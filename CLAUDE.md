@@ -55,6 +55,7 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
   - `IG-Intro.dc.html`, `IG-Result.dc.html`, `IG-Tip.dc.html`: Instagram 1080×1350 templates (RU)
   - `LinkedIn-Banner.dc.html`: 1584×396 banner
   - `Highlights.dc.html`: Instagram highlight covers
+- `site/`: the live one-page website (EN), plain HTML/CSS/JS with no build step. `index.html`, `styles.css`, `main.js`, `assets/portrait.webp` (hero photo), `assets/og.jpg` (link preview). Black-and-white only, no gold. Sections: name hero → verified results → lessons and prices → method → story → FAQ → contact. Unfilled facts are marked with red dashed `.todo` spans; search for `todo` before publishing.
 - The live, editable design canvas is in Nurassyl's Claude account: https://claude.ai/artifact/5fR9rzHko1kNuSNpoKb4RJ (private).
 
 ## Open items (waiting on Nurassyl)
