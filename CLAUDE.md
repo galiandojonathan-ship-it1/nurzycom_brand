@@ -71,7 +71,7 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Suggested next tasks
 
-1. Convert `design/Main.dc.html` into a deployable static site (`site/index.html` + CSS): strip the `<x-dc>`, `<helmet>` and `support.js` wrapper, keep the markup and styles, check it at 375px width, and prepare it for free hosting (GitHub Pages, Netlify or Vercel) and a domain such as nurzy.com or a .kz domain.
+1. Deploy `site/` to free hosting (Netlify, Vercel or GitHub Pages) and connect a domain such as nurzy.com or a .kz domain. Replace `assets/portrait.webp` with the full-resolution original when Nurassyl sends it.
 2. Write the full 6-slide "3 mistakes in SAT Reading & Writing" carousel (RU) in the `IG-Tip` style.
 3. Plan a 4-week content calendar: about 3 posts a week across exam tips, his journey, admissions, chemistry and a little personality (gym, discipline: max 15%).
 4. Build a free lead magnet (e.g. a one-page SAT RW error-log template) to collect contacts via Telegram.
