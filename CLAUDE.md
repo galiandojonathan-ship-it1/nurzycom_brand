@@ -6,8 +6,8 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 
 ## The business in brief
 
-- **Offers:** SAT Reading & Writing (small group 3-5 students and 1:1), IELTS Writing (1:1), Organic Chemistry I (1:1, university level, in English). SAT Math and olympiad prep exist only as possible later offers.
-- **Launch prices:** group 35,000 ₸/month (8 × 90 min); SAT RW 1:1 8,000 ₸/h, pack of 8 for 60,000 ₸; IELTS Writing 7,000 ₸/h, essay review 3,000 ₸; OrgChem $20/h, pack of 10 for $180. Raise only after verified results are published.
+- **Offers (updated 2026-10-12):** SAT Verbal (Reading & Writing) and Chemistry (IBDP, A-level, university level). All lessons are **online**. IELTS Writing is **not offered** any more (the IELTS 8.0 score is still a publishable credential). SAT Math and olympiad prep exist only as possible later offers.
+- **Prices (updated 2026-10-12):** SAT Verbal 12-lesson pack: individual 90,000 ₸; duo 70,000 ₸; group of 6 42,000 ₸ (duo and group shown on the site as per student; confirm with Nurassyl). Chemistry: price agreed individually, from 10,000 ₸/hour. Do not publish a payment method or a LinkedIn link.
 - **Audience:** grade 9-12 students in Kazakhstan (NIS, BIL, RFMSH) applying to NU or abroad, and their parents (who pay and verify). Also university students needing organic chemistry.
 - **Customer insight:** students need "something to prove their competence" for universities and summer programs. Headline idea: *Scores that prove what you're capable of.*
 - **Conversion action:** free 20-minute consultation with a short diagnostic. Telegram @nurzycom (primary), WhatsApp +7 705 421 1262 (https://wa.me/77054211262).
@@ -38,13 +38,17 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 - **Type (website, chosen 2026-10-12):** Noto Serif Display Light 300 Italic for the name, headlines and big numbers (40px and larger only: its hairlines vanish at small sizes); Geist 400-500 for body and buttons; IBM Plex Mono 400 in small spaced capitals for labels and metadata (the fashion-poster detail). All free on Google Fonts and all cover Russian and Kazakh letters. Cormorant Garamond + Manrope remain the fallback pairing used in the older `design/` files.
 - **Logo:** "NK" in Cormorant Garamond inside a thin hexagon outline (nod to the benzene ring). Inline SVG is in every file in `design/`.
 - **Photos:** his real face on every profile picture; black and white for Instagram/Telegram, colour for LinkedIn. AI may polish real photos (light, background) but never replace or alter his appearance.
-- **Languages:** Russian for parent-facing social content, English for the website and SAT/IELTS examples, some Kazakh.
+- **Languages:** Russian for parent-facing social content, English and Russian for the website, English for SAT examples, some Kazakh.
 
-## The teaching method (use in copy)
+## The teaching method (public description only)
 
-1. **Diagnose:** official Bluebook practice test; every mistake sorted by question type in an error log.
-2. **Target:** lessons on the 2-3 question types losing the most points; a timed module every week.
-3. **Prove:** full practice test every 2-3 weeks; short score update to parents.
+Nurassyl's method is his own ("авторская методика") and **its details stay private**. Do not publish lesson structure, test schedules, error logs or step-by-step procedures. Public copy may name only these three elements:
+
+1. **Active recall:** retrieving answers from memory instead of rereading (a technique with strong support in learning research).
+2. **Vocabulary expansion:** steady work on the vocabulary SAT passages and questions demand.
+3. **Supportive atmosphere:** attentive, calm lessons where any question is welcome.
+
+Say the techniques are backed by research; do not claim the method as a whole was "proved by scientists" or that it delivers "consistent results" until there are published, consented student results.
 
 ## Files in this project
 
@@ -55,14 +59,12 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
   - `IG-Intro.dc.html`, `IG-Result.dc.html`, `IG-Tip.dc.html`: Instagram 1080×1350 templates (RU)
   - `LinkedIn-Banner.dc.html`: 1584×396 banner
   - `Highlights.dc.html`: Instagram highlight covers
-- `site/`: the live one-page website (EN), plain HTML/CSS/JS with no build step. `index.html`, `styles.css`, `main.js`, `assets/portrait.webp` (hero photo), `assets/og.jpg` (link preview). Black-and-white only, no gold. Sections: name hero → verified results → lessons and prices → method → story → FAQ → contact. Unfilled facts are marked with red dashed `.todo` spans; search for `todo` before publishing.
+- `site/`: the live one-page website, plain HTML/CSS/JS with no build step. English at `site/index.html`, Russian at `site/ru/index.html` (EN/RU switch in the top bar; both pages share `styles.css` and `main.js`, so change copy in both files). Also `assets/portrait.webp` (hero photo), `assets/og.jpg` (link preview). Black-and-white only, no gold. Sections: name hero → verified results → lessons and prices → method → story → FAQ → contact. Unfilled facts are marked with red dashed `.todo` spans; search for `todo` before publishing.
 - The live, editable design canvas is in Nurassyl's Claude account: https://claude.ai/artifact/5fR9rzHko1kNuSNpoKb4RJ (private).
 
 ## Open items (waiting on Nurassyl)
 
 - Portrait and candid photo to replace `[Your portrait]` / `[Candid photo]` placeholders
-- Payment method for the FAQ (`[payment method]`, e.g. Kaspi transfer)
-- LinkedIn profile URL (footer `[LinkedIn URL]`)
 - October 2026 SAT official scores and consent (Mukhamediya is his own individual student; results card `[Score]`)
 - Ansara's final Organic Chemistry grade (University of Cincinnati)
 - Registration as self-employed or individual entrepreneur in Kazakhstan
@@ -70,10 +72,9 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 ## Suggested next tasks
 
 1. Convert `design/Main.dc.html` into a deployable static site (`site/index.html` + CSS): strip the `<x-dc>`, `<helmet>` and `support.js` wrapper, keep the markup and styles, check it at 375px width, and prepare it for free hosting (GitHub Pages, Netlify or Vercel) and a domain such as nurzy.com or a .kz domain.
-2. Add a Russian version of the site with a language switch.
-3. Write the full 6-slide "3 mistakes in SAT Reading & Writing" carousel (RU) in the `IG-Tip` style.
-4. Plan a 4-week content calendar: about 3 posts a week across exam tips, his journey, admissions, chemistry and a little personality (gym, discipline: max 15%).
-5. Build a free lead magnet (e.g. a one-page SAT RW error-log template) to collect contacts via Telegram.
+2. Write the full 6-slide "3 mistakes in SAT Reading & Writing" carousel (RU) in the `IG-Tip` style.
+3. Plan a 4-week content calendar: about 3 posts a week across exam tips, his journey, admissions, chemistry and a little personality (gym, discipline: max 15%).
+4. Build a free lead magnet (e.g. a one-page SAT RW error-log template) to collect contacts via Telegram.
 
 ## Useful tools
 
