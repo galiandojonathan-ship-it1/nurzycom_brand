@@ -2,7 +2,7 @@
 
 You are continuing work on the personal brand and tutoring business of Nurassyl Kunanbayev (@nurzycom), a Chemical Engineering student at Nazarbayev University (NU), Kazakhstan. The goal is to turn his academic record into paying students now and a brand-based business later.
 
-**Read `.agents/product-marketing.md` before any marketing, copy or design task.** It is the single source of truth for positioning, audience, prices, proof, competitors and voice. When facts change, update it: bump the version, update "Last updated", and add one changelog line at the top (newest first).
+**This file is the single source of truth** for positioning, audience, prices, proof and voice. Read it before any marketing, copy or design task, and update it when facts change. (An older `.agents/product-marketing.md` was referenced earlier but is not in this repo.)
 
 ## The business in brief
 
@@ -39,7 +39,8 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 - **Colours (black and white only, since 2026-10-13):** Ink #0A0A0A (text, dark sections), Paper #FAF8F3 (main background), Mist #F0EEE8 (alternate light sections), Studio grey #D5D5D4 (photo backdrop), Stone #5A5852 (secondary text). No accent colour: gold is retired. The older `design/` files still use gold and Cormorant Garamond; treat them as outdated and rebuild anything from them in the current system.
 - **Type (website, chosen 2026-10-12):** Noto Serif Display Light 300 Italic for the name, headlines and big numbers (40px and larger only: its hairlines vanish at small sizes); Geist 400-500 for body and buttons; IBM Plex Mono 400 in small spaced capitals for labels and metadata (the fashion-poster detail). All free on Google Fonts and all cover Russian and Kazakh letters. Cormorant Garamond + Manrope remain the fallback pairing used in the older `design/` files.
 - **Logo:** "NK" in Noto Serif Display Light Italic inside a thin hexagon outline (nod to the benzene ring). The current inline SVG is in `site/index.html` (`.logo`).
-- **Photos:** his real face on every profile picture; black and white for Instagram/Telegram, colour for LinkedIn. AI may polish real photos (light, background) but never replace or alter his appearance.
+- **Photos:** his real face on every profile picture. Website: black-and-white studio portrait. Instagram: colour photos, informal style (chosen 2026-10-13: black and white read as too cold on social posts). LinkedIn: colour. AI may polish real photos (light, background) but never replace or alter his appearance.
+- **Two styles, one brand:** the website is formal and editorial; Instagram is informal (dot-grid paper, polaroid photo, stickers with line icons, bold Geist + serif italic accents). Both use the same colours and fonts. Template: `social/story/slide-01.html`.
 - **Languages:** Russian for parent-facing social content, English and Russian for the website, English for SAT examples, some Kazakh.
 
 ## The teaching method (public description only)
@@ -54,7 +55,6 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Files in this project
 
-- `.agents/product-marketing.md`: brand foundation document (v3). Read first.
 - `design/`: source of the design canvas made in Claude (format: Claude Design `.dc.html` components; mostly plain HTML with inline styles inside `<x-dc>` tags).
   - `Main.dc.html`: one-page website (EN)
   - `BrandKit.dc.html`: logo, colours, type, voice, photo guide
@@ -80,7 +80,7 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Useful tools
 
-- Marketing skills: `npx skills add coreyhaines31/marketingskills -a claude-code` (product-marketing, copywriting, copy-editing, social, content-strategy, offers, pricing, lead-magnets). Every skill reads `.agents/product-marketing.md` first.
+- Marketing skills: `npx skills add coreyhaines31/marketingskills -a claude-code` (product-marketing, copywriting, copy-editing, social, content-strategy, offers, pricing, lead-magnets).
 - Video (Reels intros, animated results): `npx skills add heygen-com/hyperframes` (needs Node.js 22+ and FFmpeg).
 
 ## Working style
