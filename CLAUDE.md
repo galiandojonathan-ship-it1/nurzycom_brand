@@ -34,9 +34,9 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 
 - **Personality:** Precise. Driven. Warm. The credible older-brother mentor. Confident, never arrogant.
 - **Voice:** short sentences, concrete numbers, practical advice. Use: results, plan, step by step, verified score, error log, realistic range. Avoid: genius, secret, guaranteed, hack, IQ, exclamation marks, AI-sounding patterns ("it's not X, it's Y", stacked negation lists).
-- **Colours:** Ink #0A0A0A, Paper #FAF8F3, Gold #C9A24B (on black only), Deep gold #7A5C14 (gold accents on light backgrounds), Stone #4A4740 (secondary text). White and black dominate; gold stays under 15% of a layout. Never gold text on white.
+- **Colours (black and white only, since 2026-10-13):** Ink #0A0A0A (text, dark sections), Paper #FAF8F3 (main background), Mist #F0EEE8 (alternate light sections), Studio grey #D5D5D4 (photo backdrop), Stone #5A5852 (secondary text). No accent colour: gold is retired. The older `design/` files still use gold and Cormorant Garamond; treat them as outdated and rebuild anything from them in the current system.
 - **Type (website, chosen 2026-10-12):** Noto Serif Display Light 300 Italic for the name, headlines and big numbers (40px and larger only: its hairlines vanish at small sizes); Geist 400-500 for body and buttons; IBM Plex Mono 400 in small spaced capitals for labels and metadata (the fashion-poster detail). All free on Google Fonts and all cover Russian and Kazakh letters. Cormorant Garamond + Manrope remain the fallback pairing used in the older `design/` files.
-- **Logo:** "NK" in Cormorant Garamond inside a thin hexagon outline (nod to the benzene ring). Inline SVG is in every file in `design/`.
+- **Logo:** "NK" in Noto Serif Display Light Italic inside a thin hexagon outline (nod to the benzene ring). The current inline SVG is in `site/index.html` (`.logo`).
 - **Photos:** his real face on every profile picture; black and white for Instagram/Telegram, colour for LinkedIn. AI may polish real photos (light, background) but never replace or alter his appearance.
 - **Languages:** Russian for parent-facing social content, English and Russian for the website, English for SAT examples, some Kazakh.
 
