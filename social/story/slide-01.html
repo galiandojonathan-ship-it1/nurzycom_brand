@@ -30,6 +30,9 @@
   }
   .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(1); display: none; }
   .photo.has img { display: block; }
+  /* Photo tone: default is black and white; ?tone=warm or ?tone=color for comparison */
+  .photo.warm img { filter: grayscale(1) sepia(.22) contrast(1.03); }
+  .photo.color img { filter: none; }
   .slot { position: absolute; inset: 24px; border: 2px dashed rgba(10,10,10,.35); display: grid; place-items: center; text-align: center; font: 400 20px/1.8 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: rgba(10,10,10,.55); }
   .photo.has .slot { display: none; }
 
@@ -67,6 +70,8 @@
     const box = document.getElementById('photo');
     box.querySelector('img').src = src;
     box.classList.add('has');
+    const tone = new URLSearchParams(location.search).get('tone');
+    if (tone) box.classList.add(tone);
   }
 </script>
 </body>
