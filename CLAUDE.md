@@ -19,6 +19,7 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 - Perfect 5.0/5.0 GPA every term for six years at NIS
 - Chemistry olympiads: 2023 national gold and gold at the International Tuymaada Olympiad; 2024 national silver (top 6) and Tuymaada bronze
 - Silver medal, Republican Science Project Competition, 2023 (grade 9). Total medals verified from his Common App: **5** (national chemistry gold and silver, Tuymaada gold and bronze, science projects silver). His Common App lists Tuymaada bronze as "medals"; if that is more than one, confirm before publishing a higher count.
+- 2023 diplomas seen (grade 9): Republican olympiad, chemistry, I degree (Shymkent, 20-25 March 2023); Republican science projects competition, II degree; XXX International Tuymaada Olympiad, chemistry junior league, First Degree Diploma (Yakutsk, 2-10 July 2023). "Absolute champion" of Tuymaada is not shown on the diploma: do not publish it without the official results list.
 - SAT 1560 is a superscore: Reading & Writing 760 (May 2025) + Math 800 (Dec 2025). IELTS 8.0 (Jan 2025): L 8, R 8.5, W 8, S 7.
 - Admitted to NYU Abu Dhabi (formal offer), chose NU
 - A student he tutored finished Organic Chemistry I at UC San Diego Extended Studies with a 92.4% final grade (publish unnamed, as a result only)
