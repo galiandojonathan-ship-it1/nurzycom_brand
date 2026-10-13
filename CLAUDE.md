@@ -6,7 +6,7 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 
 ## The business in brief
 
-- **Offers (updated 2026-10-12):** SAT Verbal (Reading & Writing) and Chemistry (IBDP, A-level, university level). All lessons are **online**. IELTS Writing is **not offered** any more (the IELTS 8.0 score is still a publishable credential). SAT Math and olympiad prep exist only as possible later offers.
+- **Offers (updated 2026-10-12):** SAT Verbal (Reading & Writing) and Chemistry (IBDP, A-level, university level). All lessons are **online** and last **70 minutes at most** (set 2026-10-13; plan every lesson, slide deck and script to fit). Teaching slides are written in Russian, with SAT terms, questions and vocabulary in English. IELTS Writing is **not offered** any more (the IELTS 8.0 score is still a publishable credential). SAT Math and olympiad prep exist only as possible later offers.
 - **Prices (updated 2026-10-12):** SAT Verbal 12-lesson pack: individual 90,000 ₸; duo 70,000 ₸; group of 6 42,000 ₸ (duo and group shown on the site as per student; confirm with Nurassyl). Chemistry: price agreed individually, from 10,000 ₸/hour. Do not publish a payment method or a LinkedIn link.
 - **Audience:** grade 9-12 students in Kazakhstan (NIS, BIL, RFMSH) applying to NU or abroad, and their parents (who pay and verify). Also university students needing organic chemistry.
 - **Customer insight:** students need "something to prove their competence" for universities and summer programs. Headline idea: *Scores that prove what you're capable of.*
