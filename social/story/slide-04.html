@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Story · slide 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Display:ital,wght@1,300&display=swap">
+<style>
+  /* Instagram portrait post 1080 × 1350, informal style (see slide-01). */
+  :root {
+    --ink: #0A0A0A; --paper: #FAF8F3; --studio: #D5D5D4;
+    --serif: 'Noto Serif Display', serif;
+    --sans: 'Geist', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .slide { position: relative; width: 1080px; height: 1350px; padding: 64px 72px; }
+  .slide::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(10,10,10,.12) 1.6px, transparent 1.6px); background-size: 36px 36px; }
+  .slide > * { position: relative; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); }
+  .chip svg { width: 22px; height: 22px; }
+
+  .text { position: absolute; left: 72px; right: 72px; bottom: 150px; }
+  h1 { font: 700 92px/1 var(--sans); letter-spacing: -.035em; }
+  h1 em { font: 300 italic 104px/1 var(--serif); letter-spacing: -.02em; }
+  .sub { margin-top: 18px; font-size: 30px; line-height: 1.35; max-width: 40ch; color: #2b2a27; }
+  .sub b { font-weight: 700; color: var(--ink); }
+
+  .card { position: absolute; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.35); }
+  .card img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .photo { left: 70px; top: 150px; width: 420px; padding: 18px 18px 64px; transform: rotate(-4deg); }
+  .photo .ph { width: 384px; height: 520px; }
+  .photo .cap { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font: 300 italic 32px var(--serif); }
+  .diploma { right: 64px; top: 230px; width: 500px; padding: 14px; transform: rotate(5deg); }
+  .diploma .ph { width: 472px; height: 333px; }
+  .tape { position: absolute; width: 130px; height: 40px; background: rgba(213,213,212,.9); }
+  .photo .tape { top: -16px; left: 50%; transform: translateX(-50%) rotate(-4deg); }
+  .diploma .tape.a { top: -18px; left: -36px; transform: rotate(-30deg); }
+  .diploma .tape.b { bottom: -16px; right: -36px; transform: rotate(-30deg); }
+
+  .sticker { position: absolute; display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 999px; font: 700 30px var(--sans); letter-spacing: -.01em; white-space: nowrap; box-shadow: 0 10px 24px -12px rgba(10,10,10,.4); }
+  .sticker svg { width: 32px; height: 32px; flex: none; }
+  .s-dark { background: var(--ink); color: var(--paper); }
+  .s-light { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); }
+  .s1 { top: 150px; right: 80px; transform: rotate(-4deg); }
+  .s2 { top: 610px; right: 110px; transform: rotate(4deg); }
+  .s3 { top: 730px; right: 70px; transform: rotate(-3deg); }
+
+  .note { position: absolute; top: 845px; left: 540px; font: 300 italic 38px/1.1 var(--serif); transform: rotate(-4deg); }
+  .arrow { position: absolute; top: 770px; left: 425px; width: 120px; height: 100px; }
+  .arrow path { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .sparkle { position: absolute; width: 40px; height: 40px; }
+  .sparkle path { fill: var(--ink); }
+  .sp1 { top: 190px; left: 520px; }
+  .sp2 { top: 860px; right: 110px; width: 28px; height: 28px; }
+
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 56px; display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .swipe { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--ink); color: var(--paper); border-radius: 999px; }
+  svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .text { position: absolute; left: 72px; right: 72px; bottom: 150px; }
+  .text .sub { font-size: 29px; max-width: 44ch; }
+  .board { position: absolute; left: 72px; right: 72px; top: 170px; }
+  .row { display: flex; align-items: center; gap: 36px; padding: 22px 36px; margin-bottom: 22px; background: #fff; border: 2.5px solid var(--ink); border-radius: 28px; box-shadow: 0 16px 30px -18px rgba(10,10,10,.4); }
+  .row:nth-child(1) { transform: rotate(-1.5deg); width: 86%; }
+  .row:nth-child(2) { transform: rotate(1deg); width: 86%; margin-left: 6%; }
+  .row:nth-child(3) { transform: rotate(-1deg); width: 86%; margin-left: 12%; background: var(--ink); color: var(--paper); }
+  .row .n { font: 300 italic 108px/1 var(--serif); width: 70px; text-align: center; }
+  .row .t { flex: 1; }
+  .row .t b { display: block; font: 700 38px/1.1 var(--sans); letter-spacing: -.02em; }
+  .row .t span { font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
+  .row svg { width: 64px; height: 64px; flex: none; }
+  .s1 { top: 128px; right: 80px; transform: rotate(5deg); }
+  .note { position: absolute; top: 700px; right: 80px; font: 300 italic 36px/1.1 var(--serif); transform: rotate(-4deg); text-align: right; }
+  .arrow { top: 560px; right: 120px; width: 100px; height: 130px; }
+  .sp1 { top: 640px; left: 90px; }
+  .sp2 { top: 120px; left: 560px; width: 28px; height: 28px; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="top">
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v6L5 19a1.5 1.5 0 0 0 1.3 2h11.4A1.5 1.5 0 0 0 19 19l-5-10V3"/><path d="M7.5 15h9"/></svg>Химия</span>
+    <span>04 / 08</span>
+  </div>
+
+  <div class="board">
+    <div class="row"><span class="n">7</span><span class="t"><b>Первые олимпиады</b><span>класс · без медали</span></span><svg class="i" viewBox="0 0 24 24" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg></div>
+    <div class="row"><span class="n">8</span><span class="t"><b>Снова мимо</b><span>класс · без медали</span></span><svg class="i" viewBox="0 0 24 24" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg></div>
+    <div class="row"><span class="n">9</span><span class="t"><b>«В этот раз смогу»</b><span>класс · решение</span></span><svg class="i" viewBox="0 0 24 24" stroke-width="1.6"><circle cx="12" cy="12" r="10" stroke-dasharray="3 3"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6"/><path d="M12 17.2v.1"/></svg></div>
+  </div>
+
+  <span class="note">два года<br>без медалей</span>
+
+  <div class="text">
+    <h1>И тут <em>химия</em></h1>
+    <p class="sub">Мой учитель химии заметил меня и стал таскать по олимпиадам. Но в 7 и 8 классе ничего не получилось: не хватало драйва. В конце 8 класса я решил, что в 9 классе <b>точно смогу</b>.</p>
+  </div>
+
+  <svg class="sparkle sp1" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <svg class="sparkle sp2" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+
+  <div class="foot">
+    <span>@nurzycom</span>
+    <span class="swipe">Листай <svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
+  </div>
+</div>
+</body>
+</html>
