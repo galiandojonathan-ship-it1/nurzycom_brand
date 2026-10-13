@@ -34,6 +34,13 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 5. **Do not publish** an IQ score or the unverified "0.6% NYUAD acceptance rate".
 6. **No guarantees.** Never promise a specific score; offer "a realistic range after the diagnostic".
 
+## Activities (corrected by Nurassyl, 2026-10-13)
+
+His Common App activity descriptions are partly overstated: never quote them. Use only these versions:
+- Founder of the school magazine NISX: issues shared online to about 1,000 people, dozens of printed copies.
+- Vice-president of the NIS Karaganda student council; member of the disciplinary committee (do not mention expulsions).
+- Olympiad chemistry club: overstated in the Common App and no photos exist; do not use until he gives an accurate description.
+
 ## Brand identity
 
 - **Personality:** Precise. Driven. Warm. The credible older-brother mentor. Confident, never arrogant.
