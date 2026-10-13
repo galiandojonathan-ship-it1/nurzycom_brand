@@ -28,6 +28,8 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 
 ## Hard rules (never break these)
 
+0. **Privacy on documents.** Before publishing any diploma, letter or score report, hide: ID and serial numbers, QR codes, record locators, TRF numbers, his patronymic, his school name and class, and other people's names (supervisors, teachers). Keep his name, the award, the event and the date.
+
 1. **Never invent reviews, testimonials, quotes, scores or statistics.** No review exists for the UCSD student; show the grade only. If proof is missing, write a visible placeholder like `[Score]` and tell Nurassyl.
 2. **Official scores only.** Practice-test scores and expected scores are never published as results.
 3. **Consent first.** Publish a student's name, score or words only with written consent, plus a parent's consent if under 18. Anonymous is fine ("Student, grade 11").
