@@ -77,25 +77,41 @@
   .s2 { bottom: 330px; right: 90px; transform: rotate(-3deg); }
   .note { top: auto; left: auto; bottom: 170px; right: 80px; transform: rotate(-4deg); text-align: right; }
   .sp1 { bottom: 520px; left: 600px; } .sp2 { bottom: 240px; right: 420px; width: 30px; height: 30px; }
+  .b1 { bottom: 620px; left: 470px; transform: rotate(-6deg); }
+
+  /* NYU violet accent: this carousel only */
+  :root { --v: #57068C; }
+  h1 em, .big { color: var(--v); }
+  .numcard b { color: var(--ink); }
+  .sparkle path { fill: var(--v); }
+  .s-dark.sv { background: var(--v); }
+  .chip { border-color: var(--v); }
+  .chip svg { color: var(--v); }
+  .badge { position: absolute; z-index: 3; width: 92px; height: 92px; border-radius: 50%; background: var(--v); color: #FAF8F3; display: grid; place-items: center; box-shadow: 0 14px 30px -14px rgba(87,6,140,.7); }
+  .badge svg { width: 46px; height: 46px; stroke-width: 1.8; }
+  .badge.w { background: #FAF8F3; color: var(--v); border: 3px solid var(--v); }
+  .stripe { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--v); }
+  .no { color: var(--v) !important; border-color: var(--v) !important; }
 </style>
 </head>
 <body>
 <div class="slide">
+  <span class="stripe"></span>
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>причина 4 из 4</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>причина 4</span>
     <span>06 / 08</span>
   </div>
   <div class="numcard"><span class="tape"></span><b>4</b></div>
-  <span class="sticker s-dark s1"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h11a3 3 0 0 1 3 3v11H7a3 3 0 0 1-3-3z"/><path d="M8 9h6M8 13h6"/></svg>учусь сам</span>
+  <span class="sticker s-dark sv s1"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h11a3 3 0 0 1 3 3v11H7a3 3 0 0 1-3-3z"/><path d="M8 9h6M8 13h6"/></svg>учусь сам</span>
   <span class="sticker s-light s2"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>SAT · IELTS · химия</span>
-  <span class="note">вот почему<br>я не «маленький<br>мальчик»</span>
+  <span class="note">вот почему<br>это не «послушный<br>мальчик»</span>
   <svg class="sparkle sp1" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
   <svg class="sparkle sp2" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <span class="badge b1"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
   <div class="text">
-    <span class="kick">Причина 4</span>
-    <h1>Умение <em>учиться</em></h1>
-    <p class="sub">К концу 12 класса я понял главное: умение учиться самому важнее названия университета. Я доказывал это себе снова и снова: начальная школа, математика, химия, история, SAT, IELTS и даже бодибилдинг.</p>
-    <p class="sub">Если место мне не подходит, семья волнуется, а препятствия того не стоят, причин ехать не остаётся.</p>
+    <h1>Я умею учиться <em>сам</em></h1>
+    <p class="sub">В конце 12 класса я заметил простую вещь. Всё, чего я добился, я выучил сам: химию, историю, SAT, IELTS, даже бодибилдинг.</p>
+    <p class="sub">Хороший университет помогает. Но если место не твоё, семья переживает, а цена слишком высокая, ехать нет смысла.</p>
   </div>
   <div class="foot">
     <span>@nurzycom</span>

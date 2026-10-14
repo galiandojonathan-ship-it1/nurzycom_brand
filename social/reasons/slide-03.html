@@ -77,25 +77,41 @@
   .s2 { top: 400px; left: 100px; transform: rotate(3deg); }
   .note { top: 560px; left: 80px; transform: rotate(-4deg); }
   .sp1 { top: 170px; left: 140px; } .sp2 { top: 690px; left: 470px; width: 30px; height: 30px; }
+  .b1 { top: 470px; right: 470px; transform: rotate(-6deg); }
+
+  /* NYU violet accent: this carousel only */
+  :root { --v: #57068C; }
+  h1 em, .big { color: var(--v); }
+  .numcard b { color: var(--ink); }
+  .sparkle path { fill: var(--v); }
+  .s-dark.sv { background: var(--v); }
+  .chip { border-color: var(--v); }
+  .chip svg { color: var(--v); }
+  .badge { position: absolute; z-index: 3; width: 92px; height: 92px; border-radius: 50%; background: var(--v); color: #FAF8F3; display: grid; place-items: center; box-shadow: 0 14px 30px -14px rgba(87,6,140,.7); }
+  .badge svg { width: 46px; height: 46px; stroke-width: 1.8; }
+  .badge.w { background: #FAF8F3; color: var(--v); border: 3px solid var(--v); }
+  .stripe { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--v); }
+  .no { color: var(--v) !important; border-color: var(--v) !important; }
 </style>
 </head>
 <body>
 <div class="slide">
+  <span class="stripe"></span>
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>причина 1 из 4</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>причина 1</span>
     <span>03 / 08</span>
   </div>
   <div class="numcard"><span class="tape"></span><b>1</b></div>
-  <span class="sticker s-dark s1"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>обстановка в регионе</span>
+  <span class="sticker s-dark sv s1"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>обстановка в регионе</span>
   <span class="sticker s-light s2"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c1-3.5 3.3-5.5 6-5.5s5 2 6 5.5"/><path d="M15 14.5c2.6 0 4.6 1.6 5.5 4.5"/></svg>3 друга всё равно поехали</span>
   <span class="note">каждый решает<br>сам за себя</span>
   <svg class="sparkle sp1" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
   <svg class="sparkle sp2" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <span class="badge b1"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></span>
   <div class="text">
-    <span class="kick">Причина 1</span>
-    <h1>Ситуация в <em>регионе</em></h1>
-    <p class="sub">Война началась прямо в день моего интервью, и домой нас эвакуировало посольство. Мне эта обстановка не понравилась, и жить в ней четыре года я не захотел.</p>
-    <p class="sub">Но это мой выбор. Трое друзей, которые были со мной в той поездке, всё равно поехали туда учиться.</p>
+    <h1>Я видел, как всё <em>началось</em></h1>
+    <p class="sub">Война началась прямо в день моего интервью. Жить четыре года рядом с этим я не захотел.</p>
+    <p class="sub">Трое друзей из той же поездки всё равно поехали учиться, и у них всё хорошо. Каждый решает за себя.</p>
   </div>
   <div class="foot">
     <span>@nurzycom</span>

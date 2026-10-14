@@ -85,10 +85,26 @@
   .s2 { top: 770px; left: 100px; transform: rotate(3deg); }
   .fine { position: absolute; left: 72px; top: 900px; max-width: 420px; font: 400 18px/1.5 var(--mono); letter-spacing: .06em; color: #5A5852; }
   .sp1 { top: 560px; left: 440px; } .sp2 { top: 1130px; left: 200px; width: 30px; height: 30px; }
+  .b1 { top: 520px; left: 300px; transform: rotate(-8deg); }
+
+  /* NYU violet accent: this carousel only */
+  :root { --v: #57068C; }
+  h1 em, .big { color: var(--v); }
+  .numcard b { color: var(--ink); }
+  .sparkle path { fill: var(--v); }
+  .s-dark.sv { background: var(--v); }
+  .chip { border-color: var(--v); }
+  .chip svg { color: var(--v); }
+  .badge { position: absolute; z-index: 3; width: 92px; height: 92px; border-radius: 50%; background: var(--v); color: #FAF8F3; display: grid; place-items: center; box-shadow: 0 14px 30px -14px rgba(87,6,140,.7); }
+  .badge svg { width: 46px; height: 46px; stroke-width: 1.8; }
+  .badge.w { background: #FAF8F3; color: var(--v); border: 3px solid var(--v); }
+  .stripe { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--v); }
+  .no { color: var(--v) !important; border-color: var(--v) !important; }
 </style>
 </head>
 <body>
 <div class="slide">
+  <span class="stripe"></span>
   <div class="top">
     <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M2 16l20-6-9 10-2-5z"/><path d="M11 15l-9 1"/></svg>NYU Abu Dhabi</span>
     <span>01 / 08</span>
@@ -96,14 +112,15 @@
   <div class="text">
     <div class="pre">Я отказался от</div>
     <div class="big">170 000 000 ₸</div>
-    <p class="sub">4 причины, почему я сказал «нет» NYU&nbsp;Abu&nbsp;Dhabi</p>
+    <p class="sub">Полная стипендия NYU Abu Dhabi на четыре года. Рассказываю, почему сказал «нет».</p>
   </div>
   <div class="pol p1"><span class="tape"></span><div class="ph"><img src="../assets/reasons-tower.jpg" alt=""></div><div class="cap">Абу-Даби, март 2026</div></div>
-  <span class="sticker s-dark s1"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>полная стипендия</span>
+  <span class="sticker s-dark sv s1"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>полная стипендия</span>
   <span class="sticker s-light s2"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>≈ $355 000 · 4 года</span>
   <p class="fine">$88 862 в год × 4 года по пакету помощи NYUAD 2026–27, по курсу от 478 ₸ за $1</p>
   <svg class="sparkle sp1" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
   <svg class="sparkle sp2" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <span class="badge b1"><svg class="i" viewBox="0 0 24 24"><path d="M2 16l20-6-9 10-2-5z"/><path d="M11 15l-9 1"/></svg></span>
   <div class="foot">
     <span>@nurzycom</span>
     <span class="swipe">Листай <svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
