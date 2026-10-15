@@ -61,38 +61,38 @@
   .text { position: absolute; left: 72px; right: 72px; }
   .text .sub { max-width: 46ch; font-size: 30px; line-height: 1.4; }
   .text .sub + .sub { margin-top: 18px; }
-  .foot .swipe svg { width: 22px; height: 22px; }
+  .tape.a { top: -18px; left: -40px; transform: rotate(-30deg); }
+  .tape.b { top: -16px; right: -44px; transform: rotate(26deg); }
 
   .t3 { top: 150px; }
-  .t3 h1 { margin: 0 0 30px; }
-  .t3 .sub { font-size: 34px; max-width: 44ch; } .tl { position: absolute; left: 72px; right: 72px; top: 740px; display: flex; flex-direction: column; gap: 22px; }
-  .tl .sticker { position: relative; align-self: flex-start; }
-  .tl .sticker:nth-child(1) { transform: rotate(-3deg); }
-  .tl .sticker:nth-child(2) { transform: rotate(2deg); margin-left: 150px; }
-  .tl .sticker:nth-child(3) { transform: rotate(-2deg); margin-left: 300px; }
-  .sp1 { top: 760px; right: 140px; } .sp2 { top: 1100px; left: 860px; width: 30px; height: 30px; }
-  .n3 { top: 1070px; left: 330px; transform: rotate(-3deg); font-size: 40px; }
+  .t3 h1 { margin: 0; }
+  .t3 .sub { margin-top: 20px; }
+  .p3 { left: 110px; top: 470px; width: 820px; transform: rotate(2deg); }
+  .p3 .ph { width: 784px; height: 560px; }
+  .p3 .ph img { object-position: 70% 40%; }
+  .f1 { top: 440px; right: 60px; transform: rotate(-6deg); }
+  .n3 { top: 1135px; left: 90px; transform: rotate(-3deg); font-size: 40px; }
+  .sp1 { top: 1120px; left: 820px; } .sp2 { top: 430px; left: 70px; width: 30px; height: 30px; }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>март–май · уроки</span>
-    <span>03 / 04</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>лето · Франция</span>
+    <span>03 / 05</span>
   </div>
 
   <div class="text t3">
-    <h1>Как это <em>было</em></h1>
-    <p class="sub">В январе Юсуф написал пробник на 1300. В марте мы начали заниматься, до экзамена оставалось три месяца.</p>
-    <p class="sub">Занимались в основном Verbal, немного Math. Ещё больше он работал сам, каждый день.</p>
-    <p class="sub">1580 это его труд. Я рад, что был рядом. С прошлого года я помогаю ему и с поступлением в университеты.</p>
+    <h1>Открыли <em>вместе</em></h1>
+    <p class="sub">Летом Юсуф поехал на международный конкурс во Францию. Там мы вместе и открыли его результат.</p>
   </div>
-  <div class="tl">
-    <span class="sticker s-light"><svg class="i" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>январь · пробник 1300</span>
-    <span class="sticker s-light"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h11a3 3 0 0 1 3 3v11H7a3 3 0 0 1-3-3z"/><path d="M8 9h6M8 13h6"/></svg>март–май · уроки</span>
-    <span class="sticker s-dark"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>6 июня · SAT 1580</span>
+  <div class="polaroid p3">
+    <span class="tape a"></span><span class="tape b"></span>
+    <div class="ph"><img src="../assets/yussuf-paris.jpg" alt=""></div>
+    <div class="cap">Франция, лето 2026</div>
   </div>
-  <span class="note n3">пять месяцев от пробника<br>до официальных 1580</span>
+  <span class="sticker s-dark f1"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>SAT 1580</span>
+  <span class="note n3">один из самых ярких<br>моментов моего лета</span>
   <svg class="sparkle sp1" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg><svg class="sparkle sp2" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
 
   <div class="foot">
