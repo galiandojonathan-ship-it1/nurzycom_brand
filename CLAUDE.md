@@ -31,7 +31,7 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 ## About Nurassyl (from his answers, 2026-10-16)
 
 - **Goal by summer 2027:** 1,000,000 ₸ a month, part of it passive income, and a strong Instagram. He started now because this is his easiest year at NU.
-- **Time:** at most 5 hours a week this year, for teaching and content together. Plan within that limit, or show him the maths when a goal needs more.
+- **Time:** 20-24 hours a week for the business (teaching and content); he spends about 5 hours a week on NU studies this year. Plan within that limit, and show him the maths when a goal needs more.
 - **Where students came from:** Yussuf, met at a camp. Mukhamediya wrote first after following his Telegram channel; Nurassyl met him as a mentor on an employer company's August SAT marathon (respect hard rule 4: no poaching; check any non-solicit terms). Ansara came from the NU Tutors Telegram vacancies channel. Students contact him, parents do not. Two people asked about chemistry: one hesitated at the price, one went silent.
 - **Channels:** Telegram channel with 84 subscribers (strangers and friends). His best Instagram post so far is the introduction post. He is willing to film talking videos. He posts gym content but not his personal life.
 - **Views:** admires solo tutors; dislikes companies that charge a lot for ordinary tutors. Keep that private: public copy never attacks companies. He knows he cannot do everything alone.
