@@ -91,6 +91,8 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Open items (waiting on Nurassyl)
 
+- October 2026 SAT: three of his students did not reach their target scores (reported 2026-10-16). Do not publish these results. Plan: steady useful Instagram content now, December SAT results as the next proof, a "new chapter" launch after December scores are released.
+
 - Portrait and candid photo to replace `[Your portrait]` / `[Candid photo]` placeholders
 - October 2026 SAT official scores and consent (Mukhamediya is his own individual student; results card `[Score]`)
 - Ansara's final Organic Chemistry grade (University of Cincinnati)
