@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>SAT archaisms · slide 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Display:ital,wght@1,300&display=swap">
+<style>
+  /* Instagram portrait post 1080 × 1350. Informal version: colour photo,
+     stickers and doodles, same ink / paper / grey palette. */
+  :root {
+    --ink: #0A0A0A; --paper: #FAF8F3; --studio: #D5D5D4;
+    --serif: 'Noto Serif Display', serif;
+    --sans: 'Geist', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .slide { position: relative; width: 1080px; height: 1350px; padding: 64px 72px; }
+  .slide::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(10,10,10,.12) 1.6px, transparent 1.6px); background-size: 36px 36px; }
+  .slide > * { position: relative; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); }
+  .chip svg { width: 22px; height: 22px; }
+
+  .sub { margin-top: 18px; font-size: 30px; line-height: 1.35; max-width: 40ch; color: #2b2a27; }
+
+  .tape { position: absolute; width: 150px; height: 44px; background: rgba(213,213,212,.9); }
+
+  .sticker { position: absolute; display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 999px; font: 700 30px var(--sans); letter-spacing: -.01em; white-space: nowrap; box-shadow: 0 10px 24px -12px rgba(10,10,10,.4); }
+  .sticker svg { width: 32px; height: 32px; flex: none; }
+  .s-dark { background: var(--ink); color: var(--paper); }
+  .s-light { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); }
+
+  .todo { outline: 2px dashed #c33; outline-offset: 3px; color: #c33; }
+  .sparkle { position: absolute; width: 44px; height: 44px; }
+  .sparkle path { fill: var(--ink); }
+
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 56px; display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .swipe { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--ink); color: var(--paper); border-radius: 999px; }
+  svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  h1 { font: 700 88px/1.02 var(--sans); letter-spacing: -.035em; }
+  h1 em { font: 300 italic 100px/1 var(--serif); letter-spacing: -.02em; }
+  .stack { position: absolute; left: 72px; right: 72px; top: 150px; bottom: 150px; display: flex; flex-direction: column; justify-content: space-between; }
+  .word { font: 300 italic 150px/1.02 var(--serif); letter-spacing: -.02em; margin-left: -6px; }
+  .pron { margin-top: 24px; font: 400 25px var(--mono); color: #5A5852; letter-spacing: .04em; }
+  .lab { display: block; font: 400 18px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #5A5852; }
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .vs > div { padding: 26px 28px 28px; border-radius: 26px; }
+  .vs .now { border: 2.5px solid var(--ink); background: var(--paper); transform: rotate(-1.5deg); }
+  .vs .old { background: var(--ink); color: var(--paper); transform: rotate(1.5deg); }
+  .vs .old .lab { color: rgba(250,248,243,.7); }
+  .vs p { margin-top: 10px; font: 500 34px/1.2 var(--sans); letter-spacing: -.01em; }
+  .vs .now p { text-decoration: line-through; text-decoration-thickness: 3px; color: #5A5852; }
+  .ex { position: relative; padding: 42px 46px 34px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
+  .ex .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
+  .ex .en { font: 300 italic 40px/1.25 var(--serif); }
+  .ex .en b { font: 400 italic 40px/1.25 var(--serif); background: linear-gradient(transparent 62%, #D5D5D4 62%); }
+  .ex .src { margin-top: 12px; font: 400 18px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5A5852; }
+  .ex .ru { margin-top: 14px; font: 400 25px/1.4 var(--sans); color: #5A5852; }
+  .trap p { margin-top: 12px; font: 400 30px/1.35 var(--sans); max-width: 46ch; }
+  .trap p b { font-weight: 700; }
+  .foot .swipe svg { width: 22px; height: 22px; }
+
+  .t1 { position: absolute; left: 72px; right: 72px; top: 160px; }
+  .t1 .sub { margin-top: 26px; font-size: 32px; line-height: 1.38; max-width: 38ch; color: #2b2a27; }
+  .card { position: absolute; left: 90px; right: 90px; top: 560px; padding: 48px 52px 40px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); transform: rotate(-2deg); }
+  .card .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
+  .card .q { font: 300 italic 60px/1.1 var(--serif); }
+  .card .q b { font-weight: 400; background: linear-gradient(transparent 62%, #D5D5D4 62%); }
+  .card .src { margin-top: 14px; font: 400 18px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #5A5852; }
+  .card .ru { margin-top: 22px; font: 500 32px/1.3 var(--sans); }
+  .s-a { position: absolute; z-index: 3; top: 960px; right: 80px; transform: rotate(5deg); }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="top">
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v2h4V6a2 2 0 0 0-2-2z"/><path d="M8 8v10a2 2 0 0 1-4 0v-1h4"/><path d="M11 9h5M11 13h5"/></svg>SAT Verbal · архаизмы</span>
+    <span>01 / 12</span>
+  </div>
+
+  <div class="t1">
+    <h1>Знакомые слова, которые <em>врут</em> на SAT</h1>
+    <p class="sub">8 слов, которые в старых текстах значат совсем другое.</p>
+  </div>
+  <div class="card"><span class="tape"></span>
+    <p class="q">O Romeo, Romeo! <b>Wherefore</b> art thou Romeo?</p>
+    <p class="src">Шекспир · «Ромео и Джульетта»</p>
+    <p class="ru">Джульетта спрашивает не «где ты», а «почему ты Ромео».</p>
+  </div>
+  <span class="sticker s-dark s-a">wherefore = почему</span>
+  <svg class="sparkle" style="top:560px;right:110px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg><svg class="sparkle" style="top:1180px;left:150px;width:30px;height:30px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+
+  <div class="foot">
+    <span>@nurzycom</span>
+    <span class="swipe">Листай <svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
+  </div>
+</div>
+</body>
+</html>
