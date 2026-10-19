@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>SAT archaisms · slide 02</title>
+<title>SAT archaic English · slide 02</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Display:ital,wght@1,300&display=swap">
 <style>
   /* Instagram portrait post 1080 × 1350. Informal version: colour photo,
@@ -41,36 +41,31 @@
   .swipe { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--ink); color: var(--paper); border-radius: 999px; }
   svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  h1 { font: 700 88px/1.02 var(--sans); letter-spacing: -.035em; }
-  h1 em { font: 300 italic 100px/1 var(--serif); letter-spacing: -.02em; }
-  .stack { position: absolute; left: 72px; right: 72px; top: 150px; bottom: 150px; display: flex; flex-direction: column; justify-content: space-between; }
-  .word { font: 300 italic 150px/1.02 var(--serif); letter-spacing: -.02em; margin-left: -6px; }
-  .pron { margin-top: 24px; font: 400 25px var(--mono); color: #5A5852; letter-spacing: .04em; }
+  h1 { font: 700 84px/1.02 var(--sans); letter-spacing: -.035em; }
+  h1 em { font: 300 italic 96px/1 var(--serif); letter-spacing: -.02em; }
+  .tt { position: absolute; left: 72px; right: 72px; top: 150px; }
+  .tt .sub { margin-top: 20px; font-size: 30px; line-height: 1.4; max-width: 44ch; color: #2b2a27; }
+  .body { position: absolute; left: 72px; right: 72px; }
   .lab { display: block; font: 400 18px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #5A5852; }
-  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-  .vs > div { padding: 26px 28px 28px; border-radius: 26px; }
-  .vs .now { border: 2.5px solid var(--ink); background: var(--paper); transform: rotate(-1.5deg); }
-  .vs .old { background: var(--ink); color: var(--paper); transform: rotate(1.5deg); }
-  .vs .old .lab { color: rgba(250,248,243,.7); }
-  .vs p { margin-top: 10px; font: 500 34px/1.2 var(--sans); letter-spacing: -.01em; }
-  .vs .now p { text-decoration: line-through; text-decoration-thickness: 3px; color: #5A5852; }
-  .ex { position: relative; padding: 42px 46px 34px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
-  .ex .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
-  .ex .en { font: 300 italic 40px/1.25 var(--serif); }
-  .ex .en b { font: 400 italic 40px/1.25 var(--serif); background: linear-gradient(transparent 62%, #D5D5D4 62%); }
-  .ex .src { margin-top: 12px; font: 400 18px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5A5852; }
-  .ex .ru { margin-top: 14px; font: 400 25px/1.4 var(--sans); color: #5A5852; }
-  .trap p { margin-top: 12px; font: 400 30px/1.35 var(--sans); max-width: 46ch; }
-  .trap p b { font-weight: 700; }
+  .paper { position: relative; padding: 40px 44px 34px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
+  .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
+  .q { font: 300 italic 44px/1.22 var(--serif); }
+  .q b { font: 400 italic 44px/1.22 var(--serif); background: linear-gradient(transparent 62%, #D5D5D4 62%); }
+  .src { margin-top: 12px; font: 400 18px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5A5852; }
+  .ru { margin-top: 14px; font: 400 26px/1.4 var(--sans); color: #5A5852; }
+  .dark { padding: 34px 40px; background: var(--ink); color: var(--paper); border-radius: 28px; }
+  .dark .lab { color: rgba(250,248,243,.7); }
+  .dark p { margin-top: 10px; font: 400 30px/1.38 var(--sans); }
+  .dark p b { font-weight: 700; }
+  .rows { display: grid; gap: 14px; }
+  .row { display: grid; align-items: center; gap: 20px; padding: 18px 26px; background: #fff; box-shadow: 0 14px 30px -18px rgba(10,10,10,.3); }
+  .row .w { font: 300 italic 54px/1 var(--serif); }
+  .row .m { font: 500 28px/1.2 var(--sans); }
+  .row .x { font: 400 23px/1.3 var(--sans); color: #5A5852; }
+  .row .x i { font-style: italic; color: var(--ink); }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .t2 { position: absolute; left: 72px; right: 72px; top: 150px; }
-  .t2 .sub { margin-top: 24px; font-size: 32px; line-height: 1.4; max-width: 42ch; color: #2b2a27; }
-  .t2 .sub + .sub { margin-top: 18px; }
-  .qq { position: absolute; left: 72px; right: 72px; top: 610px; padding: 40px 46px; background: var(--ink); color: var(--paper); border-radius: 30px; transform: rotate(-1.5deg); }
-  .qq .lab { color: rgba(250,248,243,.7); }
-  .qq p { margin-top: 14px; font: 300 italic 46px/1.2 var(--serif); }
-  .n2 { position: absolute; top: 960px; left: 90px; font: 300 italic 44px/1.15 var(--serif); transform: rotate(-3deg); }
+  .w1 { top: 480px; } .w2 { top: 800px; transform: rotate(-1.5deg); }
 </style>
 </head>
 <body>
@@ -80,14 +75,11 @@
     <span>02 / 12</span>
   </div>
 
-  <div class="t2">
-    <h1>Откуда на SAT <em>старые</em> слова</h1>
-    <p class="sub">В литературных отрывках SAT часто берёт классику XIX и начала XX века. Тогда многие обычные слова значили другое.</p>
-    <p class="sub">А вопрос звучит так:</p>
-  </div>
-  <div class="qq"><span class="lab">типичный вопрос</span><p>As used in the text, what does the word «…» most nearly mean?</p></div>
-  <p class="n2">ловушка: выбрать современное значение</p>
-  <svg class="sparkle" style="top:570px;right:70px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg><svg class="sparkle" style="top:1120px;right:200px;width:30px;height:30px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <div class="tt"><h1>Почему это <em>важно</em></h1>
+  <p class="sub">В литературных отрывках SAT встречаются классика и поэзия прошлых веков. Там «ты» звучит как thou, а «откуда» как whence.</p></div>
+  <div class="body w1"><div class="paper"><span class="tape"></span>
+    <p class="ru" style="margin:0;color:#0A0A0A;font-size:30px">Вопросы к таким текстам проверяют простые вещи: кто говорит, к кому обращается и зачем. Перепутал thou и thee, и уже не понимаешь, кто что делает.</p></div></div>
+  <div class="body w2"><div class="dark"><span class="lab">хорошая новость</span><p>Правил немного. Все они поместились в следующие <b>9 слайдов</b>.</p></div></div>
 
   <div class="foot">
     <span>@nurzycom</span>

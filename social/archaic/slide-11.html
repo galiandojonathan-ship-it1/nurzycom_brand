@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>SAT archaisms · slide 11</title>
+<title>SAT archaic English · slide 11</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Display:ital,wght@1,300&display=swap">
 <style>
   /* Instagram portrait post 1080 × 1350. Informal version: colour photo,
@@ -41,50 +41,55 @@
   .swipe { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--ink); color: var(--paper); border-radius: 999px; }
   svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  h1 { font: 700 88px/1.02 var(--sans); letter-spacing: -.035em; }
-  h1 em { font: 300 italic 100px/1 var(--serif); letter-spacing: -.02em; }
-  .stack { position: absolute; left: 72px; right: 72px; top: 150px; bottom: 150px; display: flex; flex-direction: column; justify-content: space-between; }
-  .word { font: 300 italic 150px/1.02 var(--serif); letter-spacing: -.02em; margin-left: -6px; }
-  .pron { margin-top: 24px; font: 400 25px var(--mono); color: #5A5852; letter-spacing: .04em; }
+  h1 { font: 700 84px/1.02 var(--sans); letter-spacing: -.035em; }
+  h1 em { font: 300 italic 96px/1 var(--serif); letter-spacing: -.02em; }
+  .tt { position: absolute; left: 72px; right: 72px; top: 150px; }
+  .tt .sub { margin-top: 20px; font-size: 30px; line-height: 1.4; max-width: 44ch; color: #2b2a27; }
+  .body { position: absolute; left: 72px; right: 72px; }
   .lab { display: block; font: 400 18px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #5A5852; }
-  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-  .vs > div { padding: 26px 28px 28px; border-radius: 26px; }
-  .vs .now { border: 2.5px solid var(--ink); background: var(--paper); transform: rotate(-1.5deg); }
-  .vs .old { background: var(--ink); color: var(--paper); transform: rotate(1.5deg); }
-  .vs .old .lab { color: rgba(250,248,243,.7); }
-  .vs p { margin-top: 10px; font: 500 34px/1.2 var(--sans); letter-spacing: -.01em; }
-  .vs .now p { text-decoration: line-through; text-decoration-thickness: 3px; color: #5A5852; }
-  .ex { position: relative; padding: 42px 46px 34px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
-  .ex .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
-  .ex .en { font: 300 italic 40px/1.25 var(--serif); }
-  .ex .en b { font: 400 italic 40px/1.25 var(--serif); background: linear-gradient(transparent 62%, #D5D5D4 62%); }
-  .ex .src { margin-top: 12px; font: 400 18px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5A5852; }
-  .ex .ru { margin-top: 14px; font: 400 25px/1.4 var(--sans); color: #5A5852; }
-  .trap p { margin-top: 12px; font: 400 30px/1.35 var(--sans); max-width: 46ch; }
-  .trap p b { font-weight: 700; }
+  .paper { position: relative; padding: 40px 44px 34px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
+  .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
+  .q { font: 300 italic 44px/1.22 var(--serif); }
+  .q b { font: 400 italic 44px/1.22 var(--serif); background: linear-gradient(transparent 62%, #D5D5D4 62%); }
+  .src { margin-top: 12px; font: 400 18px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5A5852; }
+  .ru { margin-top: 14px; font: 400 26px/1.4 var(--sans); color: #5A5852; }
+  .dark { padding: 34px 40px; background: var(--ink); color: var(--paper); border-radius: 28px; }
+  .dark .lab { color: rgba(250,248,243,.7); }
+  .dark p { margin-top: 10px; font: 400 30px/1.38 var(--sans); }
+  .dark p b { font-weight: 700; }
+  .rows { display: grid; gap: 14px; }
+  .row { display: grid; align-items: center; gap: 20px; padding: 18px 26px; background: #fff; box-shadow: 0 14px 30px -18px rgba(10,10,10,.3); }
+  .row .w { font: 300 italic 54px/1 var(--serif); }
+  .row .m { font: 500 28px/1.2 var(--sans); }
+  .row .x { font: 400 23px/1.3 var(--sans); color: #5A5852; }
+  .row .x i { font-style: italic; color: var(--ink); }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .t11 { position: absolute; left: 72px; right: 72px; top: 150px; }
-  .t11 .sub { margin-top: 20px; font-size: 30px; line-height: 1.4; max-width: 44ch; color: #2b2a27; }
-  .dict { position: absolute; left: 72px; right: 72px; top: 470px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 22px; }
-  .dict li { padding: 24px 28px; background: #fff; box-shadow: 0 16px 34px -18px rgba(10,10,10,.3); }
-  .dict li:nth-child(4n+1), .dict li:nth-child(4n+4) { transform: rotate(-1deg); } .dict li:nth-child(4n+2), .dict li:nth-child(4n+3) { transform: rotate(1deg); }
-  .dict b { display: block; font: 300 italic 56px/1 var(--serif); }
-  .dict span { display: block; margin-top: 8px; font: 500 28px/1.2 var(--sans); }
+  .p11 { top: 330px; transform: rotate(-1deg); }
+  .p11 .q { font-size: 38px; }
+  .qs { top: 760px; list-style: none; display: grid; gap: 16px; }
+  .qs li { display: flex; gap: 20px; align-items: baseline; font: 400 30px/1.35 var(--sans); }
+  .qs li span { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 700 22px var(--sans); transform: translateY(6px); }
+  .an { top: 1105px; text-align: center; transform: rotate(180deg); }
+  .an p { margin-top: 6px; font: 400 22px/1.4 var(--mono); color: #5A5852; }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v2h4V6a2 2 0 0 0-2-2z"/><path d="M8 8v10a2 2 0 0 1-4 0v-1h4"/><path d="M11 9h5M11 13h5"/></svg>SAT Verbal · мини-словарь</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v2h4V6a2 2 0 0 0-2-2z"/><path d="M8 8v10a2 2 0 0 1-4 0v-1h4"/><path d="M11 9h5M11 13h5"/></svg>SAT Verbal · проверка</span>
     <span>11 / 12</span>
   </div>
 
-  <div class="t11">
-    <h1>Ещё 8 <em>коротких</em></h1>
-    <p class="sub">Эти слова почти не встречаются сегодня, но в классике попадаются постоянно.</p>
-  </div>
-  <ul class="dict"><li><b>ere</b><span>до, прежде чем</span></li><li><b>lest</b><span>чтобы не</span></li><li><b>whence</b><span>откуда</span></li><li><b>hither</b><span>сюда</span></li><li><b>thence</b><span>оттуда</span></li><li><b>fain</b><span>охотно</span></li><li><b>betwixt</b><span>между</span></li><li><b>anon</b><span>вскоре</span></li></ul>
+  <div class="tt"><h1>Проверь <em>себя</em></h1></div>
+  <div class="body p11"><div class="paper"><span class="tape"></span>
+    <p class="q">"<b>Whence</b> comest <b>thou</b>, stranger? <b>Thy</b> boots are worn. Rest here <b>ere</b> night falls, <b>lest</b> the cold find <b>thee</b> on the road."</p></div></div>
+  <ol class="body qs">
+    <li><span>1</span>Как перевести «Whence comest thou»?</li>
+    <li><span>2</span>Кого может застать холод?</li>
+    <li><span>3</span>Что значат ere и lest?</li>
+  </ol>
+  <div class="body an"><span class="lab">ответы</span><p>1 откуда ты идёшь · 2 путника (thee = тебя) · 3 до того как · чтобы не</p></div>
 
   <div class="foot">
     <span>@nurzycom</span>
