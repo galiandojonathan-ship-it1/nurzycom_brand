@@ -61,32 +61,29 @@
   .pol .cap { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 300 italic 30px var(--serif); }
   .big { font: 300 italic 200px/.9 var(--serif); letter-spacing: -.04em; }
   .body.paper { position: absolute; }
+  .next { position: absolute; z-index: 5; left: 72px; right: 72px; top: 1150px; font: 300 italic 36px/1.15 var(--serif); }
+  .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .q7 { top: 470px; transform: rotate(-1.2deg); }
-  .l7 { top: 830px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .l7 > div { padding: 24px 28px; border-radius: 26px; border: 2.5px solid var(--ink); }
-  .l7 > div:last-child { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .l7 > div:last-child .lab { color: rgba(250,248,243,.7); }
-  .l7 b { display: block; margin-top: 6px; font: 300 italic 64px/1 var(--serif); }
+  .u6 { top: 360px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .u6 > div { padding: 28px 28px 30px; background: #fff; box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); }
+  .u6 > div:nth-child(1), .u6 > div:nth-child(4) { transform: rotate(-1.2deg); } .u6 > div:nth-child(2), .u6 > div:nth-child(3) { transform: rotate(1.2deg); }
+  .u6 b { display: block; font: 300 italic 76px/1 var(--serif); }
+  .u6 p { margin-top: 12px; font: 400 26px/1.35 var(--sans); }
+  .n6 { top: 920px; font: 400 22px/1.45 var(--mono); letter-spacing: .04em; color: #5A5852; }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · Назарбаев Университет</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · кто принимает</span>
     <span>07 / 10</span>
   </div>
 
-  <div class="tt"><h1>А в НУ <em>нет</em></h1>
-  <p class="sub">Если у тебя несколько сертификатов SAT, НУ берёт один, с лучшим общим баллом. Секции из разных сдач не складывают.</p></div>
-  <div class="body q7 paper"><span class="tape"></span>
-    <p class="q">…the certificate with the best overall results will be considered in the competition without superscoring.</p>
-    <p class="src">Правила приёма НУ · утверждены 11.03.2026</p></div>
-  <div class="body l7">
-    <div><span class="lab">минимум для бакалавриата</span><b>1240</b></div>
-    <div><span class="lab">для НУ у меня считался бы</span><b>1520</b></div>
-  </div>
+  <div class="tt"><h1>Так делают <em>и они</em></h1></div>
+  <div class="body u6"><div><b>MIT</b><p>учитывает лучший балл по каждой секции</p></div><div><b>Yale</b><p>можно указать лучшие баллы по секциям из разных сдач</p></div><div><b>Stanford</b><p>просит вписать лучшие баллы по каждой секции</p></div><div><b>Columbia</b><p>оценивает по лучшему баллу в каждой секции</p></div></div>
+  <p class="body n6">по официальным сайтам вузов, октябрь 2026. Правила меняются, проверяй перед подачей</p>
+  <p class="next">а теперь главное для тех, кто поступает в НУ</p>
 
   <div class="foot">
     <span>@nurzycom</span>

@@ -61,12 +61,16 @@
   .pol .cap { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 300 italic 30px var(--serif); }
   .big { font: 300 italic 200px/.9 var(--serif); letter-spacing: -.04em; }
   .body.paper { position: absolute; }
+  .next { position: absolute; z-index: 5; left: 72px; right: 72px; top: 1150px; font: 300 italic 36px/1.15 var(--serif); }
+  .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .tt h1 { font-size: 86px; }
-  .p1 { left: 120px; top: 480px; width: 350px; transform: rotate(-5deg); }
-  .p2 { right: 120px; top: 510px; width: 350px; transform: rotate(4deg); }
-  .k1 { position: absolute; z-index: 4; left: 50%; top: 1130px; transform: translateX(-50%) rotate(-3deg); font-size: 40px; padding: 18px 32px; }
+  .tt h1 { font-size: 92px; }
+  .c1 { top: 560px; text-align: center; }
+  .c1 .big { font-size: 330px; }
+  .m1 { position: absolute; z-index: 3; top: 920px; left: 110px; transform: rotate(-5deg); }
+  .m2 { position: absolute; z-index: 3; top: 950px; right: 110px; transform: rotate(4deg); }
+  .x1 { position: absolute; z-index: 3; top: 500px; right: 80px; transform: rotate(8deg); }
 </style>
 </head>
 <body>
@@ -77,11 +81,12 @@
   </div>
 
   <div class="tt"><h1>Я ни разу не набрал 1560 <em>за один раз</em></h1>
-  <p class="sub">Но в заявке у меня стоит 1560, и вузы это принимают. Рассказываю, как работает суперскор.</p></div>
-  <div class="pol p1"><span class="tape"></span><img src="../assets/story-08-sat-may.png" alt=""><div class="cap">май 2025</div></div>
-  <div class="pol p2"><span class="tape"></span><img src="../assets/story-08-sat-dec.png" alt=""><div class="cap">декабрь 2025</div></div>
-  <span class="sticker s-dark k1">760 + 800 = 1560</span>
-  <svg class="sparkle" style="top:470px;left:520px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+  <p class="sub">Но в заявке у меня стоит 1560. Рассказываю, как это работает и где это не сработает.</p></div>
+  <div class="body c1"><div class="big">1560</div></div>
+  <span class="sticker s-light m1">май · 1490</span>
+  <span class="sticker s-light m2">декабрь · 1520</span>
+  <span class="sticker s-dark x1">ни разу за одну сдачу</span>
+  <p class="next">начнём с моих двух попыток</p>
 
   <div class="foot">
     <span>@nurzycom</span>

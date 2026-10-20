@@ -61,26 +61,30 @@
   .pol .cap { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 300 italic 30px var(--serif); }
   .big { font: 300 italic 200px/.9 var(--serif); letter-spacing: -.04em; }
   .body.paper { position: absolute; }
+  .next { position: absolute; z-index: 5; left: 72px; right: 72px; top: 1150px; font: 300 italic 36px/1.15 var(--serif); }
+  .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .u6 { top: 360px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .u6 > div { padding: 28px 28px 30px; background: #fff; box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); }
-  .u6 > div:nth-child(1), .u6 > div:nth-child(4) { transform: rotate(-1.2deg); } .u6 > div:nth-child(2), .u6 > div:nth-child(3) { transform: rotate(1.2deg); }
-  .u6 b { display: block; font: 300 italic 76px/1 var(--serif); }
-  .u6 p { margin-top: 12px; font: 400 26px/1.35 var(--sans); }
-  .n6 { top: 1000px; }
+  .w5 { top: 450px; transform: rotate(-1.2deg); }
+  .m5 { top: 760px; transform: rotate(1.2deg); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · кто принимает</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · зачем суперскор</span>
     <span>06 / 10</span>
   </div>
 
-  <div class="tt"><h1>Кто <em>принимает</em></h1></div>
-  <div class="body u6"><div><b>MIT</b><p>учитывает лучший балл по каждой секции</p></div><div><b>Yale</b><p>можно указать лучшие баллы по секциям из разных сдач</p></div><div><b>Stanford</b><p>просит вписать лучшие баллы по каждой секции</p></div><div><b>Columbia</b><p>оценивает по лучшему баллу в каждой секции</p></div></div>
-  <div class="body n6 dark"><span class="lab">важно</span><p>Так пишут сами вузы на своих сайтах в октябре 2026. Правила меняются, проверяй их перед подачей.</p></div>
+  <div class="tt"><h1>Поэтому есть <em>суперскор</em></h1>
+  <p class="sub">Нервы, сон, неудачный набор вопросов. Один день не показывает всё.</p></div>
+  <div class="body w5 dark"><span class="lab">это признаёт и сам College Board</span>
+    <p>В каждом отчёте есть диапазон баллов, которые ты мог бы получить в другие дни. У меня в мае это было <b>1450–1530</b>.</p></div>
+  <div class="body m5 paper"><span class="tape"></span>
+    <p class="q">We do this in order to consider all applicants in their best light.</p>
+    <p class="src">MIT Admissions · о суперскоре</p>
+    <p class="ru">«Так мы видим каждого абитуриента с лучшей стороны».</p></div>
+  <p class="next">MIT не единственный</p>
 
   <div class="foot">
     <span>@nurzycom</span>

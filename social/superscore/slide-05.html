@@ -61,27 +61,28 @@
   .pol .cap { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 300 italic 30px var(--serif); }
   .big { font: 300 italic 200px/.9 var(--serif); letter-spacing: -.04em; }
   .body.paper { position: absolute; }
+  .next { position: absolute; z-index: 5; left: 72px; right: 72px; top: 1150px; font: 300 italic 36px/1.15 var(--serif); }
+  .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .w5 { top: 470px; transform: rotate(-1.2deg); }
-  .m5 { top: 720px; transform: rotate(1.2deg); }
+  .tl { top: 320px; list-style: none; display: grid; gap: 14px; }
+  .tl li { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 24px; padding: 16px 26px; background: #fff; box-shadow: 0 14px 30px -18px rgba(10,10,10,.3); }
+  .tl li:nth-child(odd) { transform: rotate(-.8deg); } .tl li:nth-child(even) { transform: rotate(.8deg); }
+  .tl li:last-child { background: var(--ink); color: var(--paper); }
+  .tl b { font: 300 italic 60px/1 var(--serif); }
+  .tl p { font: 400 27px/1.35 var(--sans); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · зачем суперскор</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · история</span>
     <span>05 / 10</span>
   </div>
 
-  <div class="tt"><h1>Зачем вузам <em>суперскор</em></h1>
-  <p class="sub">Один день не показывает всё. Нервы, сон, неудачный набор вопросов.</p></div>
-  <div class="body w5 dark"><span class="lab">это признаёт и сам College Board</span>
-    <p>В каждом отчёте есть диапазон баллов, которые ты мог бы получить в другие дни. У меня в мае это было <b>1450–1530</b>.</p></div>
-  <div class="body m5 paper"><span class="tape"></span>
-    <p class="q">We do this in order to consider all applicants in their best light.</p>
-    <p class="src">MIT Admissions · о суперскоре</p>
-    <p class="ru">«Так мы видим каждого абитуриента с лучшей стороны».</p></div>
+  <div class="tt"><h1>Менялся <em>тест</em></h1></div>
+  <ol class="body tl"><li><b>1926</b><p>Первый SAT. Девять подтестов, почти всё на скорость.</p></li><li><b>2005</b><p>Добавили Writing, максимум вырос до 2400.</p></li><li><b>2016</b><p>Writing убрали. Снова 1600.</p></li><li><b>2023</b><p>Цифровой SAT в Bluebook за пределами США.</p></li><li><b>2024</b><p>Цифровой SAT и в США.</p></li><li><b>2026</b><p>23 июня SAT исполнилось 100 лет.</p></li></ol>
+  <p class="next">одно не менялось: один день может пойти не так</p>
 
   <div class="foot">
     <span>@nurzycom</span>

@@ -61,39 +61,25 @@
   .pol .cap { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 300 italic 30px var(--serif); }
   .big { font: 300 italic 200px/.9 var(--serif); letter-spacing: -.04em; }
   .body.paper { position: absolute; }
+  .next { position: absolute; z-index: 5; left: 72px; right: 72px; top: 1150px; font: 300 italic 36px/1.15 var(--serif); }
+  .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .g2 { top: 420px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  .g2 > div { padding: 30px 32px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
-  .g2 > div:first-child { transform: rotate(-1.5deg); } .g2 > div:last-child { transform: rotate(1.5deg); }
-  .g2 .tot { margin-top: 8px; font: 300 italic 72px/1 var(--serif); color: #5A5852; }
-  .g2 .ln { margin-top: 18px; display: flex; justify-content: space-between; align-items: baseline; font: 500 28px var(--sans); padding: 10px 14px; border-radius: 14px; }
-  .g2 .ln span { font: 700 40px var(--sans); }
-  .g2 .ln.best { background: var(--ink); color: var(--paper); }
-  .g2 .ln.off span { color: #9a988f; font-weight: 500; }
-  .res { top: 920px; text-align: center; }
-  .res .big { font-size: 170px; }
-  .res p { margin-top: 10px; font: 400 28px var(--sans); color: #2b2a27; }
+  .p1 { left: 110px; top: 360px; width: 370px; transform: rotate(-5deg); }
+  .p2 { right: 110px; top: 390px; width: 370px; transform: rotate(4deg); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · как это считается</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · мои попытки</span>
     <span>02 / 10</span>
   </div>
 
-  <div class="tt"><h1>Как получилось <em>1560</em></h1>
-  <p class="sub">Вуз берёт лучший балл по каждой секции из разных попыток.</p></div>
-  <div class="body g2">
-    <div><span class="lab">май 2025</span><div class="tot">1490</div>
-      <div class="ln best">Reading &amp; Writing <span>760</span></div>
-      <div class="ln off">Math <span>730</span></div></div>
-    <div><span class="lab">декабрь 2025</span><div class="tot">1520</div>
-      <div class="ln off">Reading &amp; Writing <span>720</span></div>
-      <div class="ln best">Math <span>800</span></div></div>
-  </div>
-  <div class="body res"><div class="big">760 + 800</div><p>= <b>1560</b>, мой суперскор</p></div>
+  <div class="tt"><h1>Две сдачи, <em>два балла</em></h1></div>
+  <div class="pol p1"><span class="tape"></span><img src="../assets/story-08-sat-may.png" alt=""><div class="cap">май 2025 · 1490</div></div>
+  <div class="pol p2"><span class="tape"></span><img src="../assets/story-08-sat-dec.png" alt=""><div class="cap">декабрь 2025 · 1520</div></div>
+  <p class="next">ни одна не 1560. Смотри, что делает вуз</p>
 
   <div class="foot">
     <span>@nurzycom</span>
