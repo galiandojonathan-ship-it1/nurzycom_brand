@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Systems of Equations</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Systems of Equations</h1>
+<p class="intro">Systems of linear equations and when they have no solution, one solution or infinitely many solutions.</p>
+<div class="progress">Solved: <span id="count">0</span> of 2</div>
+<article class="card" id="SYS-01">
+<header><span class="num">SYS-01</span><span class="src">PDF 3 &middot; p. 27</span><label class="done"><input type="checkbox" data-id="SYS-01"> Solved</label></header>
+<div class="stem">Arturo builds and sells two types of steel tables. The revenue Arturo generates from selling each square table is 2 times his cost to build a square table, and the revenue Arturo generates from selling each hexagonal table is 2.5 times his cost to build a hexagonal table. In one year, Arturo's total cost to build tables was \$42,120, and he generated a total revenue of \$101,250 from selling all the tables he built that year. For that year, how much greater is the revenue Arturo generated from selling hexagonal tables than the revenue he generated from selling square tables?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">\$16,200</span></li><li><span class="letter">B</span><span class="ctext">\$25,920</span></li><li><span class="letter">C</span><span class="ctext">\$59,130</span></li><li><span class="letter">D</span><span class="ctext">\$68,850</span></li></ol></article>
+<article class="card" id="SYS-02">
+<header><span class="num">SYS-02</span><span class="src">PDF 5 &middot; p. 8</span><label class="done"><input type="checkbox" data-id="SYS-02"> Solved</label></header>
+<div class="stem">The given equation is $7x+8y=3$, which is one equation in a system of two linear equations. If the system of equations has at least one solution, which of the following equations could be the other equation in the system? I. $10.5x+12y=4.5$ II. $10.5x-12y=4.5$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">II only</span></li><li><span class="letter">B</span><span class="ctext">Neither I nor II</span></li><li><span class="letter">C</span><span class="ctext">I and II</span></li><li><span class="letter">D</span><span class="ctext">I only</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "SYS";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>
