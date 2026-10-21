@@ -33,7 +33,9 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 - **NU does not superscore.** NU admission policy approved 11.03.2026 (No. 38-н/қ): only the digital SAT counts; with several SAT certificates the one with the best overall result is used, "without superscoring"; minimum SAT 1240 for undergraduate (1140 for international NUFYP applicants).
 - **Superscore confirmed on official admissions pages (Oct 2026):** MIT (quote: "We do this in order to consider all applicants in their best light"; asks applicants to self-report all sittings), Yale, Stanford, Columbia. Harvard allows Score Choice but its page does not say it superscores: do not list it.
 - **History:** first SAT on 23 June 1926, about 8,000 students, 315 questions in 97 minutes (Pew Research, 2026; College Board Research Report 2003-3). 2400 scale with Writing from March 2005 to January 2016; digital SAT from March 2023 outside the US and March 2024 in the US. The 1926 practice test scan (public domain) is at `social/assets/sat1926-subtest1.png`.
-- Superscore carousel: `social/superscore/` (PNG and zip in `social/exports/superscore/`, PPTX `social/pptx/sat-superscore.pptx`).
+- Superscore carousel (12 slides, edited by Nurassyl 2026-10-21; cover uses his cut-out photo `social/assets/nurassyl-pointing.png`): `social/superscore/` (PNG and zip in `social/exports/superscore/`, PPTX `social/pptx/sat-superscore.pptx`). He says he focused on Reading & Writing in May 2025 and on Math in December 2025.
+- **NU certificate rules:** SAT/ACT certificates are valid for two years from the test date and must not expire before 1 August of the entry year.
+- **SAT dates 2026-27 (College Board, Oct 2026):** 5 Dec 2026 (register by 20 Nov), 6 Mar 2027 (19 Feb), 1 May 2027 (16 Apr), 5 Jun 2027 (21 May).
 
 ## About Nurassyl (from his answers, 2026-10-16)
 

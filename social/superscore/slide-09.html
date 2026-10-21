@@ -65,30 +65,28 @@
   .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .v8 { top: 380px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-  .v8 > div { padding: 30px 30px 32px; border-radius: 26px; }
-  .v8 .a { background: #fff; box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); transform: rotate(-1.4deg); }
-  .v8 .b { background: var(--ink); color: var(--paper); transform: rotate(1.4deg); }
-  .v8 .b .lab { color: rgba(250,248,243,.7); }
-  .v8 b { display: block; margin-top: 8px; font: 300 italic 60px/1.02 var(--serif); }
-  .v8 p { margin-top: 14px; font: 400 26px/1.38 var(--sans); }
-  .n8 { top: 800px; }
+  .r8 { top: 330px; display: grid; gap: 22px; }
+  .r8 > div:first-child { transform: rotate(-1.2deg); }
+  .r8 > div:last-child { transform: rotate(1.2deg); }
+  .r8 b.h { display: block; margin-top: 8px; font: 300 italic 64px/1.02 var(--serif); }
+  .r8 .paper p, .r8 .dark p { font-size: 28px; }
+  .ex8 { top: 900px; font: 300 italic 34px/1.2 var(--serif); transform: rotate(-1.5deg); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · Score Choice</span>
-    <span>09 / 10</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · правила НУ</span>
+    <span>09 / 12</span>
   </div>
 
-  <div class="tt"><h1>Ты выбираешь, <em>вуз считает</em></h1></div>
-  <div class="body v8">
-    <div class="a"><span class="lab">решаешь ты</span><b>Score Choice</b><p>Функция College Board: ты сам выбираешь, результаты каких дат отправить.</p></div>
-    <div class="b"><span class="lab">решает вуз</span><b>Superscore</b><p>Вуз складывает твои лучшие секции из всех присланных сдач.</p></div>
+  <div class="tt"><h1>Ещё два правила <em>НУ</em></h1></div>
+  <div class="body r8">
+    <div class="dark"><span class="lab">правило 1</span><b class="h">Только цифровой SAT</b><p>Бумажные результаты в конкурсе не учитывают.</p></div>
+    <div class="paper"><span class="tape"></span><span class="lab">правило 2</span><b class="h">Срок 2 года</b><p class="ru">Сертификат действует два года с даты сдачи и должен быть действителен на 1 августа года поступления.</p></div>
   </div>
-  <div class="body n8 paper"><span class="tape"></span><p class="ru" style="margin:0;font-size:28px">Некоторые вузы просят все результаты. MIT, например, просит указать каждую сдачу и сам считает суперскор.</p></div>
-  <p class="next">собрал всё в план</p>
+  <p class="body ex8">сдал в мае 2025? Для поступления в 2027 уже не подойдёт: срок истечёт в мае 2027</p>
+  <p class="next">а для вузов США важно, что ты отправляешь</p>
 
   <div class="foot">
     <span>@nurzycom</span>

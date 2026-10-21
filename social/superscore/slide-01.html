@@ -65,27 +65,32 @@
   .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .tt h1 { font-size: 92px; }
-  .c1 { top: 560px; text-align: center; }
-  .c1 .big { font-size: 330px; }
-  .m1 { position: absolute; z-index: 3; top: 920px; left: 110px; transform: rotate(-5deg); }
-  .m2 { position: absolute; z-index: 3; top: 950px; right: 110px; transform: rotate(4deg); }
-  .x1 { position: absolute; z-index: 3; top: 500px; right: 80px; transform: rotate(8deg); }
+  .tt h1 { font-size: 84px; } .tt h1 em { font-size: 96px; }
+  .tt .sub { font-size: 28px; max-width: 40ch; }
+  .c1 { position: absolute; left: 420px; width: 600px; top: 440px; text-align: center; }
+  .c1 .big { font-size: 230px; }
+  .me { position: absolute; z-index: 2; left: 430px; bottom: 0; width: 560px; }
+  .x1 { position: absolute; z-index: 3; top: 520px; left: 60px; transform: rotate(-4deg); }
+  .m1 { position: absolute; z-index: 3; top: 770px; left: 80px; transform: rotate(-5deg); }
+  .m2 { position: absolute; z-index: 3; top: 860px; left: 120px; transform: rotate(4deg); }
+  .next { top: 1020px; right: auto; width: 340px; }
+  .foot { z-index: 6; }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
     <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · суперскор</span>
-    <span>01 / 10</span>
+    <span>01 / 12</span>
   </div>
 
   <div class="tt"><h1>Я ни разу не набрал 1560 <em>за один раз</em></h1>
   <p class="sub">Но в заявке у меня стоит 1560. Рассказываю, как это работает и где это не сработает.</p></div>
-  <div class="body c1"><div class="big">1560</div></div>
+  <div class="c1"><div class="big">1560</div></div>
+  <img class="me" src="../assets/nurassyl-pointing.png" alt="">
+  <span class="sticker s-dark x1">ни разу за одну сдачу</span>
   <span class="sticker s-light m1">май · 1490</span>
   <span class="sticker s-light m2">декабрь · 1520</span>
-  <span class="sticker s-dark x1">ни разу за одну сдачу</span>
   <p class="next">начнём с моих двух попыток</p>
 
   <div class="foot">

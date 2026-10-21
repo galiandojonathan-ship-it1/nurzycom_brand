@@ -65,28 +65,34 @@
   .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .s9 { top: 320px; display: grid; gap: 16px; }
-  .s9 .dark { padding: 26px 34px; }
-  .s9 .dark:nth-child(odd) { transform: rotate(-1deg); }
-  .s9 .dark:nth-child(even) { transform: rotate(1deg); background: #fff; color: var(--ink); box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); }
-  .s9 .dark:nth-child(even) .lab { color: #5A5852; }
-  .k10 { position: absolute; z-index: 3; left: 50%; top: 1110px; transform: translateX(-50%) rotate(-3deg); font-size: 32px; padding: 16px 28px; }
+  .v8 { top: 380px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .v8 > div { padding: 30px 30px 32px; border-radius: 26px; }
+  .v8 .a { background: #fff; box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); transform: rotate(-1.4deg); }
+  .v8 .b { background: var(--ink); color: var(--paper); transform: rotate(1.4deg); }
+  .v8 .b .lab { color: rgba(250,248,243,.7); }
+  .v8 b { display: block; margin-top: 8px; font: 300 italic 60px/1.02 var(--serif); }
+  .v8 p { margin-top: 14px; font: 400 26px/1.38 var(--sans); }
+  .n8 { top: 800px; }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · план</span>
-    <span>10 / 10</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-5 3 3 5-6"/></svg>SAT · Score Choice</span>
+    <span>10 / 12</span>
   </div>
 
-  <div class="tt"><h1>План на <em>две сдачи</em></h1></div>
-  <div class="body s9"><div class="dark"><span class="lab">1</span><p>Нужен высокий балл? Закладывай <b>две попытки</b>.</p></div><div class="dark"><span class="lab">2</span><p>На каждой сдаче старайся по <b>обеим секциям</b>. MIT пишет, что большой разрыв между попытками могут учесть.</p></div><div class="dark"><span class="lab">3</span><p>Поступаешь в НУ? Целься в <b>лучший общий балл за одну сдачу</b>.</p></div><div class="dark"><span class="lab">4</span><p>Правила проверяй <b>на сайте каждого вуза</b>.</p></div></div>
-  <span class="sticker s-dark k10">сохрани и отправь другу, который пересдаёт</span>
+  <div class="tt"><h1>Ты выбираешь, <em>вуз считает</em></h1></div>
+  <div class="body v8">
+    <div class="a"><span class="lab">решаешь ты</span><b>Score Choice</b><p>Функция College Board: ты сам выбираешь, результаты каких дат отправить.</p></div>
+    <div class="b"><span class="lab">решает вуз</span><b>Superscore</b><p>Вуз складывает твои лучшие секции из всех присланных сдач.</p></div>
+  </div>
+  <div class="body n8 paper"><span class="tape"></span><p class="ru" style="margin:0;font-size:28px">Некоторые вузы просят все результаты. MIT, например, просит указать каждую сдачу и сам считает суперскор.</p></div>
+  <p class="next">осталось выбрать даты</p>
 
   <div class="foot">
     <span>@nurzycom</span>
-    <span></span>
+    <span class="swipe">Листай <svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
   </div>
 </div>
 </body>
