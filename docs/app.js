@@ -47,7 +47,7 @@
   function renderParts() {
     const l = state.data.lessons.find((x) => x.tag === $("lesson").value);
     state.lesson = l || null; state.part = null;
-    $("parts").innerHTML = l ? l.parts.map((p) => `<button class="part" data-p="${p.id}" aria-pressed="false">${p.title}<small>вопросы ${p.a}–${p.b}</small></button>`).join("") : "";
+    $("parts").innerHTML = l ? l.parts.map((p) => `<button class="part" data-p="${p.id}" aria-pressed="false">${p.title}<small>вопросы ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></button>`).join("") : "";
     $("parts").querySelectorAll(".part").forEach((b) => (b.onclick = () => {
       $("parts").querySelectorAll(".part").forEach((x) => x.setAttribute("aria-pressed", x === b));
       state.part = l.parts.find((p) => p.id === b.dataset.p); check();
@@ -60,7 +60,7 @@
     store("hw_student", $("student").value.trim());
     const { lesson, part } = state; state.answers = {};
     $("ans-title").textContent = `${lesson.tag} · ${part.title}`;
-    const qs = lesson.q.filter((q) => q.n >= part.a && q.n <= part.b);
+    const qs = part.q;
     $("qs").innerHTML = qs.map((q) => q.t === "mc"
       ? `<div class="q"><span class="n">${q.n}</span><div class="opts">${"ABCD".split("").map((c) => `<button data-n="${q.n}" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</div></div>`
       : `<div class="q"><span class="n">${q.n}</span><div><input type="text" inputmode="text" data-n="${q.n}" autocomplete="off" aria-label="Ответ ${q.n}"><div class="hint" id="h${q.n}"></div></div></div>`).join("");
@@ -81,13 +81,13 @@
     count(); show("s-answers");
   }
   function count() {
-    const total = state.part.b - state.part.a + 1;
+    const total = state.part.q.length;
     $("count").textContent = `${Object.keys(state.answers).length} / ${total}`;
   }
 
   async function grade() {
     const { lesson, part, answers } = state;
-    const qs = lesson.q.filter((q) => q.n >= part.a && q.n <= part.b);
+    const qs = part.q;
     const blanks = qs.filter((q) => !answers[q.n]).map((q) => q.n);
     if (blanks.length && !confirm(`Без ответа: ${blanks.join(", ")}. Сдать всё равно?`)) return;
     clearInterval(state.timer);
@@ -96,13 +96,13 @@
     for (const q of qs) {
       const a = answers[q.n]; let v = null;
       if (a) v = q.t === "mc" ? a : parseSpr(a);
-      const ok = v !== null && q.h.includes(await sha(`${lesson.salt}:${q.n}:${v}`));
+      const ok = v !== null && q.h.includes(await sha(`${lesson.salt}:${q.i}:${v}`));
       if (ok) right++; else wrong.push(q.n);
     }
     const key = `hw_att_${store("hw_student")}_${lesson.tag}_${part.id}`;
     const attempt = Number(store(key) || 0) + 1; store(key, String(attempt));
     const ansStr = qs.map((q) => `${q.n}:${answers[q.n] || "-"}`).join(" ");
-    const res = { student: store("hw_student") || $("student").value.trim(), lesson: lesson.tag, part: part.id,
+    const res = { student: store("hw_student") || $("student").value.trim(), lesson: lesson.tag, part: `${part.id} · ${part.title}`,
       answers: ansStr, score: `${right}/${qs.length}`, wrong: wrong.join(","), seconds: String(seconds), attempt: String(attempt) };
     renderResult(res, part, seconds);
     send(res);
