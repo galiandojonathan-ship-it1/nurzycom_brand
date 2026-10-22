@@ -97,4 +97,4 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Working style
 
-Nurassyl wants a company-level, premium look and finished work, not just advice. Do what you can yourself, mark what depends on him clearly, and keep him honest on proof: credibility with parents is the whole business.
+Nurassyl wants a company-level, premium look and finished work, not just advice. All his apps and services (Google Forms, Sheets, GitHub and others) are in English: when giving step-by-step instructions, quote the English menu and button names, even when the explanation itself is in Russian (set 2026-10-22). Do what you can yourself, mark what depends on him clearly, and keep him honest on proof: credibility with parents is the whole business.
