@@ -42,8 +42,16 @@
     $("student").value = store("hw_student") || "";
     const params = new URLSearchParams(location.search);
     if (params.get("l")) sel.value = params.get("l");
-    sel.onchange = renderParts; $("student").oninput = check; renderParts();
+    sel.onchange = renderParts; $("student").oninput = check; $("code").oninput = check; renderParts();
+    if (params.get("p")) pickPart(params.get("p"));
+    const hw = [];
+    state.data.lessons.forEach((l) => l.parts.forEach((p) => { if (p.img) hw.push([l, p]); }));
+    $("hw-list").innerHTML = hw.map(([l, p]) => `<button class="part" data-l="${l.tag}" data-p="${p.id}">${l.title}<small>${p.title} · ${p.q.length} вопросов</small></button>`).join("");
+    $("hw-list").querySelectorAll("button").forEach((b) => (b.onclick = () => {
+      sel.value = b.dataset.l; renderParts(); pickPart(b.dataset.p); $("student").focus();
+    }));
   }
+  function pickPart(pid) { const b = $("parts").querySelector(`.part[data-p="${pid}"]`); if (b) b.click(); }
   function renderParts() {
     const l = state.data.lessons.find((x) => x.tag === $("lesson").value);
     state.lesson = l || null; state.part = null;
@@ -54,16 +62,58 @@
     }));
     check();
   }
-  function check() { $("go").disabled = !($("student").value.trim().length >= 2 && state.lesson && state.part); }
+  function check() {
+    const needCode = !!(state.part && state.part.img && !store("hw_code"));
+    $("code-row").classList.toggle("hidden", !needCode);
+    $("go").disabled = !($("student").value.trim().length >= 2 && state.lesson && state.part && (!needCode || $("code").value.trim().length >= 4));
+  }
 
-  function startAnswers() {
+  // Question images are encrypted; the class code unlocks them (AES-GCM, key from PBKDF2).
+  let aesKey = null;
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  async function unlock(code) {
+    const e = state.data.enc;
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]);
+    const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(e.salt), iterations: e.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    const c = b64(e.check);
+    const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: c.slice(0, 12) }, key, c.slice(12));
+    if (new TextDecoder().decode(out) !== "nurzycom") throw new Error("bad");
+    return key;
+  }
+  async function loadImages() {
+    const imgs = Array.from($("qs").querySelectorAll("img[data-src]"));
+    let k = 0;
+    async function worker() {
+      while (k < imgs.length) {
+        const img = imgs[k++];
+        try {
+          const buf = new Uint8Array(await (await fetch(img.dataset.src)).arrayBuffer());
+          const png = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, aesKey, buf.slice(12));
+          img.src = URL.createObjectURL(new Blob([png], { type: "image/png" })); img.removeAttribute("data-src");
+        } catch (e) { img.alt = "Не удалось загрузить вопрос. Обновите страницу."; }
+      }
+    }
+    await Promise.all([worker(), worker(), worker(), worker()]);
+  }
+
+  async function startAnswers() {
     store("hw_student", $("student").value.trim());
     const { lesson, part } = state; state.answers = {};
+    if (part.img && !aesKey) {
+      const code = (store("hw_code") || $("code").value).trim().toLowerCase();
+      $("start-msg").textContent = "Проверяю код…";
+      try { aesKey = await unlock(code); store("hw_code", code); $("start-msg").textContent = ""; }
+      catch (e) { try { localStorage.removeItem("hw_code"); } catch (_) {} check(); $("start-msg").textContent = "Неверный код класса. Спросите у преподавателя."; return; }
+    }
     $("ans-title").textContent = `${lesson.tag} · ${part.title}`;
     const qs = part.q;
-    $("qs").innerHTML = qs.map((q) => q.t === "mc"
-      ? `<div class="q"><span class="n">${q.n}</span><div class="opts">${"ABCD".split("").map((c) => `<button data-n="${q.n}" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</div></div>`
-      : `<div class="q"><span class="n">${q.n}</span><div><input type="text" inputmode="text" data-n="${q.n}" autocomplete="off" aria-label="Ответ ${q.n}"><div class="hint" id="h${q.n}"></div></div></div>`).join("");
+    const ctrl = (q) => q.t === "mc"
+      ? `<div class="opts">${"ABCD".split("").map((c) => `<button data-n="${q.n}" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</div>`
+      : `<div><input type="text" inputmode="text" data-n="${q.n}" autocomplete="off" aria-label="Ответ ${q.n}"><div class="hint" id="h${q.n}"></div></div>`;
+    $("qs").innerHTML = qs.map((q) => q.img
+      ? `<div class="qi"><span class="n">${q.n}</span><img data-src="${q.img}" alt="Вопрос ${q.n}" class="qimg"><div class="q">${ctrl(q)}</div></div>`
+      : `<div class="q"><span class="n">${q.n}</span>${ctrl(q)}</div>`).join("");
+    $("qs").querySelectorAll(".qimg").forEach((im) => (im.onclick = () => { if (im.src) { $("zoom-img").src = im.src; $("zoom").classList.remove("hidden"); } }));
     $("qs").querySelectorAll(".opts button").forEach((b) => (b.onclick = () => {
       const n = b.dataset.n;
       b.parentNode.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
@@ -79,6 +129,7 @@
     state.t0 = Date.now(); clearInterval(state.timer);
     state.timer = setInterval(() => { const s = Math.floor((Date.now() - state.t0) / 1000); $("clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }, 1000);
     count(); show("s-answers");
+    if (part.img) loadImages();
   }
   function count() {
     const total = state.part.q.length;
@@ -142,6 +193,7 @@
   $("submit").onclick = grade;
   $("again").onclick = startAnswers;
   $("home").onclick = () => show("s-start");
+  $("zoom").onclick = () => $("zoom").classList.add("hidden");
 
   fetch("lessons.json", { cache: "no-store" }).then((r) => r.json()).then((d) => { state.data = d; renderStart(); })
     .catch(() => { $("start-msg").textContent = "Не удалось загрузить уроки. Обновите страницу."; });

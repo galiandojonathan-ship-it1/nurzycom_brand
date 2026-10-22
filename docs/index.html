@@ -44,6 +44,15 @@ button{font:inherit;cursor:pointer;border-radius:0}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .hidden{display:none}
 .mono{font-family:"IBM Plex Mono",monospace}
+.parts.hw{grid-template-columns:1fr}
+@media(min-width:560px){.parts.hw{grid-template-columns:1fr 1fr}}
+.qi{padding:16px 0 10px;border-bottom:1px solid var(--studio)}
+.qi .n{display:block;margin-bottom:8px}
+.qimg{display:block;width:100%;height:auto;min-height:60px;background:#fff;border:1px solid var(--mist);cursor:zoom-in}
+.qi .q{border:0;padding:10px 0 0}
+#zoom{position:fixed;inset:0;background:rgba(10,10,10,.92);overflow:auto;z-index:10;padding:12px}
+#zoom img{display:block;width:200%;max-width:1600px;height:auto;background:#fff}
+@media(min-width:900px){#zoom img{width:auto;max-width:100%;margin:0 auto}}
 </style>
 </head>
 <body>
@@ -58,12 +67,14 @@ button{font:inherit;cursor:pointer;border-radius:0}
     <span class="label">Проверка ответов</span>
     <h1>Сдать задание</h1>
     <p class="sub">Введите ответы из рабочей тетради. Проверка сразу; результат уходит преподавателю. Правильные ответы — на разборе.</p>
+    <div class="card"><span class="label">Домашние задания с вопросами</span><div class="parts hw" id="hw-list"></div></div>
     <label class="f" for="student">Имя и первая буква фамилии</label>
     <input id="student" type="text" autocomplete="off" placeholder="Например: Айгерим К.">
     <label class="f" for="lesson">Урок</label>
     <select id="lesson"></select>
     <label class="f">Часть тетради</label>
     <div class="parts" id="parts"></div>
+    <div id="code-row" class="hidden"><label class="f" for="code">Код класса</label><input id="code" type="text" autocomplete="off" autocapitalize="off" placeholder="Код от преподавателя"></div>
     <div class="row"><button class="btn" id="go" disabled>Начать</button></div>
     <p class="hint" id="start-msg"></p>
   </section>
@@ -73,6 +84,7 @@ button{font:inherit;cursor:pointer;border-radius:0}
     <div class="bar"><span class="label" id="ans-title"></span><span class="label"><span id="count">0</span> · <span id="clock">00:00</span></span></div>
     <div id="qs"></div>
     <div class="row"><button class="btn" id="submit">Сдать</button><button class="btn ghost" id="back">Назад</button></div>
+    <p class="hint">Нажмите на вопрос, чтобы увеличить. На телефоне удобнее держать его горизонтально.</p>
     <p class="hint">Числовой ответ: целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются, как на экзамене.</p>
   </section>
 
@@ -91,6 +103,7 @@ button{font:inherit;cursor:pointer;border-radius:0}
     <div class="row"><button class="btn ghost" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
   </section>
 </main>
+<div id="zoom" class="hidden" role="dialog" aria-label="Увеличенный вопрос"><img id="zoom-img" alt=""></div>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
