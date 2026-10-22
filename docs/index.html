@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Проверка домашнего задания · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--studio:#D5D5D4;--stone:#5A5852;--bad:#0A0A0A}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 Geist,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 96px}
+.label{font:12px/1.2 "IBM Plex Mono",monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+h1{font:italic 300 44px/1.05 "Noto Serif Display",serif;margin:10px 0 6px}
+p.sub{color:var(--stone);margin:0 0 22px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo svg{width:34px;height:34px}
+.card{background:var(--mist);padding:18px;margin:14px 0}
+label.f{display:block;font-weight:500;margin:14px 0 6px}
+input[type=text],select{width:100%;font:inherit;padding:12px;border:1px solid var(--studio);background:#fff;color:var(--ink);border-radius:0}
+.parts{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:560px){.parts{grid-template-columns:repeat(3,1fr)}}
+button{font:inherit;cursor:pointer;border-radius:0}
+.part{padding:12px;border:1px solid var(--studio);background:#fff;text-align:left}
+.part small{display:block;color:var(--stone);font-size:13px}
+.part[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.btn{display:inline-block;padding:14px 22px;background:var(--ink);color:var(--paper);border:0;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn:disabled{opacity:.35;cursor:default}
+.bar{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--studio);display:flex;justify-content:space-between;gap:12px;z-index:2}
+.q{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--mist)}
+.q .n{font:italic 300 26px/1 "Noto Serif Display",serif;width:44px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opts button{width:46px;height:42px;border:1px solid var(--studio);background:#fff;font-family:"IBM Plex Mono",monospace}
+.opts button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.q input{max-width:180px;font-family:"IBM Plex Mono",monospace}
+.hint{font-size:13px;color:var(--stone);margin-top:4px}
+.big{font:italic 300 64px/1 "Noto Serif Display",serif;margin:8px 0}
+.err{color:var(--stone)}
+.code{font:13px/1.4 "IBM Plex Mono",monospace;word-break:break-all;background:#fff;border:1px solid var(--studio);padding:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.hidden{display:none}
+.mono{font-family:"IBM Plex Mono",monospace}
+</style>
+</head>
+<body>
+<main>
+  <div class="logo" aria-hidden="true">
+    <svg viewBox="0 0 100 100"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    <span class="label">nurzycom · SAT</span>
+  </div>
+
+  <!-- Step 1: who and what -->
+  <section id="s-start">
+    <span class="label">Проверка ответов</span>
+    <h1>Сдать задание</h1>
+    <p class="sub">Введите ответы из рабочей тетради. Проверка сразу; результат уходит преподавателю. Правильные ответы — на разборе.</p>
+    <label class="f" for="student">Имя и первая буква фамилии</label>
+    <input id="student" type="text" autocomplete="off" placeholder="Например: Айгерим К.">
+    <label class="f" for="lesson">Урок</label>
+    <select id="lesson"></select>
+    <label class="f">Часть тетради</label>
+    <div class="parts" id="parts"></div>
+    <div class="row"><button class="btn" id="go" disabled>Начать</button></div>
+    <p class="hint" id="start-msg"></p>
+  </section>
+
+  <!-- Step 2: answers -->
+  <section id="s-answers" class="hidden">
+    <div class="bar"><span class="label" id="ans-title"></span><span class="label"><span id="count">0</span> · <span id="clock">00:00</span></span></div>
+    <div id="qs"></div>
+    <div class="row"><button class="btn" id="submit">Сдать</button><button class="btn ghost" id="back">Назад</button></div>
+    <p class="hint">Числовой ответ: целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются, как на экзамене.</p>
+  </section>
+
+  <!-- Step 3: result -->
+  <section id="s-result" class="hidden">
+    <span class="label" id="res-title"></span>
+    <div class="big" id="res-score"></div>
+    <p id="res-detail"></p>
+    <div class="card"><span class="label">Ошибки и пропуски</span><p id="res-wrong" class="mono"></p></div>
+    <p id="send-status" class="hint"></p>
+    <div id="backup" class="hidden">
+      <p class="hint">Если результат не отправился, скопируйте код и пришлите преподавателю в Telegram.</p>
+      <div class="code" id="res-code"></div>
+      <div class="row"><button class="btn ghost" id="copy">Скопировать код</button><a class="btn ghost" id="tg" target="_blank" rel="noopener">Открыть Telegram</a></div>
+    </div>
+    <div class="row"><button class="btn ghost" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
+  </section>
+</main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
