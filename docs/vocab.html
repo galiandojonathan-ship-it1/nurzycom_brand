@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Словарь · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--studio:#D5D5D4;--stone:#5A5852}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 Geist,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 96px}
+.label{font:12px/1.2 "IBM Plex Mono",monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+h1{font:italic 300 44px/1.05 "Noto Serif Display",serif;margin:10px 0 6px}
+p.sub{color:var(--stone);margin:0 0 22px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:28px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo svg{width:34px;height:34px}
+a{color:var(--ink)}
+.card{background:var(--mist);padding:18px;margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:560px){.grid{grid-template-columns:1fr 1fr}}
+button{font:inherit;cursor:pointer;border-radius:0}
+.pick{padding:12px;border:1px solid var(--studio);background:#fff;text-align:left;color:var(--ink)}
+.pick small{display:block;color:var(--stone);font-size:13px}
+.pick[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 6px}
+.tab{padding:9px 14px;border:1px solid var(--studio);background:#fff;font:13px "IBM Plex Mono",monospace;letter-spacing:.08em;color:var(--ink)}
+.tab[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn{display:inline-block;padding:14px 22px;background:var(--ink);color:var(--paper);border:0;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.hidden{display:none}
+.hint{font-size:13px;color:var(--stone);margin-top:6px}
+.item{padding:12px 0;border-bottom:1px solid var(--studio)}
+.item .en{font-weight:600}
+.item .pos{font:12px "IBM Plex Mono",monospace;color:var(--stone);margin-left:6px}
+.item .ru{color:var(--ink)}
+.item .def,.item .ex{color:var(--stone);font-size:14px;margin-top:2px}
+.item .ex{font-style:italic}
+.gname{margin-top:22px}
+.flash{background:#fff;border:1px solid var(--studio);min-height:240px;padding:28px 22px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;margin-top:12px}
+.flash .front{font:italic 300 40px/1.1 "Noto Serif Display",serif}
+.flash .back{margin-top:18px;border-top:1px solid var(--mist);padding-top:14px}
+.flash .back .en{font-size:22px;font-weight:600}
+.meta{display:flex;justify-content:space-between;margin-top:10px}
+input[type=text]{width:100%;font:inherit;padding:12px;border:1px solid var(--studio);background:#fff;color:var(--ink);border-radius:0}
+.big{font:italic 300 64px/1 "Noto Serif Display",serif;margin:8px 0}
+.res{font-size:14px;margin-top:8px}
+.res b{font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+      <span class="label">nurzycom · SAT</span>
+    </div>
+    <a class="label" href="./">← Домашние задания</a>
+  </div>
+
+  <section id="v-start">
+    <span class="label">Словарь</span>
+    <h1>Слова и термины</h1>
+    <p class="sub">Все слова из уроков. Вспоминайте, а не перечитывайте: сначала попробуйте сами, потом откройте ответ.</p>
+    <div class="grid" id="lessons"></div>
+  </section>
+
+  <section id="v-lesson" class="hidden">
+    <span class="label" id="l-title"></span>
+    <div class="tabs" id="groups"></div>
+    <div class="tabs" id="modes">
+      <button class="tab" data-m="list" aria-pressed="true">Список</button>
+      <button class="tab" data-m="cards" aria-pressed="false">Карточки</button>
+      <button class="tab" data-m="test" aria-pressed="false">Тест</button>
+    </div>
+
+    <div id="m-list"></div>
+
+    <div id="m-cards" class="hidden">
+      <div class="tabs" id="dir">
+        <button class="tab" data-d="ru" aria-pressed="true">Русский → English</button>
+        <button class="tab" data-d="en" aria-pressed="false">English → русский</button>
+      </div>
+      <div class="flash" id="flash"><div class="front" id="f-front"></div><div class="back hidden" id="f-back"></div></div>
+      <div class="meta"><span class="label" id="f-count"></span><span class="label" id="f-known"></span></div>
+      <div class="row" id="f-btns">
+        <button class="btn ghost" id="f-show">Показать ответ</button>
+      </div>
+      <div class="row hidden" id="f-grade">
+        <button class="btn" id="f-yes">Знаю</button>
+        <button class="btn ghost" id="f-no">Ещё раз</button>
+      </div>
+      <p class="hint">«Ещё раз» — карточка вернётся в конец колоды. Колода закончится, когда все слова будут «Знаю».</p>
+    </div>
+
+    <div id="m-test" class="hidden">
+      <div id="t-run">
+        <p class="hint" id="t-count"></p>
+        <div class="flash" style="cursor:default"><div class="front" id="t-q"></div><div class="hint" id="t-help"></div></div>
+        <div class="row"><input type="text" id="t-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Напишите по-английски"></div>
+        <div class="row"><button class="btn" id="t-check">Проверить</button><button class="btn ghost" id="t-skip">Не знаю</button></div>
+        <p class="res" id="t-fb"></p>
+      </div>
+      <div id="t-done" class="hidden">
+        <span class="label">Результат</span>
+        <div class="big" id="t-score"></div>
+        <div class="card"><span class="label">Повторить</span><div id="t-miss"></div></div>
+        <div class="row"><button class="btn" id="t-again">Ещё раз</button><button class="btn ghost" id="t-missonly">Только ошибки</button></div>
+      </div>
+    </div>
+
+    <div class="row"><button class="btn ghost" id="back">Другой урок</button></div>
+  </section>
+</main>
+<script src="vocab.js"></script>
+</body>
+</html>

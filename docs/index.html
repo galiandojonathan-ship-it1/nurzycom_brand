@@ -50,6 +50,9 @@ button{font:inherit;cursor:pointer;border-radius:0}
 .qi .n{display:block;margin-bottom:8px}
 .qimg{display:block;width:100%;height:auto;min-height:60px;background:#fff;border:1px solid var(--mist);cursor:zoom-in}
 .qi .q{border:0;padding:10px 0 0}
+.vocab-link{display:block;color:var(--ink);text-decoration:none}
+.vocab-link .vl-t{display:block;font-weight:600;margin-top:8px}
+.vocab-link small{display:block;color:var(--stone);font-size:13px}
 #zoom{position:fixed;inset:0;background:rgba(10,10,10,.92);overflow:auto;z-index:10;padding:12px}
 #zoom img{display:block;width:200%;max-width:1600px;height:auto;background:#fff}
 @media(min-width:900px){#zoom img{width:auto;max-width:100%;margin:0 auto}}
@@ -68,6 +71,7 @@ button{font:inherit;cursor:pointer;border-radius:0}
     <h1>Сдать задание</h1>
     <p class="sub">Введите ответы из рабочей тетради. Проверка сразу; результат уходит преподавателю. Правильные ответы — на разборе.</p>
     <div class="card"><span class="label">Домашние задания с вопросами</span><div class="parts hw" id="hw-list"></div></div>
+    <a class="card vocab-link" href="vocab.html"><span class="label">Словарь</span><span class="vl-t">Слова и термины всех уроков</span><small>Список, карточки и тест · →</small></a>
     <label class="f" for="student">Имя и первая буква фамилии</label>
     <input id="student" type="text" autocomplete="off" placeholder="Например: Айгерим К.">
     <label class="f" for="lesson">Урок</label>
