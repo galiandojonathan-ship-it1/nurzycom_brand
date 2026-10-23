@@ -6,7 +6,7 @@
   const state = { data: null, lesson: null, part: null, answers: {}, t0: 0, timer: null };
 
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
-  function show(id) { ["s-start", "s-answers", "s-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
+  function show(id) { ["s-start", "s-answers", "s-solve", "s-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
 
   async function sha(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -68,7 +68,7 @@
     $("part-lesson").textContent = l ? l.title.replace(/ · Урок /, " · ") : "";
     $("parts").innerHTML = l ? l.parts.map((p) => {
       const last = store(lastKey(l.tag, p.id));
-      return `<button class="pick part" data-p="${p.id}" aria-pressed="false"><span><span class="t">${esc(p.title)}</span>${p.img ? '<span class="tag">на экране</span>' : ""}<small>${p.q.length} вопросов · ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></span><span class="r">${last ? "последний: " + last : "→"}</span></button>`;
+      return `<button class="pick part" data-p="${p.id}" aria-pressed="false"><span><span class="t">${esc(p.title)}</span><span class="tag">${p.mode === "test" ? "как на экзамене" : "2 попытки · объяснения"}</span><small>${p.q.length} вопросов · ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></span><span class="r">${last ? "последний: " + last : "→"}</span></button>`;
     }).join("") : "";
     $("parts").querySelectorAll(".pick").forEach((b) => (b.onclick = () => {
       $("parts").querySelectorAll(".pick").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
@@ -77,9 +77,11 @@
     check();
   }
   function check() {
-    const needCode = !!(state.part && state.part.img && !store("hw_code"));
+    const needCode = !!(state.part && !store("hw_code"));
     $("code-row").classList.toggle("hidden", !needCode);
-    $("go").disabled = !($("student").value.trim().length >= 2 && state.lesson && state.part && (!needCode || $("code").value.trim().length >= 4));
+    const ready = $("student").value.trim().length >= 2 && state.lesson && state.part;
+    $("go").disabled = !(ready && (!needCode || $("code").value.trim().length >= 4));
+    $("go-paper").disabled = !ready;
   }
 
   // Question images are encrypted; the class code unlocks them (AES-GCM, key from PBKDF2).
@@ -94,40 +96,16 @@
     if (new TextDecoder().decode(out) !== "nurzycom") throw new Error("bad");
     return key;
   }
-  async function loadImages() {
-    const imgs = Array.from($("qs").querySelectorAll("img[data-src]"));
-    let k = 0;
-    async function worker() {
-      while (k < imgs.length) {
-        const img = imgs[k++];
-        try {
-          const buf = new Uint8Array(await (await fetch(img.dataset.src)).arrayBuffer());
-          const png = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, aesKey, buf.slice(12));
-          img.src = URL.createObjectURL(new Blob([png], { type: "image/png" })); img.removeAttribute("data-src");
-        } catch (e) { img.alt = "Не удалось загрузить вопрос. Обновите страницу."; }
-      }
-    }
-    await Promise.all([worker(), worker(), worker(), worker()]);
-  }
-
   async function startAnswers() {
     store("hw_student", $("student").value.trim());
     const { lesson, part } = state; state.answers = {};
-    if (part.img && !aesKey) {
-      const code = (store("hw_code") || $("code").value).trim().toLowerCase();
-      $("start-msg").textContent = "Проверяю код…";
-      try { aesKey = await unlock(code); store("hw_code", code); $("start-msg").textContent = ""; }
-      catch (e) { try { localStorage.removeItem("hw_code"); } catch (_) {} check(); $("start-msg").textContent = "Неверный код класса. Спросите у преподавателя."; return; }
-    }
+    state.mode = "paper";
     $("ans-title").textContent = `${lesson.tag} · ${part.title}`;
     const qs = part.q;
     const ctrl = (q) => q.t === "mc"
       ? `<div class="opts">${"ABCD".split("").map((c) => `<button data-n="${q.n}" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</div>`
       : `<div><input type="text" inputmode="text" data-n="${q.n}" autocomplete="off" aria-label="Ответ ${q.n}"><div class="hint" id="h${q.n}"></div></div>`;
-    $("qs").innerHTML = qs.map((q) => q.img
-      ? `<div class="qi"><span class="n">${q.n}</span><img data-src="${q.img}" alt="Вопрос ${q.n}" class="qimg"><div class="q">${ctrl(q)}</div></div>`
-      : `<div class="q"><span class="n">${q.n}</span>${ctrl(q)}</div>`).join("");
-    $("qs").querySelectorAll(".qimg").forEach((im) => (im.onclick = () => { if (im.src) { $("zoom-img").src = im.src; $("zoom").classList.remove("hidden"); } }));
+    $("qs").innerHTML = qs.map((q) => `<div class="q"><span class="n">${q.n}</span>${ctrl(q)}</div>`).join("");
     $("qs").querySelectorAll(".opts button").forEach((b) => (b.onclick = () => {
       const n = b.dataset.n;
       b.parentNode.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
@@ -143,7 +121,6 @@
     state.t0 = Date.now(); clearInterval(state.timer);
     state.timer = setInterval(() => { const s = Math.floor((Date.now() - state.t0) / 1000); $("clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }, 1000);
     count(); show("s-answers");
-    if (part.img) loadImages();
   }
   function count() {
     const total = state.part.q.length, n = Object.keys(state.answers).length;
@@ -175,7 +152,38 @@
     send(res);
   }
 
-  function renderResult(r, part, seconds) {
+  // ---- on-screen workbook (solve.js): decrypt the part's bundle and hand it over
+  async function startScreen() {
+    store("hw_student", $("student").value.trim());
+    const { lesson, part } = state; state.mode = "screen";
+    if (!aesKey) {
+      const code = (store("hw_code") || $("code").value).trim().toLowerCase();
+      $("start-msg").textContent = "Проверяю код…";
+      try { aesKey = await unlock(code); store("hw_code", code); }
+      catch (e) { try { localStorage.removeItem("hw_code"); } catch (_) {} check(); $("start-msg").textContent = "Неверный код класса. Спросите у преподавателя."; return; }
+    }
+    $("start-msg").textContent = "Загружаю вопросы…";
+    let items;
+    try {
+      const buf = new Uint8Array(await (await fetch(part.b, { cache: "no-store" })).arrayBuffer());
+      items = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, aesKey, buf.slice(12))));
+    } catch (e) { $("start-msg").textContent = "Не удалось загрузить вопросы. Обновите страницу."; return; }
+    $("start-msg").textContent = "";
+    state.items = items;
+    HWSolve.open({ lesson, part, items, student: store("hw_student"), sha, parseSpr, show,
+      onClose: () => show("s-result"),
+      onFinish: (r, extra) => {
+        const key = `hw_att_${store("hw_student")}_${lesson.tag}_${part.id}`;
+        const attempt = Number(store(key) || 0) + 1; store(key, String(attempt));
+        const res = Object.assign({ student: store("hw_student") }, r, { attempt: String(attempt) });
+        store(lastKey(lesson.tag, part.id), res.score);
+        state.review = extra.state;
+        renderResult(res, part, Number(r.seconds), extra);
+        send(res);
+      } });
+  }
+
+  function renderResult(r, part, seconds, extra) {
     $("res-title").textContent = `${r.lesson} · ${part.title}`;
     $("res-score").textContent = r.score;
     const [a, b] = r.score.split("/").map(Number);
@@ -183,6 +191,12 @@
     $("res-time").textContent = `${Math.floor(seconds / 60)} мин ${seconds % 60} с`;
     $("res-att").textContent = r.attempt;
     $("res-wrong").innerHTML = r.wrong ? r.wrong.split(",").map((n) => `<span>${n}</span>`).join("") : "<p>Нет. Всё верно.</p>";
+    // on screen the main score counts first attempts; the second attempt is shown next to it
+    $("res-2-box").classList.toggle("hidden", !(extra && extra.learn)); if (extra) $("res-2").textContent = extra.second;
+    $("res-mode-box").classList.remove("hidden");
+    $("res-mode").textContent = !extra ? "ответы из тетради" : extra.learn ? "на экране, 2 попытки" : "на экране, экзамен";
+    $("res-wrong-h").textContent = extra && extra.learn ? "Не с первой попытки" : "Ошибки и пропуски";
+    $("review").classList.toggle("hidden", !extra);
     const code = ["HW", r.lesson, r.part, r.student, r.score, r.wrong || "-", r.seconds + "s", "a" + r.attempt, r.answers].join(" | ");
     $("res-code").textContent = code;
     $("tg").href = `https://t.me/${CFG.telegram || "nurzycom"}`;
@@ -207,12 +221,13 @@
     }
   }
 
-  $("go").onclick = startAnswers;
+  $("go").onclick = startScreen;
+  $("go-paper").onclick = startAnswers;
+  $("review").onclick = () => HWSolve.open({ lesson: state.lesson, part: state.part, items: state.items, review: state.review, student: store("hw_student"), sha, parseSpr, show, onClose: () => show("s-result"), onFinish: () => {} });
   $("back").onclick = () => { clearInterval(state.timer); show("s-start"); };
   $("submit").onclick = grade;
-  $("again").onclick = startAnswers;
+  $("again").onclick = () => (state.mode === "screen" ? startScreen() : startAnswers());
   $("home").onclick = () => { renderStart(); if (state.lesson) pickLesson(state.lesson.tag); show("s-start"); };
-  $("zoom").onclick = () => $("zoom").classList.add("hidden");
 
   fetch("lessons.json", { cache: "no-store" }).then((r) => r.json()).then((d) => { state.data = d; renderStart(); })
     .catch(() => { $("start-msg").textContent = "Не удалось загрузить уроки. Обновите страницу."; });

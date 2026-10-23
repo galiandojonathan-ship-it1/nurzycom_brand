@@ -23,54 +23,6 @@
 .set[aria-pressed=true] .label{color:var(--studio)}
 .types{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .types span{font:11px var(--mono);letter-spacing:.06em;border:1px solid var(--studio);padding:5px 8px;color:var(--stone)}
-/* test screen */
-.qwrap{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
-@media(min-width:900px){.qwrap{grid-template-columns:1fr 1fr}.passage{border-right:1px solid var(--studio);padding-right:36px}.ask{padding-left:36px}}
-.passage,.ask{padding-top:22px;padding-bottom:22px}
-@media(max-width:899px){.passage{border-bottom:1px solid var(--studio)}}
-.passage p{margin:0 0 14px;font-size:17px;line-height:1.7}
-.passage p.th{font:12px var(--mono);letter-spacing:.14em;text-transform:uppercase;margin:18px 0 6px}
-.passage p.th:first-child{margin-top:0}
-.passage ul{margin:0 0 14px;padding-left:20px;font-size:17px;line-height:1.6}
-.passage li{margin-bottom:6px}
-.passage u{text-decoration-thickness:1px;text-underline-offset:3px}
-.blank{letter-spacing:-.05em}
-.tw{overflow-x:auto;margin:0 0 18px;-webkit-overflow-scrolling:touch}
-table.dt{border-collapse:collapse;width:100%;min-width:420px;font-size:14px}
-table.dt caption{text-align:left;font-weight:600;font-size:14px;padding-bottom:8px}
-table.dt th,table.dt td{border:1px solid var(--studio);padding:8px 10px;text-align:left;vertical-align:top}
-table.dt th{background:var(--mist);font-weight:500}
-table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
-.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--mist);padding:8px 10px 8px 14px;margin-bottom:16px}
-.qhead .qn{font:13px var(--mono);letter-spacing:.08em}
-.flag{border:1px solid transparent;background:transparent;font:12px var(--mono);letter-spacing:.06em;padding:6px 8px}
-.flag[aria-pressed=true]{border-color:var(--ink)}
-.flag[aria-pressed=true]::before{content:"▲ "}
-.stem{font-size:17px;line-height:1.6;font-weight:500;margin:0 0 16px}
-.opt{display:flex;align-items:stretch;gap:0;margin-bottom:8px}
-.opt .ch{flex:1;display:flex;gap:14px;align-items:flex-start;text-align:left;padding:13px 14px;border:1px solid var(--studio);background:var(--white);font-size:16px;line-height:1.5;transition:border-color .1s}
-.opt .ch:hover{border-color:var(--ink)}
-.opt .lt{flex:none;width:28px;height:28px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:13px var(--mono);margin-top:-1px}
-.opt.on .ch{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.opt.on .lt{background:var(--ink);color:var(--paper)}
-.opt .x{flex:none;width:42px;border:1px solid var(--studio);border-left:0;background:var(--paper);font:13px var(--mono);color:var(--stone)}
-.opt .x:hover{color:var(--ink)}
-.opt.out .ch{color:var(--stone)}
-.opt.out .ch .tx{text-decoration:line-through}
-.opt.out .lt{border-color:var(--stone)}
-.opt.out .x{color:var(--ink)}
-.navrow{position:sticky;bottom:0;z-index:4;background:var(--paper);border-top:1px solid var(--ink);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
-.navrow .btn{padding:12px 18px}
-#navbtn{font:13px var(--mono);letter-spacing:.06em;background:var(--white);border:1px solid var(--studio);padding:11px 14px}
-#navbtn:hover{border-color:var(--ink)}
-.navpanel{border:1px solid var(--ink);background:var(--white);padding:16px;margin:8px 0 14px}
-.grid12{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:12px 0}
-@media(min-width:560px){.grid12{grid-template-columns:repeat(12,1fr)}}
-.grid12 button{position:relative;height:42px;border:1px dashed var(--stone);background:var(--white);font:13px var(--mono)}
-.grid12 button.ans{border:1px solid var(--ink);background:var(--ink);color:var(--paper)}
-.grid12 button.cur{outline:2px solid var(--ink);outline-offset:2px}
-.grid12 button.mk::after{content:"";position:absolute;top:3px;right:3px;border-left:6px solid transparent;border-top:6px solid currentColor}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--stone)}
 /* review */
 .rev{border-top:1px solid var(--studio)}
 .rev details{border-bottom:1px solid var(--studio)}

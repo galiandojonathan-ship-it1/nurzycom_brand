@@ -45,9 +45,10 @@
       <div class="list" id="parts"></div>
       <div id="code-row" class="hidden" style="margin-top:18px">
         <div class="field"><input id="code" type="text" autocomplete="off" autocapitalize="off" placeholder="Код класса от преподавателя" aria-label="Код класса"></div>
-        <p class="hint">Вопросы дополнительного ДЗ открываются кодом класса. Его нужно ввести один раз.</p>
+        <p class="hint">Вопросы на экране открываются кодом класса. Его нужно ввести один раз.</p>
       </div>
-      <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button></div>
+      <div class="row"><button class="btn" id="go" disabled>Решать на экране <span class="arr">→</span></button><button class="btn ghost" id="go-paper" disabled>Ввести ответы из тетради</button></div>
+      <p class="hint" id="mode-hint">На экране: вопрос за вопросом, как в Bluebook. Две попытки, объяснение сразу после ответа. Финальный тест — как на экзамене: объяснения после сдачи.</p>
       <p class="hint" id="start-msg"></p>
     </div>
 
@@ -63,8 +64,34 @@
     <div class="bar"><div class="bar-in"><span class="label" id="ans-title"></span><span class="label"><span id="count">0</span> · <span id="clock">00:00</span></span></div><div class="prog"><i id="prog"></i></div></div>
     <div id="qs"></div>
     <div class="row"><button class="btn" id="submit">Сдать <span class="arr">→</span></button><button class="btn ghost" id="back">Назад</button></div>
-    <p class="hint">Нажмите на вопрос, чтобы увеличить. На телефоне удобнее держать его горизонтально.</p>
     <p class="hint">Числовой ответ: целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются, как на экзамене.</p>
+  </section>
+
+
+  <!-- Step 2b: on-screen workbook (solve.js) -->
+  <section id="s-solve" class="hidden">
+    <div class="bar"><div class="bar-in"><span class="label" id="sv-title"></span><span class="label"><span id="sv-pos"></span> · <button class="tlink" id="sv-clock-t" title="Скрыть или показать таймер"><span id="sv-clock">00:00</span></button></span></div><div class="prog"><i id="sv-prog"></i></div></div>
+    <div id="sv-nav" class="navpanel hidden">
+      <div class="legend" id="sv-legend"></div>
+      <div class="grid12" id="sv-grid"></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="sv-finish">Сдать</button><button class="btn ghost" id="sv-close">Закрыть</button></div>
+    </div>
+    <div class="qwrap" id="sv-wrap">
+      <div class="passage qhtml" id="sv-passage"></div>
+      <div class="ask">
+        <div class="qhead"><span class="qn" id="sv-qn"></span><button class="flag" id="sv-flag" aria-pressed="false">Отметить</button></div>
+        <div class="stem qhtml" id="sv-stem"></div>
+        <div id="sv-opts"></div>
+        <div id="sv-fb" class="fb hidden"></div>
+        <div class="row" style="margin-top:12px"><button class="btn" id="sv-check">Проверить</button></div>
+        <div id="sv-expl" class="sv-expl hidden"></div>
+      </div>
+    </div>
+    <div class="navrow">
+      <button class="btn ghost" id="sv-prev">← Назад</button>
+      <button id="navbtn" aria-label="Все вопросы"></button>
+      <button class="btn" id="sv-next">Далее →</button>
+    </div>
   </section>
 
   <!-- Step 3: result -->
@@ -72,9 +99,9 @@
     <span class="label" id="res-title"></span>
     <div class="result-grid">
       <div><div class="big" id="res-score"></div><div class="meter"><i id="res-meter"></i></div></div>
-      <div class="stats"><div><span class="label">Время</span><b id="res-time"></b></div><div><span class="label">Попытка</span><b id="res-att"></b></div></div>
+      <div class="stats"><div><span class="label">Время</span><b id="res-time"></b></div><div><span class="label">Попытка</span><b id="res-att"></b></div><div id="res-2-box" class="hidden"><span class="label">Со 2-й попытки</span><b id="res-2"></b></div><div id="res-mode-box" class="hidden"><span class="label">Режим</span><b id="res-mode"></b></div></div>
     </div>
-    <span class="label">Ошибки и пропуски</span>
+    <span class="label" id="res-wrong-h">Ошибки и пропуски</span>
     <div class="wrong" id="res-wrong"></div>
     <p id="send-status" class="hint" style="margin-top:22px"></p>
     <div id="backup" class="hidden">
@@ -82,12 +109,12 @@
       <div class="code" id="res-code"></div>
       <div class="row"><button class="btn ghost" id="copy">Скопировать код</button><a class="btn ghost" id="tg" target="_blank" rel="noopener">Открыть Telegram</a></div>
     </div>
-    <div class="row"><button class="btn" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
+    <div class="row"><button class="btn ghost hidden" id="review">Посмотреть разбор</button><button class="btn" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
   </section>
 </main>
 <footer class="foot">nurzycom · Telegram <a href="https://t.me/nurzycom" target="_blank" rel="noopener">@nurzycom</a></footer>
-<div id="zoom" class="hidden" role="dialog" aria-label="Увеличенный вопрос"><img id="zoom-img" alt=""></div>
 <script src="config.js"></script>
+<script src="solve.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
