@@ -46,6 +46,12 @@ You are continuing work on the personal brand and tutoring business of Nurassyl 
 - **Views:** admires solo tutors; dislikes companies that charge a lot for ordinary tutors. Keep that private: public copy never attacks companies. He knows he cannot do everything alone.
 - **How to work with him:** think critically and creatively, and push back when an idea is weak or could hurt his reputation. He says he is strong at communication and inspiring people, weaker at accuracy and common-sense checks, so check facts, numbers and risks for him.
 
+## Strategic decision (Nurassyl, 2026-10-23)
+
+- **Free SAT-prep website, his own:** no subscriptions, no paywall, organised like Bluebook (by Reading & Writing domain, skill and difficulty). Motive: help students like him, not only earn. Positioning: a high-level mentor who teaches a way of thinking, not just material.
+- **Later: combined SAT + IELTS preparation** (his view: SAT work strengthens reading and vocabulary for IELTS). An LLM council (2026-10-23) advised against building the site now; Nurassyl heard it and decided to go ahead. Support the decision; flag risks, do not re-argue it.
+- **Content rule for the site:** only self-written questions and explanations; official College Board questions are linked or referenced by their official ID, never copied onto the site (copyright). Every question and answer key is checked twice before publishing.
+
 ## Hard rules (never break these)
 
 0. **Privacy on documents.** Before publishing any diploma, letter or score report, hide: ID and serial numbers, QR codes, record locators, TRF numbers, his patronymic, his school name and class, and other people's names (supervisors, teachers). Keep his name, the award, the event and the date.
