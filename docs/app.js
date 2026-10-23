@@ -36,28 +36,42 @@
     return (sign < 0n ? "-" : "") + str.slice(0, -4) + "." + str.slice(-4);
   }
 
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const lastKey = (tag, pid) => `hw_last_${store("hw_student") || ""}_${tag}_${pid}`;
+
   function renderStart() {
-    const sel = $("lesson");
-    sel.innerHTML = '<option value="">Выберите урок</option>' + state.data.lessons.map((l) => `<option value="${l.tag}">${l.title}</option>`).join("");
+    const courses = [["V", "SAT Verbal", "Reading & Writing"], ["M", "SAT Math", "Math"]];
+    $("lessons").innerHTML = courses.map(([c, name, sub]) => {
+      const ls = state.data.lessons.filter((l) => l.tag[0] === c);
+      return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} уроков · ${sub}</span></div><div class="tiles">${ls.map((l) => {
+        const nm = l.title.split(" · ").slice(2).join(" · ");
+        const done = l.parts.filter((p) => store(lastKey(l.tag, p.id))).length;
+        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${String(Number(l.tag.slice(1))).padStart(2, "0")}</span><span class="nm">${esc(nm)}</span>${done ? `<span class="dot">${done}/${l.parts.length}</span>` : ""}</button>`;
+      }).join("")}</div></div>`;
+    }).join("");
+    $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { pickLesson(b.dataset.l); $("step-part").scrollIntoView({ behavior: "smooth", block: "start" }); }));
     $("student").value = store("hw_student") || "";
+    $("student").oninput = check; $("code").oninput = check;
     const params = new URLSearchParams(location.search);
-    if (params.get("l")) sel.value = params.get("l");
-    sel.onchange = renderParts; $("student").oninput = check; $("code").oninput = check; renderParts();
+    if (params.get("l")) pickLesson(params.get("l")); else renderParts();
     if (params.get("p")) pickPart(params.get("p"));
-    const hw = [];
-    state.data.lessons.forEach((l) => l.parts.forEach((p) => { if (p.img) hw.push([l, p]); }));
-    $("hw-list").innerHTML = hw.map(([l, p]) => `<button class="part" data-l="${l.tag}" data-p="${p.id}">${l.title}<small>${p.title} · ${p.q.length} вопросов</small></button>`).join("");
-    $("hw-list").querySelectorAll("button").forEach((b) => (b.onclick = () => {
-      sel.value = b.dataset.l; renderParts(); pickPart(b.dataset.p); $("student").focus();
-    }));
   }
-  function pickPart(pid) { const b = $("parts").querySelector(`.part[data-p="${pid}"]`); if (b) b.click(); }
+  function pickLesson(tag) {
+    state.lesson = state.data.lessons.find((x) => x.tag === tag) || null;
+    $("lessons").querySelectorAll(".tile").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.l === tag)));
+    renderParts();
+  }
+  function pickPart(pid) { const b = $("parts").querySelector(`.pick[data-p="${pid}"]`); if (b) b.click(); }
   function renderParts() {
-    const l = state.data.lessons.find((x) => x.tag === $("lesson").value);
-    state.lesson = l || null; state.part = null;
-    $("parts").innerHTML = l ? l.parts.map((p) => `<button class="part" data-p="${p.id}" aria-pressed="false">${p.title}<small>вопросы ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></button>`).join("") : "";
-    $("parts").querySelectorAll(".part").forEach((b) => (b.onclick = () => {
-      $("parts").querySelectorAll(".part").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    const l = state.lesson; state.part = null;
+    $("parts-empty").classList.toggle("hidden", !!l);
+    $("part-lesson").textContent = l ? l.title.replace(/ · Урок /, " · ") : "";
+    $("parts").innerHTML = l ? l.parts.map((p) => {
+      const last = store(lastKey(l.tag, p.id));
+      return `<button class="pick part" data-p="${p.id}" aria-pressed="false"><span><span class="t">${esc(p.title)}</span>${p.img ? '<span class="tag">на экране</span>' : ""}<small>${p.q.length} вопросов · ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></span><span class="r">${last ? "последний: " + last : "→"}</span></button>`;
+    }).join("") : "";
+    $("parts").querySelectorAll(".pick").forEach((b) => (b.onclick = () => {
+      $("parts").querySelectorAll(".pick").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
       state.part = l.parts.find((p) => p.id === b.dataset.p); check();
     }));
     check();
@@ -132,8 +146,9 @@
     if (part.img) loadImages();
   }
   function count() {
-    const total = state.part.q.length;
-    $("count").textContent = `${Object.keys(state.answers).length} / ${total}`;
+    const total = state.part.q.length, n = Object.keys(state.answers).length;
+    $("count").textContent = `${n} / ${total}`;
+    $("prog").style.width = `${(100 * n) / total}%`;
   }
 
   async function grade() {
@@ -155,15 +170,19 @@
     const ansStr = qs.map((q) => `${q.n}:${answers[q.n] || "-"}`).join(" ");
     const res = { student: store("hw_student") || $("student").value.trim(), lesson: lesson.tag, part: `${part.id} · ${part.title}`,
       answers: ansStr, score: `${right}/${qs.length}`, wrong: wrong.join(","), seconds: String(seconds), attempt: String(attempt) };
+    store(lastKey(lesson.tag, part.id), res.score);
     renderResult(res, part, seconds);
     send(res);
   }
 
   function renderResult(r, part, seconds) {
-    $("res-title").textContent = `${r.lesson} · ${part.title} · попытка ${r.attempt}`;
+    $("res-title").textContent = `${r.lesson} · ${part.title}`;
     $("res-score").textContent = r.score;
-    $("res-detail").textContent = `Время: ${Math.floor(seconds / 60)} мин ${seconds % 60} с.`;
-    $("res-wrong").textContent = r.wrong ? r.wrong.split(",").join(", ") : "Нет. Всё верно.";
+    const [a, b] = r.score.split("/").map(Number);
+    $("res-meter").style.width = `${(100 * a) / b}%`;
+    $("res-time").textContent = `${Math.floor(seconds / 60)} мин ${seconds % 60} с`;
+    $("res-att").textContent = r.attempt;
+    $("res-wrong").innerHTML = r.wrong ? r.wrong.split(",").map((n) => `<span>${n}</span>`).join("") : "<p>Нет. Всё верно.</p>";
     const code = ["HW", r.lesson, r.part, r.student, r.score, r.wrong || "-", r.seconds + "s", "a" + r.attempt, r.answers].join(" | ");
     $("res-code").textContent = code;
     $("tg").href = `https://t.me/${CFG.telegram || "nurzycom"}`;
@@ -192,7 +211,7 @@
   $("back").onclick = () => { clearInterval(state.timer); show("s-start"); };
   $("submit").onclick = grade;
   $("again").onclick = startAnswers;
-  $("home").onclick = () => show("s-start");
+  $("home").onclick = () => { renderStart(); if (state.lesson) pickLesson(state.lesson.tag); show("s-start"); };
   $("zoom").onclick = () => $("zoom").classList.add("hidden");
 
   fetch("lessons.json", { cache: "no-store" }).then((r) => r.json()).then((d) => { state.data = d; renderStart(); })
