@@ -116,6 +116,8 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Useful tools
 
+- **LLM council** (`/llm-council <question>`, skill in `.claude/skills/llm-council/`): five sub-agents with different models and roles (Strategist, Skeptic, Parent, Student, Creative) answer independently, three reviewers rank the answers anonymously, and the main session chairs a final answer. Use it for high-stakes decisions only; hard rules override the council.
+
 - Marketing skills: `npx skills add coreyhaines31/marketingskills -a claude-code` (product-marketing, copywriting, copy-editing, social, content-strategy, offers, pricing, lead-magnets).
 - Video (Reels intros, animated results): `npx skills add heygen-com/hyperframes` (needs Node.js 22+ and FFmpeg).
 
