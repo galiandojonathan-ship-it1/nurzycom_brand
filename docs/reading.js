@@ -5,7 +5,7 @@
   const CFG = window.HW_CONFIG || {};
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
-  const st = { data: null, t: null, ans: {}, ok: null, key: null, quiz: false };
+  const st = { data: null, t: null, ans: {}, ok: null, quiz: false };
   const MK = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
   const plural = (n, a, b, c) => { const m = n % 100, k = n % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k >= 2 && k <= 4 ? b : c; };
   const words = (n) => `${n} ${plural(n, "слово", "слова", "слов")}`;
@@ -15,25 +15,6 @@
   async function sha(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
-  }
-  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function unlock(code) {
-    const e = st.data.enc;
-    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(e.salt), iterations: e.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-    const c = b64(e.check);
-    const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: c.slice(0, 12) }, key, c.slice(12));
-    if (new TextDecoder().decode(out) !== "nurzycom") throw new Error("bad");
-    return key;
-  }
-  async function tryCode(code) {
-    code = (code || "").trim().toLowerCase();
-    if (code.length < 4) return false;
-    try { st.key = await unlock(code); store("hw_code", code); return true; } catch (e) { return false; }
-  }
-  async function openSealed(s) {
-    const buf = b64(s);
-    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, st.key, buf.slice(12))));
   }
 
   // ---- list of texts
@@ -119,15 +100,13 @@
     $("res-score").textContent = res.score; $("res-meter").style.width = `${(100 * right) / qs.length}%`;
     $("check").classList.add("hidden"); $("q-res").classList.remove("hidden"); $("q-msg").textContent = "";
     st.quiz = false; setQuiet(false); $("gl").classList.remove("hidden");
-    if (!st.key && store("hw_code")) await tryCode(store("hw_code"));
     await reveal();
     $("q-res").scrollIntoView({ behavior: "smooth", block: "center" });
     send(res);
   }
   async function reveal() {
     const info = {};
-    if (st.key) for (const q of st.t.q) { try { info[q.i] = await openSealed(q.x); } catch (e) { /* stays locked */ } }
-    $("lock").classList.toggle("hidden", Object.keys(info).length === st.t.q.length);
+    for (const q of st.t.q) info[q.i] = await SITE.sealed(q.x);
     renderQuiz(info);
   }
   async function send(r) {
@@ -140,15 +119,10 @@
   $("to-quiz").onclick = startQuiz;
   $("check").onclick = check;
   $("again").onclick = startQuiz;
-  $("unlock").onclick = async () => {
-    $("lock-msg").textContent = "Проверяю…";
-    if (await tryCode($("code2").value)) { $("lock-msg").textContent = ""; await reveal(); } else $("lock-msg").textContent = "Неверный код класса.";
-  };
-  $("code2").addEventListener("keydown", (e) => { if (e.key === "Enter") $("unlock").click(); });
   $("next").onclick = () => { const i = st.data.texts.indexOf(st.t); openText(st.data.texts[(i + 1) % st.data.texts.length].id); };
   $("back").onclick = () => { history.replaceState(null, "", location.pathname); renderStart(); show("r-start"); };
 
-  fetch("reading.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+  SITE.json("reading").then((d) => {
     st.data = d; renderStart();
     const want = new URLSearchParams(location.search).get("t");
     if (want) openText(want);

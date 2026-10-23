@@ -1,38 +1,17 @@
-// Hard practice sets: one question at a time (as in Bluebook), graded by hashed keys, explanations unlocked by the class code.
+// Hard practice sets: one question at a time (as in Bluebook), graded by hashed keys; explanations open after submitting.
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
-  const st = { data: null, set: null, cur: 0, ans: {}, out: {}, marked: new Set(), t0: 0, timer: null, key: null, rev: null };
+  const st = { data: null, set: null, cur: 0, ans: {}, out: {}, marked: new Set(), t0: 0, timer: null, rev: null };
 
   function show(id) { ["p-start", "p-test", "p-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
   async function sha(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
   }
-  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function unlock(code) {
-    const e = st.data.enc;
-    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(e.salt), iterations: e.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-    const c = b64(e.check);
-    const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: c.slice(0, 12) }, key, c.slice(12));
-    if (new TextDecoder().decode(out) !== "nurzycom") throw new Error("bad");
-    return key;
-  }
-  async function openSealed(s) {
-    const buf = b64(s);
-    const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, st.key, buf.slice(12));
-    return JSON.parse(new TextDecoder().decode(out));
-  }
-  async function tryCode(code) {
-    code = (code || "").trim().toLowerCase();
-    if (code.length < 4) return false;
-    try { st.key = await unlock(code); store("hw_code", code); return true; } catch (e) { return false; }
-  }
-
   // Text: escape, then ⟦underline⟧ and the blank.
   // Course words are marked [[surface|key]]: plain during the test, highlighted with the translation in the review.
   const MK = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
@@ -67,8 +46,6 @@
       $("sets").querySelectorAll(".set").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
       st.set = st.data.sets.find((s) => s.id === b.dataset.s); check();
     }));
-    const saved = !!store("hw_code");
-    $("code-row").classList.toggle("hidden", saved); $("code-ok").classList.toggle("hidden", !saved);
     $("student").oninput = check;
     const want = new URLSearchParams(location.search).get("s");
     if (want) { const b = $("sets").querySelector(`.set[data-s="${want}"]`); if (b) b.click(); }
@@ -78,13 +55,6 @@
 
   async function begin() {
     store("hw_student", $("student").value.trim());
-    if (!st.key && store("hw_code")) await tryCode(store("hw_code"));
-    const typed = $("code").value.trim();
-    if (!st.key && typed) {
-      $("start-msg").textContent = "Проверяю код…";
-      if (!(await tryCode(typed))) { $("start-msg").textContent = "Неверный код класса. Можно начать без него: очистите поле."; return; }
-      $("start-msg").textContent = "";
-    }
     st.ans = {}; st.out = {}; st.marked = new Set(); st.cur = 0;
     $("t-title").textContent = `${st.set.id} · ${st.set.title}`;
     st.t0 = Date.now(); clearInterval(st.timer);
@@ -178,9 +148,7 @@
   async function renderReview() {
     const { ok } = st.rev, qs = st.set.q;
     const info = {};
-    if (st.key) for (const q of qs) { try { info[q.i] = await openSealed(q.x); } catch (e) { /* stays locked */ } }
-    const open = Object.keys(info).length === qs.length;
-    $("lock").classList.toggle("hidden", open);
+    for (const q of qs) info[q.i] = await SITE.sealed(q.x);
     $("rev").innerHTML = qs.map((q) => {
       const mine = st.ans[q.i], inf = info[q.i];
       const opts = q.o.map((o, k) => { const c = "ABCD"[k]; const right = inf && inf.a === c;
@@ -193,12 +161,6 @@
     const ws = (q.w || []).map((k) => st.data.gloss[k]).filter(Boolean);
     return ws.length ? `<div class="wlist"><span class="label">Слова курса в вопросе</span>${ws.map((g) => `<div><b>${esc(g.en)}</b> — ${esc(g.ru)} <span class="label">${g.l}</span></div>`).join("")}</div>` : "";
   }
-  $("unlock").onclick = async () => {
-    $("lock-msg").textContent = "Проверяю…";
-    if (await tryCode($("code2").value)) { $("lock-msg").textContent = ""; await renderReview(); }
-    else $("lock-msg").textContent = "Неверный код класса.";
-  };
-  $("code2").addEventListener("keydown", (e) => { if (e.key === "Enter") $("unlock").click(); });
 
   async function send(r) {
     const f = CFG.fields || {};
@@ -221,6 +183,6 @@
   $("again").onclick = begin;
   $("home").onclick = () => { renderStart(); show("p-start"); };
 
-  fetch("practice.json", { cache: "no-store" }).then((r) => r.json()).then((d) => { st.data = d; renderStart(); })
+  SITE.json("practice").then((d) => { st.data = d; renderStart(); })
     .catch(() => { $("start-msg").textContent = "Не удалось загрузить вопросы. Обновите страницу."; });
 })();

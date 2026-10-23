@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script src="auth.js"></script>
 <style>
 .texts{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:620px){.texts{grid-template-columns:1fr 1fr}}
@@ -92,12 +93,6 @@
           <div class="result-grid" style="margin-top:18px">
             <div><span class="label">Результат</span><div class="big" id="res-score"></div><div class="meter"><i id="res-meter"></i></div></div>
             <div><p id="send-status" class="hint"></p></div>
-          </div>
-          <div class="card hidden" id="lock">
-            <span class="label">Правильные ответы закрыты</span>
-            <p style="margin:8px 0 12px">Введите код класса, чтобы увидеть правильные ответы и объяснения.</p>
-            <div class="row" style="margin-top:0"><input id="code2" type="text" autocomplete="off" autocapitalize="off" placeholder="Код класса" aria-label="Код класса" style="max-width:260px"><button class="btn" id="unlock">Открыть</button></div>
-            <p class="hint" id="lock-msg"></p>
           </div>
           <div class="row"><button class="btn ghost" id="again">Ещё раз</button><button class="btn" id="next">Следующий текст <span class="arr">→</span></button></div>
         </div>

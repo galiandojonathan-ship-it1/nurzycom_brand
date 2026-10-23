@@ -51,7 +51,7 @@
     }).join("");
     $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { pickLesson(b.dataset.l); $("step-part").scrollIntoView({ behavior: "smooth", block: "start" }); }));
     $("student").value = store("hw_student") || "";
-    $("student").oninput = check; $("code").oninput = check;
+    $("student").oninput = check;
     const params = new URLSearchParams(location.search);
     if (params.get("l")) pickLesson(params.get("l")); else renderParts();
     if (params.get("p")) pickPart(params.get("p"));
@@ -77,25 +77,11 @@
     check();
   }
   function check() {
-    const needCode = !!(state.part && !store("hw_code"));
-    $("code-row").classList.toggle("hidden", !needCode);
     const ready = $("student").value.trim().length >= 2 && state.lesson && state.part;
-    $("go").disabled = !(ready && (!needCode || $("code").value.trim().length >= 4));
+    $("go").disabled = !ready;
     $("go-paper").disabled = !ready;
   }
 
-  // Question images are encrypted; the class code unlocks them (AES-GCM, key from PBKDF2).
-  let aesKey = null;
-  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function unlock(code) {
-    const e = state.data.enc;
-    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(e.salt), iterations: e.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-    const c = b64(e.check);
-    const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: c.slice(0, 12) }, key, c.slice(12));
-    if (new TextDecoder().decode(out) !== "nurzycom") throw new Error("bad");
-    return key;
-  }
   async function startAnswers() {
     store("hw_student", $("student").value.trim());
     const { lesson, part } = state; state.answers = {};
@@ -156,17 +142,10 @@
   async function startScreen() {
     store("hw_student", $("student").value.trim());
     const { lesson, part } = state; state.mode = "screen";
-    if (!aesKey) {
-      const code = (store("hw_code") || $("code").value).trim().toLowerCase();
-      $("start-msg").textContent = "Проверяю код…";
-      try { aesKey = await unlock(code); store("hw_code", code); }
-      catch (e) { try { localStorage.removeItem("hw_code"); } catch (_) {} check(); $("start-msg").textContent = "Неверный код класса. Спросите у преподавателя."; return; }
-    }
     $("start-msg").textContent = "Загружаю вопросы…";
     let items;
     try {
-      const buf = new Uint8Array(await (await fetch(part.b, { cache: "no-store" })).arrayBuffer());
-      items = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, aesKey, buf.slice(12))));
+      items = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(part.b, { cache: "no-store" })).arrayBuffer())));
     } catch (e) { $("start-msg").textContent = "Не удалось загрузить вопросы. Обновите страницу."; return; }
     $("start-msg").textContent = "";
     state.items = items;
@@ -229,7 +208,7 @@
   $("again").onclick = () => (state.mode === "screen" ? startScreen() : startAnswers());
   $("home").onclick = () => { renderStart(); if (state.lesson) pickLesson(state.lesson.tag); show("s-start"); };
 
-  fetch("lessons.json", { cache: "no-store" }).then((r) => r.json()).then((d) => { state.data = d; renderStart(); })
+  SITE.json("lessons").then((d) => { state.data = d; renderStart(); })
     .catch(() => { $("start-msg").textContent = "Не удалось загрузить уроки. Обновите страницу."; });
   window.__hw = { parseSpr, sha };  // for testing
 })();

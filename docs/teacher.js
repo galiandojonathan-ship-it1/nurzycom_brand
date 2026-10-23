@@ -302,7 +302,46 @@
   $("tabs").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.view = b.dataset.v; if (D.view !== "students") D.student = null; render(); }));
   addEventListener("resize", () => { if (!$("dash").classList.contains("hidden") && D.view === "overview") render(); });
 
-  Promise.all(["lessons.json", "practice.json", "reading.json"].map((f) => fetch(f, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then(([l, p, t]) => {
+
+  // ---------- site password: re-wrap the master key with a new password and publish access.json
+  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || "main" });
+  function ghState() { const g = GH(); $("gh-state").textContent = g.token ? `· подключено: ${g.repo}, ветка ${g.branch}` : "· не подключено"; $("gh-repo").value = g.repo; $("gh-branch").value = g.branch; }
+  async function newAccess() {
+    const cur = $("pw-cur").value, a = $("pw-new").value.trim(), b = $("pw-new2").value.trim();
+    if (a.length < 6) throw new Error("Новый пароль — не короче 6 символов.");
+    if (a !== b) throw new Error("Новые пароли не совпадают.");
+    if (a === cur.trim()) throw new Error("Новый пароль совпадает с текущим.");
+    try { return { json: JSON.stringify(await SITE.rewrap(cur.trim(), a)), pw: a }; } catch (e) { throw new Error("Текущий пароль неверный."); }
+  }
+  const pwMsg = (t) => ($("pw-msg").textContent = t);
+  $("pw-gh").onclick = async () => {
+    const g = GH(); if (!g.token) { $("gh-set").open = true; pwMsg("Сначала подключите GitHub ниже (один раз) или скачайте файл вручную."); return; }
+    try {
+      pwMsg("Меняю пароль…"); const n = await newAccess();
+      const url = `https://api.github.com/repos/${g.repo}/contents/docs/access.json`, hd = { Authorization: `Bearer ${g.token}`, Accept: "application/vnd.github+json" };
+      const cur = await fetch(`${url}?ref=${encodeURIComponent(g.branch)}`, { headers: hd });
+      if (cur.status === 401 || cur.status === 403) throw new Error("GitHub не принял токен. Проверьте токен и права Contents: Read and write.");
+      if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ответил ${cur.status}. Проверьте репозиторий и ветку.`);
+      const sha = cur.ok ? (await cur.json()).sha : undefined;
+      const put = await fetch(url, { method: "PUT", headers: hd, body: JSON.stringify({ message: "Change site password", content: btoa(n.json), branch: g.branch, sha }) });
+      if (!put.ok) throw new Error(`GitHub не сохранил файл (${put.status}).`);
+      SITE.remember(n.pw); ["pw-cur", "pw-new", "pw-new2"].forEach((i) => ($(i).value = ""));
+      pwMsg("Готово. Пароль сменён: через 1–10 минут сайт будет принимать только новый пароль. Отправьте его ученикам.");
+    } catch (e) { pwMsg(e.message); }
+  };
+  $("pw-dl").onclick = async () => {
+    try {
+      const n = await newAccess();
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([n.json], { type: "application/json" })); a.download = "access.json"; a.click();
+      SITE.remember(n.pw);
+      pwMsg("Файл access.json скачан. Загрузите его на GitHub: репозиторий → папка docs → Add file → Upload files → перетащите файл → Commit changes. Пока файл не загружен, работает старый пароль.");
+    } catch (e) { pwMsg(e.message); }
+  };
+  $("gh-save").onclick = () => { if ($("gh-token").value.trim()) store("gh_token", $("gh-token").value.trim()); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || "main"); $("gh-token").value = ""; ghState(); };
+  $("gh-forget").onclick = () => { store("gh_token", null); ghState(); };
+  ghState();
+
+  Promise.all(["lessons", "practice", "reading"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t]) => {
     D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || [];
     const u = store("teacher_url"); if (u) { $("url").value = u; fromUrl(u); }
   });

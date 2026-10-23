@@ -183,7 +183,7 @@
   $("modes").querySelectorAll(".chip").forEach((b) => (b.onclick = () => setMode(b.dataset.m)));
   $("back").onclick = () => { sync(); show("v-start"); };
 
-  fetch("vocab.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+  SITE.json("vocab").then((d) => {
     st.data = d;
     const saved = load("vocab_sel", null);
     if (saved) { st.sel = new Set(saved.sel || []); st.cats = new Set(saved.cats || []); }

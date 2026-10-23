@@ -45,8 +45,8 @@ h1{font:italic 300 clamp(44px,8vw,72px)/1.02 var(--serif);margin:12px 0 14px;let
 .step-h .aside{margin-left:auto}
 
 /* fields and buttons */
-input[type=text]{width:100%;font:inherit;font-size:17px;padding:14px 14px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0;-webkit-appearance:none;appearance:none}
-input[type=text]:focus{border-color:var(--ink);outline:none}
+input[type=text],input[type=password]{width:100%;font:inherit;font-size:17px;padding:14px 14px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0;-webkit-appearance:none;appearance:none}
+input[type=text]:focus,input[type=password]:focus{border-color:var(--ink);outline:none}
 .field{max-width:420px}
 .btn{display:inline-flex;align-items:center;gap:10px;padding:15px 24px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);font-weight:500;text-decoration:none;transition:opacity .15s}
 .btn:hover{opacity:.86}
@@ -223,3 +223,15 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
 .stats{grid-template-columns:repeat(2,1fr)}
 .qhtml td,.qhtml th{overflow-wrap:normal;word-break:normal}
 .spr label{display:block}
+
+/* site login (auth.js) */
+html.locked body > *:not(#auth){display:none !important}
+#auth{flex:1;display:grid;place-items:center;padding:40px 16px}
+.auth-box{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.auth-box svg{width:46px;height:46px;margin-bottom:6px}
+.auth-box h1{margin:2px 0 0}
+.auth-box .sub{margin-bottom:8px}
+.auth-box .btn{justify-content:center}
+.auth-keep{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--stone)}
+.nav a.out{color:var(--stone)}
+input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}

@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script src="auth.js"></script>
 <style>
 main{max-width:1200px}
 .src{display:grid;grid-template-columns:1fr;gap:10px}
@@ -52,6 +53,11 @@ table.t td.num{font-family:var(--mono);font-size:13px;white-space:nowrap}
 .miss span{border:1px solid var(--ink);padding:6px 10px;font-size:14px}
 .empty{padding:28px;text-align:center;color:var(--stone);background:var(--white);border:1px dashed var(--studio)}
 select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0}
+.pwgrid{display:grid;grid-template-columns:1fr;gap:8px;max-width:980px}
+@media(min-width:800px){.pwgrid{grid-template-columns:1fr 1fr 1fr}}
+.ghsteps{margin:12px 0;padding-left:18px;font-size:14px;color:var(--stone);line-height:1.8}
+.ghsteps b{color:var(--ink);font-weight:500}
+#gh-set summary{cursor:pointer}
 .demo-flag{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:4px 8px}
 </style>
 </head>
@@ -93,6 +99,35 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
     </div>
   </section>
   <div class="row" id="demo-row"><button class="btn ghost" id="demo">Показать на вымышленных данных</button><span class="hint" id="src-msg"></span></div>
+
+
+  <section class="step" id="pw" style="margin-top:48px">
+    <div class="step-h"><span class="num">⚿</span><span class="label">Пароль сайта</span></div>
+    <p class="sub" style="font-size:15px">Один пароль для всех учеников. После смены старый пароль перестаёт работать: ученики увидят окно входа и введут новый. Сайт начинает принимать новый пароль через 1–10 минут.</p>
+    <div class="pwgrid">
+      <input id="pw-cur" type="password" placeholder="Текущий пароль" autocomplete="current-password" aria-label="Текущий пароль">
+      <input id="pw-new" type="password" placeholder="Новый пароль, от 6 символов" autocomplete="new-password" aria-label="Новый пароль">
+      <input id="pw-new2" type="password" placeholder="Новый пароль ещё раз" autocomplete="new-password" aria-label="Новый пароль ещё раз">
+    </div>
+    <div class="row"><button class="btn" id="pw-gh">Сменить пароль</button><button class="btn ghost" id="pw-dl">Скачать файл и загрузить вручную</button></div>
+    <p class="hint" id="pw-msg"></p>
+    <details class="card" id="gh-set" style="margin-top:16px">
+      <summary><span class="label">GitHub · подключить один раз</span> <span class="hint" id="gh-state"></span></summary>
+      <ol class="ghsteps">
+        <li>GitHub → фото профиля → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
+        <li><b>Token name</b>: nurzycom password. <b>Expiration</b>: на ваш выбор (например, 1 year).</li>
+        <li><b>Repository access</b> → <b>Only select repositories</b> → выберите репозиторий сайта.</li>
+        <li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → <b>Read and write</b>.</li>
+        <li><b>Generate token</b>, скопируйте его и вставьте сюда. Токен хранится только в этом браузере.</li>
+      </ol>
+      <div class="pwgrid">
+        <input id="gh-token" type="password" placeholder="github_pat_…" aria-label="GitHub token" autocomplete="off">
+        <input id="gh-repo" type="text" placeholder="владелец/репозиторий" aria-label="Репозиторий">
+        <input id="gh-branch" type="text" placeholder="ветка сайта, обычно main" aria-label="Ветка">
+      </div>
+      <div class="row"><button class="btn ghost" id="gh-save">Сохранить</button><button class="btn ghost" id="gh-forget">Удалить токен с этого устройства</button></div>
+    </details>
+  </section>
 
   <div id="dash" class="hidden">
     <div class="status"><span class="label" id="st-line"></span><span class="chips"><button class="chip" id="reload">Обновить</button><button class="chip" id="change">Сменить источник</button><button class="chip" id="forget">Очистить</button></span></div>

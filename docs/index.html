@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script src="auth.js"></script>
 </head>
 <body>
 <header class="top"><div class="top-in">
@@ -43,10 +44,6 @@
       <div class="step-h"><span class="num">03</span><span class="label">Часть тетради</span><span class="label aside" id="part-lesson"></span></div>
       <p class="hint" id="parts-empty">Сначала выберите урок.</p>
       <div class="list" id="parts"></div>
-      <div id="code-row" class="hidden" style="margin-top:18px">
-        <div class="field"><input id="code" type="text" autocomplete="off" autocapitalize="off" placeholder="Код класса от преподавателя" aria-label="Код класса"></div>
-        <p class="hint">Вопросы на экране открываются кодом класса. Его нужно ввести один раз.</p>
-      </div>
       <div class="row"><button class="btn" id="go" disabled>Решать на экране <span class="arr">→</span></button><button class="btn ghost" id="go-paper" disabled>Ввести ответы из тетради</button></div>
       <p class="hint" id="mode-hint">На экране: вопрос за вопросом, как в Bluebook. Две попытки, объяснение сразу после ответа. Финальный тест — как на экзамене: объяснения после сдачи.</p>
       <p class="hint" id="start-msg"></p>
