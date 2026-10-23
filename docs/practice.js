@@ -34,12 +34,15 @@
   }
 
   // Text: escape, then ⟦underline⟧ and the blank.
-  const rich = (t) => esc(t).replace(/⟦/g, "<u>").replace(/⟧/g, "</u>").replace(/_{4,}/g, '<span class="blank" aria-label="пропуск">______</span>');
-  function blocks(bs) {
+  // Course words are marked [[surface|key]]: plain during the test, highlighted with the translation in the review.
+  const MK = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
+  const rich = (t, hl) => esc(t).replace(/⟦/g, "<u>").replace(/⟧/g, "</u>").replace(/_{4,}/g, '<span class="blank" aria-label="пропуск">______</span>')
+    .replace(MK, (m, w, k) => { const g = (st.data.gloss || {})[k]; return hl && g ? `<span class="vw" title="${esc(g.ru)} · ${g.l}">${w}</span>` : w; });
+  function blocks(bs, hl) {
     return bs.map((b) => {
-      if (b.k === "p") return `<p>${rich(b.v)}</p>`;
+      if (b.k === "p") return `<p>${rich(b.v, hl)}</p>`;
       if (b.k === "h") return `<p class="th">${esc(b.v)}</p>`;
-      if (b.k === "ul") return `<ul>${b.v.map((x) => `<li>${rich(x)}</li>`).join("")}</ul>`;
+      if (b.k === "ul") return `<ul>${b.v.map((x) => `<li>${rich(x, hl)}</li>`).join("")}</ul>`;
       if (b.k === "table") {
         const [head, ...rows] = b.rows;
         return `<div class="tw"><table class="dt"><caption>${esc(b.c)}</caption><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -52,11 +55,14 @@
   const lastKey = (id) => `px_last_${store("hw_student") || ""}_${id}`;
   function renderStart() {
     $("student").value = store("hw_student") || "";
-    $("sets").innerHTML = st.data.sets.map((s, i) => {
-      const last = store(lastKey(s.id));
-      return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${String(i + 1).padStart(2, "0")}</span><span class="t">${esc(s.title)}</span>
-        <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} вопросов · ${s.minutes} мин${last ? " · " + last : ""}</span></span></button>`;
-    }).join("");
+    const card = (s) => {
+      const last = store(lastKey(s.id)), nw = s.q.reduce((a, q) => a + (q.w || []).length, 0);
+      return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id.slice(1)}</span><span class="t">${esc(s.title)}</span>
+        <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} вопросов · ${s.minutes} мин${nw ? ` · ${nw} из словаря курса` : ""}${last ? " · " + last : ""}</span></span></button>`;
+    };
+    const groups = [["Разные темы", (s) => s.id < "X05"], ["Американская литература", (s) => s.id >= "X05"]];
+    $("sets").innerHTML = groups.map(([name, f]) => { const ss = st.data.sets.filter(f);
+      return ss.length ? `<div class="course-h" style="grid-column:1/-1;margin-top:8px"><b>${name}</b><span class="label">${ss.length} ${ss.length > 4 ? "наборов" : "набора"}</span></div>${ss.map(card).join("")}` : ""; }).join("");
     $("sets").querySelectorAll(".set").forEach((b) => (b.onclick = () => {
       $("sets").querySelectorAll(".set").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
       st.set = st.data.sets.find((s) => s.id === b.dataset.s); check();
@@ -178,10 +184,14 @@
     $("rev").innerHTML = qs.map((q) => {
       const mine = st.ans[q.i], inf = info[q.i];
       const opts = q.o.map((o, k) => { const c = "ABCD"[k]; const right = inf && inf.a === c;
-        return `<div class="ropt${right ? " right" : ""}${mine === c ? " mine" : ""}"><span class="lt">${c}</span><span>${rich(o)}</span>${right ? '<span class="tg">верный</span>' : mine === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("");
+        return `<div class="ropt${right ? " right" : ""}${mine === c ? " mine" : ""}"><span class="lt">${c}</span><span>${rich(o, true)}</span>${right ? '<span class="tg">верный</span>' : mine === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("");
       return `<details><summary><span class="mk ${ok[q.i] ? "ok" : "no"}">${q.i}</span><span class="sm"><b>${ok[q.i] ? "Верно" : mine ? "Ошибка" : "Без ответа"}</b><small>Ваш ответ: ${mine || "—"}${inf ? ` · верный: ${inf.a} · ${esc(inf.t)}` : ""}</small></span><span class="ar">›</span></summary>
-        <div class="rbody"><div class="passage" style="padding:8px 0 4px">${blocks(q.b)}</div><p class="stem">${rich(q.s)}</p>${opts}${inf ? `<div class="expl"><span class="label">Разбор · ${esc(inf.t)}</span>${esc(inf.x)}</div>` : ""}</div></details>`;
+        <div class="rbody"><div class="passage" style="padding:8px 0 4px">${blocks(q.b, true)}</div><p class="stem">${rich(q.s, true)}</p>${opts}${inf ? `<div class="expl"><span class="label">Разбор · ${esc(inf.t)}</span>${esc(inf.x)}</div>` : ""}${words(q)}</div></details>`;
     }).join("");
+  }
+  function words(q) {
+    const ws = (q.w || []).map((k) => st.data.gloss[k]).filter(Boolean);
+    return ws.length ? `<div class="wlist"><span class="label">Слова курса в вопросе</span>${ws.map((g) => `<div><b>${esc(g.en)}</b> — ${esc(g.ru)} <span class="label">${g.l}</span></div>`).join("")}</div>` : "";
   }
   $("unlock").onclick = async () => {
     $("lock-msg").textContent = "Проверяю…";

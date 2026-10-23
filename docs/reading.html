@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FAF8F3">
+<title>Тексты · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+.texts{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:620px){.texts{grid-template-columns:1fr 1fr}}
+@media(min-width:960px){.texts{grid-template-columns:1fr 1fr 1fr}}
+.tcard{display:flex;flex-direction:column;gap:4px;min-height:176px;padding:18px;border:1px solid var(--studio);background:var(--white);text-align:left;transition:border-color .15s}
+.tcard:hover{border-color:var(--ink)}
+.tcard .no{font:italic 300 48px/1 var(--serif);margin-bottom:auto}
+.tcard .t{font-size:19px;font-weight:500;margin-top:14px}
+.tcard .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.read-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.article{max-width:680px}
+.article h1{margin:10px 0 10px}
+.story p{font-size:18px;line-height:1.75;margin:0 0 18px}
+.story .vw{cursor:pointer}
+.story.quiet .vw{text-decoration:none;cursor:text}
+.story .vw.on{background:var(--ink);color:var(--paper)}
+.pop{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:20;width:min(420px,calc(100vw - 32px));background:var(--ink);color:var(--paper);padding:16px 18px;box-shadow:0 12px 40px rgba(10,10,10,.25)}
+.pop b{display:block;font-size:20px;font-weight:600;margin:4px 0 2px}
+.pop .label{color:var(--studio)}
+.gl{margin:8px 0 34px;border-top:1px solid var(--studio);border-bottom:1px solid var(--studio)}
+.gl summary{cursor:pointer;padding:14px 0;list-style:none;display:flex;justify-content:space-between}
+.gl summary::-webkit-details-marker{display:none}
+.gl .gi{display:grid;grid-template-columns:1fr;gap:2px;padding:8px 0;border-top:1px solid var(--mist);font-size:15px}
+@media(min-width:620px){.gl .gi{grid-template-columns:200px 1fr 90px}}
+.gl .gi b{font-weight:600}
+.quiz{border-top:1px solid var(--ink);padding-top:18px;margin-top:10px}
+.rq{padding:18px 0;border-bottom:1px solid var(--studio)}
+.rq .stem{font-weight:500;font-size:17px;margin:6px 0 12px}
+.rq .ch{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:11px 13px;margin-bottom:6px;border:1px solid var(--studio);background:var(--white);font-size:16px;line-height:1.45}
+.rq .ch:hover{border-color:var(--ink)}
+.rq .lt{flex:none;width:26px;height:26px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:12px var(--mono)}
+.rq .ch[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.rq .ch[aria-pressed=true] .lt{background:var(--ink);color:var(--paper)}
+.rq.done .ch{cursor:default}
+.rq .ch.right{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.rq .ch.mine-no{border-style:dashed;border-color:var(--stone);box-shadow:none;color:var(--stone)}
+.rq .verdict{font:12px var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-left:8px}
+.rq .expl{background:var(--mist);padding:14px 16px;margin-top:8px;font-size:15px;line-height:1.6}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="nurzycom">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html" aria-current="page">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a></nav>
+</div></header>
+
+<main>
+  <section id="r-start">
+    <div class="hero">
+      <span class="label">Чтение · слова курса в контексте</span>
+      <h1>Тексты</h1>
+      <p class="sub">Двенадцать коротких рассказов, по одному на каждый урок SAT Verbal. В каждом 17–20 слов урока и несколько слов из прошлых уроков. Нажмите на подчёркнутое слово, чтобы увидеть перевод. После текста — 6 вопросов в формате SAT, и подсказки на это время выключаются.</p>
+    </div>
+    <div class="texts" id="texts"></div>
+  </section>
+
+  <section id="r-read" class="hidden">
+    <div class="read-top">
+      <button class="btn ghost" id="back">← Все тексты</button>
+      <button class="chip" id="hl" aria-pressed="true">Подсветка слов курса</button>
+    </div>
+    <div class="article">
+      <span class="label" id="a-label"></span>
+      <h1 id="a-title"></h1>
+      <p class="hint" id="a-meta" style="margin-bottom:28px"></p>
+      <div class="story" id="story"></div>
+      <details class="gl" id="gl"><summary><span class="label" id="gl-n"></span><span class="label">открыть</span></summary><div id="gl-list"></div></details>
+      <div class="row" id="to-quiz-row"><button class="btn" id="to-quiz">К вопросам <span class="arr">→</span></button></div>
+
+      <section class="quiz hidden" id="quiz">
+        <div class="step-h"><span class="label">Проверьте себя</span><span class="label aside" id="q-n"></span></div>
+        <div id="name-row" class="field hidden" style="margin-bottom:8px"><input id="student" type="text" autocomplete="off" placeholder="Имя и первая буква фамилии" aria-label="Имя и первая буква фамилии"></div>
+        <div id="q-list"></div>
+        <div class="row"><button class="btn" id="check">Проверить ответы <span class="arr">→</span></button></div>
+        <p class="hint" id="q-msg"></p>
+        <div id="q-res" class="hidden">
+          <div class="result-grid" style="margin-top:18px">
+            <div><span class="label">Результат</span><div class="big" id="res-score"></div><div class="meter"><i id="res-meter"></i></div></div>
+            <div><p id="send-status" class="hint"></p></div>
+          </div>
+          <div class="card hidden" id="lock">
+            <span class="label">Правильные ответы закрыты</span>
+            <p style="margin:8px 0 12px">Введите код класса, чтобы увидеть правильные ответы и объяснения.</p>
+            <div class="row" style="margin-top:0"><input id="code2" type="text" autocomplete="off" autocapitalize="off" placeholder="Код класса" aria-label="Код класса" style="max-width:260px"><button class="btn" id="unlock">Открыть</button></div>
+            <p class="hint" id="lock-msg"></p>
+          </div>
+          <div class="row"><button class="btn ghost" id="again">Ещё раз</button><button class="btn" id="next">Следующий текст <span class="arr">→</span></button></div>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+<div class="pop hidden" id="pop" role="status"></div>
+<footer class="foot">nurzycom · Telegram <a href="https://t.me/nurzycom" target="_blank" rel="noopener">@nurzycom</a></footer>
+<script src="config.js"></script>
+<script src="reading.js"></script>
+</body>
+</html>

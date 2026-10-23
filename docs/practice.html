@@ -17,7 +17,8 @@
 .set:hover{border-color:var(--ink)}
 .set .no{font:italic 300 48px/1 var(--serif);margin-bottom:auto}
 .set .t{font-size:19px;font-weight:500;margin-top:14px}
-.set .meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px}
+.set .meta{display:flex;justify-content:space-between;gap:4px 10px;margin-top:6px}
+@media(max-width:560px){.set .meta{flex-direction:column}}
 .set[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .set[aria-pressed=true] .label{color:var(--studio)}
 .types{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
@@ -92,6 +93,9 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
 .ropt.mine:not(.right){border-style:dashed;border-color:var(--stone)}
 .ropt .tg{margin-left:auto;font:11px var(--mono);letter-spacing:.06em;color:var(--stone);white-space:nowrap}
 .lock{margin:18px 0}
+.wlist{border-top:1px solid var(--studio);margin-top:14px;padding-top:10px;font-size:14px;line-height:1.7}
+.wlist .label{margin-left:6px}
+.wlist > .label:first-child{display:block;margin:0 0 4px}
 </style>
 </head>
 <body>
@@ -100,7 +104,7 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
     <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
     <span>nurzycom · SAT</span>
   </a>
-  <nav class="nav"><a href="./">Домашние задания</a><a href="vocab.html">Словарь</a><a href="practice.html" aria-current="page">Сложные вопросы</a></nav>
+  <nav class="nav"><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html" aria-current="page"><span class="lg">Сложные </span>вопросы</a></nav>
 </div></header>
 
 <main>
@@ -108,7 +112,7 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
     <div class="hero">
       <span class="label">SAT Reading & Writing · уровень hard</span>
       <h1>Сложные вопросы</h1>
-      <p class="sub">Авторские вопросы преподавателя в формате SAT: философия, география, наука, история, языки и искусство. Тексты опираются на реальные факты; гипотетичны только «находки» в вопросах с «if true», как на самом SAT. В каждом наборе 12 вопросов и все типы заданий раздела Reading & Writing.</p>
+      <p class="sub">Авторские вопросы преподавателя в формате SAT: философия, география, наука, история, языки, искусство и американская литература. В наборах по литературе встречаются слова из уроков курса; после сдачи они подсвечены, с переводом. Тексты опираются на реальные факты; гипотетичны только «находки» в вопросах с «if true», как на самом SAT. В каждом наборе 12 вопросов и все типы заданий раздела Reading & Writing.</p>
     </div>
     <div class="step">
       <div class="step-h"><span class="num">01</span><span class="label">Ученик</span></div>

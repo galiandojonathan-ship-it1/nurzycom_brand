@@ -21,7 +21,7 @@ button{font:inherit;color:inherit;cursor:pointer;border-radius:0}
 .nav a{font:11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--stone);padding:10px 10px;white-space:nowrap;border-bottom:1px solid transparent}
 .nav a:hover{color:var(--ink)}
 .nav a[aria-current=page]{color:var(--ink);border-bottom-color:var(--ink)}
-@media(max-width:560px){.top{position:static}.nav a{letter-spacing:.06em;padding:10px 8px;font-size:10.5px}.top-in{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 16px 0}.nav{width:100%;margin:0 -10px}.brand span{display:none}}
+@media(max-width:560px){.nav .lg{display:none}.top{position:static}.nav a{letter-spacing:.06em;padding:10px 8px;font-size:10.5px}.top-in{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 16px 0}.nav{width:100%;margin:0 -10px}.brand span{display:none}}
 
 main{flex:1;width:100%;max-width:1080px;margin:0 auto;padding:40px 16px 96px}
 main.narrow{max-width:760px}
@@ -91,6 +91,7 @@ input[type=text]:focus{border-color:var(--ink);outline:none}
 /* promo cards linking the three tools */
 .promo{display:grid;grid-template-columns:1fr;gap:10px;margin-top:48px}
 @media(min-width:700px){.promo{grid-template-columns:1fr 1fr}}
+@media(min-width:960px){.promo{grid-template-columns:1fr 1fr 1fr}}
 .promo a{display:block;text-decoration:none;padding:22px;background:var(--mist);transition:background .15s}
 .promo a:hover{background:var(--studio)}
 .promo .pt{display:block;font-size:20px;font-weight:500;margin:10px 0 4px}
@@ -133,3 +134,4 @@ input[type=text]:focus{border-color:var(--ink);outline:none}
 .wrong{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .wrong span{font:13px var(--mono);border:1px solid var(--ink);padding:6px 10px}
 .code{font:13px/1.4 var(--mono);word-break:break-all;background:var(--white);border:1px solid var(--studio);padding:10px}
+.vw{text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:4px;cursor:help}
