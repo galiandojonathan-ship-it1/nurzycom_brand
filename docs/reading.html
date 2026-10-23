@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="site.css">
 <script src="auth.js"></script>
 <style>
@@ -54,16 +57,17 @@
 <body>
 <header class="top"><div class="top-in">
   <a class="brand" href="./" aria-label="nurzycom">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
     <span>nurzycom · SAT</span>
   </a>
   <nav class="nav"><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html" aria-current="page">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
 </div></header>
 
 <main>
   <section id="r-start">
     <div class="hero">
-      <span class="label">Чтение · слова курса в контексте</span>
+      <span class="label">03 — Чтение · слова курса в контексте</span>
       <h1>Тексты</h1>
       <p class="sub">Двенадцать коротких рассказов, по одному на каждый урок SAT Verbal. В каждом 17–20 слов урока и несколько слов из прошлых уроков. Нажмите на подчёркнутое слово, чтобы увидеть перевод. После текста — 6 вопросов в формате SAT, и подсказки на это время выключаются.</p>
     </div>
@@ -101,7 +105,11 @@
   </section>
 </main>
 <div class="pop hidden" id="pop" role="status"></div>
-<footer class="foot">nurzycom · Telegram <a href="https://t.me/nurzycom" target="_blank" rel="noopener">@nurzycom</a></footer>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
 <script src="config.js"></script>
 <script src="reading.js"></script>
 </body>

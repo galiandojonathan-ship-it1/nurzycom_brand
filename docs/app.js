@@ -65,6 +65,7 @@
   function renderParts() {
     const l = state.lesson; state.part = null;
     $("parts-empty").classList.toggle("hidden", !!l);
+    $("tip-card").classList.toggle("hidden", !(l && l.tip)); if (l && l.tip) $("tip-text").textContent = l.tip;
     $("part-lesson").textContent = l ? l.title.replace(/ · Урок /, " · ") : "";
     $("parts").innerHTML = l ? l.parts.map((p) => {
       const last = store(lastKey(l.tag, p.id));

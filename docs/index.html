@@ -9,23 +9,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="site.css">
 <script src="auth.js"></script>
 </head>
 <body>
 <header class="top"><div class="top-in">
   <a class="brand" href="./" aria-label="nurzycom">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
     <span>nurzycom · SAT</span>
   </a>
   <nav class="nav"><a href="./" aria-current="page"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
 </div></header>
 
 <main>
   <!-- Step 1: who and what -->
   <section id="s-start">
     <div class="hero">
-      <span class="label">SAT Reading & Writing · SAT Math</span>
+      <span class="label">01 — SAT Reading & Writing · SAT Math</span>
       <h1>Домашние задания</h1>
       <p class="sub">Введите ответы из рабочей тетради или решите вопросы на экране. Проверка сразу, результат уходит преподавателю. Правильные ответы разбираем на уроке.</p>
     </div>
@@ -44,6 +48,7 @@
       <div class="step-h"><span class="num">03</span><span class="label">Часть тетради</span><span class="label aside" id="part-lesson"></span></div>
       <p class="hint" id="parts-empty">Сначала выберите урок.</p>
       <div class="list" id="parts"></div>
+      <div class="tip-card hidden" id="tip-card"><span class="label">Совет преподавателя</span><p id="tip-text"></p><span class="label sig">Нурасыл · SAT 1560</span></div>
       <div class="row"><button class="btn" id="go" disabled>Решать на экране <span class="arr">→</span></button><button class="btn ghost" id="go-paper" disabled>Ввести ответы из тетради</button></div>
       <p class="hint" id="mode-hint">На экране: вопрос за вопросом, как в Bluebook. Две попытки, объяснение сразу после ответа. Финальный тест — как на экзамене: объяснения после сдачи.</p>
       <p class="hint" id="start-msg"></p>
@@ -109,7 +114,11 @@
     <div class="row"><button class="btn ghost hidden" id="review">Посмотреть разбор</button><button class="btn" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
   </section>
 </main>
-<footer class="foot">nurzycom · Telegram <a href="https://t.me/nurzycom" target="_blank" rel="noopener">@nurzycom</a></footer>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
 <script src="config.js"></script>
 <script src="solve.js"></script>
 <script src="app.js"></script>

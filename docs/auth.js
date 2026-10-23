@@ -52,15 +52,18 @@
   function gate() {
     if (!document.documentElement.classList.contains("locked")) return;
     const d = document.createElement("div"); d.id = "auth";
-    d.innerHTML = `<form class="auth-box" autocomplete="on">
-      <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    d.innerHTML = `<div class="auth-art" aria-hidden="true"><img src="assets/portrait.webp" alt="">
+        <div class="auth-name"><span class="label">Ваш преподаватель</span><span class="auth-word">Нурасыл</span><span class="label auth-cred">SAT 1560 · IELTS 8.0 · Nazarbayev University</span></div></div>
+      <form class="auth-box" autocomplete="on">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
       <span class="label">nurzycom · SAT</span><h1>Вход</h1>
-      <p class="sub">Сайт для учеников. Пароль — у преподавателя.</p>
+      <p class="sub">Домашние задания, словарь и тексты курса. Пароль — у преподавателя.</p>
       <input type="text" name="username" value="student" autocomplete="username" hidden>
       <input id="auth-pw" type="password" autocomplete="current-password" placeholder="Пароль" aria-label="Пароль" required>
       <label class="auth-keep"><input id="auth-keep" type="checkbox" checked> Запомнить на этом устройстве</label>
       <button class="btn" id="auth-go" type="submit">Войти <span class="arr">→</span></button>
-      <p class="hint" id="auth-msg"></p></form>`;
+      <p class="hint" id="auth-msg"></p>
+      <p class="label auth-foot">Telegram @nurzycom</p></form>`;
     document.body.prepend(d);
     d.querySelector("form").onsubmit = async (e) => {
       e.preventDefault(); const msg = document.getElementById("auth-msg"); msg.textContent = "Проверяю…";

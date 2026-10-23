@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="site.css">
 <script src="auth.js"></script>
 <style>
@@ -64,7 +67,7 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
 <body>
 <header class="top"><div class="top-in">
   <a class="brand" href="./" aria-label="nurzycom">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><text x="50" y="62" text-anchor="middle" font-family="Noto Serif Display,serif" font-style="italic" font-weight="300" font-size="34">NK</text></svg>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
     <span>nurzycom · SAT</span>
   </a>
   <span class="label">Кабинет преподавателя</span>
@@ -72,7 +75,7 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
 
 <main>
   <div class="hero" style="margin-bottom:22px">
-    <span class="label">Только для преподавателя</span>
+    <span class="label">05 — Только для преподавателя</span>
     <h1>Результаты учеников</h1>
     <p class="sub">Сводка по ответам из Google Form: кто что сдал, где ошибки, что повторить на уроке. Данные открываются только в этом браузере: страница ничего не хранит на сервере и никуда их не отправляет.</p>
   </div>
@@ -146,7 +149,11 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
   </div>
 </main>
 <div class="tip hidden" id="tip"></div>
-<footer class="foot">nurzycom · кабинет преподавателя</footer>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
 <script src="teacher.js"></script>
 </body>
 </html>
