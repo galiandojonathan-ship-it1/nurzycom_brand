@@ -249,8 +249,8 @@
         const a = A[q.n], ok = right(q, a);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
           return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
-        return `<details class="rv"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}</small></span></summary>
-          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">Объяснение College Board</span><div class="qhtml">${q.rat}</div></div></div></details>`;
+        return `<details class="rv"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
+          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div></div></div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
     r.classList.remove("hidden"); $("res-review").textContent = "Скрыть разбор";
