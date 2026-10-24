@@ -29,7 +29,7 @@
     Object.entries(NAMES).forEach(([k, re]) => { const i = head.findIndex((h) => re.test(h.trim())); if (i >= 0) col[k] = i; });
     const sample = body.slice(0, 50), used = new Set(Object.values(col));
     const guess = (k, test) => { if (col[k] !== undefined) return; for (let i = 0; i < head.length; i++) if (!used.has(i) && sample.length && sample.filter((r) => test(r[i] || "")).length >= sample.length * 0.8) { col[k] = i; used.add(i); return; } };
-    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^[VMXT]\d\d$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
+    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXT]\d\d|PT\d)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
     guess("answers", (v) => /^\d+:/.test(v.trim())); guess("part", (v) => /·|^p\d/.test(v)); guess("attempt", (v) => /^\d{1,2}$/.test(v.trim()));
     guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
     return col;
@@ -54,13 +54,14 @@
     const rows = [];
     body.forEach((r) => {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
-      const lesson = g("lesson").toUpperCase(), sc = g("score").match(/^(\d+)\/(\d+)$/);
-      if (!/^[VMXT]\d\d$/.test(lesson) || !sc) return;
+      let lesson = g("lesson").toUpperCase(); const sc = g("score").match(/^(\d+)\/(\d+)$/);
+      if (!/^([VMXT]\d\d|PT\d)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
+      if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
       const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: Number(n), tries: v === "-" ? [] : v.split(">") }; });
       const s2 = part.match(/2-я: (\d+)\/(\d+)/);   // on-screen parts also report the score after the second attempt
       rows.push({ ts: parseDate(g("ts")), name: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
-        a: +sc[1], b: +sc[2], pct: +sc[2] ? (100 * +sc[1]) / +sc[2] : 0, wrong: g("wrong").split(",").map(Number).filter((x) => x), sec: Number(g("seconds")) || 0,
+        a: +sc[1], b: +sc[2], pct: +sc[2] ? (100 * +sc[1]) / +sc[2] : 0, wrong: g("wrong").split(",").map((x) => x.trim()).filter(Boolean).map((x) => (/^\d+$/.test(x) ? Number(x) : x)), sec: Number(g("seconds")) || 0,
         attempt: Number(g("attempt")) || 1, answers });
     });
     if (!rows.length) throw new Error("Строки есть, но ни одна не похожа на результат с сайта.");
@@ -83,6 +84,7 @@
   const ago = (d) => { if (!d) return "—"; const n = Math.floor((Date.now() - d) / DAY); return n <= 0 ? "сегодня" : n === 1 ? "вчера" : `${n} дн. назад`; };
   const whatOf = (r) => {
     if (r.kind === "X") { const s = D.sets.find((x) => x.id === r.lesson); return `Сложные вопросы · ${s ? s.title : r.lesson}`; }
+    if (r.kind === "P") return `Пробный тест ${r.lesson.slice(2).replace("·", " · ")} · ${r.part.replace(/^\S+ · /, "")}`;
     if (r.kind === "T") { const t = D.texts.find((x) => x.id === r.lesson); return `Текст · ${t ? t.title : r.lesson}`; }
     const p = partOf(r.lesson, r.pid); return `${r.lesson} · ${p ? p.title : r.part}`;
   };
@@ -202,7 +204,7 @@
     $("back-st").onclick = () => { D.student = null; render(); };
   }
   function lessons() {
-    const all = D.lessons.map((l) => l.tag).concat(D.sets.map((x) => x.id), D.texts.map((x) => x.id));
+    const all = D.lessons.map((l) => l.tag).concat(D.sets.map((x) => x.id), D.texts.map((x) => x.id), [...new Set(D.rows.filter((r) => r.kind === "P").map((r) => r.lesson))].sort());
     const have = all.filter((t) => D.rows.some((r) => r.lesson === t));
     if (!D.lesson || !have.includes(D.lesson)) D.lesson = have[have.length - 1] || all[0];
     let html = `<h2>Уроки</h2><p class="hint">Выберите урок: кто сдал, средний результат и вопросы, на которых ошибаются чаще всего.</p><div class="chips" id="les-pick">${have.map((t) => `<button class="chip" data-t="${t}" aria-pressed="${t === D.lesson}">${t}</button>`).join("")}</div>`;
@@ -220,11 +222,11 @@
       html += `<h2>Ученики × части</h2><p class="hint">Лучший результат с первой попытки, %.</p>` + heatStudents(L, rows);
       $("v-lessons").innerHTML = html; hbars($("les-miss"), miss.slice(0, 10));
     } else {
-      html += `<h2>${esc(whatOf(rows[0] || { kind: D.lesson[0], lesson: D.lesson }))}</h2>` + table(["Ученик", "Лучший", "Сдач", "Последняя"], D.students.filter((s) => rows.some((r) => r.key === s.key)).map((s) => { const rs = rows.filter((r) => r.key === s.key), b = best(rs);
+      html += `<h2>${esc(D.lesson[0] === "P" ? `Пробный тест ${D.lesson.slice(2).replace("·", " · ")}` : whatOf(rows[0] || { kind: D.lesson[0], lesson: D.lesson }))}</h2>` + table(["Ученик", "Лучший", "Сдач", "Последняя"], D.students.filter((s) => rows.some((r) => r.key === s.key)).map((s) => { const rs = rows.filter((r) => r.key === s.key), b = best(rs);
         return { k: s.key, cells: [esc(s.name), `${b.a}/${b.b} · ${pct(b.pct)}`, rs.length, when(rs[rs.length - 1].ts)] }; }), { num: [1, 2] });
       const qs = {}; rows.forEach((r) => r.wrong.forEach((n) => (qs[n] = (qs[n] || 0) + 1)));
       html += `<h2>Чаще всего ошибаются</h2><div id="les-miss"></div>`;
-      $("v-lessons").innerHTML = html; hbars($("les-miss"), Object.entries(qs).map(([n, k]) => ({ label: `Вопрос ${n}`, value: (100 * k) / rows.length, n: rows.length })).sort((a, b) => b.value - a.value).slice(0, 10));
+      $("v-lessons").innerHTML = html; hbars($("les-miss"), Object.entries(qs).map(([n, k]) => ({ label: /\./.test(n) ? `Модуль ${n.split(".")[0]} · вопрос ${n.split(".")[1]}` : `Вопрос ${n}`, value: (100 * k) / rows.length, n: rows.length })).sort((a, b) => b.value - a.value).slice(0, 10));
     }
     $("les-pick").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.lesson = b.dataset.t; render(); }));
   }

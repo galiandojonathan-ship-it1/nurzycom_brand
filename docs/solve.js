@@ -23,6 +23,7 @@
     }
     $("sv-title").textContent = `${ctx.lesson.tag} · ${ctx.part.title}${S.review ? " · разбор" : ""}`;
     $("sv-wrap").classList.toggle("one", ctx.lesson.tag[0] === "M");
+    if (window.BBTools) { if (!$("sv-tools").childElementCount) BBTools.mount($("sv-tools")); BBTools.show(ctx.lesson.tag[0] === "M"); }
     clearInterval(S.timer);
     if (!S.review) { S.timer = setInterval(tick, 1000); tick(); } else $("sv-clock").textContent = "разбор";
     $("sv-finish").textContent = S.review ? "Закрыть разбор" : "Сдать";
@@ -115,6 +116,7 @@
   function go(k) { S.cur = Math.max(0, Math.min(S.items.length - 1, k)); S.sel = null; S.spr = null; $("sv-nav").classList.add("hidden"); render(); window.scrollTo(0, 0); }
 
   async function finish() {
+    if (window.BBTools) BBTools.close();
     if (S.review) { S.ctx.onClose(); return; }
     const n = S.items.length;
     const open_ = S.items.filter((q) => learn() ? !S.st[q.i].done : !S.st[q.i].tries.length).map((q) => q.n);
