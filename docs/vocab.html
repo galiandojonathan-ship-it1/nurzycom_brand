@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FAF8F3">
+<title>Словарь · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="site.css">
+<script src="auth.js"></script>
+<style>
+.modes{display:grid;grid-template-columns:1fr;gap:6px}
+@media(min-width:700px){.modes{grid-template-columns:repeat(3,1fr)}}
+.modes .pick{flex-direction:column;align-items:flex-start;gap:4px;min-height:96px}
+.modes .pick .r{margin:auto 0 0;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.sel-sum{font-size:15px;margin:14px 0 0}
+.sel-sum b{font-weight:600}
+.run-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px}
+/* flashcard */
+.flip{perspective:1600px;margin-top:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.card3d{position:relative;height:340px;transition:transform .5s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.flip.on .card3d{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--white);border:1px solid var(--studio);padding:22px 22px 18px;display:flex;flex-direction:column;overflow:auto}
+.face.back{transform:rotateY(180deg);background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.face .top-l{display:flex;justify-content:space-between;gap:10px}
+.face.back .label{color:var(--studio)}
+.face .word{margin:auto 0;font:italic 300 clamp(40px,7vw,60px)/1.08 var(--serif);overflow-wrap:anywhere}
+.face .ans{margin-top:auto;font:600 clamp(22px,4vw,30px)/1.2 var(--sans);overflow-wrap:anywhere}
+.face .def{margin-top:10px;font-size:15px;color:var(--studio)}
+.face .ex{margin-top:10px;font-size:15px;font-style:italic;color:var(--studio)}
+.face .tap{font-size:13px;color:var(--stone)}
+.deck-meta{display:flex;justify-content:space-between;margin-top:12px;gap:10px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.grade .btn{justify-content:center}
+.keys{margin-top:12px}
+@media(hover:none){.keys{display:none}}
+.done{padding:28px 0}
+/* test */
+.tq{background:var(--white);border:1px solid var(--studio);padding:22px;min-height:180px;display:flex;flex-direction:column;justify-content:center;margin-top:14px}
+.tq .word{font:italic 300 clamp(40px,7vw,56px)/1.08 var(--serif);overflow-wrap:anywhere}
+.fb{font-size:15px;margin-top:14px;min-height:24px}
+.fb b{font-weight:600}
+.fb.ok{border-left:3px solid var(--ink);padding-left:12px}
+.fb.no{border-left:3px solid var(--stone);padding-left:12px}
+/* list */
+.lgroup{margin-top:26px}
+.lgroup h3{margin:0 0 4px;font:12px var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.item{display:grid;grid-template-columns:1fr;gap:2px;padding:12px 0;border-bottom:1px solid var(--studio)}
+@media(min-width:700px){.item{grid-template-columns:240px 1fr}}
+.item .en{font-weight:600}
+.item .pos{font:12px var(--mono);color:var(--stone);margin-left:6px}
+.item .def,.item .ex{color:var(--stone);font-size:14px}
+.item .ex{font-style:italic}
+.item .hard{font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--ink);padding:2px 5px;margin-left:6px;vertical-align:2px}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="nurzycom">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="plan.html">План<span class="lg"> курса</span></a><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html" aria-current="page">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a><a href="mock.html"><span class="lg">Пробные </span>тесты</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
+</div></header>
+
+<main>
+  <section id="v-start">
+    <div class="hero">
+      <span class="label">02 — Словарь · SAT Verbal и SAT Math</span>
+      <h1>Карточки слов</h1>
+      <p class="sub">Выберите уроки, и их слова соберутся в одну колоду. Сначала вспомните ответ сами, потом переверните карточку: так слова держатся в памяти дольше.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><span class="num">01</span><span class="label">Уроки</span></div>
+      <div class="chips" style="margin-bottom:18px"><button class="chip" id="all-v">Все Verbal</button><button class="chip" id="all-m">Все Math</button><button class="chip" id="clear">Сбросить</button></div>
+      <div class="courses" id="lessons"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><span class="num">02</span><span class="label">Какие слова</span></div>
+      <div class="chips" id="cats">
+        <button class="chip" data-c="words" aria-pressed="true">Слова из текстов</button>
+        <button class="chip" data-c="terms" aria-pressed="true">Термины, грамматика, слова вопросов</button>
+        <button class="chip" data-c="review" aria-pressed="true">Повторение (Math)</button>
+      </div>
+      <p class="sel-sum" id="sum"></p>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><span class="num">03</span><span class="label">Режим</span></div>
+      <div class="modes" id="start-modes">
+        <button class="pick" data-m="cards"><span class="t">Карточки</span><small>Переверните, отметьте «Знаю» или «Ещё раз»</small><span class="r">Начать →</span></button>
+        <button class="pick" data-m="test"><span class="t">Тест</span><small>Видите перевод, пишете слово по-английски</small><span class="r">Начать →</span></button>
+        <button class="pick" data-m="list"><span class="t">Список</span><small>Все слова с переводом и примером</small><span class="r">Открыть →</span></button>
+      </div>
+      <div class="row"><button class="btn ghost" id="hard-go">Только трудные слова · <span id="hard-n">0</span></button></div>
+      <p class="hint">Слова в живом тексте: <a href="reading.html">12 рассказов со словами уроков Verbal</a>.</p>
+      <p class="hint">Трудные слова — те, что вы отметили «Ещё раз» или не написали в тесте. Они хранятся на этом устройстве и уходят из списка, когда вы вспомните их с первого раза в новой колоде или напишете в тесте.</p>
+    </div>
+  </section>
+
+  <section id="v-run" class="hidden">
+    <div class="run-h">
+      <div><span class="label" id="run-title"></span></div>
+      <div class="chips" id="modes">
+        <button class="chip" data-m="cards">Карточки</button><button class="chip" data-m="test">Тест</button><button class="chip" data-m="list">Список</button>
+      </div>
+    </div>
+
+    <div id="m-cards" class="hidden">
+      <div class="chips" id="dir">
+        <button class="chip" data-d="ru" aria-pressed="true">Русский → English</button>
+        <button class="chip" data-d="en" aria-pressed="false">English → русский</button>
+      </div>
+      <div id="f-run">
+        <div class="flip" id="flash" role="button" tabindex="0" aria-label="Перевернуть карточку">
+          <div class="card3d">
+            <div class="face front"><div class="top-l"><span class="label" id="f-lesson"></span><span class="label" id="f-pos"></span></div><div class="word" id="f-front"></div><span class="tap">Нажмите, чтобы перевернуть</span></div>
+            <div class="face back"><div class="top-l"><span class="label">Ответ</span><span class="label" id="f-lesson2"></span></div><div class="ans" id="f-ans"></div><div class="def" id="f-def"></div><div class="ex" id="f-ex"></div></div>
+          </div>
+        </div>
+        <div class="prog" style="margin-top:12px"><i id="f-prog"></i></div>
+        <div class="deck-meta"><span class="label" id="f-count"></span><span class="label" id="f-known"></span></div>
+        <div class="row" id="f-btns"><button class="btn" id="f-show" style="width:100%;justify-content:center">Показать ответ</button></div>
+        <div class="grade hidden" id="f-grade"><button class="btn ghost" id="f-no">← Ещё раз</button><button class="btn" id="f-yes">Знаю →</button></div>
+        <p class="hint keys">Клавиши: пробел — перевернуть, → — знаю, ← — ещё раз.</p>
+      </div>
+      <div id="f-done" class="hidden done">
+        <span class="label">Колода пройдена</span>
+        <div class="big" id="f-score"></div>
+        <p id="f-sum"></p>
+        <div class="row"><button class="btn" id="f-again">Ещё раз всю колоду</button><button class="btn ghost" id="f-hard">Только трудные</button></div>
+      </div>
+    </div>
+
+    <div id="m-test" class="hidden">
+      <div id="t-run">
+        <div class="deck-meta"><span class="label" id="t-count"></span><span class="label" id="t-help"></span></div>
+        <div class="tq"><span class="label" id="t-lesson"></span><div class="word" id="t-q"></div></div>
+        <div class="row"><input type="text" id="t-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Напишите по-английски" aria-label="Ответ по-английски"></div>
+        <div class="row"><button class="btn" id="t-check">Проверить</button><button class="btn ghost" id="t-skip">Не знаю</button></div>
+        <div class="fb" id="t-fb"></div>
+      </div>
+      <div id="t-done" class="hidden done">
+        <span class="label">Результат теста</span>
+        <div class="big" id="t-score"></div>
+        <div class="card" style="margin-top:14px"><span class="label">Повторить</span><div id="t-miss"></div></div>
+        <div class="row"><button class="btn" id="t-again">Ещё раз</button><button class="btn ghost" id="t-missonly">Только ошибки</button></div>
+      </div>
+    </div>
+
+    <div id="m-list" class="hidden"></div>
+
+    <div class="row" style="margin-top:36px"><button class="btn ghost" id="back">← Выбрать другие уроки</button></div>
+  </section>
+</main>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
+<script src="vocab.js"></script>
+</body>
+</html>
