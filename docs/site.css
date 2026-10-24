@@ -344,3 +344,4 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 .qhtml .fr>span:last-child{padding:0 3px}
 .qhtml .rt{border-top:1px solid currentColor;padding:0 2px}
 .qhtml p.eq{text-align:center;margin:10px 0}
+@media(max-width:1180px){.nav .lg{display:none}}   /* seven links: short labels until there is room */
