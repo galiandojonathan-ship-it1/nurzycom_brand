@@ -46,16 +46,21 @@
   // ---- start screen
   function renderStart() {
     $("student").value = student();
-    $("mocks").innerHTML = T.index.mocks.map((m) => {
+    const card = (m) => {
       const run = load(m.id), last = store(lastKey(m.id));
       const status = run && run.phase !== "done" ? "в процессе" : last ? `последний: ${esc(last)}` : "не начат";
       return `<button class="mcard" data-m="${m.id}" aria-pressed="${T.mock && T.mock.id === m.id}"><span class="no">${m.id.slice(2)}</span>
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
-    }).join("");
+    };
+    const full = T.index.mocks.filter((m) => !m.only), rw = T.index.mocks.filter((m) => m.only === "rw");
+    $("mocks").innerHTML = `<div class="course-h" style="grid-column:1/-1"><b>Полные тесты</b><span class="label">Reading and Writing и Math</span></div>${full.map(card).join("")}`
+      + (rw.length ? `<div class="course-h" style="grid-column:1/-1;margin-top:18px"><b>Тесты Reading and Writing</b><span class="label">только авторские вопросы nurzycom</span></div>${rw.map(card).join("")}` : "");
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
-    $("formats").querySelectorAll(".pick").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === T.fmt)));
+    $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
+    $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));
     ready();
   }
+  const fmt = () => (T.mock && T.mock.only) || T.fmt;   // a Reading and Writing test has only one format
   function ready() { $("go").disabled = !($("student").value.trim().length >= 2 && T.mock); }
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); renderStart(); };
   $("formats").querySelectorAll(".pick").forEach((b) => (b.onclick = () => { T.fmt = b.dataset.f; renderStart(); }));
@@ -74,7 +79,7 @@
     store("hw_student", $("student").value.trim());
     const old = load(T.mock.id);
     if (old && old.phase !== "done" && confirm("Этот тест уже начат. Продолжить с того же места? «Отмена» начнёт тест заново.")) T.st = old;
-    else T.st = { mid: T.mock.id, secs: T.fmt === "full" ? ["rw", "math"] : [T.fmt], si: 0, mod: "m1", phase: "dir", deadline: 0, ans: {}, mk: {}, res: {}, sent: {} };
+    else T.st = { mid: T.mock.id, secs: fmt() === "full" ? ["rw", "math"] : [fmt()], si: 0, mod: "m1", phase: "dir", deadline: 0, ans: {}, mk: {}, res: {}, sent: {} };
     $("start-msg").textContent = "Загружаю тест…";
     try { for (const s of T.st.secs) await bundle(s); }
     catch (e) { $("start-msg").textContent = "Не удалось загрузить тест. Обновите страницу."; return; }

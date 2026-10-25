@@ -27,6 +27,7 @@
 .formats{display:grid;grid-template-columns:1fr;gap:6px;margin-top:4px}
 @media(min-width:700px){.formats{grid-template-columns:repeat(3,1fr)}}
 .formats .pick{flex-direction:column;align-items:flex-start;gap:2px}
+.formats .pick:disabled{opacity:.35;cursor:default}
 .dirbox{max-width:760px}
 .dirbox h2{font:italic 300 clamp(48px,8vw,84px)/1 var(--serif);margin:10px 0 18px}
 .dirbox ul{padding-left:20px;line-height:1.8;font-size:16px}
@@ -82,7 +83,7 @@
     <div class="hero">
       <span class="label">05 — Digital SAT · полный формат</span>
       <h1>Пробные тесты</h1>
-      <p class="sub">Четыре теста в формате Bluebook: Reading and Writing — 2 модуля по 27 вопросов и 32 минуты, Math — 2 модуля по 22 вопроса и 35 минут, между разделами перерыв 10 минут. Второй модуль адаптивный: сложнее или легче, по результату первого.</p>
+      <p class="sub">Восемь тестов в формате Bluebook. Тесты 1–4 полные: Reading and Writing — 2 модуля по 27 вопросов и 32 минуты, Math — 2 модуля по 22 вопроса и 35 минут, между разделами перерыв 10 минут. Тесты 5–8 — только Reading and Writing. Второй модуль адаптивный: сложнее или легче, по результату первого.</p>
     </div>
     <div class="step">
       <div class="step-h"><span class="num">01</span><span class="label">Ученик</span></div>
@@ -99,13 +100,14 @@
         <button class="pick" data-f="rw" aria-pressed="false"><span class="t">Только Reading and Writing</span><small>2 модуля · 64 минуты</small></button>
         <button class="pick" data-f="math" aria-pressed="false"><span class="t">Только Math</span><small>2 модуля · 70 минут · Desmos и справочник</small></button>
       </div>
+      <p class="hint hidden" id="fmt-note">В тестах 5–8 только Reading and Writing: 2 модуля по 27 вопросов, 64 минуты.</p>
       <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button></div>
       <p class="hint" id="start-msg"></p>
     </div>
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
       <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — счёт по модулям и разделам, разбор каждого вопроса с официальным объяснением. Шкалу 200–800 считает только Bluebook: здесь видно, сколько вопросов решено верно.</p></div>
     <div class="card" style="margin-top:8px"><span class="label">Откуда вопросы</span>
-      <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около трёх четвертей, в Math — около половины. Вопросов из официальных пробных тестов Bluebook здесь нет, поэтому эти тесты останутся для вас новыми.</p></div>
+      <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около трёх четвертей, в Math — около половины. Тесты 5–8 полностью авторские: тексты из литературы, истории, науки и статистики, грамматика и заметки, как на экзамене. Вопросов из официальных пробных тестов Bluebook здесь нет, поэтому эти тесты останутся для вас новыми.</p></div>
   </section>
 
   <section id="m-dir" class="hidden">

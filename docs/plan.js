@@ -78,6 +78,8 @@
     }
     const fin = [mockItem("PT4")];
     if (course !== "M") ["X05", "X06", "X07"].forEach((x) => fin.push({ id: x, t: `Сложные вопросы: ${HARD[x]}`, s: "≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }));
+    if (course !== "M") ["PT5", "PT6", "PT7", "PT8"].forEach((x) => fin.push({ id: x, t: `Пробный тест ${x.slice(2)} · Reading and Writing`, opt: true,
+      s: "Ещё практика до экзамена, по одному тесту в неделю · 64 мин, лучше за один раз", href: `mock.html?t=${x}`, res: mockDone(x, ["rw"]) }));
     fin.push({ id: "hard-words", t: "Повторите трудные слова", s: "Словарь → колода трудных слов, карточки и тест · по 10 минут в день до экзамена", href: "vocab.html" });
     fin.push({ id: "compare", t: "Сравните пробный тест 4 с тестом 1", s: "Тесты разные по составу, поэтому смотрите не на точный счёт, а на модуль 2 (сложный или лёгкий) и на разделы, которые выросли" });
     out.push({ no: "13", cap: "После курса", title: "Финальная проверка", items: [{ when: "После урока 12", list: fin }] });
