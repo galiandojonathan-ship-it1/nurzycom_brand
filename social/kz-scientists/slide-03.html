@@ -65,50 +65,47 @@
   .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .two { top: 500px; display: grid; gap: 24px; }
-  .two .paper { transform: rotate(-1deg); padding: 30px 36px 30px; }
-  .two .dark { transform: rotate(1deg); padding: 30px 36px 32px; }
-  .two ul { list-style: none; margin-top: 14px; display: grid; gap: 16px; }
-  .two li { position: relative; padding-left: 30px; font: 400 27px/1.36 var(--sans); }
-  .two .paper li { color: #2b2a27; }
-  .two li::before { content: ''; position: absolute; left: 4px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
-  .two li.st { font-weight: 700; }
-  .two li.st::before { border-radius: 2px; transform: rotate(45deg); }
   .tt h1 em { font-size: 104px; }
+  .lab { display: block; }
+  ul.l { list-style: none; margin-top: 10px; display: grid; gap: 10px; }
+  ul.l li { position: relative; padding-left: 28px; font: 400 26px/1.36 var(--sans); }
+  ul.l li::before { content: ''; position: absolute; left: 4px; top: 13px; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+
   .tt { right: 400px; }
   .ph1 { right: 76px; top: 150px; width: 270px; z-index: 4; transform: rotate(4deg); padding: 12px 12px 50px; }
   .ph1 img { display: block; width: 100%; aspect-ratio: 4/5; object-fit: cover; }
   .ph1 .cap { font-size: 26px; bottom: 10px; }
-  .two .dark { position: relative; }
-  .bdg { position: absolute; right: 26px; top: -30px; width: 84px; height: 84px; border-radius: 50%; background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); display: grid; place-items: center; transform: rotate(-8deg); }
-  .bdg svg { width: 46px; height: 46px; stroke-width: 1.6; }
-  .two li.md { padding-left: 42px; }
-  .two li.md::before { display: none; }
-  .two li.md svg { position: absolute; left: 0; top: 2px; width: 32px; height: 32px; stroke-width: 1.7; color: var(--paper); }
+  .stack { top: 500px; display: grid; gap: 22px; }
+  .stack .paper { padding: 26px 32px 26px; transform: rotate(-.8deg); }
+  .stack .paper ul.l li { color: #2b2a27; }
+  .stack .fact { padding: 24px 32px; border-radius: 26px; border: 2.5px solid var(--acc); background: var(--paper); transform: rotate(.8deg); }
+  .stack .fact .lab { color: var(--acc); }
+  .stack .hard { padding: 22px 32px; border-radius: 26px; background: var(--ink); color: var(--paper); transform: rotate(-.6deg); }
+  .stack .hard .lab { color: rgba(250,248,243,.7); }
+  .stack .hard p, .stack .fact p { margin-top: 8px; font: 400 26px/1.38 var(--sans); }
+
   .slide { --acc: #9C4F22; }
   .tt h1 em { color: var(--acc); }
-  .two .dark { background: var(--acc); }
-  .bdg { color: var(--acc); border-color: var(--acc); }
   .chip { border-color: var(--acc); color: var(--acc); }
   .stripe { position: absolute; left: 0; right: 0; top: 0; height: 14px; background: var(--acc); }
-  .two li.st::before { background: var(--paper); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
     <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>1899 · геология</span>
-    <span>03 / 8</span>
+    <span>03 / 13</span>
   </div>
 
   <span class="stripe"></span>
   <div class="tt"><h1>Қаныш <em>Сәтбаев</em></h1></div>
-  <div class="body two">
-    <div class="paper"><span class="tape"></span><span class="lab">шын өмірде</span><ul><li>Томск технологиялық институтын тау-кен инженер-геологы ретінде бітірген.</li><li>Жезқазған кен орнын зерттеген. Қазақ КСР Ғылым академиясының тұңғыш президенті болған.</li></ul></div>
-    <div class="dark"><span class="bdg"><svg   xmlns="http://www.w3.org/2000/svg"       viewBox="0 0 24 24"   fill="none"   stroke="currentColor"   stroke-width="2"   stroke-linecap="round"   stroke-linejoin="round"   class="icon icon-tabler icons-tabler-outline icon-tabler-pick" >   <path stroke="none" d="M0 0h24v24H0z" fill="none" />   <path d="M13 8l-9.383 9.418a2.091 2.091 0 0 0 0 2.967a2.11 2.11 0 0 0 2.976 0l9.407 -9.385" />   <path d="M9 3h4.586a1 1 0 0 1 .707 .293l6.414 6.414a1 1 0 0 1 .293 .707v4.586a2 2 0 1 1 -4 0v-3l-5 -5h-3a2 2 0 1 1 0 -4" /> </svg></span><span class="lab">2026 жылы, 17 жаста</span><ul><li class="md"><svg   xmlns="http://www.w3.org/2000/svg"       viewBox="0 0 24 24"   fill="none"   stroke="currentColor"   stroke-width="2"   stroke-linecap="round"   stroke-linejoin="round"   class="icon icon-tabler icons-tabler-outline icon-tabler-medal" >   <path stroke="none" d="M0 0h24v24H0z" fill="none" />   <path d="M12 4v3m-4 -3v6m8 -6v6" />   <path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5l-3 -1.5" /> </svg>Халықаралық жер туралы ғылымдар олимпиадасы (IESO).</li><li>Туған өлкенің кен орындарының картасы: жеке зерттеу жобасы.</li><li class="st">Оқитын мамандығы: тау-кен немесе геологиялық инженерия.</li></ul></div>
-  </div>
   <div class="pol ph1"><span class="tape"></span><img src="../assets/kz-satpayev.jpg" alt=""><div class="cap">1899–1964</div></div>
-  <p class="next">екіншісі 23 жасқа толмай Қашғарға барған</p>
+  <div class="body stack">
+    <div class="paper"><span class="tape"></span><span class="lab">шын өмірде</span><ul class="l"><li>Томск технологиялық институтын тау-кен инженер-геологы ретінде бітірген.</li><li>Жезқазған кен орнын зерттеген. Қазақ КСР Ғылым академиясының тұңғыш президенті болған.</li></ul></div>
+    <div class="fact"><span class="lab">қызық дерек</span><p>1921 жылы туберкулезбен ауырып жүргенде ауылға емделуге келген геолог Михаил Усовпен танысады. Сол кездесу оны Томскіге, геологияға алып келеді.</p></div>
+    <div class="hard"><span class="lab">оңай болмаған</span><p>1952 жылы академия президенті қызметінен кетеді. 1955 жылы ғана қайта сайланады.</p></div>
+  </div>
+  <p class="next">2026 жылы оның портфолиосы қандай болар еді</p>
 
   <div class="foot">
     <span>@nurzycom</span>

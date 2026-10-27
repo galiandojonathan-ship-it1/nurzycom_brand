@@ -65,29 +65,57 @@
   .next::after { content: ' →'; font-family: var(--sans); font-style: normal; font-weight: 500; }
   .foot .swipe svg { width: 22px; height: 22px; }
 
-  .s8 { top: 330px; display: grid; gap: 18px; }
-  .s8 .dark:nth-child(odd) { transform: rotate(-1deg); }
-  .s8 .dark:nth-child(even) { transform: rotate(1deg); background: #fff; color: var(--ink); box-shadow: 0 18px 40px -18px rgba(10,10,10,.3); }
-  .s8 .dark:nth-child(even) .lab { color: #5A5852; }
-  .q8 { top: 900px; font: 300 italic 52px/1.12 var(--serif); }
-  .k8 { position: absolute; z-index: 3; left: 72px; top: 1080px; transform: rotate(-3deg); font-size: 30px; padding: 14px 26px; }
+  .tt h1 em { font-size: 104px; }
+  .lab { display: block; }
+  ul.l { list-style: none; margin-top: 10px; display: grid; gap: 10px; }
+  ul.l li { position: relative; padding-left: 28px; font: 400 26px/1.36 var(--sans); }
+  ul.l li::before { content: ''; position: absolute; left: 4px; top: 13px; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+
+  .sc { top: 360px; display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 16px; }
+  .sc > div { padding: 22px 22px 20px; background: var(--acc); color: var(--paper); border-radius: 24px; }
+  .sc > div:nth-child(1) { transform: rotate(-1.5deg); } .sc > div:nth-child(2) { transform: rotate(1deg); } .sc > div:nth-child(3) { transform: rotate(-.6deg); }
+  .sc .lab { color: rgba(250,248,243,.75); }
+  .sc b { display: block; margin-top: 6px; font: 300 italic 76px/1 var(--serif); }
+  .sc small { display: block; margin-top: 6px; font: 400 18px var(--mono); letter-spacing: .06em; opacity: .85; }
+  .why { top: 620px; font: 300 italic 34px/1.2 var(--serif); transform: rotate(-1deg); }
+  .why::before { content: '«'; } .why::after { content: '»'; }
+  .pf { top: 820px; padding: 28px 34px 30px; transform: rotate(.8deg); position: absolute; }
+  .pf .bdg { position: absolute; right: 26px; top: -30px; width: 84px; height: 84px; border-radius: 50%; background: var(--paper); color: var(--acc); border: 2.5px solid var(--acc); display: grid; place-items: center; transform: rotate(-8deg); }
+  .pf .bdg svg { width: 46px; height: 46px; stroke-width: 1.6; }
+  .pf ul.l li { color: #2b2a27; }
+  .pf ul.l li.md { padding-left: 40px; }
+  .pf ul.l li.md::before { display: none; }
+  .pf ul.l li.md svg { position: absolute; left: 0; top: 1px; width: 30px; height: 30px; stroke-width: 1.7; color: var(--acc); }
+  .pf ul.l li.st { font-weight: 700; color: var(--ink); }
+  .pf ul.l li.st::before { border-radius: 2px; transform: rotate(45deg); background: var(--acc); }
+
+  .slide { --acc: #5B2E91; }
+  .tt h1 em { color: var(--acc); }
+  .chip { border-color: var(--acc); color: var(--acc); }
+  .stripe { position: absolute; left: 0; right: 0; top: 0; height: 14px; background: var(--acc); }
 </style>
 </head>
 <body>
 <div class="slide">
   <div class="top">
-    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>2026 · ортақ не</span>
-    <span>08 / 8</span>
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>2026 · Бөкетов</span>
+    <span>08 / 13</span>
   </div>
 
-  <div class="tt"><h1>Бәріне ортақ <em>не</em>?</h1></div>
-  <div class="body s8"><div class="dark"><span class="lab">1</span><p>Бір салаға <b>терең</b> кірді.</p></div><div class="dark"><span class="lab">2</span><p>Білімін <b>еліне</b> жұмсады: кен орны, университет, ғылыми институт.</p></div><div class="dark"><span class="lab">3</span><p>Бір қызығушылықпен шектелмеді: Бөкетов химиямен қатар <b>кітап</b> жазды.</p></div></div>
-  <p class="body q8">Ал сенің портфолиоңда не бар?</p>
-  <span class="sticker s-dark k8">пікірге жаз · сақтап қой</span>
+  <span class="stripe"></span>
+  <div class="tt"><h1>Бөкетов <em>2026</em></h1></div>
+  <div class="body sc">
+    <div><span class="lab">SAT</span><b>1510</b><small>Math 770 · RW 740</small></div>
+    <div><span class="lab">IELTS</span><b>7.5</b><small>Academic</small></div>
+    <div><span class="lab">GPA</span><b>4.8</b><small>5 баллдық жүйе</small></div>
+  </div>
+  <p class="body why">Химиямен қатар әдебиетті сүйген адамның екі секциясы да мықты болар еді.</p>
+  <div class="body pf paper"><span class="bdg"><svg   xmlns="http://www.w3.org/2000/svg"       viewBox="0 0 24 24"   fill="none"   stroke="currentColor"   stroke-width="2"   stroke-linecap="round"   stroke-linejoin="round"   class="icon icon-tabler icons-tabler-outline icon-tabler-flask" >   <path stroke="none" d="M0 0h24v24H0z" fill="none" />   <path d="M9 3l6 0" />   <path d="M10 9l4 0" />   <path d="M10 3v6l-4 11a.7 .7 0 0 0 .5 1h11a.7 .7 0 0 0 .5 -1l-4 -11v-6" /> </svg></span><span class="lab">портфолио · 17 жас</span><ul class="l"><li class="md"><svg   xmlns="http://www.w3.org/2000/svg"       viewBox="0 0 24 24"   fill="none"   stroke="currentColor"   stroke-width="2"   stroke-linecap="round"   stroke-linejoin="round"   class="icon icon-tabler icons-tabler-outline icon-tabler-medal" >   <path stroke="none" d="M0 0h24v24H0z" fill="none" />   <path d="M12 4v3m-4 -3v6m8 -6v6" />   <path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5l-3 -1.5" /> </svg>Халықаралық химия олимпиадасы (IChO): алтын медаль.</li><li>Металлургия бойынша зерттеу жобасымен ISEF жеңімпазы.</li><li class="st">Оқитын мамандығы: химиялық инженерия немесе материалтану.</li></ul></div>
+  <p class="next">төртіншісі математиканы ғарышқа шығарған</p>
 
   <div class="foot">
     <span>@nurzycom</span>
-    <span></span>
+    <span class="swipe">Әрі қарай <svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
   </div>
 </div>
 </body>
