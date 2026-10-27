@@ -124,6 +124,8 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 - **LLM council** (`/llm-council <question>`, skill in `.claude/skills/llm-council/`): five sub-agents with different models and roles (Strategist, Skeptic, Parent, Student, Creative) answer independently, three reviewers rank the answers anonymously, and the main session chairs a final answer. Use it for high-stakes decisions only; hard rules override the council.
 
+- **Icons and decorative elements (checked 2026-10-27):** Tabler Icons (MIT, thin line, best fit for the brand), Phosphor duotone (MIT), OpenMoji black (CC BY-SA, credit "OpenMoji"), colour Noto emoji only as a rare accent; all load from cdn.jsdelivr.net. Wikimedia blocks this server (HTTP 429), so historical photos come from Nurassyl or e-history.kz.
+
 - Marketing skills: `npx skills add coreyhaines31/marketingskills -a claude-code` (product-marketing, copywriting, copy-editing, social, content-strategy, offers, pricing, lead-magnets).
 - Video (Reels intros, animated results): `npx skills add heygen-com/hyperframes` (needs Node.js 22+ and FFmpeg).
 
