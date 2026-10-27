@@ -69,20 +69,26 @@
   .lab { display: block; }
   ul.l { list-style: none; margin-top: 10px; display: grid; gap: 10px; }
   ul.l li { position: relative; padding-left: 28px; font: 400 26px/1.36 var(--sans); }
+  .pf ul.l { gap: 8px; } .pf ul.l li { font-size: 24px; line-height: 1.34; }
   ul.l li::before { content: ''; position: absolute; left: 4px; top: 13px; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
 
   .tt { right: 400px; }
   .ph1 { right: 76px; top: 150px; width: 270px; z-index: 4; transform: rotate(4deg); padding: 12px 12px 50px; }
   .ph1 img { display: block; width: 100%; aspect-ratio: 4/5; object-fit: cover; }
   .ph1 .cap { font-size: 26px; bottom: 10px; }
-  .stack { top: 500px; display: grid; gap: 22px; }
-  .stack .paper { padding: 26px 32px 26px; transform: rotate(-.8deg); }
+  .born { margin-top: 18px; max-width: 560px; }
+  .born .lab { color: var(--acc); }
+  .born b { display: block; margin-top: 6px; font: 700 26px/1.3 var(--sans); }
+  .born p { margin-top: 6px; font: 400 24px/1.38 var(--sans); color: #2b2a27; }
+  .stack { top: 625px; display: grid; gap: 16px; }
+  .stack .paper { padding: 22px 30px 20px; transform: rotate(-.8deg); }
   .stack .paper ul.l li { color: #2b2a27; }
-  .stack .fact { padding: 24px 32px; border-radius: 26px; border: 2.5px solid var(--acc); background: var(--paper); transform: rotate(.8deg); }
+  .stack .fact { padding: 18px 30px; border-radius: 26px; border: 2.5px solid var(--acc); background: var(--paper); transform: rotate(.8deg); }
   .stack .fact .lab { color: var(--acc); }
-  .stack .hard { padding: 22px 32px; border-radius: 26px; background: var(--ink); color: var(--paper); transform: rotate(-.6deg); }
+  .stack .hard { padding: 16px 30px; border-radius: 26px; background: var(--ink); color: var(--paper); transform: rotate(-.6deg); }
   .stack .hard .lab { color: rgba(250,248,243,.7); }
-  .stack .hard p, .stack .fact p { margin-top: 8px; font: 400 26px/1.38 var(--sans); }
+  .stack .hard p, .stack .fact p { margin-top: 6px; font: 400 24px/1.36 var(--sans); }
+  .stack ul.l li { font-size: 24px; }
 
   .slide { --acc: #2338A0; }
   .tt h1 em { color: var(--acc); }
@@ -99,12 +105,13 @@
   </div>
 
   <span class="stripe"></span>
-  <div class="tt"><h1>Өмірзақ <em>Сұлтанғазин</em></h1></div>
+  <div class="tt"><h1>Өмірзақ <em>Сұлтанғазин</em></h1>
+    <div class="born"><span class="lab">туған жері</span><b>1936 · Қостанай облысы, Қараоба ауылы</b><p>Ата-анасы колхозда таңнан кешке дейін жұмыс істеген, баланы сөзбен емес, өз үлгісімен тәрбиелеген. 1944–1953 жылдары ауыл мектебінде оқыған.</p></div></div>
   <div class="pol ph1"><span class="tape"></span><img src="../assets/kz-sultangazin.jpg" alt=""><div class="cap">1936–2005</div></div>
   <div class="body stack">
     <div class="paper"><span class="tape"></span><span class="lab">шын өмірде</span><ul class="l"><li>ҚазМУ-дың механика-математика факультетін бітірген.</li><li>1988–1994 жылдары Ғылым академиясының президенті, 1991 жылдан Ғарыштық зерттеулер институтының директоры.</li></ul></div>
-    <div class="fact"><span class="lab">қызық дерек</span><p>Қараоба ауылының мектебінде мұғалімі, Берлин түбінде ауыр жараланған майдангер Мырзағали Қарсақбаев, қабілетті оқушылармен сабақтан кейін есеп шығарған. Сол мектептен 5 академик шыққан.</p></div>
-    <div class="hard"><span class="lab">оңай болмаған</span><p>Балалығы соғыстан кейінгі ауыр жылдарға тап келген. Ата-анасы колхозда таңнан кешке дейін жұмыс істеген.</p></div>
+    <div class="fact"><span class="lab">қызық дерек</span><p>Мұғалімі, Берлин түбінде ауыр жараланған майдангер Мырзағали Қарсақбаев, қабілетті оқушылармен сабақтан кейін есеп шығарған. Сол мектептен 5 академик шыққан.</p></div>
+    <div class="hard"><span class="lab">оңай болмаған</span><p>Балалығы соғыс және соғыстан кейінгі ауыр жылдарға тап келген.</p></div>
   </div>
   <p class="next">2026 жылы оның портфолиосы қандай болар еді</p>
 
