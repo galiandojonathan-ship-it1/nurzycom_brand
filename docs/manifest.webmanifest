@@ -1,0 +1,14 @@
+{
+  "name": "nurzycom · SAT",
+  "short_name": "nurzycom",
+  "description": "Домашние задания, словарь и тексты курса SAT Нурасыла Кунанбаева.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FAF8F3",
+  "theme_color": "#0A0A0A",
+  "lang": "ru",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

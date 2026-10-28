@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FAF8F3">
+<title>Пробные тесты · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="site.css">
+<script src="auth.js"></script>
+<style>
+.mocks{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:700px){.mocks{grid-template-columns:1fr 1fr}}
+.mcard{display:flex;flex-direction:column;gap:6px;min-height:170px;padding:18px;border:1px solid var(--studio);background:var(--white);text-align:left;transition:border-color .15s}
+.mcard:hover{border-color:var(--ink)}
+.mcard[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.mcard[aria-pressed=true] .label,.mcard[aria-pressed=true] small{color:var(--studio)}
+.mcard .no{font:italic 300 48px/1 var(--serif);margin-bottom:auto}
+.mcard .t{font-size:19px;font-weight:500;margin-top:12px}
+.mcard small{color:var(--stone);font-size:13px}
+.formats{display:grid;grid-template-columns:1fr;gap:6px;margin-top:4px}
+@media(min-width:700px){.formats{grid-template-columns:repeat(3,1fr)}}
+.formats .pick{flex-direction:column;align-items:flex-start;gap:2px}
+.formats .pick:disabled{opacity:.35;cursor:default}
+.dirbox{max-width:760px}
+.dirbox h2{font:italic 300 clamp(48px,8vw,84px)/1 var(--serif);margin:10px 0 18px}
+.dirbox ul{padding-left:20px;line-height:1.8;font-size:16px}
+.mbar{position:sticky;top:57px;z-index:5;background:var(--paper);border-bottom:2px dashed var(--ink);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:10px 0}
+@media(max-width:560px){.mbar{top:0;grid-template-columns:1fr auto}.mbar .mtools{grid-column:1/-1}}
+.mbar .mtitle{font:12px/1.3 var(--mono);letter-spacing:.08em}
+.mtimer{text-align:center}
+.mtimer b{display:block;font:500 24px/1 var(--mono);letter-spacing:.04em}
+.mtimer button{border:1px solid var(--studio);background:var(--white);font:11px var(--mono);padding:3px 8px;margin-top:4px}
+.mtimer.low b{animation:blink 1s steps(2) 3}
+.mtimer.hide b{visibility:hidden}
+@keyframes blink{50%{opacity:.2}}
+.mtools{justify-self:end}
+.qnum{display:inline-grid;place-items:center;min-width:30px;height:30px;background:var(--ink);color:var(--paper);font:13px var(--mono);margin-right:10px}
+.checkbox{max-width:900px}
+.checkbox h2{font:italic 300 clamp(44px,7vw,72px)/1 var(--serif);margin:8px 0 14px}
+.brk{text-align:center;padding:40px 0}
+.brk .big{font-family:var(--mono);font-style:normal;font-weight:400;letter-spacing:.02em}
+.secres{margin-top:18px}
+.secres .label + .big{margin-top:6px}
+.dom{display:grid;grid-template-columns:minmax(140px,280px) 1fr auto;gap:10px;align-items:center;font-size:14px;padding:6px 0;border-bottom:1px solid var(--studio)}
+.dom .bar2{height:10px;background:var(--mist);position:relative}
+.dom .bar2 i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0}
+.dom span.mono{font-size:13px;white-space:nowrap}
+.revmod{margin-top:26px}
+.rv{border-bottom:1px solid var(--studio)}
+.rv summary{list-style:none;display:flex;gap:12px;align-items:center;padding:12px 0;cursor:pointer}
+.rv summary::-webkit-details-marker{display:none}
+.rv .mk{flex:none;width:30px;height:30px;display:grid;place-items:center;font:12px var(--mono);border:1px solid var(--ink)}
+.rv .mk.ok{background:var(--ink);color:var(--paper)}
+.rv .mk.no{border-style:dashed;border-color:var(--stone);color:var(--stone)}
+.rv small{color:var(--stone)}
+.rv .rbody{padding:4px 0 20px}
+.ropt{display:flex;gap:10px;padding:8px 10px;border:1px solid var(--mist);margin-bottom:4px;font-size:15px}
+.ropt .lt{font:13px var(--mono);flex:none;width:18px}
+.ropt.right{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ropt.mine:not(.right){border-style:dashed;border-color:var(--stone)}
+.ropt .tg{margin-left:auto;font:11px var(--mono);color:var(--stone);white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="nurzycom">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="plan.html">План<span class="lg"> курса</span></a><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a><a href="mock.html" aria-current="page"><span class="lg">Пробные </span>тесты</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
+</div></header>
+
+<main>
+  <section id="m-start">
+    <div class="hero">
+      <span class="label">05 — Digital SAT · полный формат</span>
+      <h1>Пробные тесты</h1>
+      <p class="sub">Восемь тестов в формате Bluebook. Тесты 1–4 полные: Reading and Writing — 2 модуля по 27 вопросов и 32 минуты, Math — 2 модуля по 22 вопроса и 35 минут, между разделами перерыв 10 минут. Тесты 5–8 — только Reading and Writing. Второй модуль адаптивный: сложнее или легче, по результату первого.</p>
+    </div>
+    <div class="step">
+      <div class="step-h"><span class="num">01</span><span class="label">Ученик</span></div>
+      <div class="field"><input id="student" type="text" autocomplete="off" placeholder="Имя и первая буква фамилии: Айгерим К." aria-label="Имя и первая буква фамилии"></div>
+    </div>
+    <div class="step">
+      <div class="step-h"><span class="num">02</span><span class="label">Тест</span></div>
+      <div class="mocks" id="mocks"></div>
+    </div>
+    <div class="step">
+      <div class="step-h"><span class="num">03</span><span class="label">Формат</span></div>
+      <div class="formats" id="formats">
+        <button class="pick" data-f="full" aria-pressed="true"><span class="t">Весь тест</span><small>Reading and Writing, перерыв, Math · около 2 ч 25 мин</small></button>
+        <button class="pick" data-f="rw" aria-pressed="false"><span class="t">Только Reading and Writing</span><small>2 модуля · 64 минуты</small></button>
+        <button class="pick" data-f="math" aria-pressed="false"><span class="t">Только Math</span><small>2 модуля · 70 минут · Desmos и справочник</small></button>
+      </div>
+      <p class="hint hidden" id="fmt-note">В тестах 5–8 только Reading and Writing: 2 модуля по 27 вопросов, 64 минуты.</p>
+      <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button></div>
+      <p class="hint" id="start-msg"></p>
+    </div>
+    <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
+      <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — счёт по модулям и разделам, разбор каждого вопроса с официальным объяснением. Шкалу 200–800 считает только Bluebook: здесь видно, сколько вопросов решено верно.</p></div>
+    <div class="card" style="margin-top:8px"><span class="label">Откуда вопросы</span>
+      <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около трёх четвертей, в Math — около половины. Тесты 5–8 полностью авторские: тексты из литературы, истории, науки и статистики, грамматика и заметки, как на экзамене. Вопросов из официальных пробных тестов Bluebook здесь нет, поэтому эти тесты останутся для вас новыми.</p></div>
+  </section>
+
+  <section id="m-dir" class="hidden">
+    <div class="dirbox">
+      <span class="label" id="dir-label"></span>
+      <h2 id="dir-title"></h2>
+      <div class="kpis-row stats" style="max-width:520px;grid-template-columns:repeat(2,1fr)"><div><span class="label">Вопросов</span><b id="dir-n"></b></div><div><span class="label">Время</span><b id="dir-min"></b></div></div>
+      <ul id="dir-rules"></ul>
+      <div class="row"><button class="btn" id="dir-go">Начать модуль <span class="arr">→</span></button><button class="btn ghost" id="dir-exit">Выйти к тестам</button></div>
+      <p class="hint">Выход сохраняет тест, но время модуля продолжает идти.</p>
+    </div>
+  </section>
+
+  <section id="m-test" class="hidden">
+    <div class="mbar">
+      <span class="mtitle" id="t-title"></span>
+      <div class="mtimer" id="timer"><b id="clock">32:00</b><button id="hide-t">Скрыть</button></div>
+      <span class="mtools" id="t-tools"></span>
+    </div>
+    <div id="navpanel" class="navpanel hidden">
+      <div class="legend"><span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span></div>
+      <div class="grid12" id="grid"></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="to-check">Проверить ответы модуля</button><button class="btn ghost" id="closenav">Закрыть</button></div>
+    </div>
+    <div class="qwrap" id="wrap">
+      <div class="passage qhtml" id="passage"></div>
+      <div class="ask">
+        <div class="qhead"><span><span class="qnum" id="qnum"></span><span class="qn" id="qn"></span></span><button class="flag" id="flag" aria-pressed="false">Отметить</button></div>
+        <div class="stem qhtml" id="stem"></div>
+        <div id="opts"></div>
+      </div>
+    </div>
+    <div class="navrow">
+      <button class="btn ghost" id="prev">← Назад</button>
+      <button id="navbtn" aria-label="Все вопросы"></button>
+      <button class="btn" id="next">Далее →</button>
+    </div>
+  </section>
+
+  <section id="m-check" class="hidden">
+    <div class="checkbox">
+      <span class="label" id="chk-label"></span>
+      <h2>Проверьте ответы</h2>
+      <p class="sub" style="color:var(--stone)">Здесь видно, на какие вопросы вы ответили и какие отметили. Нажмите на номер, чтобы вернуться к вопросу. Когда будете готовы, сдайте модуль: вернуться к нему будет нельзя.</p>
+      <div class="legend" style="margin-top:14px"><span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span></div>
+      <div class="grid12" id="chk-grid"></div>
+      <p class="hint" id="chk-sum"></p>
+      <div class="row"><button class="btn" id="chk-submit">Сдать модуль <span class="arr">→</span></button><button class="btn ghost" id="chk-back">Вернуться к вопросам</button></div>
+      <p class="label" style="margin-top:14px">Осталось времени: <span id="chk-clock"></span></p>
+    </div>
+  </section>
+
+  <section id="m-break" class="hidden">
+    <div class="brk">
+      <span class="label">Перерыв</span>
+      <div class="big" id="brk-clock">10:00</div>
+      <p class="sub" style="margin:0 auto 18px;color:var(--stone)">Reading and Writing сдан. Отдохните: встаньте, выпейте воды. Math начнётся, когда вы нажмёте кнопку или когда закончится перерыв.</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="brk-go">Продолжить: Math <span class="arr">→</span></button></div>
+    </div>
+  </section>
+
+  <section id="m-result" class="hidden">
+    <span class="label" id="res-title"></span>
+    <div id="res-secs"></div>
+    <p id="send-status" class="hint" style="margin-top:16px"></p>
+    <div class="row"><button class="btn" id="res-review">Разбор вопросов</button><button class="btn ghost" id="res-home">К тестам</button></div>
+    <div id="review" class="hidden"></div>
+  </section>
+</main>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
+<script src="config.js"></script>
+<script src="tools.js"></script>
+<script src="mock.js"></script>
+</body>
+</html>
