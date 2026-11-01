@@ -52,9 +52,12 @@
       return `<button class="mcard" data-m="${m.id}" aria-pressed="${T.mock && T.mock.id === m.id}"><span class="no">${m.id.slice(2)}</span>
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
-    const full = T.index.mocks.filter((m) => !m.only), rw = T.index.mocks.filter((m) => m.only === "rw");
-    $("mocks").innerHTML = `<div class="course-h" style="grid-column:1/-1"><b>Полные тесты</b><span class="label">Reading and Writing и Math</span></div>${full.map(card).join("")}`
-      + (rw.length ? `<div class="course-h" style="grid-column:1/-1;margin-top:18px"><b>Тесты Reading and Writing</b><span class="label">только авторские вопросы nurzycom</span></div>${rw.map(card).join("")}` : "");
+    const num = (m) => Number(m.id.slice(2));
+    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4);
+    const group = (title, sub, ms, first) => (ms.length ? `<div class="course-h" style="grid-column:1/-1${first ? "" : ";margin-top:18px"}"><b>${title}</b><span class="label">${sub}</span></div>${ms.map(card).join("")}` : "");
+    $("mocks").innerHTML = group("Полные тесты", "Reading and Writing и Math", full, true)
+      + group("Тесты Reading and Writing", "только авторские вопросы nurzycom", rw)
+      + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2);
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
     $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
     $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));

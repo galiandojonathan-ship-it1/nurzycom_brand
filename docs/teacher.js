@@ -29,7 +29,7 @@
     Object.entries(NAMES).forEach(([k, re]) => { const i = head.findIndex((h) => re.test(h.trim())); if (i >= 0) col[k] = i; });
     const sample = body.slice(0, 50), used = new Set(Object.values(col));
     const guess = (k, test) => { if (col[k] !== undefined) return; for (let i = 0; i < head.length; i++) if (!used.has(i) && sample.length && sample.filter((r) => test(r[i] || "")).length >= sample.length * 0.8) { col[k] = i; used.add(i); return; } };
-    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTD]\d\d|PT\d|MD)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
+    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTD]\d\d|PT\d\d?|MD)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
     guess("answers", (v) => /^\d+:/.test(v.trim())); guess("part", (v) => /·|^p\d/.test(v)); guess("attempt", (v) => /^\d{1,2}$/.test(v.trim()));
     guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
     return col;
@@ -55,7 +55,7 @@
     body.forEach((r) => {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
       let lesson = g("lesson").toUpperCase(); const sc = g("score").match(/^(\d+)\/(\d+)$/);
-      if (!/^([VMXTD]\d\d|PT\d|MD)$/.test(lesson) || !sc) return;
+      if (!/^([VMXTD]\d\d|PT\d\d?|MD)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
       const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: Number(n), tries: v === "-" ? [] : v.split(">") }; });
