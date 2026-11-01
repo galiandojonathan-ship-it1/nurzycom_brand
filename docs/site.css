@@ -344,7 +344,9 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 .qhtml .fr>span:last-child{padding:0 3px}
 .qhtml .rt{border-top:1px solid currentColor;padding:0 2px}
 .qhtml p.eq{text-align:center;margin:10px 0}
-@media(max-width:1180px){.nav .lg{display:none}}   /* seven links: short labels until there is room */
+@media(max-width:1300px){.nav .lg{display:none}}   /* nine links: short labels until the full ones fit */
+.top-in{max-width:1280px}
+@media(max-width:1000px){.brand span{display:none}}   /* room for the nav on tablets */
 .qhtml p.verse{font-style:normal;line-height:1.7;padding-left:18px;border-left:1px solid var(--studio)}
 
 /* Desmos hint under an explanation (desmos/hints.txt) */

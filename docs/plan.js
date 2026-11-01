@@ -69,6 +69,8 @@
           href: `./?l=${tag}&p=${xPart(tag)}`, need: hp !== null && hp < 80, opt: hp !== null && hp >= 80, res: xs });
         if (c === "M" && DESMOS_AFTER[n]) { const x = DESMOS_AFTER[n];
           week.push({ id: x, crs: tg, t: `Desmos: набор ${Number(x.slice(1))} · ${DESMOS[x]}`, s: "8 задач с подсказкой «как набрать» и разбором в Desmos · ≈ 20 мин", href: `desmos.html?s=${x}`, res: store(`hw_last_${student()}_${x}_p1`) }); }
+        if (c === "M" && n === 10) week.push({ id: "unit-circle", crs: tg, t: "Единичная окружность: правила и 4 набора задач", s: "Радианы, особые углы, четверти, sin и cos дополнительных углов · по набору за раз, ≈ 15 мин каждый", href: "circle.html",
+          res: ["U01", "U02", "U03", "U04"].every((u) => store(`hw_last_${student()}_${u}_p1`)) ? "4 набора" : null });
         if (c === "V" && HARD_AFTER[n]) { const x = HARD_AFTER[n];
           week.push({ id: x, crs: tg, t: `Сложные вопросы: ${HARD[x]}`, s: "12 авторских вопросов повышенной сложности, таймер 14 мин · ≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }); }
       }

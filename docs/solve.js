@@ -4,7 +4,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   let S = null;  // session: ctx, items, state per question, current index, marks, eliminated options
-  const isMath = (tag) => /^(M|D\d)/.test(tag);   // Math lessons, the Desmos lesson (MD) and the Desmos page sets (D01…): one column + Desmos
+  const isMath = (tag) => /^(M|[DU]\d)/.test(tag);   // Math lessons, the Desmos lesson (MD) and the Desmos page sets (D01…): one column + Desmos
 
   const key = () => `hw_prog_${S.ctx.student}_${S.ctx.lesson.tag}_${S.ctx.part.id}`;
   function save() { try { localStorage.setItem(key(), JSON.stringify({ st: S.st, mk: [...S.mk], el: Date.now() - S.t0 })); } catch (e) { /* private mode */ } }
@@ -75,9 +75,10 @@
     let hb = $("sv-hintbox");
     if (!hb) { hb = document.createElement("div"); hb.id = "sv-hintbox"; $("sv-opts").before(hb); }
     const canHint = q.hint && learn() && !S.review && !s.done;
-    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">Подсказка · как решить в Desmos</span>${q.hint}</div>`
-      : `<button class="hint-btn" id="sv-hint">Подсказка: как решить в Desmos</button>`;
-    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (window.BBTools && BBTools.calc) BBTools.calc(true); };
+    const desmosHint = !/^U\d/.test(S.ctx.lesson.tag);   // the unit circle sets give a plain hint
+    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">${desmosHint ? "Подсказка · как решить в Desmos" : "Подсказка"}</span>${q.hint}</div>`
+      : `<button class="hint-btn" id="sv-hint">${desmosHint ? "Подсказка: как решить в Desmos" : "Подсказка"}</button>`;
+    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc) BBTools.calc(true); };
     $("sv-expl").classList.toggle("hidden", !revealed(s));
     $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);
     $("sv-check").textContent = s.tries.length ? "Проверить ещё раз" : "Проверить";

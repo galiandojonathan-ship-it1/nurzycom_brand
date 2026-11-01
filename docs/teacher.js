@@ -29,7 +29,7 @@
     Object.entries(NAMES).forEach(([k, re]) => { const i = head.findIndex((h) => re.test(h.trim())); if (i >= 0) col[k] = i; });
     const sample = body.slice(0, 50), used = new Set(Object.values(col));
     const guess = (k, test) => { if (col[k] !== undefined) return; for (let i = 0; i < head.length; i++) if (!used.has(i) && sample.length && sample.filter((r) => test(r[i] || "")).length >= sample.length * 0.8) { col[k] = i; used.add(i); return; } };
-    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTD]\d\d|PT\d\d?|MD)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
+    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTDU]\d\d|PT\d\d?|MD)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
     guess("answers", (v) => /^\d+:/.test(v.trim())); guess("part", (v) => /·|^p\d/.test(v)); guess("attempt", (v) => /^\d{1,2}$/.test(v.trim()));
     guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
     return col;
@@ -55,7 +55,7 @@
     body.forEach((r) => {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
       let lesson = g("lesson").toUpperCase(); const sc = g("score").match(/^(\d+)\/(\d+)$/);
-      if (!/^([VMXTD]\d\d|PT\d\d?|MD)$/.test(lesson) || !sc) return;
+      if (!/^([VMXTDU]\d\d|PT\d\d?|MD)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
       const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: Number(n), tries: v === "-" ? [] : v.split(">") }; });
@@ -84,6 +84,7 @@
   const ago = (d) => { if (!d) return "—"; const n = Math.floor((Date.now() - d) / DAY); return n <= 0 ? "сегодня" : n === 1 ? "вчера" : `${n} дн. назад`; };
   const whatOf = (r) => {
     if (r.kind === "X") { const s = D.sets.find((x) => x.id === r.lesson); return `Сложные вопросы · ${s ? s.title : r.lesson}`; }
+    if (r.kind === "U") { const l = lessonOf(r.lesson); return `Окружность · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "D") { const l = lessonOf(r.lesson); return `Desmos · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "P") return `Пробный тест ${r.lesson.slice(2).replace("·", " · ")} · ${r.part.replace(/^\S+ · /, "")}`;
     if (r.kind === "T") { const t = D.texts.find((x) => x.id === r.lesson); return `Текст · ${t ? t.title : r.lesson}`; }
@@ -94,7 +95,7 @@
   function skillStats(rows) {
     const sk = {};
     rows.forEach((r) => {
-      if (!"VMD".includes(r.kind)) return;
+      if (!"VMDU".includes(r.kind)) return;
       const p = partOf(r.lesson, r.pid); if (!p) return;
       const wrong = new Set(r.wrong);
       p.q.forEach((q) => { if (!q.sk) return; const s = (sk[q.sk] = sk[q.sk] || { n: 0, ok: 0 }); s.n++; if (!wrong.has(q.n)) s.ok++; });
