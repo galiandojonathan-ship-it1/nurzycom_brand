@@ -4,6 +4,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   let S = null;  // session: ctx, items, state per question, current index, marks, eliminated options
+  const isMath = (tag) => /^(M|D\d)/.test(tag);   // Math lessons, the Desmos lesson (MD) and the Desmos page sets (D01…): one column + Desmos
 
   const key = () => `hw_prog_${S.ctx.student}_${S.ctx.lesson.tag}_${S.ctx.part.id}`;
   function save() { try { localStorage.setItem(key(), JSON.stringify({ st: S.st, mk: [...S.mk], el: Date.now() - S.t0 })); } catch (e) { /* private mode */ } }
@@ -22,8 +23,8 @@
       } else clear();
     }
     $("sv-title").textContent = `${ctx.lesson.tag} · ${ctx.part.title}${S.review ? " · разбор" : ""}`;
-    $("sv-wrap").classList.toggle("one", ctx.lesson.tag[0] === "M");
-    if (window.BBTools) { if (!$("sv-tools").childElementCount) BBTools.mount($("sv-tools")); BBTools.show(ctx.lesson.tag[0] === "M"); }
+    $("sv-wrap").classList.toggle("one", isMath(ctx.lesson.tag));
+    if (window.BBTools) { if (!$("sv-tools").childElementCount) BBTools.mount($("sv-tools")); BBTools.show(isMath(ctx.lesson.tag)); }
     clearInterval(S.timer);
     if (!S.review) { S.timer = setInterval(tick, 1000); tick(); } else $("sv-clock").textContent = "разбор";
     $("sv-finish").textContent = S.review ? "Закрыть разбор" : "Сдать";
@@ -34,7 +35,7 @@
   const revealed = (s) => S.review || (learn() && s.done);
 
   function render() {
-    const q = S.items[S.cur], s = S.st[q.i], n = S.items.length, math = S.ctx.lesson.tag[0] === "M";
+    const q = S.items[S.cur], s = S.st[q.i], n = S.items.length, math = isMath(S.ctx.lesson.tag);
     const answered = S.items.filter((x) => S.st[x.i].done || (!learn() && S.st[x.i].tries.length)).length;
     $("sv-pos").textContent = `${answered} / ${n}`; $("sv-prog").style.width = `${(100 * answered) / n}%`;
     $("sv-qn").textContent = `Вопрос ${q.n} · ${S.cur + 1} из ${n}`;
@@ -69,7 +70,14 @@
       if (S.review && !s.tries.length) fb = `Без ответа. Правильный ответ: <b>${q.ans}</b>.`;
     }
     $("sv-fb").innerHTML = fb; $("sv-fb").className = `fb${fb ? "" : " hidden"}${s.done && s.ok ? " ok" : fb ? " no" : ""}`;
-    $("sv-expl").innerHTML = revealed(s) ? `<span class="label">Объяснение College Board</span><div class="qhtml">${q.rat}</div>` : "";
+    $("sv-expl").innerHTML = revealed(s) ? `<span class="label">${q.own ? "Объяснение nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}` : "";
+    // Desmos hint on request (learn mode, before the answer is revealed); its use is reported with the result
+    let hb = $("sv-hintbox");
+    if (!hb) { hb = document.createElement("div"); hb.id = "sv-hintbox"; $("sv-opts").before(hb); }
+    const canHint = q.hint && learn() && !S.review && !s.done;
+    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">Подсказка · как решить в Desmos</span>${q.hint}</div>`
+      : `<button class="hint-btn" id="sv-hint">Подсказка: как решить в Desmos</button>`;
+    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (window.BBTools && BBTools.calc) BBTools.calc(true); };
     $("sv-expl").classList.toggle("hidden", !revealed(s));
     $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);
     $("sv-check").textContent = s.tries.length ? "Проверить ещё раз" : "Проверить";
@@ -126,11 +134,12 @@
     const seconds = Math.round((Date.now() - S.t0) / 1000);
     const first = S.items.filter((q) => S.st[q.i].ok && S.st[q.i].tries.length === 1);
     const any = S.items.filter((q) => S.st[q.i].ok);
-    const res = { lesson: S.ctx.lesson.tag, part: `${S.ctx.part.id} · ${S.ctx.part.title} · экран${learn() ? ` · 2-я: ${any.length}/${n}` : ""}`,
+    const hints = S.items.filter((q) => S.st[q.i].hint).length;
+    const res = { lesson: S.ctx.lesson.tag, part: `${S.ctx.part.id} · ${S.ctx.part.title} · экран${learn() ? ` · 2-я: ${any.length}/${n}` : ""}${hints ? ` · подсказок: ${hints}` : ""}`,
       answers: S.items.map((q) => `${q.n}:${S.st[q.i].tries.join(">") || "-"}`).join(" "),
       score: `${first.length}/${n}`, wrong: S.items.filter((q) => !first.includes(q)).map((q) => q.n).join(","), seconds: String(seconds) };
     const st = JSON.parse(JSON.stringify(S.st)); clear();
-    S.ctx.onFinish(res, { second: `${any.length}/${n}`, learn: learn(), state: st });
+    S.ctx.onFinish(res, { second: `${any.length}/${n}`, learn: learn(), state: st, hints });
   }
 
   $("sv-check").onclick = check;

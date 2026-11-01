@@ -46,7 +46,7 @@
       return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} уроков · ${sub}</span></div><div class="tiles">${ls.map((l) => {
         const nm = l.title.split(" · ").slice(2).join(" · ");
         const done = l.parts.filter((p) => store(lastKey(l.tag, p.id))).length;
-        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${String(Number(l.tag.slice(1))).padStart(2, "0")}</span><span class="nm">${esc(nm)}</span>${done ? `<span class="dot">${done}/${l.parts.length}</span>` : ""}</button>`;
+        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(nm)}</span>${done ? `<span class="dot">${done}/${l.parts.length}</span>` : ""}</button>`;
       }).join("")}</div></div>`;
     }).join("");
     $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { pickLesson(b.dataset.l); $("step-part").scrollIntoView({ behavior: "smooth", block: "start" }); }));

@@ -346,3 +346,17 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 .qhtml p.eq{text-align:center;margin:10px 0}
 @media(max-width:1180px){.nav .lg{display:none}}   /* seven links: short labels until there is room */
 .qhtml p.verse{font-style:normal;line-height:1.7;padding-left:18px;border-left:1px solid var(--studio)}
+
+/* Desmos hint under an explanation (desmos/hints.txt) */
+.dz{border-left:2px solid var(--ink);background:var(--paper);padding:10px 14px;margin-top:14px}
+.dz .label{display:block;margin-bottom:6px}
+.dz p{margin:0;font-size:15px;line-height:1.6}
+.dz code{font:13.5px "IBM Plex Mono",monospace;background:var(--mist);padding:1px 5px;overflow-wrap:anywhere}
+/* Desmos hint on request (solve.js) */
+#sv-hintbox{margin:0 0 12px}
+.hint-btn{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;background:none;border:1px dashed var(--stone);color:var(--ink);padding:9px 12px}
+.hint-btn:hover{border-style:solid;border-color:var(--ink)}
+.dz.pre{margin-top:0;background:var(--white)}
+/* phones: the big hero hexagon used to stick out past the right edge and let the page scroll sideways;
+   the same visible part of it, drawn inside the screen */
+@media(max-width:560px){.hero::after{right:-16px;width:196px;height:300px;aspect-ratio:auto;background-size:300px 300px;background-position:left center}}

@@ -70,5 +70,6 @@
     },
     show(on) { if (bar) bar.classList.toggle("hidden", !on); if (!on) { if (calc) toggleCalc(false); if (ref) toggleRef(false); } },
     close() { if (calc) toggleCalc(false); if (ref) toggleRef(false); },
+    calc(on) { toggleCalc(on); },   // the Desmos page opens the calculator from its guide
   };
 })();

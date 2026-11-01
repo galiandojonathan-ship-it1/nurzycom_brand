@@ -14,7 +14,7 @@
   function show(id) { ["v-start", "v-run"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   const catOf = (g) => (g.name === "Слова" ? "words" : g.name === "Повторение" ? "review" : "terms");
-  const short = (l) => `${l.tag[0] === "V" ? "Verbal" : "Math"} ${Number(l.tag.slice(1))}`;
+  const short = (l) => `${l.tag[0] === "V" ? "Verbal" : "Math"} ${/^\D\d+$/.test(l.tag) ? Number(l.tag.slice(1)) : l.tag.slice(1)}`;
 
   // All words of the chosen lessons and categories, each word once (first lesson wins).
   function build(onlyHard) {
@@ -38,7 +38,7 @@
       const ls = st.data.lessons.filter((l) => l.tag[0] === c);
       return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} уроков</span></div><div class="tiles">${ls.map((l) => {
         const n = l.groups.reduce((s, g) => s + g.items.length, 0);
-        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${String(Number(l.tag.slice(1))).padStart(2, "0")}</span><span class="nm">${esc(l.title.split(" · ").slice(2).join(" · "))}</span><span class="dot">${n}</span></button>`;
+        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(l.title.split(" · ").slice(2).join(" · "))}</span><span class="dot">${n}</span></button>`;
       }).join("")}</div></div>`;
     }).join("");
     $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { const t = b.dataset.l; st.sel.has(t) ? st.sel.delete(t) : st.sel.add(t); sync(); }));

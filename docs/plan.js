@@ -19,6 +19,9 @@
     X05: "Американская литература: XIX век", X06: "Американская литература: XX век, проза", X07: "Американская литература: драма, поэзия, общество" };
   const HARD_AFTER = { 6: "X01", 7: "X02", 9: "X03", 10: "X04" };   // the rest after lesson 12; none in the weeks with a full test
   const MOCK_AFTER = { 0: "PT1", 4: "PT2", 8: "PT3", 12: "PT4" };
+  // Math: the Desmos lesson (MD) comes after lesson 6; one Desmos practice set a week after lessons 7–12
+  const DESMOS_AFTER = { 7: "D01", 8: "D02", 9: "D03", 10: "D04", 11: "D05", 12: "D06" };
+  const DESMOS = { D01: "Графики и нули", D02: "Системы", D03: "Слайдеры", D04: "Функции и регрессия", D05: "Списки и статистика", D06: "Окружности, неравенства, тригонометрия" };
   const NAME = { V: "SAT Verbal", M: "SAT Math" };
   // workbook part ids (V01 opens with a cold start, V04 has two practice parts)
   const hwPart = (tag) => (tag === "V01" || tag === "V04" ? "p4" : "p3");
@@ -64,6 +67,8 @@
         const xs = hwScore(tag, xPart(tag));
         week.push({ id: `${tag}-extra`, crs: tg, t: "Дополнительное ДЗ", s: `${hp === null ? "Нужно, если в домашнем задании меньше 80% с первой попытки" : `В домашнем задании ${Math.round(hp)}% с первой попытки${hp < 80 ? ", это меньше 80%" : ""}`} · ≈ ${c === "V" ? 30 : 40} мин`,
           href: `./?l=${tag}&p=${xPart(tag)}`, need: hp !== null && hp < 80, opt: hp !== null && hp >= 80, res: xs });
+        if (c === "M" && DESMOS_AFTER[n]) { const x = DESMOS_AFTER[n];
+          week.push({ id: x, crs: tg, t: `Desmos: набор ${Number(x.slice(1))} · ${DESMOS[x]}`, s: "8 задач с подсказкой «как набрать» и разбором в Desmos · ≈ 20 мин", href: `desmos.html?s=${x}`, res: store(`hw_last_${student()}_${x}_p1`) }); }
         if (c === "V" && HARD_AFTER[n]) { const x = HARD_AFTER[n];
           week.push({ id: x, crs: tg, t: `Сложные вопросы: ${HARD[x]}`, s: "12 авторских вопросов повышенной сложности, таймер 14 мин · ≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }); }
       }
@@ -75,6 +80,13 @@
       const title = cs.map((c) => (course === "VM" ? `${NAME[c]}: ${TOPIC[c][n - 1]}` : TOPIC[c][n - 1])).join(" · ");
       out.push({ no: nn(n), cap: `Урок ${n}`, title, inclass: cs.map((c) => `${course === "VM" ? NAME[c] + ": " : ""}${inClass(`${c}${nn(n)}`)}`).join(" · "),
         items: [{ when: "Сразу после урока", list: now }, { when: "В течение недели", list: week }, eve.length && { when: "Накануне следующего урока", list: eve }].filter(Boolean) });
+      if (n === 6 && cs.includes("M")) {
+        const tg = course === "VM" ? "M" : "";
+        out.push({ no: "D", cap: "Урок Desmos", title: course === "VM" ? "SAT Math: Desmos" : "Desmos: решать быстрее", inclass: `${course === "VM" ? "SAT Math: " : ""}Холодный старт рукой, Практика, Финальный тест с Desmos`,
+          items: [{ when: "Сразу после урока", list: [{ id: "MD-hw", crs: tg, t: "Домашнее задание", s: "Решайте на экране с Desmos: подсказка «как набрать» по кнопке · ≈ 45 мин", href: "./?l=MD&p=p3", need: true, res: hwScore("MD", "p3") }] },
+            { when: "В течение недели", list: [{ id: "MD-cards", crs: tg, t: "Термины урока: карточки", s: "20 слов Desmos по-английски · ≈ 10 мин", href: "vocab.html?l=MD" },
+              { id: "MD-guide", crs: tg, t: "Страница Desmos: 10 правил и 12 приёмов", s: "Прочитайте и наберите примеры сами · ≈ 20 мин", href: "desmos.html" }] }] });
+      }
     }
     const fin = [mockItem("PT4")];
     if (course !== "M") ["X05", "X06", "X07"].forEach((x) => fin.push({ id: x, t: `Сложные вопросы: ${HARD[x]}`, s: "≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }));
