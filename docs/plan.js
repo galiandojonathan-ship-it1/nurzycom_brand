@@ -82,6 +82,14 @@
       const title = cs.map((c) => (course === "VM" ? `${NAME[c]}: ${TOPIC[c][n - 1]}` : TOPIC[c][n - 1])).join(" · ");
       out.push({ no: nn(n), cap: `Урок ${n}`, title, inclass: cs.map((c) => `${course === "VM" ? NAME[c] + ": " : ""}${inClass(`${c}${nn(n)}`)}`).join(" · "),
         items: [{ when: "Сразу после урока", list: now }, { when: "В течение недели", list: week }, eve.length && { when: "Накануне следующего урока", list: eve }].filter(Boolean) });
+      if (n === 11 && cs.includes("V")) {   // lesson A «Archaic words» (Verbal, mixed review on old texts) comes after lesson 11
+        const tg = course === "VM" ? "V" : "";
+        out.push({ no: "A", cap: "Урок A", title: course === "VM" ? "SAT Verbal: Archaic words" : "Archaic words: старый английский", inclass: `${course === "VM" ? "SAT Verbal: " : ""}Холодный старт, Практика, Финальный тест на старых текстах`,
+          items: [{ when: "Сразу после урока", list: [{ id: "VA-hw", crs: tg, t: "Домашнее задание", s: "20 вопросов на старых текстах: подсказка со словарём по кнопке · ≈ 35 мин", href: "./?l=VA&p=p3", need: true, res: hwScore("VA", "p3") }] },
+            { when: "В течение недели", list: [{ id: "VA-cards", crs: tg, t: "Архаичные слова: карточки", s: "59 слов: thou, hath, wherefore, старые значения · ≈ 10 мин", href: "vocab.html?l=VA" },
+              { id: "VA-page", crs: tg, t: "Полезное → Архаичные слова: 3 набора", s: "Правила, словарь и наборы A01–A03 по 8 вопросов · ≈ 15 мин каждый", href: "archaic.html",
+                res: ["A01", "A02", "A03"].every((u) => store(`hw_last_${student()}_${u}_p1`)) ? "3 набора" : null }] }] });
+      }
       if (n === 6 && cs.includes("M")) {
         const tg = course === "VM" ? "M" : "";
         out.push({ no: "D", cap: "Урок Desmos", title: course === "VM" ? "SAT Math: Desmos" : "Desmos: решать быстрее", inclass: `${course === "VM" ? "SAT Math: " : ""}Холодный старт рукой, Практика, Финальный тест с Desmos`,

@@ -13,7 +13,8 @@
 
   function show(id) { ["v-start", "v-run"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-  const catOf = (g) => (g.name === "Слова" ? "words" : g.name === "Повторение" ? "review" : "terms");
+  const ARCH = new Set(["Местоимения", "Формы глаголов", "Короткие слова", "Старые значения"]);   // lesson A: its groups are words, not task terms
+  const catOf = (g) => (g.name === "Слова" || ARCH.has(g.name) ? "words" : g.name === "Повторение" ? "review" : "terms");
   const short = (l) => `${l.tag[0] === "V" ? "Verbal" : "Math"} ${/^\D\d+$/.test(l.tag) ? Number(l.tag.slice(1)) : l.tag.slice(1)}`;
 
   // All words of the chosen lessons and categories, each word once (first lesson wins).

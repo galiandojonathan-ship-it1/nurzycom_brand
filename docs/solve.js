@@ -75,9 +75,12 @@
     let hb = $("sv-hintbox");
     if (!hb) { hb = document.createElement("div"); hb.id = "sv-hintbox"; $("sv-opts").before(hb); }
     const canHint = q.hint && learn() && !S.review && !s.done;
-    const desmosHint = !/^U\d/.test(S.ctx.lesson.tag);   // the unit circle sets give a plain hint
-    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">${desmosHint ? "Подсказка · как решить в Desmos" : "Подсказка"}</span>${q.hint}</div>`
-      : `<button class="hint-btn" id="sv-hint">${desmosHint ? "Подсказка: как решить в Desmos" : "Подсказка"}</button>`;
+    const archHint = /^(VA|A\d)/.test(S.ctx.lesson.tag);   // lesson A and the archaic words sets: a glossary of the old words
+    const desmosHint = !/^U\d/.test(S.ctx.lesson.tag) && !archHint;   // the unit circle sets give a plain hint
+    const hLabel = archHint ? "Подсказка · старые слова" : desmosHint ? "Подсказка · как решить в Desmos" : "Подсказка";
+    const hBtn = archHint ? "Подсказка: старые слова этого текста" : desmosHint ? "Подсказка: как решить в Desmos" : "Подсказка";
+    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">${hLabel}</span>${q.hint}</div>`
+      : `<button class="hint-btn" id="sv-hint">${hBtn}</button>`;
     if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc) BBTools.calc(true); };
     $("sv-expl").classList.toggle("hidden", !revealed(s));
     $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);

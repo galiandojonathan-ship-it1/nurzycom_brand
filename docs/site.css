@@ -344,7 +344,7 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 .qhtml .fr>span:last-child{padding:0 3px}
 .qhtml .rt{border-top:1px solid currentColor;padding:0 2px}
 .qhtml p.eq{text-align:center;margin:10px 0}
-@media(max-width:1300px){.nav .lg{display:none}}   /* nine links: short labels until the full ones fit */
+@media(max-width:1100px){.nav .lg{display:none}}   /* seven links: short labels until the full ones fit */
 .top-in{max-width:1280px}
 @media(max-width:1000px){.brand span{display:none}}   /* room for the nav on tablets */
 .qhtml p.verse{font-style:normal;line-height:1.7;padding-left:18px;border-left:1px solid var(--studio)}
@@ -362,3 +362,6 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 /* phones: the big hero hexagon used to stick out past the right edge and let the page scroll sideways;
    the same visible part of it, drawn inside the screen */
 @media(max-width:560px){.hero::after{right:-16px;width:196px;height:300px;aspect-ratio:auto;background-size:300px 300px;background-position:left center}}
+/* archaic words: the glossary hint inside a question (2026-11-03) */
+.gloss{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 18px;font-size:14px;line-height:1.45}
+.gloss b{font-weight:600}
