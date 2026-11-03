@@ -38,7 +38,9 @@
 
   function show(id) { ["m-start", "m-dir", "m-test", "m-check", "m-break", "m-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
   const student = () => store("hw_student") || "";
-  const stKey = (mid) => `mk_state_${student()}_${mid}`;
+  // a mock whose content was revised (rev in mocks.json) keeps its runs under a new key, so an old run is not resumed on new questions
+  const revOf = (mid) => { const m = T.index && T.index.mocks.find((x) => x.id === mid); return m && m.rev ? `_r${m.rev}` : ""; };
+  const stKey = (mid) => `mk_state_${student()}_${mid}${revOf(mid)}`;
   const lastKey = (mid) => `mk_last_${student()}_${mid}`;
   function save() { if (T.st) store(stKey(T.st.mid), JSON.stringify(T.st)); }
   function load(mid) { try { return JSON.parse(store(stKey(mid))); } catch (e) { return null; } }
