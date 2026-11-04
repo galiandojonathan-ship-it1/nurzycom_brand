@@ -233,36 +233,57 @@
   function modsOf(sec) { const r = T.st.res[sec]; return ["m1", r.m2h ? "m2h" : "m2e"]; }
   function results() {
     clearInterval(T.timer);
-    const parts = [];
+    const parts = [], est = {}, skills = [], capped = [];
     $("res-title").textContent = `${T.mock.title} · результат`;
-    $("res-secs").innerHTML = T.st.secs.map((sec) => {
-      const r = T.st.res[sec], [, m2] = modsOf(sec), b = T.bundles[secInfo(sec).b];
-      const tot = r.m1.raw + r[m2].raw, n = r.m1.n + r[m2].n, secs = r.m1.sec + r[m2].sec;
-      parts.push(`${sec === "rw" ? "RW" : "Math"} ${tot}/${n}`);
-      const dom = {};
-      for (const mod of ["m1", m2]) for (const q of b.mods[mod]) { const d = dom[q.dom] || (dom[q.dom] = [0, 0]); d[1]++; if (right(q, T.st.ans[`${sec}.${mod}`][q.n])) d[0]++; }
+    const secHtml = T.st.secs.map((sec) => {
+      const r = T.st.res[sec], [, m2] = modsOf(sec), b = T.bundles[secInfo(sec).b], hard = m2 === "m2h";
+      const tot = r.m1.raw + r[m2].raw, n = r.m1.n + r[m2].n, secs = r.m1.sec + r[m2].sec, sc = SATSCALE.section(sec, hard, tot);
+      est[sec] = sc; if (!hard) capped.push(sec);
+      parts.push(`${sec === "rw" ? "RW" : "Math"} ${tot}/${n} ≈ ${sc}`);
+      const dom = {}, skl = {};
+      for (const mod of ["m1", m2]) for (const q of b.mods[mod]) {
+        const ok = right(q, T.st.ans[`${sec}.${mod}`][q.n]) ? 1 : 0;
+        const d = dom[q.dom] || (dom[q.dom] = [0, 0]); d[1]++; d[0] += ok;
+        const s = skl[q.sk] || (skl[q.sk] = { sec, sk: q.sk, a: 0, k: 0 }); s.k++; s.a += ok;
+      }
+      skills.push(...Object.values(skl));
+      const seg = (a, k) => { const f = Math.round((7 * a) / k); return `<span class="seg" aria-label="${a} из ${k}">${Array.from({ length: 7 }, (_, i) => `<i${i < f ? ' class="on"' : ""}></i>`).join("")}</span>`; };
       return `<div class="secres"><span class="label">${SEC[sec]}</span>
-        <div class="result-grid"><div><div class="big">${tot}/${n}</div><div class="meter"><i style="width:${(100 * tot) / n}%"></i></div></div>
-        <div class="stats"><div><span class="label">Модуль 1</span><b>${r.m1.raw}/${r.m1.n}</b></div><div><span class="label">Модуль 2 · ${m2 === "m2h" ? "сложный" : "лёгкий"}</span><b>${r[m2].raw}/${r[m2].n}</b></div>
-        <div><span class="label">Время</span><b>${Math.floor(secs / 60)} мин ${secs % 60} с</b></div><div><span class="label">Верно</span><b>${Math.round((100 * tot) / n)}%</b></div></div></div>
-        <div style="margin-top:14px">${Object.entries(dom).map(([d, [a, k]]) => `<div class="dom"><span>${DOM[d] || d}</span><span class="bar2"><i style="width:${(100 * a) / k}%"></i></span><span class="mono">${a}/${k}</span></div>`).join("")}</div></div>`;
-    }).join("") + `<p class="hint" style="margin-top:18px">Здесь показано число верных ответов. Шкалу 200–800 считает только College Board: для оценки балла решите официальный тест в Bluebook. ${T.st.secs.some((s) => T.st.res[s].m2e) ? "Лёгкий второй модуль на настоящем экзамене ограничивает максимальный балл: стоит подтянуть первый модуль." : ""}</p>`;
+        <div class="result-grid"><div><span class="label">Примерный балл · 200–800</span><div class="big">${sc}</div><div class="meter"><i style="width:${((sc - 200) / 600) * 100}%"></i></div></div>
+        <div class="stats"><div><span class="label">Модуль 1</span><b>${r.m1.raw}/${r.m1.n}</b></div><div><span class="label">Модуль 2 · ${hard ? "сложный" : "лёгкий"}</span><b>${r[m2].raw}/${r[m2].n}</b></div>
+        <div><span class="label">Верно</span><b>${tot}/${n} · ${Math.round((100 * tot) / n)}%</b></div><div><span class="label">Время</span><b>${Math.floor(secs / 60)} мин ${secs % 60} с</b></div></div></div>
+        <div class="ks"><span class="label">Knowledge and Skills · по разделам</span>${Object.entries(dom).map(([d, [a, k]]) => `<div class="dom"><span>${DOM[d] || d}<small>${k} вопр. · ${Math.round((100 * k) / n)}% теста</small></span>${seg(a, k)}<span class="mono">${a}/${k}</span></div>`).join("")}</div></div>`;
+    }).join("");
+    const both = est.rw !== undefined && est.math !== undefined;
+    const total = both ? `<div class="total-card"><span class="label">Примерный общий балл</span><div class="big">${est.rw + est.math}</div>
+      <span class="label">из 1600 · Reading and Writing ${est.rw} + Math ${est.math}</span></div>` : "";
+    // weak spots: the skills with the lowest share of right answers (at least 2 questions, under 80%)
+    const weak = skills.filter((s) => s.k >= 2 && s.a / s.k < 0.8).sort((x, y) => x.a / x.k - y.a / y.k || y.k - x.k).slice(0, 4);
+    const map = (T.index && T.index.skills) || {};
+    const weakHtml = `<div class="weak"><span class="label">Слабые места · с чего начать</span>${weak.length ? weak.map((s, i) => {
+      const l = map[s.sk.toLowerCase()];
+      return `<div class="wk"><span class="no">${i + 1}</span><div><b>${esc(s.sk)}</b><small>${SEC[s.sec]} · верно ${s.a} из ${s.k} (${Math.round((100 * s.a) / s.k)}%)</small></div>
+        ${l ? `<a class="btn ghost" href="index.html?l=${encodeURIComponent(l.tag)}">Повторить: ${esc(l.title.replace(/^SAT (Verbal|Math) · /, ""))}</a>` : ""}</div>`;
+    }).join("") : `<p class="hint">Во всех навыках не меньше 80% верных ответов. Следующий шаг — сложные вопросы и следующий пробный тест.</p>`}</div>`;
+    const note = `<p class="hint" style="margin-top:18px">Балл примерный: его считает таблица nurzycom по числу верных ответов и по тому, какой второй модуль вам достался. Настоящий балл College Board может отличаться примерно на ±${SATSCALE.ERR} в каждом разделе; официальный балл даёт только экзамен или тест в Bluebook.${capped.length ? ` Вам достался лёгкий второй модуль (${capped.map((s) => SEC[s]).join(", ")}): с ним балл раздела не поднимается выше примерно ${capped.map((s) => SATSCALE.CAP[s]).join(" / ")}, поэтому важнее всего первый модуль.` : ""}</p>`;
+    $("res-secs").innerHTML = total + secHtml + weakHtml + note;
     store(lastKey(T.st.mid), parts.join(" · "));
     $("review").classList.add("hidden"); $("res-review").textContent = "Разбор вопросов";
     show("m-result"); send();
   }
   $("res-review").onclick = () => {
     const r = $("review"); if (!r.classList.contains("hidden")) { r.classList.add("hidden"); $("res-review").textContent = "Разбор вопросов"; return; }
-    r.innerHTML = T.st.secs.map((sec) => modsOf(sec).map((mod) => {
+    r.innerHTML = `<label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
       const its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[`${sec}.${mod}`];
       return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
         const a = A[q.n], ok = right(q, a);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
           return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
-        return `<details class="rv"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
+        return `<details class="rv${ok ? "" : " bad"}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
           <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
+    $("rv-bad").onchange = (e) => r.classList.toggle("only-bad", e.target.checked);
     r.classList.remove("hidden"); $("res-review").textContent = "Скрыть разбор";
   };
   $("res-home").onclick = home;

@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
-  const D = { lessons: [], sets: [], texts: [], rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
+  const D = { lessons: [], sets: [], texts: [], mocks: null, bundles: {}, t: {}, rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
   const DAY = 864e5;
 
   // ---------- CSV
@@ -34,13 +34,27 @@
     guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
     return col;
   }
-  function parseDate(s) {
+  // «04/11/2026» is 4 November in most locales (UK, Kazakhstan) but 11 April in US English: the order is decided once per file
+  function slashOrder(strs) {
+    const ms = strs.map((s) => (s || "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)).filter(Boolean);
+    if (!ms.length) return "dmy";
+    const dayFirst = ms.some((m) => +m[1] > 12), monthFirst = ms.some((m) => +m[2] > 12);
+    if (dayFirst !== monthFirst) return dayFirst ? "dmy" : "mdy";
+    // still ambiguous: form rows are appended in time order, and no answer comes from the future
+    const cost = (o) => { let bad = 0, prev = 0; const now = Date.now() + 86400000;
+      strs.forEach((s) => { const d = parseDate(s, o); if (!d) return; if (+d > now) bad += 1000; if (+d < prev) bad++; prev = +d; }); return bad; };
+    const last = (o) => Math.max(0, ...strs.map((s) => +(parseDate(s, o) || 0)));   // a tie goes to the reading with the more recent answers
+    const cm = cost("mdy"), cd = cost("dmy");
+    return cm < cd || (cm === cd && last("mdy") > last("dmy")) ? "mdy" : "dmy";
+  }
+  function parseDate(s, order = "dmy") {
     s = (s || "").trim(); let m;
     if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T]?(\d{1,2})?:?(\d{2})?:?(\d{2})?/))) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
     if ((m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/))) return new Date(+m[3], m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
     if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?\s*(AM|PM)?/i))) {
       let h = +(m[4] || 0); if (m[7] && /pm/i.test(m[7]) && h < 12) h += 12; if (m[7] && /am/i.test(m[7]) && h === 12) h = 0;
-      return new Date(+m[3], m[1] - 1, +m[2], h, +(m[5] || 0), +(m[6] || 0));   // Google Sheets in English: month/day/year
+      const [mo, dd] = order === "mdy" ? [+m[1], +m[2]] : [+m[2], +m[1]];
+      return new Date(+m[3], mo - 1, dd, h, +(m[5] || 0), +(m[6] || 0));
     }
     const d = new Date(s); return isNaN(d) ? null : d;
   }
@@ -51,16 +65,16 @@
     if (all.length < 2) throw new Error("В файле нет ответов.");
     const head = all[0], body = all.slice(1), c = columns(head, body);
     if (c.student === undefined || c.lesson === undefined || c.score === undefined) throw new Error("Не нашёл столбцы Student, Lesson и Score. Это точно таблица ответов формы?");
-    const rows = [];
+    const rows = [], order = c.ts === undefined ? "dmy" : slashOrder(body.map((r) => r[c.ts]));
     body.forEach((r) => {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
       let lesson = g("lesson").toUpperCase(); const sc = g("score").match(/^(\d+)\/(\d+)$/);
       if (!/^([VMXTDUA]\d\d|PT\d\d?|MD|VA)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
-      const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: Number(n), tries: v === "-" ? [] : v.split(">") }; });
+      const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: /\./.test(n) ? n : Number(n), tries: v === "-" ? [] : v.split(">") }; });
       const s2 = part.match(/2-я: (\d+)\/(\d+)/);   // on-screen parts also report the score after the second attempt
-      rows.push({ ts: parseDate(g("ts")), name: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
+      rows.push({ ts: parseDate(g("ts"), order), name: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
         a: +sc[1], b: +sc[2], pct: +sc[2] ? (100 * +sc[1]) / +sc[2] : 0, wrong: g("wrong").split(",").map((x) => x.trim()).filter(Boolean).map((x) => (/^\d+$/.test(x) ? Number(x) : x)), sec: Number(g("seconds")) || 0,
         attempt: Number(g("attempt")) || 1, answers });
     });
@@ -154,8 +168,8 @@
   function render() {
     $("st-line").innerHTML = `${D.demo ? '<span class="demo-flag">Демо · вымышленные данные</span> ' : ""}${D.rows.length} записей · ${D.students.length} учеников · ${esc(D.label || "")}`;
     $("tabs").querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === D.view)));
-    ["overview", "students", "lessons", "missing", "log"].forEach((v) => $("v-" + v).classList.toggle("hidden", v !== D.view));
-    ({ overview, students, lessons, missing, log })[D.view]();
+    ["overview", "students", "lessons", "tests", "missing", "log"].forEach((v) => $("v-" + v).classList.toggle("hidden", v !== D.view));
+    ({ overview, students, lessons, tests, missing, log })[D.view]();
     bindTips(document);
   }
   function overview() {
@@ -201,10 +215,88 @@
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b} · ${pct(r.pct)}`, r.wrong.length ? r.wrong.join(", ") : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? r.wrong.join(", ") : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     $("v-students").innerHTML = html;
+    $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     $("back-st").onclick = () => { D.student = null; render(); };
+  }
+  // ---------- mock tests: every question with its answer, explanation and what each student chose
+  const MODN = { m1: "Модуль 1", m2h: "Модуль 2 · сложный", m2e: "Модуль 2 · лёгкий" };
+  const DOMN = { CAS: "Craft and Structure", INI: "Information and Ideas", SEC: "Standard English Conventions", EOI: "Expression of Ideas",
+    H: "Algebra", P: "Advanced Math", Q: "Problem-Solving and Data Analysis", S: "Geometry and Trigonometry" };
+  const DIFN = { E: "лёгкий", M: "средний", H: "сложный" };
+  async function bundleT(path) {
+    if (!D.bundles[path]) D.bundles[path] = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(path, { cache: "no-store" })).arrayBuffer())));
+    return D.bundles[path];
+  }
+  // each student's latest submission of one test section (older ones are counted, not shown)
+  function mockRuns(mid, sec) {
+    const tag = `${mid}·${sec === "rw" ? "RW" : "Math"}`, by = {};
+    D.rows.filter((r) => r.lesson === tag).forEach((r) => (by[r.key] = by[r.key] || []).push(r));
+    return Object.values(by).map((rs) => {
+      const r = rs[rs.length - 1], m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e", ans = {}, bad = new Set(r.wrong.map(String));
+      r.answers.forEach((a) => { const [k, n] = String(a.n).split("."); if (n) ans[`${k === "1" ? "m1" : m2}.${n}`] = a.tries[0] || ""; });
+      const raw = (m) => +((r.part.match(m === "m1" ? /M1 (\d+)\/(\d+)/ : /M2 \S+ (\d+)\/(\d+)/) || [])[1] || 0);
+      return { r, count: rs.length, m2, ans, bad, m1: raw("m1"), m2raw: raw("m2"), est: window.SATSCALE ? SATSCALE.section(sec, m2 === "m2h", r.a) : null };
+    }).sort((x, y) => x.r.name.localeCompare(y.r.name, "ru"));
+  }
+  async function tests() {
+    const box = $("v-tests"), M = (D.mocks && D.mocks.mocks) || [], T = D.t;
+    if (!M.length) { box.innerHTML = '<h2>Пробные тесты</h2><p class="hint">Не удалось загрузить тесты. Обновите страницу.</p>'; return; }
+    if (!T.mid) { const last = [...D.rows].reverse().find((r) => r.kind === "P"); T.mid = last ? last.lesson.split("·")[0] : M[0].id; }
+    const mock = M.find((m) => m.id === T.mid) || M[0]; T.mid = mock.id;
+    if (!mock.sections.some((s) => s.k === T.sec)) T.sec = mock.sections[0].k;
+    const S = mock.sections.find((s) => s.k === T.sec), runs = mockRuns(mock.id, S.k);
+    const took = (mod) => runs.filter((x) => mod === "m1" || x.m2 === mod);
+    if (!MODN[T.mod]) T.mod = "m1";
+    const nSub = (m) => new Set(D.rows.filter((r) => r.lesson.split("·")[0] === m.id).map((r) => r.key)).size;
+    let html = `<h2>Пробные тесты</h2><p class="hint">Все вопросы каждого теста с верным ответом и разбором. Под каждым вопросом — что выбрал каждый ученик (последняя сдача этого раздела). Число на кнопке теста — сколько учеников его сдали.</p>
+      <div class="chips" id="t-mock">${M.map((m) => { const k = nSub(m); return `<button class="chip" data-m="${m.id}" aria-pressed="${m.id === mock.id}">${m.id}${k ? ` · ${k}` : ""}</button>`; }).join("")}</div>
+      <div class="chips" id="t-sec" style="margin-top:8px">${mock.sections.map((s) => `<button class="chip" data-s="${s.k}" aria-pressed="${s.k === S.k}">${esc(s.name)}</button>`).join("")}</div>`;
+    if (runs.length) {
+      html += `<h2>Кто сдал · ${runs.length}</h2>` + table(["Ученик", "Когда", "Модуль 1", "Модуль 2", "Верно", "Примерный балл", "Сдач"], runs.map((x) => ({ k: x.r.key,
+        cells: [`<b>${esc(x.r.name)}</b>`, when(x.r.ts), `${x.m1}/${S.n}`, `${x.m2 === "m2h" ? "сложный" : "лёгкий"} · ${x.m2raw}/${S.n}`, `${x.r.a}/${x.r.b} · ${pct(x.r.pct)}`, x.est ? `≈ ${x.est}` : "—", x.count] })), { click: true, num: [2, 4, 5, 6] });
+    } else html += '<p class="hint" style="margin-top:18px">Этот раздел пока никто не сдал. Вопросы и разборы ниже всё равно доступны.</p>';
+    html += `<div class="chips" id="t-mod" style="margin-top:22px">${Object.keys(MODN).map((m) => `<button class="chip" data-d="${m}" aria-pressed="${m === T.mod}">${MODN[m]}${runs.length ? ` · ${took(m).length}` : ""}</button>`).join("")}</div>
+      <div class="row t-filters"><select id="t-who" aria-label="Ученик"><option value="">Все ученики</option>${runs.map((x) => `<option value="${esc(x.r.key)}"${x.r.key === T.who ? " selected" : ""}>${esc(x.r.name)}</option>`).join("")}</select>
+      <label class="onlybad"><input type="checkbox" id="t-bad"${T.bad ? " checked" : ""}> Только вопросы с ошибками</label>
+      <label class="onlybad"><input type="checkbox" id="t-sort"${T.sort ? " checked" : ""}> Сначала самые трудные</label>
+      <button class="btn ghost" id="t-open">Раскрыть все</button></div><div id="t-list"><p class="hint">Загружаю вопросы…</p></div>`;
+    box.innerHTML = html;
+    box.querySelectorAll("#t-mock .chip").forEach((b) => (b.onclick = () => { T.mid = b.dataset.m; T.mod = "m1"; T.who = ""; render(); }));
+    box.querySelectorAll("#t-sec .chip").forEach((b) => (b.onclick = () => { T.sec = b.dataset.s; T.mod = "m1"; render(); }));
+    box.querySelectorAll("#t-mod .chip").forEach((b) => (b.onclick = () => { T.mod = b.dataset.d; render(); }));
+    box.querySelectorAll("tr.click").forEach((tr) => (tr.onclick = () => { T.who = tr.dataset.k; const x = runs.find((y) => y.r.key === T.who); if (x && T.mod !== "m1" && T.mod !== x.m2) T.mod = x.m2; render(); }));
+    $("t-who").onchange = () => { T.who = $("t-who").value; const x = runs.find((y) => y.r.key === T.who); if (x && T.mod !== "m1" && T.mod !== x.m2) T.mod = x.m2; render(); };
+    $("t-bad").onchange = () => { T.bad = $("t-bad").checked; render(); };
+    $("t-sort").onchange = () => { T.sort = $("t-sort").checked; render(); };
+    let b;
+    try { b = await bundleT(S.b); } catch (e) { $("t-list").innerHTML = '<p class="hint">Не удалось загрузить вопросы этого теста.</p>'; return; }
+    if (D.view !== "tests" || !$("t-list")) return;   // the view changed while the questions were loading
+    const who = took(T.mod), focus = runs.find((x) => x.r.key === T.who);
+    let qs = b.mods[T.mod].map((q) => {
+      const ch = who.map((x) => ({ x, a: x.ans[`${T.mod}.${q.n}`] || "", ok: !x.bad.has(`${T.mod === "m1" ? 1 : 2}.${q.n}`) }));
+      return { q, ch, right: ch.filter((c) => c.ok).length };
+    });
+    if (T.bad) qs = qs.filter((o) => o.right < o.ch.length || (focus && o.ch.some((c) => c.x === focus && !c.ok)));
+    if (focus && T.bad) qs = qs.filter((o) => o.ch.some((c) => c.x === focus && !c.ok));
+    if (T.sort) qs.sort((u, v) => (u.ch.length ? u.right / u.ch.length : 1) - (v.ch.length ? v.right / v.ch.length : 1) || u.q.n - v.q.n);
+    if (focus && T.mod !== "m1" && focus.m2 !== T.mod) { $("t-list").innerHTML = `<p class="hint" style="margin-top:14px">${esc(focus.r.name)} решал(а) ${MODN[focus.m2].toLowerCase()}, а не этот модуль.</p>`; }
+    else $("t-list").innerHTML = qs.length ? qs.map(({ q, ch, right }) => {
+      const mine = focus && ch.find((c) => c.x === focus);
+      const tag = (c) => `<span class="who ${c.ok ? "ok" : "no"}">${esc(c.x.r.name)}: <b>${esc(c.a || "—")}</b></span>`;
+      const opts = q.t === "mc" ? q.opts.map((o, k) => { const L = "ABCD"[k], by = ch.filter((c) => c.a === L);
+        return `<div class="ropt${L === q.ans ? " right" : ""}${mine && mine.a === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${L === q.ans ? "верный · " : ""}${by.length}${by.length ? ` · ${by.map((c) => esc(c.x.r.name)).join(", ")}` : ""}</span></div>`; }).join("")
+        : `<p class="hint">Ответ вводится. Принимаются: ${esc(q.acc.join(", "))}.${ch.length ? ` Ответы учеников: ${ch.map(tag).join(" ")}` : ""}</p>`;
+      return `<details class="rv tq${right < ch.length ? " bad" : ""}"><summary><span class="mk ${!ch.length ? "" : right === ch.length ? "ok" : "no"}">${q.n}</span>
+        <span class="tq-s"><b>${esc(q.sk)}</b> <small>· ${DOMN[q.dom] || q.dom} · ${DIFN[q.d] || q.d}${q.own ? " · авторский" : " · College Board"} · ответ ${esc(q.ans)}</small>
+        <br><small>${ch.length ? `верно ${right} из ${ch.length}${mine ? ` · ${esc(focus.r.name)}: ${esc(mine.a || "без ответа")} ${mine.ok ? "✓" : "✗"}` : ""}` : "никто не решал"}</small>
+        ${!focus && ch.some((c) => !c.ok) ? `<span class="whos">${ch.filter((c) => !c.ok).map(tag).join("")}</span>` : ""}</span></summary>
+        <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}
+        <div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
+    }).join("") : '<p class="hint" style="margin-top:14px">Нет вопросов под этот фильтр.</p>';
+    $("t-open").onclick = () => { const all = [...document.querySelectorAll("#t-list details")], open = all.some((d) => !d.open); all.forEach((d) => (d.open = open)); $("t-open").textContent = open ? "Свернуть все" : "Раскрыть все"; };
   }
   function lessons() {
     const all = D.lessons.map((l) => l.tag).concat(D.sets.map((x) => x.id), D.texts.map((x) => x.id), [...new Set(D.rows.filter((r) => r.kind === "P").map((r) => r.lesson))].sort());
@@ -309,7 +401,8 @@
 
 
   // ---------- site password: re-wrap the master key with a new password and publish access.json
-  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || "main" });
+  const DEP = (window.HW_CONFIG && HW_CONFIG.deploy) || {};
+  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || DEP.repo || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || DEP.branch || "main" });
   function ghState() { const g = GH(); $("gh-state").textContent = g.token ? `· подключено: ${g.repo}, ветка ${g.branch}` : "· не подключено"; $("gh-repo").value = g.repo; $("gh-branch").value = g.branch; }
   async function newAccess() {
     const cur = $("pw-cur").value, a = $("pw-new").value.trim(), b = $("pw-new2").value.trim();
@@ -342,12 +435,12 @@
       pwMsg("Файл access.json скачан. Загрузите его на GitHub: репозиторий → папка docs → Add file → Upload files → перетащите файл → Commit changes. Пока файл не загружен, работает старый пароль.");
     } catch (e) { pwMsg(e.message); }
   };
-  $("gh-save").onclick = () => { if ($("gh-token").value.trim()) store("gh_token", $("gh-token").value.trim()); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || "main"); $("gh-token").value = ""; ghState(); };
+  $("gh-save").onclick = () => { if ($("gh-token").value.trim()) store("gh_token", $("gh-token").value.trim()); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || DEP.branch || "main"); $("gh-token").value = ""; ghState(); };
   $("gh-forget").onclick = () => { store("gh_token", null); ghState(); };
   ghState();
 
-  Promise.all(["lessons", "practice", "reading"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t]) => {
-    D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || [];
+  Promise.all(["lessons", "practice", "reading", "mocks"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t, m]) => {
+    D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || []; D.mocks = m;
     const u = store("teacher_url"); if (u) { $("url").value = u; fromUrl(u); }
   });
   window.__teacher = { parseCSV, parseDate, columns };   // for testing

@@ -48,11 +48,27 @@
 .brk .big{font-family:var(--mono);font-style:normal;font-weight:400;letter-spacing:.02em}
 .secres{margin-top:18px}
 .secres .label + .big{margin-top:6px}
+.total-card{background:var(--ink);color:var(--paper);padding:28px 26px;margin-top:14px;position:relative;overflow:hidden}
+.total-card .label{color:rgba(250,248,243,.62)}
+.total-card .big{color:var(--paper);font-size:clamp(84px,18vw,150px)}
+.ks{margin-top:4px}.ks > .label{display:block;margin:6px 0 4px}
+.dom small{display:block;font:11px var(--mono);letter-spacing:.06em;color:var(--stone);margin-top:2px}
+.seg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.seg i{height:10px;background:var(--mist);border:1px solid var(--studio)}
+.seg i.on{background:var(--ink);border-color:var(--ink)}
+.weak{margin-top:30px}.weak > .label{display:block;margin-bottom:6px}
+.wk{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--studio)}
+.wk .no{width:30px;height:30px;display:grid;place-items:center;font:12px var(--mono);background:var(--ink);color:var(--paper)}
+.wk small{display:block;color:var(--stone);margin-top:2px}
+.wk .btn{padding:10px 14px;font-size:14px}
+@media(max-width:640px){.wk{grid-template-columns:34px 1fr}.wk .btn{grid-column:2}}
 .dom{display:grid;grid-template-columns:minmax(140px,280px) 1fr auto;gap:10px;align-items:center;font-size:14px;padding:6px 0;border-bottom:1px solid var(--studio)}
 .dom .bar2{height:10px;background:var(--mist);position:relative}
 .dom .bar2 i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0}
 .dom span.mono{font-size:13px;white-space:nowrap}
 .revmod{margin-top:26px}
+.onlybad{display:flex;gap:10px;align-items:center;margin-top:22px;font-size:15px;cursor:pointer}.onlybad input{width:18px;height:18px;accent-color:var(--ink)}
+.only-bad .rv:not(.bad){display:none}
 .rv{border-bottom:1px solid var(--studio)}
 .rv summary{list-style:none;display:flex;gap:12px;align-items:center;padding:12px 0;cursor:pointer}
 .rv summary::-webkit-details-marker{display:none}
@@ -105,7 +121,7 @@
       <p class="hint" id="start-msg"></p>
     </div>
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
-      <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — счёт по модулям и разделам, разбор каждого вопроса с официальным объяснением. Шкалу 200–800 считает только Bluebook: здесь видно, сколько вопросов решено верно.</p></div>
+      <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — примерный балл (200–800 за раздел, до 1600 за весь тест), разбор по разделам, как в отчёте Bluebook, ваши слабые места с уроком для повторения и разбор каждого вопроса. Балл примерный: официальный считает только College Board.</p></div>
     <div class="card" style="margin-top:8px"><span class="label">Откуда вопросы</span>
       <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около четырёх пятых, в Math — около половины. Тесты 5–8 полностью авторские: тексты из литературы, истории, науки и статистики, грамматика и заметки, как на экзамене. Полные тесты 9–12 — тоже почти полностью авторские (официальных вопросов около 12%, и это в основном лёгкие): средний и сложный уровень, как в настоящих модулях. Первый модуль Reading and Writing во всех 12 тестах обновлён 3 ноября 2026: тексты длиной как на экзамене, в каждом модуле 6 лёгких, 12 средних и 9 сложных вопросов; тест, начатый до обновления, начнётся заново. Вопросов из официальных пробных тестов Bluebook здесь нет, поэтому эти тесты останутся для вас новыми.</p></div>
   </section>
@@ -184,6 +200,7 @@
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
 <script src="config.js"></script>
 <script src="tools.js"></script>
+<script src="scale.js"></script>
 <script src="mock.js"></script>
 </body>
 </html>

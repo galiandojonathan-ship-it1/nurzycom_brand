@@ -6,5 +6,7 @@ window.HW_CONFIG = {
     student: "entry.1281302797", lesson: "entry.760668737", part: "entry.761853177", answers: "entry.1521297987",
     score: "entry.160345472", wrong: "entry.2028706924", seconds: "entry.1905181142", attempt: "entry.2005834178"
   },
-  telegram: "nurzycom"
+  telegram: "nurzycom",
+  // the GitHub repository and branch the hosting builds from: teacher.html writes a new access.json there
+  deploy: { repo: "galiandojonathan-ship-it1/nurzycom_brand", branch: "main" }
 };
