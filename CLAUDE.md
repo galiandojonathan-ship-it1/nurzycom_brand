@@ -118,6 +118,8 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 - Registration as self-employed or individual entrepreneur in Kazakhstan
 - Hosting (domain bynurzy.com bought 2026-11-04): add it to Cloudflare if bought elsewhere, set `main` as the default branch (Settings → General → Default branch), delete the old `claude/…` branches if wanted, set up the two Cloudflare Pages projects (`deploy/README.md`)
 
+- **Course 2.0 «метанавыки» proposal (2026-11-04, PDF delivered in chat, nothing built yet):** a pattern study of all 3,673 cached bank questions and their 9,088 official wrong-option explanations (trap shares by keyword labelling, about 3 in 4 labels right on a hand-checked sample, so shares are approximate), a pattern atlas for the 26 lessons, 8 learning skills with research references, Lesson 0 «Как учиться к SAT», a 5-minute skill block per lesson, pattern cards, and site features (confidence 1–3, error log by trap, spaced «Повторение» screen, «Назови тип» / «Найди ловушку» drills). Waiting on Nurassyl's decisions (last page of the PDF). Scripts and numbers in the build folder: `meta/study.py`, `meta/study.json`, `meta/proposal.py`. Keep the proposal out of the public repo (method details stay private).
+
 ## Suggested next tasks
 
 1. Deploy (prepared for bynurzy.com, see `deploy/README.md`): check both sites live once Nurassyl has set up Cloudflare Pages. Replace `assets/portrait.webp` with the full-resolution original when Nurassyl sends it.
