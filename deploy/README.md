@@ -12,6 +12,17 @@
 
 Если купите другой домен, одна команда переписывает все адреса: `python3 deploy/set_domain.py новый-домен.com` (или попросите Claude).
 
+## Сейчас: только сайт курса (решение 4 ноября 2026)
+
+Главный сайт пока не запускаем. Сайт курса уже работает на GitHub Pages из ветки `main`; ему нужен только адрес `study.bynurzy.com`.
+
+1. Cloudflare → домен `bynurzy.com` → **DNS** → **Records** → **Add record**: **Type** `CNAME`, **Name** `study`, **Target** `galiandojonathan-ship-it1.github.io`, **Proxy status** выключить (серое облако, **DNS only**) → **Save**.
+2. GitHub → репозиторий → **Settings** → **Pages** → **Custom domain** → `study.bynurzy.com` → **Save**. GitHub сам добавит файл `docs/CNAME` в `main`.
+3. Подождите, пока GitHub напишет **DNS check successful** (обычно 5–30 минут), и поставьте галочку **Enforce HTTPS** (может появиться через час).
+4. Откройте `https://study.bynurzy.com/`: окно пароля сайта. Старый адрес `…github.io/nurzycom_brand/` будет сам перенаправлять на новый.
+
+Шаги ниже (Cloudflare Pages, главный сайт, вход по почте) — на потом.
+
 ## 1. Домен в Cloudflare
 
 Домен `bynurzy.com` уже куплен. Дальше всё зависит от того, где он зарегистрирован.
