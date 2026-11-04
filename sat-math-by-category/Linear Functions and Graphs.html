@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear Functions and Graphs</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Linear Functions and Graphs</h1>
+<p class="intro">Reading and writing linear functions, lines in the xy-plane, perpendicular lines, linear inequality regions and piecewise models.</p>
+<div class="progress">Solved: <span id="count">0</span> of 9</div>
+<article class="card" id="FUN-01">
+<header><span class="num">FUN-01</span><span class="src">PDF 1 &middot; p. 18</span><label class="done"><input type="checkbox" data-id="FUN-01"> Solved</label></header>
+<div class="stem">The shaded region shown represents the solutions to $rx+ty\ge -44$, where $r$ and $t$ are constants. What is the value of $r+t$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-4$</span></li><li><span class="letter">B</span><span class="ctext">$-3$</span></li><li><span class="letter">C</span><span class="ctext">$3$</span></li><li><span class="letter">D</span><span class="ctext">$5$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 1, page 18). It is not reproduced here.</p></article>
+<article class="card" id="FUN-02">
+<header><span class="num">FUN-02</span><span class="src">PDF 1 &middot; p. 19</span><label class="done"><input type="checkbox" data-id="FUN-02"> Solved</label></header>
+<div class="stem">In the $xy$-plane, line $k$ and line $\ell$ are perpendicular and intersect at the point $(2,8)$. If line $k$ is defined by the equation $y=mx+b$, where $m$ and $b$ are constants and $m&gt;1$, which of the following points lies on line $\ell$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\left(3,\,8-\frac{1}{m}\right)$</span></li><li><span class="letter">B</span><span class="ctext">$\left(3,\,8+\frac{1}{m}\right)$</span></li><li><span class="letter">C</span><span class="ctext">$(3,\,8-m)$</span></li><li><span class="letter">D</span><span class="ctext">$(3,\,8+m)$</span></li></ol></article>
+<article class="card" id="FUN-03">
+<header><span class="num">FUN-03</span><span class="src">PDF 2 &middot; p. 3</span><label class="done"><input type="checkbox" data-id="FUN-03"> Solved</label></header>
+<div class="stem">A painting studio is offering a promotion where the first class is free, the second class is half off the regular price, and the remaining classes are regularly priced. If the regular price of a class is \$26.40, which function $f$ gives the total cost, in dollars, of $x$ classes taken using this promotion, where $x\ge 2$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$f(x)=26.40(x-1)+13.20$</span></li><li><span class="letter">B</span><span class="ctext">$f(x)=26.40(x-2)+13.20$</span></li><li><span class="letter">C</span><span class="ctext">$f(x)=26.40(x-1)+13.20(x-2)$</span></li><li><span class="letter">D</span><span class="ctext">$f(x)=26.40(x-2)+13.20(x-1)$</span></li></ol></article>
+<article class="card" id="FUN-04">
+<header><span class="num">FUN-04</span><span class="src">PDF 2 &middot; p. 21</span><label class="done"><input type="checkbox" data-id="FUN-04"> Solved</label></header>
+<div class="stem">Line $s$ is defined by $x-4y=24$. Line $t$ is perpendicular to line $s$ in the $xy$-plane and passes through the points $(k,0)$ and $(60,-k)$. What is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="FUN-05">
+<header><span class="num">FUN-05</span><span class="src">PDF 3 &middot; p. 7</span><label class="done"><input type="checkbox" data-id="FUN-05"> Solved</label></header>
+<div class="stem">Quinidra drove her car on a straight road to a certain location. The graph below models Quinidra's distance, in miles, from her home as a function of time, in hours. Which of the following could the model describe?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">Quinidra drove away from her home at a constant speed for 1 hour, spent 4 hours at the location, then continued to drive away from her home at a constant speed for 1 hour.</span></li><li><span class="letter">B</span><span class="ctext">Quinidra drove away from her home at a constant speed for 1 hour, spent 4 hours at the location, then drove back to her home at a constant speed for 1 hour.</span></li><li><span class="letter">C</span><span class="ctext">Quinidra drove away from her home at an increasing speed for 1 hour, spent 4 hours at the location, then drove back to her home at a decreasing speed for 1 hour.</span></li><li><span class="letter">D</span><span class="ctext">Quinidra drove away from her home at an increasing speed for 1 hour, drove at a constant speed for 4 hours, then drove back to her home at a decreasing speed for 1 hour.</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 3, page 7). It is not reproduced here.</p></article>
+<article class="card" id="FUN-06">
+<header><span class="num">FUN-06</span><span class="src">PDF 4 &middot; p. 3</span><label class="done"><input type="checkbox" data-id="FUN-06"> Solved</label></header>
+<div class="stem">Line $s$ in the $xy$-plane is defined by $6x+2y=0$. Line $t$ is perpendicular to line $s$ and passes through the points $(7,0)$ and $\left(k,\frac{4}{3}\right)$. What is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="FUN-07">
+<header><span class="num">FUN-07</span><span class="src">PDF 4 &middot; p. 22</span><label class="done"><input type="checkbox" data-id="FUN-07"> Solved</label></header>
+<div class="stem">The scatter plot shows the relationship between $t$ and $d$ for the data shown. Which of the following equations is the most appropriate linear model for the data shown?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$d=-48.1+2.02t$</span></li><li><span class="letter">B</span><span class="ctext">$d=148.1+2.02t$</span></li><li><span class="letter">C</span><span class="ctext">$d=371.8+2.02t$</span></li><li><span class="letter">D</span><span class="ctext">$d=406.8+2.02t$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 22). It is not reproduced here.</p></article>
+<article class="card" id="FUN-08">
+<header><span class="num">FUN-08</span><span class="src">PDF 5 &middot; p. 4</span><label class="done"><input type="checkbox" data-id="FUN-08"> Solved</label></header>
+<div class="stem">The graph of the linear function $y=f(x)+17$ is shown. If $c$ and $d$ are positive constants, which equation could define $f$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$f(x)=-d-cx$</span></li><li><span class="letter">B</span><span class="ctext">$f(x)=d+cx$</span></li><li><span class="letter">C</span><span class="ctext">$f(x)=d-cx$</span></li><li><span class="letter">D</span><span class="ctext">$f(x)=-d+cx$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 5, page 4). It is not reproduced here.</p></article>
+<article class="card" id="FUN-09">
+<header><span class="num">FUN-09</span><span class="src">PDF 5 &middot; p. 16</span><label class="done"><input type="checkbox" data-id="FUN-09"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=3d(26x+27)+18$. Which of the following represents the $x$-intercept of the graph of $y=f(x)+6$ in the $xy$-plane, where $d$ is a constant?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$(81d+24,\,0)$</span></li><li><span class="letter">B</span><span class="ctext">$\left(\frac{-81d-24}{78d},\,0\right)$</span></li><li><span class="letter">C</span><span class="ctext">$\left(6-\frac{81d+18}{78d},\,0\right)$</span></li><li><span class="letter">D</span><span class="ctext">$\left(-\frac{45}{78d+6},\,0\right)$</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "FUN";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

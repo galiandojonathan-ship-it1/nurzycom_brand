@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>SAT words · slide 14</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Display:ital,wght@1,300&display=swap">
+<style>
+  /* Instagram portrait post 1080 × 1350. Informal version: colour photo,
+     stickers and doodles, same ink / paper / grey palette. */
+  :root {
+    --ink: #0A0A0A; --paper: #FAF8F3; --studio: #D5D5D4;
+    --serif: 'Noto Serif Display', serif;
+    --sans: 'Geist', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .slide { position: relative; width: 1080px; height: 1350px; padding: 64px 72px; }
+  .slide::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(10,10,10,.12) 1.6px, transparent 1.6px); background-size: 36px 36px; }
+  .slide > * { position: relative; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); }
+  .chip svg { width: 22px; height: 22px; }
+
+  .sub { margin-top: 18px; font-size: 30px; line-height: 1.35; max-width: 40ch; color: #2b2a27; }
+
+  .tape { position: absolute; width: 150px; height: 44px; background: rgba(213,213,212,.9); }
+
+  .sticker { position: absolute; display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 999px; font: 700 30px var(--sans); letter-spacing: -.01em; white-space: nowrap; box-shadow: 0 10px 24px -12px rgba(10,10,10,.4); }
+  .sticker svg { width: 32px; height: 32px; flex: none; }
+  .s-dark { background: var(--ink); color: var(--paper); }
+  .s-light { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); }
+
+  .todo { outline: 2px dashed #c33; outline-offset: 3px; color: #c33; }
+  .sparkle { position: absolute; width: 44px; height: 44px; }
+  .sparkle path { fill: var(--ink); }
+
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 56px; display: flex; justify-content: space-between; align-items: center; font: 400 20px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .swipe { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--ink); color: var(--paper); border-radius: 999px; }
+  svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  h1 { font: 700 92px/1 var(--sans); letter-spacing: -.035em; }
+  h1 em { font: 300 italic 104px/1 var(--serif); letter-spacing: -.02em; }
+  .stack { position: absolute; left: 72px; right: 72px; top: 150px; bottom: 150px; display: flex; flex-direction: column; justify-content: space-between; }
+  .word { font: 300 italic 156px/1.02 var(--serif); letter-spacing: -.02em; margin-left: -6px; }
+  .pron { margin-top: 26px; font: 400 25px var(--mono); color: #5A5852; letter-spacing: .04em; }
+  .mean { margin-top: 20px; font: 500 44px/1.22 var(--sans); letter-spacing: -.01em; max-width: 26ch; }
+  .ex { position: relative; margin-top: 0; padding: 44px 46px 36px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); }
+  .ex .tape { position: absolute; top: -18px; left: 50%; width: 150px; height: 44px; background: rgba(213,213,212,.9); transform: translateX(-50%) rotate(-3deg); }
+  .ex .en { font: 400 36px/1.4 var(--sans); }
+  .ex .en b { font-weight: 700; background: linear-gradient(transparent 62%, #D5D5D4 62%); }
+  .ex .ru { margin-top: 16px; font: 400 25px/1.4 var(--sans); color: #5A5852; }
+  .lab { display: block; font: 400 18px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #5A5852; }
+  .syn { margin-top: 0; }
+  .chips { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px 14px; }
+  .chips .sticker { position: relative; font-size: 27px; padding: 11px 20px; }
+  .chips .sticker:nth-child(odd) { transform: rotate(-2deg); } .chips .sticker:nth-child(even) { transform: rotate(2deg); }
+  .hook { margin-top: 0; }
+  .hook p { margin-top: 12px; font: 300 italic 40px/1.18 var(--serif); max-width: 40ch; }
+  .foot .swipe svg { width: 22px; height: 22px; }
+
+  .t14 { position: absolute; left: 72px; right: 72px; top: 150px; }
+  .t14 .sub { margin-top: 20px; font-size: 30px; line-height: 1.4; max-width: 44ch; color: #2b2a27; }
+  .quiz { position: absolute; left: 72px; right: 72px; top: 450px; list-style: none; padding: 44px 46px; background: #fff; box-shadow: 0 24px 50px -18px rgba(10,10,10,.3); transform: rotate(-1deg); }
+  .quiz li { display: flex; gap: 22px; align-items: baseline; }
+  .quiz li + li { margin-top: 30px; }
+  .qn { flex: none; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 700 24px var(--sans); transform: translateY(6px); }
+  .quiz p { font: 400 33px/1.4 var(--sans); }
+  .bl { display: inline-block; width: 170px; border-bottom: 3px solid var(--ink); }
+  .ans { position: absolute; left: 72px; right: 72px; top: 1100px; text-align: center; transform: rotate(180deg); }
+  .ans .lab { margin-bottom: 8px; }
+  .ans p { font: 400 24px var(--mono); letter-spacing: .04em; color: #5A5852; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="top">
+    <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h11a3 3 0 0 1 3 3v11H7a3 3 0 0 1-3-3z"/><path d="M8 9h6M8 13h6"/></svg>SAT Verbal · проверка</span>
+    <span>14 / 14</span>
+  </div>
+
+  <div class="t14">
+    <h1>Проверь <em>себя</em></h1>
+    <p class="sub">Закрой ответы и вставь слово. Вспоминать по памяти полезнее, чем перечитывать.</p>
+  </div>
+  <ol class="quiz"><li><span class="qn">1</span><p>The link between the two events is <span class=bl></span>: one blurry photo.</p></li><li><span class="qn">2</span><p>The new bus lanes are meant to <span class=bl></span> traffic in the city centre.</p></li><li><span class="qn">3</span><p>Her <span class=bl></span> refusal to hear other views annoyed the whole team.</p></li><li><span class="qn">4</span><p>The editor asked him to <span class=bl></span> the error in the second paragraph.</p></li></ol>
+  <div class="ans"><span class="lab">ответы</span><p>1 tenuous · 2 ameliorate · 3 dogmatic · 4 rectify</p></div>
+  <svg class="sparkle" style="top:420px;right:60px" viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+
+  <div class="foot">
+    <span>@nurzycom</span>
+    <span></span>
+  </div>
+</div>
+</body>
+</html>
