@@ -402,7 +402,7 @@
 
   // ---------- site password: re-wrap the master key with a new password and publish access.json
   const DEP = (window.HW_CONFIG && HW_CONFIG.deploy) || {};
-  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || DEP.repo || "galiandojonathan-ship-it1/bynurzy", branch: store("gh_branch") || DEP.branch || "main" });
+  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || DEP.repo || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || DEP.branch || "main" });
   function ghState() { const g = GH(); $("gh-state").textContent = g.token ? `· подключено: ${g.repo}, ветка ${g.branch}` : "· не подключено"; $("gh-repo").value = g.repo; $("gh-branch").value = g.branch; }
   async function newAccess() {
     const cur = $("pw-cur").value, a = $("pw-new").value.trim(), b = $("pw-new2").value.trim();

@@ -21,16 +21,16 @@
 
 ## 2. Репозиторий и ветка
 
-- Репозиторий называется `bynurzy` (переименование: GitHub → репозиторий → **Settings** → **General** → **Repository name** → `bynurzy` → **Rename**). Старые ссылки на `nurzycom_brand` GitHub перенаправляет сам.
-- Сайты собираются из ветки `main` (создана 4 ноября 2026 из `claude/ecstatic-mayer-3asg7r`).
+- Сайты собираются из ветки `main` (создана 4 ноября 2026: в ней вся работа из трёх прежних веток `claude/…`).
 - **Settings** → **General** → **Default branch** → значок ⇄ → `main` → **Update**.
-- Новые изменения попадают в `main` через **Pull request** → **Merge**, или попросите Claude обновить `main`.
+- Claude сохраняет работу прямо в `main`, и каждое сохранение через 1–2 минуты выходит на сайт. Если новая сессия Claude начнёт в ветке `claude/…`, скажите ей: «сохраняй в main».
+- Старые ветки `claude/…` больше не нужны (всё из них уже в `main`): **Branches** → значок корзины рядом с веткой.
 
 ## 3. Главный сайт
 
 1. Cloudflare → **Workers & Pages** → **Create** → вкладка **Pages** → **Connect to Git**.
    (Если Cloudflare показывает только **Import a repository**, выберите его: шаги те же.)
-2. Подключите GitHub, выберите репозиторий `bynurzy` → **Begin setup**.
+2. Подключите GitHub, выберите репозиторий `nurzycom_brand` → **Begin setup**.
 3. **Project name**: `nurzycom` · **Production branch**: `main` · **Framework preset**: `None` · **Build command**: пусто · **Build output directory**: `site` → **Save and Deploy**.
 4. Проект → **Custom domains** → **Set up a custom domain** → `bynurzy.com` → **Continue** → **Activate domain**. Повторите для `www.bynurzy.com`.
 
