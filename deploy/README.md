@@ -1,22 +1,23 @@
 # Запуск сайтов на своём домене
 
-Два сайта на одном домене (пример: `nurzycom.com`, был свободен 4 ноября 2026):
+Два сайта на одном домене `bynurzy.com` (зарегистрирован 4 ноября 2026):
 
 | Что | Папка в репозитории | Адрес |
 |---|---|---|
-| Главный сайт (EN / RU) | `site/` | `https://nurzycom.com/` и `https://nurzycom.com/ru/` |
-| Сайт курса (по паролю) | `docs/` | `https://study.nurzycom.com/` |
+| Главный сайт (EN / RU) | `site/` | `https://bynurzy.com/` и `https://bynurzy.com/ru/` |
+| Сайт курса (по паролю) | `docs/` | `https://study.bynurzy.com/` |
 
 Хостинг: Cloudflare Pages, бесплатно. Платите только за домен (около $11 в год у Cloudflare Registrar).
 Всё в репозитории уже готово: адреса для поиска и превью ссылок, `robots.txt`, `sitemap.xml`, страницы 404, заголовки безопасности (`_headers`), ссылка «Вход для учеников» в подвале главного сайта. Сайт курса закрыт от поисковиков.
 
 Если купите другой домен, одна команда переписывает все адреса: `python3 deploy/set_domain.py новый-домен.com` (или попросите Claude).
 
-## 1. Купить домен
+## 1. Домен в Cloudflare
 
-1. https://dash.cloudflare.com → **Sign up** (или **Log in**).
-2. Слева **Domain Registration** → **Register Domains** → введите `nurzycom.com` → **Purchase**.
-3. Карта Visa / Mastercard, которая платит за рубежом. Включите **Auto-renew**, чтобы домен не пропал.
+Домен `bynurzy.com` уже куплен. Дальше всё зависит от того, где он зарегистрирован.
+
+- **Куплен в Cloudflare** (Domain Registration): ничего делать не нужно, домен уже в аккаунте. Проверьте **Auto-renew**.
+- **Куплен у другого регистратора** (Namecheap, GoDaddy, ps.kz и т. п.): Cloudflare → **Add a domain** → `bynurzy.com` → план **Free** → **Continue**. Cloudflare покажет два nameserver (вида `xxx.ns.cloudflare.com`). У регистратора откройте настройки домена → **Nameservers** → **Custom DNS** → вставьте эти два адреса → **Save**. Через 10 минут – 24 часа домен в Cloudflare станет **Active**. Включите автопродление у регистратора.
 
 ## 2. Ветка, из которой собирается сайт
 
@@ -32,22 +33,22 @@
    (Если Cloudflare показывает только **Import a repository**, выберите его: шаги те же.)
 2. Подключите GitHub, выберите репозиторий `nurzycom_brand` → **Begin setup**.
 3. **Project name**: `nurzycom` · **Production branch**: `main` · **Framework preset**: `None` · **Build command**: пусто · **Build output directory**: `site` → **Save and Deploy**.
-4. Проект → **Custom domains** → **Set up a custom domain** → `nurzycom.com` → **Continue** → **Activate domain**. Повторите для `www.nurzycom.com`.
+4. Проект → **Custom domains** → **Set up a custom domain** → `bynurzy.com` → **Continue** → **Activate domain**. Повторите для `www.bynurzy.com`.
 
 ## 4. Сайт курса
 
 1. Снова **Workers & Pages** → **Create** → **Pages** → **Connect to Git** → тот же репозиторий.
 2. **Project name**: `nurzycom-study` · **Production branch**: `main` · **Build output directory**: `docs` → **Save and Deploy**.
-3. **Custom domains** → `study.nurzycom.com` → **Activate domain**.
-4. Откройте `https://study.nurzycom.com/`: должно появиться окно пароля сайта.
+3. **Custom domains** → `study.bynurzy.com` → **Activate domain**.
+4. Откройте `https://study.bynurzy.com/`: должно появиться окно пароля сайта.
 
-Запасной вариант без Cloudflare Pages: сайт курса может остаться на GitHub Pages (**Settings** → **Pages** → **Deploy from a branch** → `main` → `/docs` → **Save**, затем **Custom domain** → `study.nurzycom.com` → **Save**), а в Cloudflare → домен → **DNS** → **Records** → **Add record**: Type `CNAME`, Name `study`, Target `galiandojonathan-ship-it1.github.io`, Proxy status **DNS only**. Вход по почте (пункт 6) тогда не работает.
+Запасной вариант без Cloudflare Pages: сайт курса может остаться на GitHub Pages (**Settings** → **Pages** → **Deploy from a branch** → `main` → `/docs` → **Save**, затем **Custom domain** → `study.bynurzy.com` → **Save**), а в Cloudflare → домен → **DNS** → **Records** → **Add record**: Type `CNAME`, Name `study`, Target `galiandojonathan-ship-it1.github.io`, Proxy status **DNS only**. Вход по почте (пункт 6) тогда не работает.
 
 GitHub Pages после переезда можно выключить: GitHub → **Settings** → **Pages** → **Source**: `None`. Тогда репозиторий можно сделать приватным (**Settings** → **General** → **Danger Zone** → **Change visibility** → **Private**): Cloudflare продолжит собирать сайт.
 
 ## 5. Смена пароля сайта на новом хостинге
 
-`https://study.nurzycom.com/teacher.html` → **GitHub · подключить один раз**: ветка теперь по умолчанию `main`. После смены пароля Cloudflare пересоберёт сайт за 1–2 минуты.
+`https://study.bynurzy.com/teacher.html` → **GitHub · подключить один раз**: ветка теперь по умолчанию `main`. После смены пароля Cloudflare пересоберёт сайт за 1–2 минуты.
 
 ## 6. (По желанию) Вход по почте для каждого ученика: Cloudflare Access
 
@@ -56,16 +57,16 @@ GitHub Pages после переезда можно выключить: GitHub �
 1. Cloudflare → **Zero Trust** → выберите план **Free** (карта нужна, списаний нет).
 2. **Settings** → **Authentication** → **Login methods** → должен быть **One-time PIN**.
 3. **Access** → **Applications** → **Add an application** → **Self-hosted**.
-   - **Application name**: `nurzycom study` · **Application domain**: `study.nurzycom.com`.
+   - **Application name**: `nurzycom study` · **Application domain**: `study.bynurzy.com`.
    - **Policy name**: `Students` · **Action**: `Allow` · **Include** → **Emails** → почты учеников и ваша.
    - **Save**.
-4. Отдельно закройте кабинет: ещё одно приложение с доменом `study.nurzycom.com`, путь `teacher.html`, в **Include** только ваша почта.
+4. Отдельно закройте кабинет: ещё одно приложение с доменом `study.bynurzy.com`, путь `teacher.html`, в **Include** только ваша почта.
 5. Общий пароль сайта останется вторым замком. Если захотите оставить только вход по почте, попросите Claude убрать пароль.
 
 ## 7. Проверка после запуска
 
-- `https://nurzycom.com/` и `/ru/` открываются, кнопка RU / EN работает, превью ссылки в Telegram показывает фото.
-- Ссылка «Вход для учеников» в подвале ведёт на `study.nurzycom.com`.
+- `https://bynurzy.com/` и `/ru/` открываются, кнопка RU / EN работает, превью ссылки в Telegram показывает фото.
+- Ссылка «Вход для учеников» в подвале ведёт на `study.bynurzy.com`.
 - На сайте курса: войти, сдать любую часть, проверить, что ответ пришёл в Google Form.
 - В кабинете (`teacher.html`) открыть ответы: даты должны совпадать с Google Sheets.
-- По желанию: Google Search Console → **Add property** → **Domain** → `nurzycom.com` (подтверждение через запись DNS в Cloudflare).
+- По желанию: Google Search Console → **Add property** → **Domain** → `bynurzy.com` (подтверждение через запись DNS в Cloudflare).

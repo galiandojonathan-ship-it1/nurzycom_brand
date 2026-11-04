@@ -1,6 +1,6 @@
 """Points the two websites at one domain. Run again with another name if the domain changes:
 
-    python3 deploy/set_domain.py nurzycom.com
+    python3 deploy/set_domain.py bynurzy.com
 
 Main site (site/)      → https://<domain>/          (English) and https://<domain>/ru/ (Russian)
 Student site (docs/)   → https://study.<domain>/    (password-protected course site)

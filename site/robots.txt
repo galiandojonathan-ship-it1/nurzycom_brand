@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nurzycom.com/sitemap.xml
+Sitemap: https://bynurzy.com/sitemap.xml
