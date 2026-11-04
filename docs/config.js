@@ -8,5 +8,5 @@ window.HW_CONFIG = {
   },
   telegram: "nurzycom",
   // the GitHub repository and branch the hosting builds from: teacher.html writes a new access.json there
-  deploy: { repo: "galiandojonathan-ship-it1/nurzycom_brand", branch: "main" }
+  deploy: { repo: "galiandojonathan-ship-it1/bynurzy", branch: "main" }
 };

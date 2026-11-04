@@ -19,19 +19,18 @@
 - **Куплен в Cloudflare** (Domain Registration): ничего делать не нужно, домен уже в аккаунте. Проверьте **Auto-renew**.
 - **Куплен у другого регистратора** (Namecheap, GoDaddy, ps.kz и т. п.): Cloudflare → **Add a domain** → `bynurzy.com` → план **Free** → **Continue**. Cloudflare покажет два nameserver (вида `xxx.ns.cloudflare.com`). У регистратора откройте настройки домена → **Nameservers** → **Custom DNS** → вставьте эти два адреса → **Save**. Через 10 минут – 24 часа домен в Cloudflare станет **Active**. Включите автопродление у регистратора.
 
-## 2. Ветка, из которой собирается сайт
+## 2. Репозиторий и ветка
 
-Сайты собираются из ветки `main`. Сейчас вся работа лежит в ветке `claude/ecstatic-mayer-3asg7r`.
-
-- GitHub → репозиторий `nurzycom_brand` → **Branches** → **New branch** → Name: `main`, Source: `claude/ecstatic-mayer-3asg7r` → **Create new branch**.
-- Потом: **Settings** → **General** → **Default branch** → переключить на `main` → **Update**.
-- Новые изменения попадают в `main` через **Pull request** → **Merge**. Можно попросить Claude: «создай main и обновляй её».
+- Репозиторий называется `bynurzy` (переименование: GitHub → репозиторий → **Settings** → **General** → **Repository name** → `bynurzy` → **Rename**). Старые ссылки на `nurzycom_brand` GitHub перенаправляет сам.
+- Сайты собираются из ветки `main` (создана 4 ноября 2026 из `claude/ecstatic-mayer-3asg7r`).
+- **Settings** → **General** → **Default branch** → значок ⇄ → `main` → **Update**.
+- Новые изменения попадают в `main` через **Pull request** → **Merge**, или попросите Claude обновить `main`.
 
 ## 3. Главный сайт
 
 1. Cloudflare → **Workers & Pages** → **Create** → вкладка **Pages** → **Connect to Git**.
    (Если Cloudflare показывает только **Import a repository**, выберите его: шаги те же.)
-2. Подключите GitHub, выберите репозиторий `nurzycom_brand` → **Begin setup**.
+2. Подключите GitHub, выберите репозиторий `bynurzy` → **Begin setup**.
 3. **Project name**: `nurzycom` · **Production branch**: `main` · **Framework preset**: `None` · **Build command**: пусто · **Build output directory**: `site` → **Save and Deploy**.
 4. Проект → **Custom domains** → **Set up a custom domain** → `bynurzy.com` → **Continue** → **Activate domain**. Повторите для `www.bynurzy.com`.
 
