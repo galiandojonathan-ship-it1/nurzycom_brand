@@ -402,7 +402,8 @@
 
   // ---------- site password: re-wrap the master key with a new password and publish access.json
   const DEP = (window.HW_CONFIG && HW_CONFIG.deploy) || {};
-  const GH = () => ({ token: store("gh_token") || "", repo: store("gh_repo") || DEP.repo || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || DEP.branch || "main" });
+  const cleanTok = (s) => String(s || "").replace(/[^\x21-\x7E]/g, "");   // a token is plain ASCII; drops spaces, line breaks, stray letters
+  const GH = () => ({ token: cleanTok(store("gh_token")), repo: store("gh_repo") || DEP.repo || "galiandojonathan-ship-it1/nurzycom_brand", branch: store("gh_branch") || DEP.branch || "main" });
   function ghState() { const g = GH(); $("gh-state").textContent = g.token ? `· подключено: ${g.repo}, ветка ${g.branch}` : "· не подключено"; $("gh-repo").value = g.repo; $("gh-branch").value = g.branch; }
   async function newAccess() {
     const cur = $("pw-cur").value, a = $("pw-new").value.trim(), b = $("pw-new2").value.trim();
@@ -505,7 +506,10 @@
   addEventListener("beforeunload", (e) => { if (ACC.dirty) { e.preventDefault(); e.returnValue = ""; } });
   SITE.ready.then(accLoad);
 
-  $("gh-save").onclick = () => { if ($("gh-token").value.trim()) store("gh_token", $("gh-token").value.trim()); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || DEP.branch || "main"); $("gh-token").value = ""; ghState(); };
+  $("gh-save").onclick = () => {
+    const raw = $("gh-token").value, tok = cleanTok(raw);
+    if (raw.trim() && !/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(tok)) { store("gh_token", null); ghState(); $("gh-state").textContent = "· это не похоже на токен GitHub: он начинается с github_pat_ и состоит только из латинских букв, цифр и _. Скопируйте токен заново и вставьте только его."; return; }
+    if (tok) store("gh_token", tok); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || DEP.branch || "main"); $("gh-token").value = ""; ghState(); };
   $("gh-forget").onclick = () => { store("gh_token", null); ghState(); };
   ghState();
 
