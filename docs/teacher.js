@@ -471,7 +471,7 @@
     if (ACC.a.wrap) sh.innerHTML = `<span class="label">Общий пароль · включён</span><p class="hint" style="margin:6px 0 10px">Пока он включён, на сайт можно войти и без логина, по старому общему паролю (поле «Логин» пустое). Когда все ученики получат свои логины, выключите его.</p><button class="btn ghost" id="acc-off">Выключить общий пароль</button>`;
     else sh.innerHTML = `<span class="label">Общий пароль · выключен</span><p class="hint" style="margin:6px 0 0">Войти можно только по логину и паролю. Чтобы включить общий пароль снова, задайте новый в разделе ниже.</p>`;
     if ($("acc-off")) $("acc-off").onclick = () => {
-      const mine = ACC.list.find((x) => x.login === me);
+      const mine = ACC.list.find((x) => x.login === me) || REG.list.find((x) => x.login === me);
       if (!mine) { accMsg("Сначала создайте логин себе, сохраните, выйдите и войдите на сайт со своим логином. Иначе после выключения вы сами не войдёте."); return; }
       if (!confirm("Выключить общий пароль? Ученики без своего логина больше не смогут войти.")) return;
       ["salt", "iter", "wrap"].forEach((k) => delete ACC.a[k]); ACC.dirty = true; accMsg("Общий пароль будет выключен после «Сохранить на сайте»."); accRender();
@@ -505,6 +505,75 @@
   };
   addEventListener("beforeunload", (e) => { if (ACC.dirty) { e.preventDefault(); e.returnValue = ""; } });
   SITE.ready.then(accLoad);
+
+  // ---------- accounts students create themselves (Cloudflare function api/…, KV storage); works only on study.bynurzy.com
+  const REG = { list: [], invite: false };
+  const regMsg = (t) => ($("reg-msg").textContent = t);
+  const newKey = () => { const u = crypto.getRandomValues(new Uint8Array(24)); return btoa(String.fromCharCode(...u)).replace(/[+/=]/g, "").slice(0, 32); };
+  function regExplain(status) {
+    if (status === 404 || status === 405) return "Регистрация работает только на https://study.bynurzy.com/. Откройте кабинет по этому адресу.";
+    if (status === 503) return "Хранилище аккаунтов ещё не подключено в Cloudflare. Сделайте шаг «KV» из инструкции, потом обновите страницу.";
+    return `Сервер ответил ${status}. Обновите страницу через минуту.`;
+  }
+  async function regLoad() {
+    const box = $("reg-admin");
+    if (!SITE.adminKey()) {
+      const probe = await SITE.api("admin/users").catch(() => ({ status: 0 }));
+      if (probe.status !== 403) { box.innerHTML = `<p class="hint">${esc(regExplain(probe.status || 503))}</p>`; return; }
+      box.innerHTML = `<span class="label">Ключ администратора</span>
+        <p class="hint" style="margin:6px 0">Ключ отличает вас от учеников: только с ним видно список аккаунтов и можно удалять. Первый раз нажмите «Стать администратором». На другом устройстве вставьте сохранённый ключ.</p>
+        <div class="row"><button class="btn" id="reg-claim">Стать администратором</button></div>
+        <div class="row"><input id="reg-key" type="password" placeholder="Вставить сохранённый ключ" autocomplete="off" aria-label="Ключ администратора"><button class="btn ghost" id="reg-key-go">Войти с ключом</button></div>`;
+      $("reg-claim").onclick = async () => {
+        const key = newKey(), r = await SITE.api("admin/claim", { method: "POST", body: JSON.stringify({ key }) });
+        if (r.status === 409) { regMsg("Администратор уже назначен. Вставьте свой сохранённый ключ ниже."); return; }
+        if (!r.ok) { regMsg(regExplain(r.status)); return; }
+        SITE.adminKey(key); regMsg(""); await regLoad();
+        $("reg-admin").insertAdjacentHTML("afterbegin", `<div style="margin-bottom:10px"><span class="label">Ваш ключ администратора · сохраните его</span><pre>${esc(key)}</pre><p class="hint">Сохраните ключ в Заметках или менеджере паролей. Он нужен, чтобы открыть этот раздел на другом устройстве. Ученикам его не отправляйте.</p></div>`);
+      };
+      $("reg-key-go").onclick = async () => { SITE.adminKey($("reg-key").value.trim()); await regLoad(); };
+      return;
+    }
+    const r = await SITE.api("admin/users").catch(() => ({ status: 0 }));
+    if (r.status === 403) { SITE.adminKey(null); regMsg("Ключ не подошёл. Вставьте правильный ключ."); return regLoad(); }
+    if (!r.ok) { box.innerHTML = `<p class="hint">${esc(regExplain(r.status || 503))}</p>`; return; }
+    box.innerHTML = `<span class="label">Администратор · вы</span><p class="hint" style="margin:6px 0 0">Ключ сохранён в этом браузере. <a href="#" id="reg-forget">Убрать ключ с этого устройства</a></p>`;
+    $("reg-forget").onclick = (e) => { e.preventDefault(); SITE.adminKey(null); regLoad(); };
+    REG.invite = r.data.invite; REG.list = [];
+    for (const u of r.data.users) { try { const me = await SITE.nameOf(u.n); REG.list.push(Object.assign({ id: u.id, at: u.at }, me)); } catch (x) { REG.list.push({ id: u.id, at: u.at, login: "?", name: "?" }); } }
+    regRender(); accRender();
+  }
+  function studentText(code) {
+    return `Сайт курса: ${siteUrl()}\n1. Нажми «Создать аккаунт».\n2. Код класса: ${code}\n3. Впиши имя и первую букву фамилии, придумай логин и пароль (от 8 символов, буквы и цифры).\nПотом входи по своему логину и паролю. Отметь «Запомнить на этом устройстве».`;
+  }
+  function regRender(fresh) {
+    const iv = $("reg-invite"); iv.classList.remove("hidden");
+    iv.innerHTML = (fresh ? `<span class="label">Новый код класса · отправьте ученикам</span><pre>${esc(studentText(fresh))}</pre><p class="hint">Код виден только сейчас. Скопируйте сообщение и отправьте в чат учеников.</p><div class="row"><button class="btn ghost" id="reg-copy">Скопировать сообщение</button></div>`
+      : REG.invite ? `<span class="label">Код класса · действует</span><p class="hint" style="margin:6px 0 0">С ним ученики создают аккаунты. Если код утёк или вы его потеряли, создайте новый: старый перестанет работать, созданные аккаунты останутся.</p>`
+      : `<span class="label">Код класса · не создан</span><p class="hint" style="margin:6px 0 0">Пока кода нет, создать аккаунт нельзя. Создайте код и отправьте его ученикам.</p>`)
+      + `<div class="row"><button class="btn${REG.invite && !fresh ? " ghost" : ""}" id="reg-newcode">${REG.invite ? "Новый код класса" : "Создать код класса"}</button>${REG.invite ? '<button class="btn ghost" id="reg-close">Закрыть регистрацию</button>' : ""}</div>`;
+    if ($("reg-copy")) $("reg-copy").onclick = async () => { try { await navigator.clipboard.writeText(studentText(fresh)); $("reg-copy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст вручную."); } };
+    $("reg-newcode").onclick = async () => {
+      if (REG.invite && !confirm("Создать новый код? Старый код перестанет работать для новых аккаунтов.")) return;
+      const code = genPw(), body = await SITE.inviteFor(code), r = await SITE.api("admin/invite", { method: "POST", body: JSON.stringify(body) });
+      if (!r.ok) { regMsg(regExplain(r.status)); return; } REG.invite = true; regMsg(""); regRender(code);
+    };
+    if ($("reg-close")) $("reg-close").onclick = async () => {
+      if (!confirm("Закрыть регистрацию? Новые аккаунты создать будет нельзя, созданные продолжат работать.")) return;
+      const r = await SITE.api("admin/invite", { method: "DELETE" }); if (!r.ok) { regMsg(regExplain(r.status)); return; } REG.invite = false; regRender();
+    };
+    const me = SITE.me();
+    $("reg-list").innerHTML = REG.list.length ? table(["Ученик", "Логин", "Создан", ""], REG.list.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), "ru")).map((u) => ({ k: u.id,
+      cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`, u.at ? when(new Date(u.at)) : "—",
+        u.login === me ? "" : `<button class="chip" data-regdel="${esc(u.id)}">Удалить</button>`] }))).replace('<table class="t">', '<table class="t acct">')
+      : '<p class="hint">Аккаунтов пока нет. Создайте себе аккаунт первым: выйдите, на странице входа нажмите «Создать аккаунт» и введите код класса.</p>';
+    $("reg-list").querySelectorAll("[data-regdel]").forEach((b) => (b.onclick = async () => {
+      const u = REG.list.find((x) => x.id === b.dataset.regdel); if (!u || !confirm(`Удалить аккаунт ${u.login} (${u.name})? Ученик больше не сможет войти.`)) return;
+      const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "DELETE" }); if (!r.ok) { regMsg(regExplain(r.status)); return; }
+      REG.list = REG.list.filter((x) => x !== u); regMsg(`Аккаунт ${u.login} удалён.`); regRender();
+    }));
+  }
+  SITE.ready.then(regLoad);
 
   $("gh-save").onclick = () => {
     const raw = $("gh-token").value, tok = cleanTok(raw);

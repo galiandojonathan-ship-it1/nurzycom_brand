@@ -81,6 +81,9 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
 .accadd{display:grid;grid-template-columns:1fr;gap:8px;max-width:980px;margin-bottom:14px}
 @media(min-width:800px){.accadd{grid-template-columns:1.2fr 1fr auto}}
 #acc-new{margin-bottom:14px;border:1.5px solid var(--ink)}
+#reg pre{white-space:pre-wrap;font:14px/1.6 var(--mono);background:var(--white);padding:12px;margin:8px 0;border:1px solid var(--studio)}
+#reg .card .row{margin-top:8px}
+#reg-admin input{max-width:420px}
 #acc-new pre{white-space:pre-wrap;font:14px/1.6 var(--mono);background:var(--white);padding:12px;margin:8px 0;border:1px solid var(--studio)}
 .acct td .chip{padding:6px 10px}
 .acct .me{font:11px var(--mono);color:var(--stone);margin-left:6px}
@@ -105,6 +108,7 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
     <span class="label">06 — Только для преподавателя</span>
     <h1>Результаты учеников</h1>
     <p class="sub">Сводка по ответам из Google Form: кто что сдал, где ошибки, что повторить на уроке. Данные открываются только в этом браузере: страница ничего не хранит на сервере и никуда их не отправляет.</p>
+    <div class="row" style="margin-top:14px"><a class="btn" href="#reg">Аккаунты учеников и код класса ↓</a></div>
   </div>
 
   <section class="src" id="src">
@@ -131,8 +135,17 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
   <div class="row" id="demo-row"><button class="btn ghost" id="demo">Показать на вымышленных данных</button><span class="hint" id="src-msg"></span></div>
 
 
+  <section class="step" id="reg" style="margin-top:48px">
+    <div class="step-h"><span class="label">Аккаунты учеников · регистрация</span></div>
+    <p class="sub" style="font-size:15px">Ученики создают аккаунт сами: на странице входа кнопка «Создать аккаунт», затем код класса, имя, логин и пароль. Здесь — код класса, список аккаунтов и удаление. Изменения работают сразу.</p>
+    <div id="reg-admin" class="card"><p class="hint">Проверяю…</p></div>
+    <div id="reg-invite" class="card hidden" style="margin-top:10px"></div>
+    <div id="reg-list" style="margin-top:10px"></div>
+    <p class="hint" id="reg-msg"></p>
+  </section>
+
   <section class="step" id="acc" style="margin-top:48px">
-    <div class="step-h"><span class="label">Логины учеников</span></div>
+    <div class="step-h"><span class="label">Логины, созданные вручную</span></div>
     <p class="sub" style="font-size:15px">У каждого ученика свой логин и пароль. Имя ученика само попадает в его результаты, без опечаток. Удалите логин — ученик больше не войдёт. Изменения начинают работать через 1–2 минуты после кнопки «Сохранить на сайте».</p>
     <div class="accadd">
       <input id="acc-name" type="text" placeholder="Имя, как в результатах: Айгерим К." aria-label="Имя ученика" autocomplete="off">
