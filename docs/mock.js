@@ -42,7 +42,13 @@
   const revOf = (mid) => { const m = T.index && T.index.mocks.find((x) => x.id === mid); return m && m.rev ? `_r${m.rev}` : ""; };
   const stKey = (mid) => `mk_state_${student()}_${mid}${revOf(mid)}`;
   const lastKey = (mid) => `mk_last_${student()}_${mid}`;
-  function save() { if (T.st) store(stKey(T.st.mid), JSON.stringify(T.st)); }
+  function save() { if (T.st && !T.view) store(stKey(T.st.mid), JSON.stringify(T.st)); }   // a reopened old result is only viewed, never saved over a run
+  // the last finished run of each test is kept apart, so its result and review can be opened again after a new attempt starts
+  const doneKey = (mid) => `mk_done_${student()}_${mid}`;
+  function doneRun(mid) {
+    try { const d = JSON.parse(store(doneKey(mid))); if (d && d.phase === "done" && (d.rev || "") === revOf(mid)) return d; } catch (e) { /* none */ }
+    const r = load(mid); return r && r.phase === "done" ? r : null;
+  }
   function load(mid) { try { return JSON.parse(store(stKey(mid))); } catch (e) { return null; } }
 
   // ---- start screen
@@ -63,6 +69,7 @@
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
     $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
     $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));
+    $("open-res").classList.toggle("hidden", !(T.mock && doneRun(T.mock.id)));
     ready();
   }
   const fmt = () => (T.mock && T.mock.only) || T.fmt;   // a Reading and Writing test has only one format
@@ -81,7 +88,7 @@
   const items = () => T.bundles[secInfo(curSec()).b].mods[T.st.mod];
 
   async function begin() {
-    store("hw_student", $("student").value.trim());
+    T.view = false; store("hw_student", $("student").value.trim());
     const old = load(T.mock.id);
     if (old && old.phase !== "done" && confirm("Этот тест уже начат. Продолжить с того же места? «Отмена» начнёт тест заново.")) T.st = old;
     else T.st = { mid: T.mock.id, secs: fmt() === "full" ? ["rw", "math"] : [fmt()], si: 0, mod: "m1", phase: "dir", deadline: 0, ans: {}, mk: {}, res: {}, sent: {} };
@@ -268,28 +275,65 @@
     const note = `<p class="hint" style="margin-top:18px">Балл примерный: его считает таблица nurzycom по числу верных ответов и по тому, какой второй модуль вам достался. Настоящий балл College Board может отличаться примерно на ±${SATSCALE.ERR} в каждом разделе; официальный балл даёт только экзамен или тест в Bluebook.${capped.length ? ` Вам достался лёгкий второй модуль (${capped.map((s) => SEC[s]).join(", ")}): с ним балл раздела не поднимается выше примерно ${capped.map((s) => SATSCALE.CAP[s]).join(" / ")}, поэтому важнее всего первый модуль.` : ""}</p>`;
     $("res-secs").innerHTML = total + secHtml + weakHtml + note;
     store(lastKey(T.st.mid), parts.join(" · "));
+    if (!T.view) store(doneKey(T.st.mid), JSON.stringify(Object.assign({}, T.st, { rev: revOf(T.st.mid) })));
     $("review").classList.add("hidden"); $("res-review").textContent = "Разбор вопросов";
     show("m-result"); send();
   }
+  // Review. In a question with a mistake the right answer and the explanation stay hidden at first: the student tries again
+  // (another option or a typed answer) and sees them after a right try or «Показать ответ». Retries change nothing in the score.
+  const SHOW = "mk_show_answers";
   $("res-review").onclick = () => {
     const r = $("review"); if (!r.classList.contains("hidden")) { r.classList.add("hidden"); $("res-review").textContent = "Разбор вопросов"; return; }
-    r.innerHTML = `<label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
+    const showAll = store(SHOW) === "1";
+    r.innerHTML = `<p class="hint rv-how">В вопросах с ошибкой сначала попробуйте ещё раз: выберите другой вариант или введите ответ. Правильный ответ и разбор откроются после верной попытки или по кнопке «Показать ответ». Балл от этого не меняется.</p>
+      <label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>
+      <label class="onlybad" style="margin-top:8px"><input type="checkbox" id="rv-show"${showAll ? " checked" : ""}> Сразу показывать правильные ответы</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
       const its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[`${sec}.${mod}`];
       return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
         const a = A[q.n], ok = right(q, a);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
-          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
-        return `<details class="rv${ok ? "" : " bad"}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
-          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
+          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}${!ok && a === c ? " tried" : ""}" data-l="${c}"${ok ? "" : ' role="button" tabindex="0"'}><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg r">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
+        const again = ok ? "" : `<div class="try"><p class="try-h">Попробуйте ещё раз: ${q.t === "mc" ? "выберите другой вариант." : "введите ответ."}</p>
+            ${q.t === "mc" ? "" : '<div class="row try-row"><input type="text" class="try-in" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Ваш ответ"><button class="btn try-go" type="button">Проверить</button></div>'}
+            <button class="btn ghost try-show" type="button">Показать ответ</button></div><p class="try-fb" aria-live="polite"></p>`;
+        return `<details class="rv${ok ? "" : " bad"}${!ok && !showAll ? " quiz" : ""}" data-sec="${sec}" data-mod="${mod}" data-n="${q.n}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")}<span class="ans-sum"> · верный: ${esc(q.ans)}</span> · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
+          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}${again}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
     $("rv-bad").onchange = (e) => r.classList.toggle("only-bad", e.target.checked);
+    $("rv-show").onchange = (e) => { store(SHOW, e.target.checked ? "1" : "0"); if (e.target.checked) r.querySelectorAll(".rv.quiz").forEach((d) => d.classList.remove("quiz")); };
+    const qOf = (d) => T.bundles[secInfo(d.dataset.sec).b].mods[d.dataset.mod].find((q) => q.n === Number(d.dataset.n));
+    const say = (d, msg) => (d.querySelector(".try-fb").textContent = msg);
+    const open = (d, msg) => { d.classList.remove("quiz"); say(d, msg); };
+    const typed = (d) => { const v = d.querySelector(".try-in").value.trim(); if (!v) return;
+      if (parseSpr(v) === null) return say(d, "Формат: 12, -3, 7/2 или .75");
+      if (right(qOf(d), v)) open(d, "Верно. Разбор ниже."); else say(d, `«${v}» — неверно. Попробуйте ещё раз.`); };
+    r.onclick = (e) => {
+      const d = e.target.closest(".rv.quiz"); if (!d) return;
+      if (e.target.closest(".try-show")) return open(d, "Ответ открыт.");
+      if (e.target.closest(".try-go")) return typed(d);
+      const o = e.target.closest(".ropt"); if (!o || o.classList.contains("tried")) return;
+      if (o.dataset.l === qOf(d).ans) open(d, "Верно. Разбор ниже."); else { o.classList.add("tried"); say(d, `${o.dataset.l} — неверно. Попробуйте другой вариант.`); }
+    };
+    r.onkeydown = (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.classList.contains("try-in") && e.key === "Enter") { e.preventDefault(); typed(e.target.closest(".rv")); }
+      else if (e.target.classList.contains("ropt")) { e.preventDefault(); e.target.click(); }
+    };
     r.classList.remove("hidden"); $("res-review").textContent = "Скрыть разбор";
   };
   $("res-home").onclick = home;
+  // the start screen opens the result and review of the last finished run of the chosen test
+  $("open-res").onclick = async () => {
+    const d = T.mock && doneRun(T.mock.id); if (!d) return;
+    $("start-msg").textContent = "Открываю результат…";
+    try { for (const s of d.secs) await bundle(s); } catch (e) { $("start-msg").textContent = "Не удалось загрузить тест. Обновите страницу."; return; }
+    $("start-msg").textContent = ""; T.view = true; T.st = d; results();
+  };
 
   async function send() {
     const f = CFG.fields || {}, todo = T.st.secs.filter((s) => !T.st.sent[s]);
+    if (T.view) { $("send-status").textContent = todo.length ? "Этот результат не дошёл до преподавателя. Сделайте скриншот и пришлите в Telegram." : "Результат отправлен преподавателю."; return; }
     if (!todo.length) { $("send-status").textContent = "Результат отправлен преподавателю."; return; }
     if (!CFG.formAction) { $("send-status").textContent = "Отправка не настроена: пришлите скриншот результата преподавателю."; return; }
     $("send-status").textContent = "Отправляю…";

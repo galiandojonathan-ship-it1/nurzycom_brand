@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611051637">
-<script src="auth.js?v=202611051637"></script>
+<link rel="stylesheet" href="site.css?v=202611051716">
+<script src="auth.js?v=202611051716"></script>
 <style>
 .mocks{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:700px){.mocks{grid-template-columns:1fr 1fr}}
@@ -82,6 +82,23 @@
 .ropt.right{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .ropt.mine:not(.right){border-style:dashed;border-color:var(--stone)}
 .ropt .tg{margin-left:auto;font:11px var(--mono);color:var(--stone);white-space:nowrap}
+/* review: try again first (2026-11-05, student request) */
+.rv.quiz .ropt.right{border-color:var(--mist);box-shadow:none}
+.rv.quiz .tg.r,.rv.quiz .ans-sum,.rv.quiz .sv-expl{display:none}
+.rv.quiz .ropt{cursor:pointer}
+@media(hover:hover){.rv.quiz .ropt:not(.tried):hover{border-color:var(--ink)}}
+.rv.quiz .ropt:focus-visible{border-color:var(--ink)}
+.rv.quiz .ropt.tried{opacity:.5;cursor:default}
+.rv.quiz .ropt.tried .lt{text-decoration:line-through}
+.rv:not(.quiz) .try{display:none}
+.try{margin:10px 0 4px;padding:12px 14px;background:var(--mist)}
+.try-h{margin:0 0 10px;font-size:14px}
+.try .try-row{margin:0 0 10px;gap:8px;flex-wrap:nowrap}
+.try .try-in{max-width:200px;font-family:var(--mono);padding:11px 12px}
+.try .btn{padding:11px 16px}
+.try-fb{font-size:14px;margin:8px 0 12px;color:var(--ink)}
+.try-fb:empty{display:none}
+.rv-how{margin-top:22px}
 </style>
 </head>
 <body>
@@ -117,7 +134,7 @@
         <button class="pick" data-f="math" aria-pressed="false"><span class="t">Только Math</span><small>2 модуля · 70 минут · Desmos и справочник</small></button>
       </div>
       <p class="hint hidden" id="fmt-note">В тестах 5–8 только Reading and Writing: 2 модуля по 27 вопросов, 64 минуты.</p>
-      <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button></div>
+      <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button><button class="btn ghost hidden" id="open-res" type="button">Результат и разбор</button></div>
       <p class="hint" id="start-msg"></p>
     </div>
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
@@ -198,9 +215,9 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611051637"></script>
-<script src="tools.js?v=202611051637"></script>
-<script src="scale.js?v=202611051637"></script>
-<script src="mock.js?v=202611051637"></script>
+<script src="config.js?v=202611051716"></script>
+<script src="tools.js?v=202611051716"></script>
+<script src="scale.js?v=202611051716"></script>
+<script src="mock.js?v=202611051716"></script>
 </body>
 </html>
