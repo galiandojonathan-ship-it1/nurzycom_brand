@@ -412,18 +412,23 @@
     try { return { json: JSON.stringify(await SITE.rewrap(cur.trim(), a)), pw: a }; } catch (e) { throw new Error("Текущий пароль неверный."); }
   }
   const pwMsg = (t) => ($("pw-msg").textContent = t);
+  // writes docs/access.json to the site's branch on GitHub; the hosting rebuilds the site from it
+  async function ghPut(json, message) {
+    const g = GH(); if (!g.token) { $("gh-set").open = true; throw new Error("Сначала подключите GitHub ниже (один раз) или скачайте файл вручную."); }
+    const url = `https://api.github.com/repos/${g.repo}/contents/docs/access.json`, hd = { Authorization: `Bearer ${g.token}`, Accept: "application/vnd.github+json" };
+    const cur = await fetch(`${url}?ref=${encodeURIComponent(g.branch)}`, { headers: hd });
+    if (cur.status === 401 || cur.status === 403) throw new Error("GitHub не принял токен. Проверьте токен и права Contents: Read and write.");
+    if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ответил ${cur.status}. Проверьте репозиторий и ветку.`);
+    const sha = cur.ok ? (await cur.json()).sha : undefined;
+    const put = await fetch(url, { method: "PUT", headers: hd, body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(json))), branch: g.branch, sha }) });
+    if (!put.ok) throw new Error(`GitHub не сохранил файл (${put.status}).`);
+  }
   $("pw-gh").onclick = async () => {
-    const g = GH(); if (!g.token) { $("gh-set").open = true; pwMsg("Сначала подключите GitHub ниже (один раз) или скачайте файл вручную."); return; }
     try {
       pwMsg("Меняю пароль…"); const n = await newAccess();
-      const url = `https://api.github.com/repos/${g.repo}/contents/docs/access.json`, hd = { Authorization: `Bearer ${g.token}`, Accept: "application/vnd.github+json" };
-      const cur = await fetch(`${url}?ref=${encodeURIComponent(g.branch)}`, { headers: hd });
-      if (cur.status === 401 || cur.status === 403) throw new Error("GitHub не принял токен. Проверьте токен и права Contents: Read and write.");
-      if (!cur.ok && cur.status !== 404) throw new Error(`GitHub ответил ${cur.status}. Проверьте репозиторий и ветку.`);
-      const sha = cur.ok ? (await cur.json()).sha : undefined;
-      const put = await fetch(url, { method: "PUT", headers: hd, body: JSON.stringify({ message: "Change site password", content: btoa(n.json), branch: g.branch, sha }) });
-      if (!put.ok) throw new Error(`GitHub не сохранил файл (${put.status}).`);
-      SITE.remember(n.pw); ["pw-cur", "pw-new", "pw-new2"].forEach((i) => ($(i).value = ""));
+      if (ACC.a) { const fresh = JSON.parse(n.json); ACC.a = Object.assign({}, ACC.a, { v: fresh.v, salt: fresh.salt, iter: fresh.iter, wrap: fresh.wrap }); n.json = JSON.stringify(ACC.a); }
+      await ghPut(n.json, "Change the shared site password");
+      if (!SITE.me()) SITE.remember(n.pw); ["pw-cur", "pw-new", "pw-new2"].forEach((i) => ($(i).value = "")); accRender();
       pwMsg("Готово. Пароль сменён: через 1–10 минут сайт будет принимать только новый пароль. Отправьте его ученикам.");
     } catch (e) { pwMsg(e.message); }
   };
@@ -431,10 +436,75 @@
     try {
       const n = await newAccess();
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([n.json], { type: "application/json" })); a.download = "access.json"; a.click();
-      SITE.remember(n.pw);
+      if (!SITE.me()) SITE.remember(n.pw);
       pwMsg("Файл access.json скачан. Загрузите его на GitHub: репозиторий → папка docs → Add file → Upload files → перетащите файл → Commit changes. Пока файл не загружен, работает старый пароль.");
     } catch (e) { pwMsg(e.message); }
   };
+  // ---------- students' own logins: access.json → users (master key wrapped per student; login and name encrypted)
+  const ACC = { a: null, list: [], dirty: false };
+  const TR = { а: "a", б: "b", в: "v", г: "g", ғ: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "i", і: "i", к: "k", қ: "q", л: "l", м: "m", н: "n", ң: "n", о: "o", ө: "o",
+    п: "p", р: "r", с: "s", т: "t", у: "u", ұ: "u", ү: "u", ф: "f", х: "kh", һ: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sh", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya", ә: "a" };
+  const toLogin = (s) => s.toLowerCase().split("").map((c) => (c in TR ? TR[c] : c)).join("").replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "").slice(0, 24);
+  function genPw() { const A = "abcdefghjkmnpqrstuvwxyz23456789", r = crypto.getRandomValues(new Uint8Array(10)); const s = Array.from(r, (x) => A[x % A.length]).join(""); return s.slice(0, 5) + "-" + s.slice(5); }
+  const siteUrl = () => location.href.replace(/teacher(\.html)?([?#].*)?$/, "");
+  const accMsg = (t) => ($("acc-msg").textContent = t);
+  async function accLoad() { try { ACC.a = await SITE.access(); ACC.list = await SITE.accounts(ACC.a); accRender(); } catch (e) { $("acc-list").innerHTML = '<p class="hint">Не удалось загрузить список логинов. Обновите страницу.</p>'; } }
+  function accRender() {
+    if (!ACC.a) return;
+    const me = SITE.me();
+    $("acc-list").innerHTML = ACC.list.length ? table(["Ученик", "Логин", ""], ACC.list.slice().sort((x, y) => x.name.localeCompare(y.name, "ru")).map((u) => ({ k: u.id,
+      cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`,
+        `<span class="chips"><button class="chip" data-np="${esc(u.id)}">Новый пароль</button><button class="chip" data-del="${esc(u.id)}">Удалить</button></span>`] })))
+      .replace('<table class="t">', '<table class="t acct">') : '<p class="hint">Логинов пока нет. Начните с себя: добавьте своё имя, сохраните и войдите на сайт со своим логином.</p>';
+    $("acc-list").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => {
+      const u = ACC.list.find((x) => x.id === b.dataset.del); if (!u) return;
+      if (u.login === me) { accMsg("Это ваш логин: с ним вы сейчас вошли. Удалить его отсюда нельзя."); return; }
+      if (!confirm(`Удалить логин ${u.login} (${u.name})? Ученик больше не сможет войти.`)) return;
+      delete ACC.a.users[u.id]; ACC.list = ACC.list.filter((x) => x !== u); ACC.dirty = true; accMsg(`Логин ${u.login} удалён. Нажмите «Сохранить на сайте».`); accRender();
+    }));
+    $("acc-list").querySelectorAll("[data-np]").forEach((b) => (b.onclick = async () => {
+      const u = ACC.list.find((x) => x.id === b.dataset.np); if (!u) return; const pw = genPw();
+      ACC.a.users[u.id] = await SITE.account(u.login, u.name, pw); ACC.dirty = true; showNew(u.name, u.login, pw, true); accRender();
+    }));
+    const sh = $("acc-shared");
+    if (ACC.a.wrap) sh.innerHTML = `<span class="label">Общий пароль · включён</span><p class="hint" style="margin:6px 0 10px">Пока он включён, на сайт можно войти и без логина, по старому общему паролю (поле «Логин» пустое). Когда все ученики получат свои логины, выключите его.</p><button class="btn ghost" id="acc-off">Выключить общий пароль</button>`;
+    else sh.innerHTML = `<span class="label">Общий пароль · выключен</span><p class="hint" style="margin:6px 0 0">Войти можно только по логину и паролю. Чтобы включить общий пароль снова, задайте новый в разделе ниже.</p>`;
+    if ($("acc-off")) $("acc-off").onclick = () => {
+      const mine = ACC.list.find((x) => x.login === me);
+      if (!mine) { accMsg("Сначала создайте логин себе, сохраните, выйдите и войдите на сайт со своим логином. Иначе после выключения вы сами не войдёте."); return; }
+      if (!confirm("Выключить общий пароль? Ученики без своего логина больше не смогут войти.")) return;
+      ["salt", "iter", "wrap"].forEach((k) => delete ACC.a[k]); ACC.dirty = true; accMsg("Общий пароль будет выключен после «Сохранить на сайте»."); accRender();
+    };
+  }
+  function showNew(name, login, pw, reset) {
+    const text = `${reset ? "Новый пароль для сайта курса" : "Твой вход на сайт курса"}\n${siteUrl()}\nЛогин: ${login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
+    const box = $("acc-new"); box.classList.remove("hidden");
+    box.innerHTML = `<span class="label">${esc(name)} · ${reset ? "новый пароль" : "новый логин"}</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику в Telegram. Логин заработает после «Сохранить на сайте».</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="acc-copy">Скопировать сообщение</button></div>`;
+    $("acc-copy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("acc-copy").textContent = "Скопировано"; } catch (e) { accMsg("Не удалось скопировать: выделите текст выше вручную."); } };
+  }
+  $("acc-add").onclick = async () => {
+    try {
+      if (!ACC.a) throw new Error("Список ещё загружается.");
+      const name = $("acc-name").value.trim(); if (name.length < 2) throw new Error("Введите имя ученика, как оно должно стоять в результатах.");
+      const login = SITE.norm($("acc-login").value) || toLogin(name);
+      if (!/^[a-z0-9][a-z0-9._-]{1,23}$/.test(login)) throw new Error("Логин: от 2 до 24 символов, латинские буквы, цифры, точка, дефис.");
+      const id = await SITE.lid(login); if ((ACC.a.users || {})[id]) throw new Error(`Логин ${login} уже есть. Впишите другой логин.`);
+      const pw = genPw(); ACC.a.users = ACC.a.users || {}; ACC.a.v = 2;
+      ACC.a.users[id] = await SITE.account(login, name, pw); ACC.list.push({ id, login, name }); ACC.dirty = true;
+      $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false); accMsg(""); accRender();
+    } catch (e) { accMsg(e.message); }
+  };
+  $("acc-save").onclick = async () => {
+    try { if (!ACC.dirty) { accMsg("Изменений нет."); return; } accMsg("Сохраняю…"); await ghPut(JSON.stringify(ACC.a), "Update student logins"); ACC.dirty = false; accMsg("Сохранено. Через 1–2 минуты новые логины начнут работать."); }
+    catch (e) { accMsg(e.message); }
+  };
+  $("acc-dl").onclick = () => {
+    if (!ACC.a) return; const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(ACC.a)], { type: "application/json" })); a.download = "access.json"; a.click();
+    accMsg("Файл скачан. Загрузите его на GitHub: репозиторий → папка docs → Add file → Upload files → Commit changes.");
+  };
+  addEventListener("beforeunload", (e) => { if (ACC.dirty) { e.preventDefault(); e.returnValue = ""; } });
+  SITE.ready.then(accLoad);
+
   $("gh-save").onclick = () => { if ($("gh-token").value.trim()) store("gh_token", $("gh-token").value.trim()); store("gh_repo", $("gh-repo").value.trim() || GH().repo); store("gh_branch", $("gh-branch").value.trim() || DEP.branch || "main"); $("gh-token").value = ""; ghState(); };
   $("gh-forget").onclick = () => { store("gh_token", null); ghState(); };
   ghState();

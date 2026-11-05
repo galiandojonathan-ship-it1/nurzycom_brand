@@ -78,6 +78,12 @@ a.pill{color:var(--ink);text-decoration:none;border-color:var(--ink)}
 .empty{padding:28px;text-align:center;color:var(--stone);background:var(--white);border:1px dashed var(--studio)}
 select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0}
 .pwgrid{display:grid;grid-template-columns:1fr;gap:8px;max-width:980px}
+.accadd{display:grid;grid-template-columns:1fr;gap:8px;max-width:980px;margin-bottom:14px}
+@media(min-width:800px){.accadd{grid-template-columns:1.2fr 1fr auto}}
+#acc-new{margin-bottom:14px;border:1.5px solid var(--ink)}
+#acc-new pre{white-space:pre-wrap;font:14px/1.6 var(--mono);background:var(--white);padding:12px;margin:8px 0;border:1px solid var(--studio)}
+.acct td .chip{padding:6px 10px}
+.acct .me{font:11px var(--mono);color:var(--stone);margin-left:6px}
 @media(min-width:800px){.pwgrid{grid-template-columns:1fr 1fr 1fr}}
 .ghsteps{margin:12px 0;padding-left:18px;font-size:14px;color:var(--stone);line-height:1.8}
 .ghsteps b{color:var(--ink);font-weight:500}
@@ -125,9 +131,24 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
   <div class="row" id="demo-row"><button class="btn ghost" id="demo">Показать на вымышленных данных</button><span class="hint" id="src-msg"></span></div>
 
 
+  <section class="step" id="acc" style="margin-top:48px">
+    <div class="step-h"><span class="label">Логины учеников</span></div>
+    <p class="sub" style="font-size:15px">У каждого ученика свой логин и пароль. Имя ученика само попадает в его результаты, без опечаток. Удалите логин — ученик больше не войдёт. Изменения начинают работать через 1–2 минуты после кнопки «Сохранить на сайте».</p>
+    <div class="accadd">
+      <input id="acc-name" type="text" placeholder="Имя, как в результатах: Айгерим К." aria-label="Имя ученика" autocomplete="off">
+      <input id="acc-login" type="text" placeholder="Логин (необязательно, создастся сам)" aria-label="Логин" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button class="btn" id="acc-add">Добавить ученика</button>
+    </div>
+    <div id="acc-new" class="card hidden"></div>
+    <div id="acc-list"><p class="hint">Загружаю список…</p></div>
+    <div class="row"><button class="btn" id="acc-save">Сохранить на сайте</button><button class="btn ghost" id="acc-dl">Скачать access.json</button></div>
+    <p class="hint" id="acc-msg"></p>
+    <div class="card" id="acc-shared" style="margin-top:14px"></div>
+  </section>
+
   <section class="step" id="pw" style="margin-top:48px">
-    <div class="step-h"><span class="label">Пароль сайта</span></div>
-    <p class="sub" style="font-size:15px">Один пароль для всех учеников. После смены старый пароль перестаёт работать: ученики увидят окно входа и введут новый. Сайт начинает принимать новый пароль через 1–10 минут.</p>
+    <div class="step-h"><span class="label">Общий пароль (старый способ)</span></div>
+    <p class="sub" style="font-size:15px">Один пароль для всех: работает, пока вы его не выключите выше. После смены старый общий пароль перестаёт работать через 1–10 минут. Логины учеников при этом не меняются.</p>
     <div class="pwgrid">
       <input id="pw-cur" type="password" placeholder="Текущий пароль" autocomplete="current-password" aria-label="Текущий пароль">
       <input id="pw-new" type="password" placeholder="Новый пароль, от 6 символов" autocomplete="new-password" aria-label="Новый пароль">
