@@ -6,10 +6,14 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000
+  Cache-Control: no-cache
 
+# pages, scripts and data are checked for a newer version on every visit (no-cache = revalidate, still fast)
 # question bundles get a new random name on every build, so they can be cached for long
 /q/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=604800
