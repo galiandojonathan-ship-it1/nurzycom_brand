@@ -70,7 +70,7 @@
   const sessionRaw = () => { const k = get("site_key"); if (!k) throw new Error("Войдите на сайт заново."); return b64(k); };
   // ---- results on the account (added 2026-11-05): finished work, scores and progress follow the login to any device.
   // Which localStorage keys travel: finished results and progress; not the login itself, teacher settings or a test in progress.
-  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers)$/;
+  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers|mk_gloss)$/;
   const META = "sync_meta";   // when each synced key last changed on this device
   const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
   const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;

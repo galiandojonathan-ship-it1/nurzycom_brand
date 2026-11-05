@@ -76,6 +76,8 @@
   function ready() { $("go").disabled = !($("student").value.trim().length >= 2 && T.mock); }
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); renderStart(); };
   $("formats").querySelectorAll(".pick").forEach((b) => (b.onclick = () => { T.fmt = b.dataset.f; renderStart(); }));
+  if (window.GLOSS) { $("gloss-on").checked = GLOSS.on; $("gloss-on").onchange = (e) => { GLOSS.on = e.target.checked; }; }
+  else $("gloss-on").closest("label").classList.add("hidden");
 
   async function bundle(sec) {
     const s = T.mock.sections.find((x) => x.k === sec);
@@ -170,10 +172,18 @@
       $("m-in").oninput = () => { const v = $("m-in").value.trim(); if (v) A[q.n] = v; else delete A[q.n]; save(); hint(); renderGrid(); };
       hint();
     }
+    glossQ(q, [$("passage"), $("stem"), $("opts")]);
     $("prev").disabled = T.cur === 0;
     $("next").textContent = T.cur === its.length - 1 ? "К проверке →" : "Далее →";
     $("navbtn").textContent = `${q.n} из ${its.length} ▴`;
     renderGrid();
+  }
+  // hard words: underlined in the passage, the question and the options (gloss.js); the key finds a question's own extra words
+  const qkey = (sec, mod, q) => `${T.st.mid}.${sec}.${mod}.${q.n}`;
+  function glossQ(q, els, sec = curSec(), mod = T.st.mod) {
+    if (!window.GLOSS) return;
+    GLOSS.hide();
+    GLOSS.ready.then(() => { if (els.every((e) => e && e.isConnected)) GLOSS.apply(els, { key: qkey(sec, mod, q), own: !!q.own }); });
   }
   function gridHtml(cls) {
     const A = T.st.ans[mkey()], M = T.st.mk[mkey()];
@@ -303,6 +313,7 @@
     $("rv-bad").onchange = (e) => r.classList.toggle("only-bad", e.target.checked);
     $("rv-show").onchange = (e) => { store(SHOW, e.target.checked ? "1" : "0"); if (e.target.checked) r.querySelectorAll(".rv.quiz").forEach((d) => d.classList.remove("quiz")); };
     const qOf = (d) => T.bundles[secInfo(d.dataset.sec).b].mods[d.dataset.mod].find((q) => q.n === Number(d.dataset.n));
+    r.querySelectorAll(".rv").forEach((d) => { const q = qOf(d); glossQ(q, [...d.querySelectorAll(".rbody > .qhtml, .ropt .qhtml")], d.dataset.sec, d.dataset.mod); });
     const say = (d, msg) => (d.querySelector(".try-fb").textContent = msg);
     const open = (d, msg) => { d.classList.remove("quiz"); say(d, msg); };
     const typed = (d) => { const v = d.querySelector(".try-in").value.trim(); if (!v) return;

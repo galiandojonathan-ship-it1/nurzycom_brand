@@ -393,3 +393,14 @@ input[type=text]:focus,input[type=password]:focus{box-shadow:inset 0 0 0 1px var
 @media(max-width:360px){
   .auth-cred{font-size:9px;letter-spacing:.03em}
 }
+
+/* hard words in test questions (gloss.js, 2026-11-05): dotted underline, a tap opens an ink card with the meaning */
+.gw{text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:4px;cursor:help;border-radius:1px}
+.gw:hover{text-decoration-style:solid}
+.gw.on{background:var(--ink);color:var(--paper);text-decoration:none;box-shadow:0 0 0 2px var(--ink)}
+.gw:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.gpop{position:fixed;z-index:60;width:min(340px,calc(100vw - 16px));background:var(--ink);color:var(--paper);padding:14px 16px 15px;box-shadow:0 14px 40px rgba(10,10,10,.28);display:flex;flex-direction:column;gap:5px;font-size:15px;line-height:1.45}
+.gpop .label{color:var(--studio)}
+.gpop b{font:600 20px/1.25 var(--sans);margin:2px 0 1px}
+.gpop-en{color:var(--paper)}
+.gpop-ru{color:var(--studio);border-top:1px solid rgba(250,248,243,.18);padding-top:7px;margin-top:2px}
