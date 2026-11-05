@@ -215,7 +215,7 @@
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? r.wrong.join(", ") : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
@@ -329,7 +329,7 @@
     let s = `<div class="tw"><table class="heat"><tr><th></th>${L.parts.map((p) => `<th title="${esc(p.title)}">${esc(p.title.split(" ")[0].slice(0, 9))}</th>`).join("")}</tr>`;
     D.students.forEach((st) => {
       s += `<tr><th>${esc(st.name)}</th>` + L.parts.map((p) => { const rs = rows.filter((r) => r.key === st.key && r.pid === p.id), b = best(rs), c = shade(b ? b.pct : null);
-        return `<td data-tip="${esc(`<b>${st.name} · ${p.title}</b><br>${b ? `${b.a}/${b.b}, сдач: ${rs.length}` : "Не сдано"}`)}"${c ? ` style="background:${c[0]};color:${c[1]}"` : ""}>${b ? Math.round(b.pct) : "·"}</td>`; }).join("") + "</tr>";
+        return `<td data-tip="${esc(`<b>${esc(st.name)} · ${esc(p.title)}</b><br>${b ? `${b.a}/${b.b}, сдач: ${rs.length}` : "Не сдано"}`)}"${c ? ` style="background:${c[0]};color:${c[1]}"` : ""}>${b ? Math.round(b.pct) : "·"}</td>`; }).join("") + "</tr>";
     });
     return s + "</table></div>";
   }
@@ -355,7 +355,7 @@
     const q = (D.q || "").toLowerCase();
     const rows = [...D.rows].reverse().filter((r) => !q || (r.name + " " + whatOf(r) + " " + r.lesson).toLowerCase().includes(q));
     $("v-log").innerHTML = `<h2>Журнал</h2><div class="field"><input id="q" type="text" placeholder="Поиск: имя, урок, часть" value="${esc(D.q || "")}"></div><p class="hint">${rows.length} записей. Ответы: «3:B>C» — вопрос 3, первая попытка B, вторая C.</p>` +
-      table(["Когда", "Ученик", "Что", "Результат", "Ошибки", "Ответы"], rows.slice(0, 400).map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b}`, r.wrong.join(", ") || "—", `<span class="mono" style="font-size:12px">${esc(r.answers.map((a) => `${a.n}:${a.tries.join(">") || "-"}`).join(" "))}</span>`] })), { num: [3] });
+      table(["Когда", "Ученик", "Что", "Результат", "Ошибки", "Ответы"], rows.slice(0, 400).map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b}`, esc(r.wrong.join(", ")) || "—", `<span class="mono" style="font-size:12px">${esc(r.answers.map((a) => `${a.n}:${a.tries.join(">") || "-"}`).join(" "))}</span>`] })), { num: [3] });
     $("q").oninput = () => { D.q = $("q").value; const pos = $("q").selectionStart; render(); $("q").focus(); $("q").setSelectionRange(pos, pos); };
   }
 

@@ -45,8 +45,11 @@
   const PW_OK = (pw) => pw.length >= 8 && /[a-zа-яё]/i.test(pw) && /\d/.test(pw);
   const LOGIN_OK = (l) => /^[a-z0-9][a-z0-9._-]{1,23}$/.test(l);
   async function signup(code, name, user, pw, keep) {
-    const r = await fetch("api/invite", { cache: "no-store" });
+    // the server checks the class code first and only then gives out the key wrapped with it
+    const r = await fetch("api/invite", { method: "POST", cache: "no-store", headers: { "content-type": "application/json" }, body: JSON.stringify({ invite: norm(code) }) });
     if (r.status === 404 || r.status === 405) throw new Error("closed");
+    if (r.status === 403) throw new Error("code");
+    if (r.status === 429) throw new Error("slow");
     if (!r.ok) throw new TypeError("api " + r.status);
     const inv = await r.json(); let raw;
     try { raw = await unwrap(norm(code), inv); } catch (x) { throw new Error("code"); }
@@ -55,7 +58,7 @@
     const s = await fetch("api/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ invite: norm(code), id, entry }) });
     if (s.status === 409) throw new Error("taken");
     if (s.status === 403) throw new Error("code");
-    if (s.status === 429) throw new Error("full");
+    if (s.status === 429) { let why = ""; try { why = (await s.json()).error; } catch (x) { /* empty */ } throw new Error(why === "slow down" ? "slow" : "full"); }
     if (!s.ok) throw new TypeError("api " + s.status);
     drop(); put("site_pw", pw, keep); put("site_login", login, keep); put("site_key", toB64(raw), false); put("site_wrap", entry.wrap, false);
     try { localStorage.setItem("hw_student", name); } catch (x) { /* private mode */ }
@@ -107,16 +110,16 @@
       <button class="btn" id="auth-go" type="submit">Войти <span class="arr">→</span></button>
       <p class="hint" id="auth-msg"></p>
       <button class="btn ghost" id="auth-to-up" type="button">Создать аккаунт</button>
-      <p class="label auth-foot">Telegram @nurzycom</p></form>
+      <p class="label auth-foot"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram @nurzycom</a></p></form>
       <form class="auth-box hidden" id="auth-up" autocomplete="on">
       <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
       <span class="label">nurzycom · SAT</span><h1>Новый аккаунт</h1>
       <p class="sub">Один раз: код класса от преподавателя, ваше имя, логин и пароль. Потом входите по логину и паролю.</p>
-      <input id="up-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Код класса" aria-label="Код класса" required>
-      <input id="up-name" type="text" autocomplete="name" placeholder="Имя и первая буква фамилии: Айгерим К." aria-label="Имя" required>
-      <input id="up-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Придумайте логин: латиница, например aigerim.k" aria-label="Логин" required>
-      <input id="up-pw" type="password" autocomplete="new-password" placeholder="Пароль: от 8 символов, буквы и цифры" aria-label="Пароль" required>
-      <input id="up-pw2" type="password" autocomplete="new-password" placeholder="Пароль ещё раз" aria-label="Пароль ещё раз" required>
+      <label class="auth-f"><span>Код класса</span><input id="up-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <label class="auth-f"><span>Имя и первая буква фамилии: Айгерим К.</span><input id="up-name" type="text" autocomplete="name" required></label>
+      <label class="auth-f"><span>Придумайте логин: латиница, например aigerim.k</span><input id="up-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="auth-f"><span>Пароль: от 8 символов, буквы и цифры</span><input id="up-pw" type="password" autocomplete="new-password" required></label>
+      <label class="auth-f"><span>Пароль ещё раз</span><input id="up-pw2" type="password" autocomplete="new-password" required></label>
       <label class="auth-keep"><input id="up-keep" type="checkbox" checked> Запомнить на этом устройстве</label>
       <button class="btn" id="up-go" type="submit">Создать аккаунт <span class="arr">→</span></button>
       <p class="hint" id="up-msg"></p>
@@ -139,6 +142,7 @@
           : err.message === "code" ? "Неверный код класса. Проверьте его в сообщении преподавателя."
           : err.message === "taken" ? "Такой логин уже занят. Придумайте другой."
           : err.message === "closed" ? "Регистрация сейчас закрыта. Напишите преподавателю."
+          : err.message === "slow" ? "Слишком много попыток с неверным кодом. Подождите 15 минут и попробуйте снова."
           : err.message === "full" ? "Достигнут предел аккаунтов. Напишите преподавателю." : "Не получилось создать аккаунт. Напишите преподавателю.";
       }
     };
