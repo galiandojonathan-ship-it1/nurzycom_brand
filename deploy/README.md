@@ -12,16 +12,44 @@
 
 Если купите другой домен, одна команда переписывает все адреса: `python3 deploy/set_domain.py новый-домен.com` (или попросите Claude).
 
-## Сейчас: только сайт курса (решение 4 ноября 2026)
+## Сейчас: сайт курса на study.bynurzy.com со входом по почте (решение 5 ноября 2026)
 
-Главный сайт пока не запускаем. Сайт курса уже работает на GitHub Pages из ветки `main`; ему нужен только адрес `study.bynurzy.com`.
+Главный сайт пока не запускаем. Сайт курса переезжает с GitHub Pages на Cloudflare Pages: только там работает вход по почте (Cloudflare Access, бесплатно до 50 человек).
 
-1. Cloudflare → домен `bynurzy.com` → **DNS** → **Records** → **Add record**: **Type** `CNAME`, **Name** `study`, **Target** `galiandojonathan-ship-it1.github.io`, **Proxy status** выключить (серое облако, **DNS only**) → **Save**.
-2. GitHub → репозиторий → **Settings** → **Pages** → **Custom domain** → `study.bynurzy.com` → **Save**. GitHub сам добавит файл `docs/CNAME` в `main`.
-3. Подождите, пока GitHub напишет **DNS check successful** (обычно 5–30 минут), и поставьте галочку **Enforce HTTPS** (может появиться через час).
-4. Откройте `https://study.bynurzy.com/`: окно пароля сайта. Старый адрес `…github.io/nurzycom_brand/` будет сам перенаправлять на новый.
+**Как будет входить ученик.** Открывает `study.bynurzy.com` → вводит свою почту → получает код из 6 цифр → вводит код. Cloudflare помнит вход 30 дней. Потом, один раз на устройстве, ученик вводит пароль сайта (он по-прежнему шифрует материалы). Почты, которых нет в вашем списке, код не получат. Кабинет `teacher.html` открывается только с вашей почты.
 
-Шаги ниже (Cloudflare Pages, главный сайт, вход по почте) — на потом.
+### Шаг 1. Сайт на Cloudflare Pages (5 минут)
+
+1. https://dash.cloudflare.com → **Workers & Pages** → **Create** (или **Create application**) → вкладка **Pages** → **Connect to Git** (или **Import an existing Git repository**).
+2. **Connect GitHub** → разрешите доступ к репозиторию `nurzycom_brand` → выберите его → **Begin setup**.
+3. **Project name**: `bynurzy-study` · **Production branch**: `main` · **Framework preset**: `None` · **Build command**: пусто · **Build output directory**: `docs` → **Save and Deploy**.
+4. Через 1–2 минуты появится адрес `bynurzy-study.pages.dev`: откройте, должно быть окно пароля сайта.
+5. В проекте → **Custom domains** → **Set up a custom domain** → `study.bynurzy.com` → **Continue** → **Activate domain**. Cloudflare сам создаст запись DNS. Через несколько минут `https://study.bynurzy.com/` откроется.
+
+### Шаг 2. Вход по почте: Cloudflare Access (10 минут)
+
+1. В левом меню **Zero Trust**. При первом входе: придумайте **Team name** (например `bynurzy`) → план **Free** ($0; Cloudflare может попросить карту, списаний нет).
+2. **Settings** → **Authentication** → **Login methods**: должен быть **One-time PIN** (обычно включён сам).
+3. **Access** (или **Access controls**) → **Applications** → **Add an application** → **Self-hosted**.
+   - **Application name**: `bynurzy study` · **Session Duration**: `1 month`.
+   - **Application domain** (или **Public hostname**): `study.bynurzy.com`, путь пустой.
+   - **Add public hostname** ещё раз: `bynurzy-study.pages.dev` (иначе по этому адресу сайт откроется без входа).
+   - **Policies** → **Add a policy**: **Policy name** `Students`, **Action** `Allow`, **Include** → **Emails** → почты учеников и ваша, через запятую.
+   - **Save**.
+4. Второе приложение для кабинета: **Add an application** → **Self-hosted** → **Application name** `bynurzy teacher` → домен `study.bynurzy.com`, **Path** `teacher.html` → политика `Teacher`, **Allow**, **Include** → **Emails** → только ваша почта → **Save**.
+5. Проверка: откройте `https://study.bynurzy.com/` в окне инкогнито → должна появиться страница Cloudflare с полем для почты.
+
+**Новый ученик:** Zero Trust → **Access** → **Applications** → `bynurzy study` → **Policies** → `Students` → **Edit** → добавить почту → **Save**. Ученик ушёл: удалить почту там же.
+
+**По желанию:** Zero Trust → **Settings** → **Custom Pages** → **Login page**: название `nurzycom · SAT`, чёрный фон (#0A0A0A), логотип — тогда страница входа будет в стиле курса.
+
+### Шаг 3. Старый адрес на GitHub Pages
+
+Когда новый адрес работает и ученики получили ссылку: GitHub → репозиторий → **Settings** → **Pages** → **Unpublish site** (или **Source** → `None`). Иначе старая копия `…github.io/nurzycom_brand/` останется открытой без входа по почте (материалы там зашифрованы, но лучше убрать).
+
+Пароль сайта меняется как раньше: `https://study.bynurzy.com/teacher.html` → **Пароль сайта** → GitHub, ветка `main`; Cloudflare сам пересоберёт сайт за 1–2 минуты.
+
+Шаги ниже (главный сайт и общий план) — на потом.
 
 ## 1. Домен в Cloudflare
 
