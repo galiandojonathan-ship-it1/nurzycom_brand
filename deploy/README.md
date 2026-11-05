@@ -23,7 +23,7 @@
    - **Variable name**: `USERS` (именно так, заглавными)
    - **KV namespace**: `bynurzy-users`
    - **Save**.
-3. Вкладка **Deployments** → у верхней (последней) публикации **⋯** → **Retry deployment**. Через 1–2 минуты хранилище подключено.
+3. Вкладка **Deployments** → в нижнем списке **All deployments** у верхней строки **Production** справа **⋯** → **Retry deployment** (или попросите Claude: любое сохранение в `main` тоже пересобирает сайт). Через 1–2 минуты хранилище подключено.
 
 ### Потом в кабинете (`https://study.bynurzy.com/teacher.html`, кнопка «Аккаунты учеников и код класса ↓»)
 
