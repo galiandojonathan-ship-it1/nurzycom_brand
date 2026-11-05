@@ -12,7 +12,7 @@
   const toB64 = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));
   const get = (k) => { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch (e) { return null; } };
   const put = (k, v, keep) => { try { (keep ? localStorage : sessionStorage).setItem(k, v); } catch (e) { /* private mode */ } };
-  const drop = () => { try { ["site_pw", "site_key", "site_wrap", "site_login"].forEach((k) => { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch (e) { /* private mode */ } };
+  const drop = () => { try { ["site_pw", "site_key", "site_wrap", "site_login", "site_sync"].forEach((k) => { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch (e) { /* private mode */ } };
   let resolve; const ready = new Promise((r) => (resolve = r)); let KEY = null;
 
   async function kek(pw, a, usage) {
@@ -68,8 +68,71 @@
   async function seal(raw, obj) { const iv = crypto.getRandomValues(new Uint8Array(12)); return toB64(new Uint8Array([...iv, ...new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aes(raw, ["encrypt"]), enc.encode(JSON.stringify(obj))))])); }
   async function unseal(raw, s) { const u = b64(s); return JSON.parse(dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, await aes(raw, ["decrypt"]), u.slice(12)))); }
   const sessionRaw = () => { const k = get("site_key"); if (!k) throw new Error("Войдите на сайт заново."); return b64(k); };
+  // ---- results on the account (added 2026-11-05): finished work, scores and progress follow the login to any device.
+  // Which localStorage keys travel: finished results and progress; not the login itself, teacher settings or a test in progress.
+  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers)$/;
+  const META = "sync_meta";   // when each synced key last changed on this device
+  const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
+  const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
+  let applying = false, timer = 0, busy = false, again = false;
+  const meta = () => { try { return JSON.parse(LS.getItem(META) || "{}"); } catch (e) { return {}; } };
+  function touch(k) { if (applying) return; const m = meta(); m[k] = Date.now(); try { rawSet.call(LS, META, JSON.stringify(m)); } catch (e) { /* full */ } later(); }
+  if (LS) {
+    Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS && SYNC.test(k)) touch(k); };
+    Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS && SYNC.test(k)) touch(k); };
+  }
+  function local() {   // { key: { v, t } }; a removed key travels as v: null
+    const m = meta(), out = {};
+    for (let i = 0; i < LS.length; i++) { const k = LS.key(i); if (SYNC.test(k)) out[k] = { v: LS.getItem(k), t: m[k] || 0 }; }
+    for (const k of Object.keys(m)) if (!(k in out) && SYNC.test(k)) out[k] = { v: null, t: m[k] };
+    return out;
+  }
+  // the newer side wins per key (a tie keeps this device); returns the merged map and whether the server lacks something
+  function merge(remote) {
+    const L = local(), m = meta(), out = Object.assign({}, remote); let push = false; applying = true;
+    try {
+      for (const [k, r] of Object.entries(remote)) {
+        if (!SYNC.test(k) || !r || typeof r.t !== "number") { delete out[k]; continue; }
+        const l = L[k]; if (l && l.t >= r.t) continue;
+        if (r.v === null) rawRemove.call(LS, k); else rawSet.call(LS, k, String(r.v));
+        m[k] = r.t;
+      }
+      for (const [k, l] of Object.entries(L)) { const r = remote[k]; if (!r || l.t > r.t || (l.t === r.t && l.v !== r.v)) { out[k] = l; push = true; } }
+      rawSet.call(LS, META, JSON.stringify(m));
+    } catch (e) { /* storage full or blocked */ } finally { applying = false; }
+    return { out, push };
+  }
+  async function syncAuth() {
+    const pw = get("site_pw"), login = get("site_login"), key = get("site_key"); if (!pw || !login || !key || !LS) return null;
+    const id = await lid(login); let tok = get("site_sync");
+    if (!tok) {
+      const base = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+      tok = toB64(await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode("bynurzy-sync:" + id), iterations: 150000, hash: "SHA-256" }, base, 256));
+      put("site_sync", tok, !!(LS && LS.getItem("site_pw")));
+    }
+    return { id, tok, raw: b64(key) };
+  }
+  async function sync() {
+    if (busy) { again = true; return; }
+    busy = true; clearTimeout(timer); timer = 0;
+    try {
+      const a = await syncAuth(); if (!a) return;
+      const url = "api/progress?id=" + encodeURIComponent(a.id), h = { "x-sync": a.tok };
+      const r = await fetch(url, { cache: "no-store", headers: h });
+      let remote = {};
+      if (r.ok) { const j = await r.json(); if (j.data) remote = await unseal(a.raw, j.data); }
+      else if (r.status !== 404) return;   // 403 (not this account's record) or offline: keep everything on this device
+      const { out, push } = merge(remote);
+      if (push) await fetch(url, { method: "PUT", cache: "no-store", headers: Object.assign({ "content-type": "application/json" }, h), body: JSON.stringify({ data: await seal(a.raw, out) }) });
+    } catch (e) { /* offline: try again with the next change or page */ }
+    finally { busy = false; if (again) { again = false; later(); } }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(sync, 15000); }   // bundle a burst of changes into one write
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && timer) sync(); });
+
   async function useKey(raw) {
     KEY = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+    await Promise.race([sync(), new Promise((r) => setTimeout(r, 4000))]);   // bring this account's results before the page reads them
     document.documentElement.classList.remove("locked");
     const g = document.getElementById("auth"); if (g) g.remove();
     resolve(KEY);
@@ -175,6 +238,7 @@
     async account(login, name, pw) { const raw = sessionRaw(), w = await wrap(raw, pw); return { salt: w.salt, iter: w.iter, wrap: w.wrap, n: await seal(raw, { login: norm(login), name }) }; },
     async accounts(a) { const raw = sessionRaw(), out = []; for (const [id, e] of Object.entries(a.users || {})) { try { out.push(Object.assign({ id }, await unseal(raw, e.n))); } catch (x) { out.push({ id, login: "?", name: "?" }); } } return out; },
     me() { return get("site_login") || ""; },
+    sync,   // pages may ask for an early save, e.g. right after a result
     // teacher page: accounts students made themselves (api/admin/…, header X-Admin-Key)
     adminKey(v) { try { if (v === undefined) return localStorage.getItem("admin_key") || ""; if (v === null) localStorage.removeItem("admin_key"); else localStorage.setItem("admin_key", v); } catch (x) { return ""; } },
     async api(path, opts = {}) {

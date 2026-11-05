@@ -5,7 +5,10 @@
 //   u:<id>   one account (id = hash of the login, made in the browser)
 //   invite   { hash, salt, iter, wrap }: the class code's hash and the master key wrapped with the class code
 //   admin    hash of the teacher's admin key (claimed once from the teacher page)
-// Routes: GET user?id · POST register · POST invite · POST admin/claim · GET admin/users · DELETE admin/user?id
+//   p:<id>   the student's results and progress, encrypted in the browser with the master key; only the account owner can
+//            read or write it: the browser sends a token derived from the password (PBKDF2, never the password itself), the
+//            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew
+// Routes: GET user?id · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · GET admin/users · DELETE admin/user?id
 //         POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
@@ -37,6 +40,11 @@ async function codeOk(request, inv, code) {
   if ((await sha("bynurzy-invite:" + norm(code))) === inv.hash) return "ok";
   await misses(request, true); return "wrong";
 }
+// the account's current wrap: self-made accounts in KV, teacher-made logins in access.json (served by the site itself)
+async function accountWrap(env, request, id) {
+  const e = await env.USERS.get("u:" + id, "json"); if (e) return e.wrap;
+  try { const r = await env.ASSETS.fetch(new URL("/access.json", request.url)); const u = ((await r.json()).users || {})[id]; return u ? u.wrap : null; } catch (x) { return null; }
+}
 async function count(env) { let n = 0, cursor; do { const r = await env.USERS.list({ prefix: "u:", cursor }); n += r.keys.length; cursor = r.list_complete ? null : r.cursor; } while (cursor); return n; }
 
 export async function onRequest(context) {
@@ -66,6 +74,18 @@ export async function onRequest(context) {
     await env.USERS.put("u:" + b.id, JSON.stringify({ salt: b.entry.salt, iter: b.entry.iter, wrap: b.entry.wrap, n: b.entry.n, at: new Date().toISOString() }));
     return json({ ok: true });
   }
+  if (route === "progress" && (m === "GET" || m === "PUT")) {
+    const id = url.searchParams.get("id"), tok = request.headers.get("x-sync") || "";
+    if (!okId(id) || !okB64(tok, 64) || tok.length < 40) return fail(400, "bad request");
+    const w = await accountWrap(env, request, id); if (!w) return fail(404, "no such login");
+    const rec = await env.USERS.get("p:" + id, "json"), h = await sha("bynurzy-sync:" + tok);
+    const stale = rec && rec.w !== w, mine = rec && !stale && rec.h === h;   // stale: the password changed after the record was made
+    if (m === "GET") { if (!rec || stale) return fail(404, "nothing saved"); if (!mine) return fail(403, "not yours"); return json({ data: rec.data, at: rec.at }); }
+    if (rec && !stale && !mine) return fail(403, "not yours");
+    const b = await body(request); if (!b || !okB64(b.data, 600000)) return fail(400, "bad data");
+    await env.USERS.put("p:" + id, JSON.stringify({ h, w, data: b.data, at: new Date().toISOString() }));
+    return json({ ok: true });
+  }
   if (route === "admin/claim" && m === "POST") {
     const b = await body(request); if (!b || typeof b.key !== "string" || b.key.length < 24) return fail(400, "bad key");
     if (await env.USERS.get("admin")) return fail(409, "already claimed");
@@ -83,7 +103,7 @@ export async function onRequest(context) {
     }
     if (route === "admin/user" && m === "DELETE") {
       const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
-      await env.USERS.delete("u:" + id); return json({ ok: true });
+      await env.USERS.delete("u:" + id); await env.USERS.delete("p:" + id); return json({ ok: true });
     }
     if (route === "admin/invite" && m === "POST") {
       const b = await body(request);

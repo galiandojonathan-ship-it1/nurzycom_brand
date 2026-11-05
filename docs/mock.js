@@ -355,7 +355,10 @@
 
   $("go").onclick = begin;
   SITE.json("mocks").then((d) => {
-    T.index = d; renderStart();
+    T.index = d;
+    // a test finished before results were kept apart (mk_done) is copied there, so it reaches the account too
+    d.mocks.forEach((m) => { if (store(doneKey(m.id))) return; const r = load(m.id); if (r && r.phase === "done") store(doneKey(m.id), JSON.stringify(Object.assign({}, r, { rev: revOf(m.id) }))); });
+    renderStart();
     const want = new URLSearchParams(location.search).get("t");
     if (want) { T.mock = d.mocks.find((m) => m.id === want) || null; renderStart(); }
   }).catch(() => { $("start-msg").textContent = "Не удалось загрузить тесты. Обновите страницу."; });
