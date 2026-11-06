@@ -117,7 +117,7 @@
     });
     return Object.entries(sk).map(([k, v]) => ({ label: k, n: v.n, value: (100 * v.ok) / v.n })).sort((a, b) => a.value - b.value);
   }
-  const shade = (v) => (v === null ? null : v >= 90 ? ["#0A0A0A", "#FAF8F3"] : v >= 75 ? ["#3A3936", "#FAF8F3"] : v >= 60 ? ["#7A7872", "#FAF8F3"] : v >= 40 ? ["#BDBBB5", "#0A0A0A"] : ["#E2E0DA", "#0A0A0A"]);
+  const shade = (v) => (v === null ? null : v >= 90 ? ["#0F0F0F", "#F5F3EE"] : v >= 75 ? ["#3A3936", "#F5F3EE"] : v >= 60 ? ["#7A7872", "#F5F3EE"] : v >= 40 ? ["#BDBBB5", "#0F0F0F"] : ["#E2E0DA", "#0F0F0F"]);
 
   // ---------- charts (single series, black and white)
   const tip = $("tip");
@@ -128,12 +128,12 @@
     const max = Math.max(1, ...data.map((d) => d.value)), top = max <= 5 ? max : Math.ceil(max / 5) * 5;
     const step = (W - pad.l) / n, bw = Math.min(24, step - 2), y = (v) => H - pad.b - ((H - pad.b - pad.t) * v) / top;
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(unit)}">`;
-    [0, top / 2, top].forEach((t) => { s += `<line x1="${pad.l}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#E2E0DA" stroke-width="1"/><text x="${pad.l - 6}" y="${y(t) + 4}" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#5A5852">${Math.round(t)}</text>`; });
+    [0, top / 2, top].forEach((t) => { s += `<line x1="${pad.l}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#E2E0DA" stroke-width="1"/><text x="${pad.l - 6}" y="${y(t) + 4}" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#5E5A54">${Math.round(t)}</text>`; });
     data.forEach((d, i) => {
       const x = pad.l + i * step + (step - bw) / 2, h = H - pad.b - y(d.value), r = Math.min(4, h);
-      if (d.value > 0) s += `<path d="M${x},${H - pad.b} V${y(d.value) + r} q0,-${r} ${r},-${r} H${x + bw - r} q${r},0 ${r},${r} V${H - pad.b} Z" fill="#0A0A0A"/>`;
+      if (d.value > 0) s += `<path d="M${x},${H - pad.b} V${y(d.value) + r} q0,-${r} ${r},-${r} H${x + bw - r} q${r},0 ${r},${r} V${H - pad.b} Z" fill="#0F0F0F"/>`;
       s += `<rect class="hit" data-i="${i}" x="${pad.l + i * step}" y="${pad.t}" width="${step}" height="${H - pad.t}" fill="transparent"/>`;
-      if (d.tick) s += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5A5852">${esc(d.tick)}</text>`;
+      if (d.tick) s += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5E5A54">${esc(d.tick)}</text>`;
     });
     el.innerHTML = s + "</svg>";
     el.querySelectorAll(".hit").forEach((h) => { h.onmousemove = (e) => showTip(e, data[h.dataset.i].tip); h.onmouseleave = hideTip; });
