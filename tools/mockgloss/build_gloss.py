@@ -1,5 +1,5 @@
 """Builds private/mockgloss.json for the site from the human decisions.
-  private/lex.json    { lemma: { keep: true/false, w, pos, en, ru: [..], sense: { qkey: "lemma#2" } } }  (from the cands.tsv pass)
+  private/lex.json    { lemma: { keep: true/false, w, pos, en, ru: [..], sense: { qkey: "lemma#2" }, only: [qkey, ..] } }  (from the cands.tsv pass)
   private/senses.json { "lemma#2": { w, pos, en, ru } }  other senses of a word, used where lex says so
   private/course.json { course key: { en, ru: [..] } }       completions of course-vocabulary cards (weak.json from analyze.js)
 Per question: at most MAX extra words, words in the question and options first, then the rarest.
@@ -20,6 +20,7 @@ for key, v in q.items():
     for c in v["cands"]:
         e = lex.get(c["lemma"])
         if not e or not e.get("keep"): continue
+        if e.get("only") and key not in e["only"]: continue      # a rare sense: only in the questions where it is used that way
         wk = (e.get("sense") or {}).get(key, c["lemma"])
         src = senses[wk] if wk in senses else e
         if not src.get("en") or len(src.get("ru", [])) < 2: problems.append(f"card incomplete: {wk}"); continue

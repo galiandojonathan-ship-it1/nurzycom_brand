@@ -13,7 +13,7 @@
   const W = {};                 // key → { w, pos, en, ru: [], src: "course" | "q" }
   const ONE = new Map();        // one-word surface form → key
   const MANY = new Map();       // first word of a phrase → [{ toks, key }]
-  let ADD = {};
+  let ADD = {}, QSKIP = {}, OFF = new Set();   // OFF: course words never carded in the tests; QSKIP: per question (wrong sense there)
 
   // the usual English endings of a word, so «undermines», «undermined», «undermining» all find «undermine»
   function forms(w) {
@@ -49,7 +49,7 @@
       });
     }));
     for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q" };
-    ADD = (extra && extra.add) || {};
+    ADD = (extra && extra.add) || {}; QSKIP = (extra && extra.skip) || {}; OFF = new Set((extra && extra.off) || []);
   }
   // the extra words of one question, matched only inside it
   function local(keys) {
@@ -62,26 +62,67 @@
   }
 
   const NO = "math,svg,script,style,code,textarea,input,select,.vw,mjx-container,.MathJax,.katex,[data-nogloss]";
-  const WORD = /[A-Za-z][A-Za-z'’]*(?:-[A-Za-z]+)*/g;
+  const WORD = /[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’]*(?:-[A-Za-zÀ-ÖØ-öø-ÿ]+)*/g;
+  // A course word has one meaning; these rules keep its card off other uses of the same spelling (checked on all 12 tests,
+  // 2026-11-06): «novel» (new) is not «a 1905 novel», «maintain» (claim) is not «maintains photographs», «long to» is not
+  // «as long to complete». adj: only before a lowercase word; verb: only after a subject, a modal or «to» (or alone).
+  const DET = new Set(["a", "an", "the", "this", "that", "these", "those", "his", "her", "its", "their", "our", "my", "your", "no", "some", "any", "each", "every", "one", "world", "chess", "union", "nature", "currency"]);
+  const FUNC = new Set(["and", "or", "but", "is", "was", "are", "were", "that", "which", "who", "by", "of", "in", "on", "at", "to", "for", "from", "with", "as", "than", "has", "had", "have"]);
+  const SUBJ = new Set(["to", "would", "could", "will", "can", "may", "might", "should", "must", "did", "do", "does", "not", "also", "often", "who", "they", "we", "i", "you", "he", "she", "it", "and", "or", "then", "historians", "critics", "scholars"]);
+  const RULES = {
+    "novel": { adj: true }, "grave": { adj: true },
+    "champion": { verb: true }, "coin": { verb: true }, "moderate": { verb: true }, "address": { verb: true },
+    "trace": { notAfter: DET, notBefore: ["of"] }, "reserve": { forms: ["reserved"] }, "lend": { forms: ["lend", "lends"] },
+    "long to": { notAfter: new Set(["as", "how", "so", "too", "no", "any", "very", "much", "take", "takes", "took"]), notForms: ["longer", "longest"] },
+    "instrumental": { before: ["in"] }, "qualify": { notBefore: ["as", "for"] }, "afford": { notBefore: ["to"] },
+    "profit from": { notAfter: new Set([...DET, "in"]) }, "contend / maintain": { maintainThat: true },
+  };
+  function allowed(key, toks, i, n, text, course) {
+    const t = toks[i], prev = toks[i - 1], next = toks[i + n];
+    // a capital letter in mid-sentence is a title or a name: The House of Mirth, Gettysburg Address, The Canon of Medicine
+    if (course && /[A-Z]/.test(text[t.s]) && /[^\s.!?"“(]\s*$/.test(text.slice(0, t.s))) return false;
+    const r = RULES[key]; if (!r) return true;
+    const pw = prev && text.slice(prev.e, t.s).trim() === "" ? prev.lw : null;   // the word right before (same sentence part)
+    const nw = next && text.slice(toks[i + n - 1].e, next.s).trim() === "" ? next.lw : null;
+    if (r.forms && !r.forms.includes(t.lw)) return false;
+    if (r.notForms && r.notForms.includes(t.lw)) return false;
+    if (r.notAfter && pw && r.notAfter.has(pw)) return false;
+    if (r.notBefore && nw && r.notBefore.includes(nw)) return false;
+    if (r.before && !(nw && r.before.includes(nw))) return false;
+    if (r.adj && /'s$|’s$/i.test(text.slice(t.s, toks[i + n - 1].e + 2).trim())) return false;   // the novel's events
+    if (r.adj && !(nw && /^[a-z]/.test(text[next.s]) && !FUNC.has(nw) && !(pw && /^\d{4}$/.test(pw)))) return false;
+    if (r.verb && pw && (DET.has(pw) || !SUBJ.has(pw))) return false;
+    if (r.maintainThat && /^maintain/.test(t.lw) && nw !== "that") return false;
+    return true;
+  }
   // underlines the first use of each word in the given elements (in reading order) and returns the keys found
   function apply(els, opt = {}) {
     if (!api.on) return [];
     const extra = local(ADD[opt.key]);
     const seen = new Set(opt.seen || []), found = [];
-    const look = (lw, toks, i) => {   // → [key, word count] for the longest match starting at token i
+    const look = (lw, toks, i, text) => {   // → [key, word count] for the longest allowed match starting at token i
+      const ok = (key, n) => !OFF.has(key) && !(QSKIP[opt.key] || []).includes(key) && allowed(key, toks, i, n, text, W[key] && W[key].src === "course" && !extra.one.has(lw));
       const cands = [...(extra.many.get(lw) || []), ...(MANY.get(lw) || [])];
       for (const c of cands.sort((a, b) => b.toks.length - a.toks.length))
-        if (c.toks.every((t, j) => toks[i + 1 + j] && toks[i + 1 + j].lw === t)) return [c.key, c.toks.length + 1];
-      const k = extra.one.get(lw) || ONE.get(lw); return k ? [k, 1] : null;
+        if (c.toks.every((t, j) => toks[i + 1 + j] && toks[i + 1 + j].lw === t) && ok(c.key, c.toks.length + 1)) return [c.key, c.toks.length + 1];
+      const k = extra.one.get(lw) || ONE.get(lw); return k && ok(k, 1) ? [k, 1] : null;
     };
     for (const root of [].concat(els).filter(Boolean)) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.nodeValue.trim() && !(n.parentElement && n.parentElement.closest(NO)) ? 1 : 2) });
       const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
       for (const node of nodes) {
-        const text = node.nodeValue, toks = [...text.matchAll(WORD)].map((m) => ({ s: m.index, e: m.index + m[0].length, lw: m[0].toLowerCase().replace(/’/g, "'").replace(/'s$/, "") }));
+        const text = node.nodeValue, toks = [];
+        for (const m of text.matchAll(WORD)) {   // a hyphenated word counts whole, and its parts count too (resin-filled → resin)
+          const lw = m[0].toLowerCase().replace(/’/g, "'").replace(/'s$/, "");
+          toks.push({ s: m.index, e: m.index + m[0].length, lw });
+          if (lw.includes("-") && !(ONE.has(lw) || extra.one.has(lw))) {
+            toks.pop(); let at = m.index;
+            for (const part of m[0].split("-")) { toks.push({ s: at, e: at + part.length, lw: part.toLowerCase() }); at += part.length + 1; }
+          }
+        }
         const hits = [];
         for (let i = 0; i < toks.length; i++) {
-          const m = look(toks[i].lw, toks, i); if (!m) continue;
+          const m = look(toks[i].lw, toks, i, text); if (!m) continue;
           const [key, n] = m; if (seen.has(key)) { i += n - 1; continue; }
           seen.add(key); found.push(key); hits.push({ s: toks[i].s, e: toks[i + n - 1].e, key }); i += n - 1;
         }

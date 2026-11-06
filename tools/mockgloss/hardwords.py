@@ -82,6 +82,18 @@ def text(h):
     return html.unescape(re.sub(r"<[^>]+>", " ", h))
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'’]*(?:-[A-Za-z]+)*")
+# a word that never appears in lower case anywhere in the tests is a name (Auezov, Shymkent, Galileo), even at a sentence start
+LOWER = set()
+for _m in mocks["mocks"]:
+    for _s in _m["sections"]:
+        for _qs in bundles[_s["b"]]["mods"].values():
+            for _q in _qs:
+                for _h in [_q.get("stim"), _q.get("stem"), _q.get("rat")] + list(_q.get("opts") or []):
+                    for _w in WORD.findall(text(_h or "")):
+                        if _w[0].islower(): LOWER.add(_w.lower())
+def compound_known(w):   # dust-plastered, length-to-width: every part is a common word
+    parts = [x for x in w.split("-") if x]
+    return len(parts) > 1 and all(zipf_frequency(x, "en") >= 3.5 or len(x) <= 3 for x in parts)
 lex = defaultdict(lambda: {"n": 0, "q": set(), "ctx": [], "flags": set(), "z": 0, "forms": set()})
 qout = {}
 for m in mocks["mocks"]:
@@ -102,6 +114,8 @@ for m in mocks["mocks"]:
                         if len(lw) < 4 or "'" in lw: continue
                         before = t[:mm.start()].rstrip()
                         if w[0].isupper() and before and before[-1] not in ".!?:\"“(—" and not re.match(r"^[A-Z]+$", w): continue   # a name
+                        if w[0].isupper() and lw not in LOWER: continue                       # a name
+                        if "-" in lw and compound_known(lw): continue
                         lm = lemma(lw) if "-" not in lw else lw
                         z = max(zipf_frequency(lw, "en"), zipf_frequency(lm, "en"))
                         flags = []

@@ -44,3 +44,20 @@ For each candidate in `cands.tsv`, read its contexts and decide:
 `build_gloss.py` then keeps at most 4 extra words per question: words in the question and the options first, then the rarest.
 During a test the site never underlines the options of Words in Context, Transitions or grammar questions (the options are
 the answer), only in the review.
+
+## What was done on 2026-11-06 (first full run, 12 tests, 1,500 questions)
+
+1. `hardwords.py` found 1,518 candidate words (after the name and compound filters). Every candidate was judged by hand:
+   kept 331 (academic and literary words, phrases, archaic forms), dropped shared Russian words, Kazakh words, names,
+   chemical and species names, compounds of known words. Rare senses only where the passage uses them (check, credit, grant…).
+2. Every Reading and Writing question that still had nothing underlined (256) was read in full and given the word that
+   blocks understanding, if any (outlet, strait, wells = колодцы, surface = всплывать…); about 100 easy questions have none.
+   In «most nearly mean» questions the tested word is never chosen.
+3. Cards: 477 question words and 73 course words completed (English meaning in simple words for the sense used, at least
+   two Russian equivalents). At most 4 extra words per question. Result: 841 of 1,500 questions (814 of 972 RW) underlined.
+4. Wrong senses of course words were checked on every occurrence: gloss.js rules (novel, maintain, long to, qualify, lend,
+   instrumental, grave, champion, address, afford, trace, reserve, profit from; no course card on a capitalised title word)
+   plus `off` (never in the tests: novel, coin, moderate, canon) and `skip` (per question) in mockgloss.bin.
+
+To change it later: `extract.js` also saves the current glossary (`$PRIV/gloss.json`); edit it, save it as
+`$PRIV/mockgloss.json`, run `seal.js`, and check with a run of the site's own gloss.js over all questions.
