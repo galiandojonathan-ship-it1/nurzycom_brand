@@ -11,7 +11,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
-  const S = { users: [], cur: null, tab: "over", filter: "all", q: "", lessons: [], assign: null, loaded: false };
+  const S = { users: [], cur: null, tab: "over", filter: "all", q: "", lessons: [], assign: null, imp: null, loaded: false };
 
   // ---------- a student's synced copy: { key: { v, t } }; v: null is a removed key
   const getter = (u) => (k) => (u.B && u.B[k] && u.B[k].v != null ? String(u.B[k].v) : null);
@@ -239,13 +239,96 @@
     toast(bad.length ? `Задано ${ok} из ${who.length}. Не получилось: ${bad.join(", ")}` : `«${t.t}» задано ${ok === 1 ? `ученику ${who[0].name}` : `${ok} ученикам`} · появится при следующем открытии сайта`, !!bad.length);
   }
 
+  // ---------- results from the Google Form → the students' accounts (2026-11-06). Work sent before the logins existed, or from
+  // another device, then ticks the plan, shows in «Сегодня» and in this cabinet. A key is written only when the account has no
+  // newer value; its time is the time of the form answer, so a newer result on the student's device still wins.
+  async function openImport() {
+    S.assign = null; S.imp = { busy: "Загружаю ответы формы…", map: {} }; render();
+    const r = await SITE.api("admin/form").catch(() => ({ status: 0 }));
+    if (r.ok) { try { const f = await SITE.unsealBlob(r.data.data); return useForm(f.csv, f.aliases || {}, `сохранены ${new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`); } catch (e) { /* fall through */ } }
+    S.imp = { busy: "", none: true, map: {} }; render();
+  }
+  function useForm(csv, aliases, label) {
+    const rows = FORMKIT.rows(csv); if (!rows.length) { S.imp = { none: true, err: "В файле нет результатов с сайта.", map: {} }; return render(); }
+    const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
+    const G = FORMKIT.group(counts, aliases), me = SITE.me(), map = {};
+    G.groups.forEach((g) => {
+      const hit = S.users.filter((u) => !u.err && u.login !== me && FORMKIT.key(u.name) === g.key);
+      map[g.key] = hit.length === 1 ? hit[0].id : "";
+    });
+    S.imp = { csv, aliases, label, rows, G, map }; render();
+  }
+  function entries(rows, n) {   // the storage keys a student's form rows stand for: { key: { v, t } }
+    const E = {}, put = (k, v, t) => { if (!E[k] || E[k].t <= t) E[k] = { v: String(v), t }; }, cnt = (k, t) => { E[k] = { v: String((E[k] ? Number(E[k].v) : 0) + 1), t: Math.max(t, E[k] ? E[k].t : 0) }; };
+    const mocks = {};
+    for (const r of rows) {
+      const t = +r.ts || 0;
+      if (r.kind === "P") { (mocks[r.lesson] = mocks[r.lesson] || []).push(r); continue; }
+      if (r.kind === "X") { put(`px_last_${n}_${r.lesson}`, `${r.a}/${r.b}`, t); cnt(`px_att_${n}_${r.lesson}`, t); continue; }
+      if (r.kind === "T") { put(`rd_last_${n}_${r.lesson}`, `${r.a}/${r.b}`, t); cnt(`rd_att_${n}_${r.lesson}`, t); continue; }
+      const pid = r.pid || (/^[ADU]\d\d$/.test(r.lesson) ? "p1" : ""); if (!pid) continue;
+      put(`hw_last_${n}_${r.lesson}_${pid}`, `${r.a}/${r.b}`, t); cnt(`hw_att_${n}_${r.lesson}_${pid}`, t);
+    }
+    for (const [id, rs] of Object.entries(mocks)) {   // the latest run of a test: its sections sent within 15 minutes of each other
+      const last = rs[rs.length - 1], run = {};
+      rs.filter((r) => Math.abs((+r.ts || 0) - (+last.ts || 0)) < 9e5).forEach((r) => (run[r.sec2] = r));
+      const v = ["rw", "math"].filter((x) => run[x]).map((x) => { const r = run[x]; return `${x === "rw" ? "RW" : "Math"} ${r.a}/${r.b} ≈ ${window.SATSCALE ? SATSCALE.section(x, r.hard, r.a) : "?"}`; }).join(" · ");
+      put(`mk_last_${n}_${id}`, v, +last.ts || 0);
+      rs.forEach((r) => cnt(`mk_att_${n}_${id}_${r.sec2}`, +r.ts || 0));
+    }
+    return E;
+  }
+  const fresh = (B, E) => Object.entries(E).filter(([k, e]) => !(B && B[k] && (B[k].t || 0) >= e.t));
+  function planFor(g) {   // what one group would bring into the chosen account
+    const u = S.users.find((x) => x.id === S.imp.map[g.key]); if (!u) return null;
+    const rows = S.imp.rows.filter((r) => g.spellings[r.raw]), E = entries(rows, u.name);
+    return { u, rows, E, add: fresh(u.B, E).filter(([k]) => /_last_/.test(k)).length };
+  }
+  function importHTML() {
+    const I = S.imp;
+    if (I.busy) return `<p class="cb-wait">${esc(I.busy)}</p>`;
+    const head = `<div class="cb-ah"><h2>Результаты из Google Form</h2><button class="tlink" type="button" id="cb-icancel">Закрыть ✕</button></div>`;
+    if (I.none) return `<div class="cb-assign">${head}<p class="td-sub">${esc(I.err || "Ответы формы ещё не сохранены в кабинете.")} Выберите файл ответов: Google Forms → Responses → View in Sheets → File → Download → Comma Separated Values (.csv).</p>
+      <label class="drop" for="cb-ifile">Выбрать CSV<input id="cb-ifile" type="file" accept=".csv,text/csv" hidden></label>
+      <p class="hint">Файл, загруженный на странице «Ответы из Google Form», сохраняется в кабинете сам.</p></div>`;
+    const accs = S.users.filter((u) => !u.err);
+    const P = I.G.groups.map((g) => ({ g, p: planFor(g), n: I.rows.filter((r) => g.spellings[r.raw]).length }));
+    const go = P.filter((x) => x.p && x.p.add), total = go.reduce((a, x) => a + x.p.add, 0);
+    return `<div class="cb-assign cb-imp">${head}
+      <p class="hint cb-lead">${I.rows.length} результатов · ${esc(I.label || "")}. Разные написания одного имени объединены. Выберите, в чей аккаунт перенести результаты: тогда они отметят план, появятся у ученика в «Сегодня» и здесь, в карточке. Более новые результаты ученика не заменяются.</p>
+      <ul class="cb-rows">${P.map(({ g, p, n }) => `<li><span><b class="nm">${esc(g.name)}</b><small>${esc(Object.keys(g.spellings).join(" · "))} · ${n} ${n === 1 ? "результат" : n < 5 ? "результата" : "результатов"}</small></span>
+        <select data-imap="${esc(g.key)}" aria-label="Аккаунт для ${esc(g.name)}"><option value="">Не переносить</option>${accs.map((u) => `<option value="${esc(u.id)}"${I.map[g.key] === u.id ? " selected" : ""}>${esc(u.name)} · ${esc(u.login)}</option>`).join("")}</select>
+        <b class="ct">${p ? (p.add ? `+${p.add}` : "уже есть") : "—"}</b></li>`).join("")}</ul>
+      <div class="row"><button class="btn" type="button" id="cb-igo" ${total ? "" : "disabled"}>Перенести${total ? ` · ${total} в ${go.length} ${go.length === 1 ? "аккаунт" : go.length < 5 ? "аккаунта" : "аккаунтов"}` : ""} <span class="arr">→</span></button><span class="hint" id="cb-imsg"></span></div>
+      <p class="hint">Ученики без аккаунта остаются только в «Ответах из Google Form». «Пробные тесты»: переносится последний результат с примерным баллом; разбор вопросов откроется только на устройстве, где тест решали.</p></div>`;
+  }
+  function bindImport() {
+    if ($("cb-icancel")) $("cb-icancel").onclick = () => { S.imp = null; render(); };
+    if ($("cb-ifile")) $("cb-ifile").onchange = () => { const f = $("cb-ifile").files[0]; if (!f) return; const rd = new FileReader();
+      rd.onload = async () => { useForm(rd.result, {}, "файл " + f.name);
+        if (S.imp && S.imp.rows) SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: rd.result, aliases: {}, at: Date.now() }) }) }).catch(() => {}); };
+      rd.readAsText(f, "utf-8"); };
+    $("cb").querySelectorAll("[data-imap]").forEach((sel) => (sel.onchange = () => { S.imp.map[sel.dataset.imap] = sel.value; render(); }));
+    if ($("cb-igo")) $("cb-igo").onclick = async () => {
+      const go = S.imp.G.groups.map(planFor).filter((p) => p && p.add); let ok = 0, n = 0; const bad = [];
+      $("cb-igo").disabled = true;
+      for (const p of go) {
+        $("cb-imsg").textContent = `Переношу ${ok + bad.length + 1} из ${go.length}…`;
+        try { await change(p.u, (B) => { for (const [k, e] of fresh(B, p.E)) { B[k] = e; if (/_last_/.test(k)) n++; } }); ok++; } catch (e) { bad.push(p.u.name); }
+      }
+      S.imp = null; render();
+      toast(bad.length ? `Перенесено в ${ok} из ${go.length}. Не получилось: ${bad.join(", ")}` : `Перенесено ${n} результатов в ${ok} ${ok === 1 ? "аккаунт" : "аккаунта(ов)"} · ученики увидят их при следующем входе`, !!bad.length);
+    };
+  }
+
   // ---------- page
   function render() {
     const main = $("cb"); if (!S.loaded) return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
-    document.body.classList.toggle("cb-has", !!u || !!S.assign);
+    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp);
     let detail = "";
-    if (S.assign) detail = assignHTML();
+    if (S.imp) detail = importHTML();
+    else if (S.assign) detail = assignHTML();
     else if (!u) detail = `<div class="cb-empty"><span class="label">[ Кабинет ]</span><h2>Выберите ученика слева</h2><p class="td-sub">Прогресс, план, результаты и задания. Или задайте одно задание сразу нескольким ученикам.</p>
         <div class="row"><button class="btn" type="button" data-bulk="1">Задать задание группе <span class="arr">→</span></button></div></div>`;
     else if (u.err) detail = `<div class="cb-empty"><h2>${esc(u.name)}</h2><p class="td-sub">${u.err === "key" ? "Копию этого ученика не удалось расшифровать." : esc(why(u.err))}</p></div>`;
@@ -260,7 +343,7 @@
         <div class="chips cb-tabs" role="tablist">${[["over", "Обзор"], ["plan", "План"], ["res", `Результаты · ${I.R.length}`], ["tasks", `Задания${I.open ? ` · ${I.open}` : ""}`]].map(([k, t]) => `<button class="chip" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab === k}" aria-pressed="${S.tab === k}">${t}</button>`).join("")}</div>
         <div class="cb-body">${S.tab === "plan" ? plan(u, I) : S.tab === "res" ? results(u, I) : S.tab === "tasks" ? tasks(u, I) : over(u, I)}</div>`;
     }
-    main.innerHTML = `<aside class="cb-side">${listHTML()}<div class="row cb-bulk"><button class="btn ghost" type="button" data-bulk="1">Задать задание группе</button><button class="tlink" type="button" id="cb-reload">Обновить</button></div></aside>
+    main.innerHTML = `<aside class="cb-side">${listHTML()}<div class="row cb-bulk"><button class="btn ghost" type="button" data-bulk="1">Задать задание группе</button><button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button><button class="tlink" type="button" id="cb-reload">Обновить</button></div></aside>
       <section class="cb-detail" aria-live="polite">${detail}</section>`;
     bind(u);
     if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
@@ -271,7 +354,8 @@
     on("[data-f]", (b) => { S.filter = b.dataset.f; render(); });
     on(".cb-st", (b) => { S.cur = b.dataset.u; S.assign = null; S.tab = "over"; render(); window.scrollTo({ top: 0 }); });
     on("[data-back]", () => { S.cur = null; render(); });
-    on("[data-bulk]", () => openAssign(S.cur ? [S.cur] : []));
+    on("[data-bulk]", () => { S.imp = null; openAssign(S.cur ? [S.cur] : []); });
+    on("[data-imp]", () => openImport());
     on("[data-tab]", (b) => { S.tab = b.dataset.tab; render(); });
     $("cb-reload").onclick = async () => { S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
     if ($("cb-nm")) $("cb-nm").onchange = (e) => { u.nm = e.target.value; render(); };
@@ -291,6 +375,7 @@
       on("[data-deltask]", (b) => { const x = I.T.find((t) => t.id === b.dataset.deltask); if (!x || !confirm(`Убрать задание «${x.t}» у ${u.name}?`)) return;
         act(u, (B, set, get) => { let L = []; try { L = JSON.parse(get("tasks") || "[]"); } catch (e) { L = []; } set("tasks", JSON.stringify(L.filter((t) => t.id !== x.id))); }, "Задание убрано"); });
     }
+    if (S.imp) bindImport();
     const f = $("cb-assign"); if (!f) return;
     const A = S.assign, keep = (fn) => (e) => { fn(e.target.value); fixAssign(); render(); };
     $("cb-kind").onchange = keep((v) => (A.kind = v));

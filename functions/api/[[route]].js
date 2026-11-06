@@ -5,6 +5,7 @@
 //   u:<id>   one account (id = hash of the login, made in the browser)
 //   invite   { hash, salt, iter, wrap }: the class code's hash and the master key wrapped with the class code
 //   admin    hash of the teacher's admin key (claimed once from the teacher page)
+//   form     the Google Form answers and the teacher's name merges, encrypted in the browser; admin key only, students never read it
 //   p:<id>   the student's results and progress, encrypted in the browser with the master key; only the account owner can
 //            read or write it: the browser sends a token derived from the password (PBKDF2, never the password itself), the
 //            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew.
@@ -13,7 +14,7 @@
 //            student's first save. When the teacher sets a new password, the record moves to it (the teacher's browser derives
 //            the new sync token), so the student keeps the cloud copy.
 // Routes: GET user?id · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · PUT admin/user?id · GET admin/users · DELETE admin/user?id
-//         GET/PUT admin/progress?id · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
+//         GET/PUT admin/progress?id · GET/PUT admin/form · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
 const MAX_USERS = 300;
@@ -130,6 +131,11 @@ export async function onRequest(context) {
       const h = rec && rec.w === w ? rec.h || null : null;   // keep the owner's claim; after a password change the next login claims it
       await env.USERS.put("p:" + id, JSON.stringify({ h, w, data: b.data, at: new Date().toISOString(), by: "teacher" }));
       return json({ ok: true });
+    }
+    if (route === "admin/form" && m === "GET") { const f = await env.USERS.get("form", "json"); return f ? json(f) : fail(404, "nothing saved"); }
+    if (route === "admin/form" && m === "PUT") {
+      const b = await body(request); if (!b || !okB64(b.data, 8000000)) return fail(400, "bad data");
+      await env.USERS.put("form", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
     }
     if (route === "admin/invite" && m === "POST") {
       const b = await body(request);
