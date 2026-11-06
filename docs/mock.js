@@ -42,7 +42,13 @@
   const revOf = (mid) => { const m = T.index && T.index.mocks.find((x) => x.id === mid); return m && m.rev ? `_r${m.rev}` : ""; };
   const stKey = (mid) => `mk_state_${student()}_${mid}${revOf(mid)}`;
   const lastKey = (mid) => `mk_last_${student()}_${mid}`;
-  function save() { if (T.st) store(stKey(T.st.mid), JSON.stringify(T.st)); }
+  function save() { if (T.st && !T.view) store(stKey(T.st.mid), JSON.stringify(T.st)); }   // a reopened old result is only viewed, never saved over a run
+  // the last finished run of each test is kept apart, so its result and review can be opened again after a new attempt starts
+  const doneKey = (mid) => `mk_done_${student()}_${mid}`;
+  function doneRun(mid) {
+    try { const d = JSON.parse(store(doneKey(mid))); if (d && d.phase === "done" && (d.rev || "") === revOf(mid)) return d; } catch (e) { /* none */ }
+    const r = load(mid); return r && r.phase === "done" ? r : null;
+  }
   function load(mid) { try { return JSON.parse(store(stKey(mid))); } catch (e) { return null; } }
 
   // ---- start screen
@@ -55,22 +61,24 @@
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
     const num = (m) => Number(m.id.slice(2));
-    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"),
-      full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official");
+    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official");
     const group = (title, sub, ms, first) => (ms.length ? `<div class="course-h" style="grid-column:1/-1${first ? "" : ";margin-top:18px"}"><b>${title}</b><span class="label">${sub}</span></div>${ms.map(card).join("")}` : "");
     $("mocks").innerHTML = group("Полные тесты", "Reading and Writing и Math", full, true)
       + group("Тесты Reading and Writing", "только авторские вопросы nurzycom", rw)
       + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2)
-      + group(`Полные тесты ${full3.length ? full3[0].id.slice(2) + "–" + full3[full3.length - 1].id.slice(2) : ""}`, "Reading and Writing и Math · официальные вопросы College Board", full3);
+      + group("Полные тесты 13–19", "Reading and Writing и Math · официальные вопросы College Board", full3);
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
     $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
     $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));
+    $("open-res").classList.toggle("hidden", !(T.mock && doneRun(T.mock.id)));
     ready();
   }
   const fmt = () => (T.mock && T.mock.only) || T.fmt;   // a Reading and Writing test has only one format
   function ready() { $("go").disabled = !($("student").value.trim().length >= 2 && T.mock); }
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); renderStart(); };
   $("formats").querySelectorAll(".pick").forEach((b) => (b.onclick = () => { T.fmt = b.dataset.f; renderStart(); }));
+  if (window.GLOSS) { $("gloss-on").checked = GLOSS.on; $("gloss-on").onchange = (e) => { GLOSS.on = e.target.checked; }; }
+  else $("gloss-on").closest("label").classList.add("hidden");
 
   async function bundle(sec) {
     const s = T.mock.sections.find((x) => x.k === sec);
@@ -83,7 +91,7 @@
   const items = () => T.bundles[secInfo(curSec()).b].mods[T.st.mod];
 
   async function begin() {
-    store("hw_student", $("student").value.trim());
+    T.view = false; store("hw_student", $("student").value.trim());
     const old = load(T.mock.id);
     if (old && old.phase !== "done" && confirm("Этот тест уже начат. Продолжить с того же места? «Отмена» начнёт тест заново.")) T.st = old;
     else T.st = { mid: T.mock.id, secs: fmt() === "full" ? ["rw", "math"] : [fmt()], si: 0, mod: "m1", phase: "dir", deadline: 0, ans: {}, mk: {}, res: {}, sent: {} };
@@ -165,10 +173,21 @@
       $("m-in").oninput = () => { const v = $("m-in").value.trim(); if (v) A[q.n] = v; else delete A[q.n]; save(); hint(); renderGrid(); };
       hint();
     }
+    glossQ(q, [$("passage"), $("stem")].concat(GIVEAWAY.test(q.sk || "") ? [] : [$("opts")]));
     $("prev").disabled = T.cur === 0;
     $("next").textContent = T.cur === its.length - 1 ? "К проверке →" : "Далее →";
     $("navbtn").textContent = `${q.n} из ${its.length} ▴`;
     renderGrid();
+  }
+  // hard words: underlined in the passage, the question and the options (gloss.js); the key finds a question's own extra words
+  // in these skills the options are the vocabulary or grammar being tested: during the test their meaning would give the answer
+  // away, so options are underlined only in the review
+  const GIVEAWAY = /words in context|transitions|boundaries|form, structure/i;
+  const qkey = (sec, mod, q) => `${T.st.mid}.${sec}.${mod}.${q.n}`;
+  function glossQ(q, els, sec = curSec(), mod = T.st.mod) {
+    if (!window.GLOSS) return;
+    GLOSS.hide();
+    GLOSS.ready.then(() => { if (els.every((e) => e && e.isConnected)) GLOSS.apply(els, { key: qkey(sec, mod, q), own: !!q.own }); });
   }
   function gridHtml(cls) {
     const A = T.st.ans[mkey()], M = T.st.mk[mkey()];
@@ -270,48 +289,66 @@
     const note = `<p class="hint" style="margin-top:18px">Балл примерный: его считает таблица nurzycom по числу верных ответов и по тому, какой второй модуль вам достался. Настоящий балл College Board может отличаться примерно на ±${SATSCALE.ERR} в каждом разделе; официальный балл даёт только экзамен или тест в Bluebook.${capped.length ? ` Вам достался лёгкий второй модуль (${capped.map((s) => SEC[s]).join(", ")}): с ним балл раздела не поднимается выше примерно ${capped.map((s) => SATSCALE.CAP[s]).join(" / ")}, поэтому важнее всего первый модуль.` : ""}</p>`;
     $("res-secs").innerHTML = total + secHtml + weakHtml + note;
     store(lastKey(T.st.mid), parts.join(" · "));
+    if (!T.view) store(doneKey(T.st.mid), JSON.stringify(Object.assign({}, T.st, { rev: revOf(T.st.mid) })));
     $("review").classList.add("hidden"); $("res-review").textContent = "Разбор вопросов";
     show("m-result"); send();
   }
-  // difficult words (course vocabulary and the test's own words) are underlined in the review, with the translation on hover or tap
-  function markWords(h, ws) {
-    if (!ws || !ws.length) return h;
-    const box = document.createElement("div"); box.innerHTML = h;
-    const re = new RegExp("\\b(" + ws.map((w) => w.s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "gi");
-    const by = Object.fromEntries(ws.map((w) => [w.s.toLowerCase(), w]));
-    const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [];
-    while (walk.nextNode()) if (!walk.currentNode.parentElement.closest("math,svg,.vw")) nodes.push(walk.currentNode);
-    for (const n of nodes) {
-      const s = n.nodeValue; re.lastIndex = 0; if (!re.test(s)) continue; re.lastIndex = 0;
-      const f = document.createDocumentFragment(); let last = 0, m;
-      while ((m = re.exec(s))) {
-        f.append(s.slice(last, m.index)); const w = by[m[0].toLowerCase()], sp = document.createElement("span");
-        sp.className = "vw"; sp.tabIndex = 0; sp.title = w ? `${w.ru} · ${w.l}` : ""; sp.textContent = m[0]; f.append(sp); last = m.index + m[0].length;
-      }
-      f.append(s.slice(last)); n.replaceWith(f);
-    }
-    return box.innerHTML;
-  }
-  const wordList = (ws) => (ws && ws.length ? `<div class="wlist"><span class="label">Трудные слова в вопросе</span>${ws.map((w) => `<div><b>${esc(w.en)}</b> — ${esc(w.ru)} <span class="label">${esc(w.l)}</span></div>`).join("")}</div>` : "");
+  // Review. In a question with a mistake the right answer and the explanation stay hidden at first: the student tries again
+  // (another option or a typed answer) and sees them after a right try or «Показать ответ». Retries change nothing in the score.
+  const SHOW = "mk_show_answers";
   $("res-review").onclick = () => {
     const r = $("review"); if (!r.classList.contains("hidden")) { r.classList.add("hidden"); $("res-review").textContent = "Разбор вопросов"; return; }
-    r.innerHTML = `<label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
+    const showAll = store(SHOW) === "1";
+    r.innerHTML = `<p class="hint rv-how">В вопросах с ошибкой сначала попробуйте ещё раз: выберите другой вариант или введите ответ. Правильный ответ и разбор откроются после верной попытки или по кнопке «Показать ответ». Балл от этого не меняется.</p>
+      <label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>
+      <label class="onlybad" style="margin-top:8px"><input type="checkbox" id="rv-show"${showAll ? " checked" : ""}> Сразу показывать правильные ответы</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
       const its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[`${sec}.${mod}`];
       return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
         const a = A[q.n], ok = right(q, a);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
-          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${markWords(o, q.w)}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
-        return `<details class="rv${ok ? "" : " bad"}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
-          <div class="rbody">${q.stim ? `<div class="qhtml">${markWords(q.stim, q.w)}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div>${wordList(q.w)}</div></details>`;
+          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}${!ok && a === c ? " tried" : ""}" data-l="${c}"${ok ? "" : ' role="button" tabindex="0"'}><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg r">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
+        const again = ok ? "" : `<div class="try"><p class="try-h">Попробуйте ещё раз: ${q.t === "mc" ? "выберите другой вариант." : "введите ответ."}</p>
+            ${q.t === "mc" ? "" : '<div class="row try-row"><input type="text" class="try-in" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Ваш ответ"><button class="btn try-go" type="button">Проверить</button></div>'}
+            <button class="btn ghost try-show" type="button">Показать ответ</button></div><p class="try-fb" aria-live="polite"></p>`;
+        return `<details class="rv${ok ? "" : " bad"}${!ok && !showAll ? " quiz" : ""}" data-sec="${sec}" data-mod="${mod}" data-n="${q.n}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")}<span class="ans-sum"> · верный: ${esc(q.ans)}</span> · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
+          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}${again}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
     $("rv-bad").onchange = (e) => r.classList.toggle("only-bad", e.target.checked);
+    $("rv-show").onchange = (e) => { store(SHOW, e.target.checked ? "1" : "0"); if (e.target.checked) r.querySelectorAll(".rv.quiz").forEach((d) => d.classList.remove("quiz")); };
+    const qOf = (d) => T.bundles[secInfo(d.dataset.sec).b].mods[d.dataset.mod].find((q) => q.n === Number(d.dataset.n));
+    r.querySelectorAll(".rv").forEach((d) => { const q = qOf(d); glossQ(q, [...d.querySelectorAll(".rbody > .qhtml, .ropt .qhtml")], d.dataset.sec, d.dataset.mod); });
+    const say = (d, msg) => (d.querySelector(".try-fb").textContent = msg);
+    const open = (d, msg) => { d.classList.remove("quiz"); say(d, msg); };
+    const typed = (d) => { const v = d.querySelector(".try-in").value.trim(); if (!v) return;
+      if (parseSpr(v) === null) return say(d, "Формат: 12, -3, 7/2 или .75");
+      if (right(qOf(d), v)) open(d, "Верно. Разбор ниже."); else say(d, `«${v}» — неверно. Попробуйте ещё раз.`); };
+    r.onclick = (e) => {
+      const d = e.target.closest(".rv.quiz"); if (!d) return;
+      if (e.target.closest(".try-show")) return open(d, "Ответ открыт.");
+      if (e.target.closest(".try-go")) return typed(d);
+      const o = e.target.closest(".ropt"); if (!o || o.classList.contains("tried")) return;
+      if (o.dataset.l === qOf(d).ans) open(d, "Верно. Разбор ниже."); else { o.classList.add("tried"); say(d, `${o.dataset.l} — неверно. Попробуйте другой вариант.`); }
+    };
+    r.onkeydown = (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.classList.contains("try-in") && e.key === "Enter") { e.preventDefault(); typed(e.target.closest(".rv")); }
+      else if (e.target.classList.contains("ropt")) { e.preventDefault(); e.target.click(); }
+    };
     r.classList.remove("hidden"); $("res-review").textContent = "Скрыть разбор";
   };
   $("res-home").onclick = home;
+  // the start screen opens the result and review of the last finished run of the chosen test
+  $("open-res").onclick = async () => {
+    const d = T.mock && doneRun(T.mock.id); if (!d) return;
+    $("start-msg").textContent = "Открываю результат…";
+    try { for (const s of d.secs) await bundle(s); } catch (e) { $("start-msg").textContent = "Не удалось загрузить тест. Обновите страницу."; return; }
+    $("start-msg").textContent = ""; T.view = true; T.st = d; results();
+  };
 
   async function send() {
     const f = CFG.fields || {}, todo = T.st.secs.filter((s) => !T.st.sent[s]);
+    if (T.view) { $("send-status").textContent = todo.length ? "Этот результат не дошёл до преподавателя. Сделайте скриншот и пришлите в Telegram." : "Результат отправлен преподавателю."; return; }
     if (!todo.length) { $("send-status").textContent = "Результат отправлен преподавателю."; return; }
     if (!CFG.formAction) { $("send-status").textContent = "Отправка не настроена: пришлите скриншот результата преподавателю."; return; }
     $("send-status").textContent = "Отправляю…";
@@ -333,9 +370,14 @@
 
   $("go").onclick = begin;
   SITE.json("mocks").then((d) => {
-    T.index = d; renderStart();
+    T.index = d;
+    // a test finished before results were kept apart (mk_done) is copied there, so it reaches the account too
+    d.mocks.forEach((m) => { if (store(doneKey(m.id))) return; const r = load(m.id); if (r && r.phase === "done") store(doneKey(m.id), JSON.stringify(Object.assign({}, r, { rev: revOf(m.id) }))); });
+    renderStart();
     const want = new URLSearchParams(location.search).get("t");
     if (want) { T.mock = d.mocks.find((m) => m.id === want) || null; renderStart(); }
+    // from the «Сегодня» chart: open that test's result and review at once
+    if (want && new URLSearchParams(location.search).get("r") === "1" && T.mock && doneRun(T.mock.id)) $("open-res").click();
   }).catch(() => { $("start-msg").textContent = "Не удалось загрузить тесты. Обновите страницу."; });
   window.__mock = { parseSpr, state: () => T.st };   // for testing
 })();

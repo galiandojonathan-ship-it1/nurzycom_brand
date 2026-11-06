@@ -4,60 +4,11 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
-  const D = { lessons: [], sets: [], texts: [], mocks: null, bundles: {}, t: {}, rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
+  const D = { csv: "", aliases: {}, lessons: [], sets: [], texts: [], mocks: null, bundles: {}, t: {}, rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
   const DAY = 864e5;
 
-  // ---------- CSV
-  function parseCSV(text) {
-    const rows = []; let row = [], f = "", q = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-      else if (c === '"') q = true;
-      else if (c === ",") { row.push(f); f = ""; }
-      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
-      else f += c;
-    }
-    if (f || row.length) { row.push(f); rows.push(row); }
-    return rows.filter((r) => r.some((x) => x.trim()));
-  }
-  // Columns by header name; if renamed, by what the values look like.
-  const NAMES = { ts: /^(timestamp|отметка времени|время отправки)/i, student: /^(student|ученик|имя)/i, lesson: /^(lesson|урок)/i, part: /^(part|часть)/i,
-    answers: /^(answers|ответы)/i, score: /^(score|счёт|счет|результат)/i, wrong: /^(wrong|ошибки)/i, seconds: /^(seconds|секунды|время)$/i, attempt: /^(attempt|попытка)/i };
-  function columns(head, body) {
-    const col = {};
-    Object.entries(NAMES).forEach(([k, re]) => { const i = head.findIndex((h) => re.test(h.trim())); if (i >= 0) col[k] = i; });
-    const sample = body.slice(0, 50), used = new Set(Object.values(col));
-    const guess = (k, test) => { if (col[k] !== undefined) return; for (let i = 0; i < head.length; i++) if (!used.has(i) && sample.length && sample.filter((r) => test(r[i] || "")).length >= sample.length * 0.8) { col[k] = i; used.add(i); return; } };
-    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTDUA]\d\d|PT\d\d?|MD|VA)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
-    guess("answers", (v) => /^\d+:/.test(v.trim())); guess("part", (v) => /·|^p\d/.test(v)); guess("attempt", (v) => /^\d{1,2}$/.test(v.trim()));
-    guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
-    return col;
-  }
-  // «04/11/2026» is 4 November in most locales (UK, Kazakhstan) but 11 April in US English: the order is decided once per file
-  function slashOrder(strs) {
-    const ms = strs.map((s) => (s || "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)).filter(Boolean);
-    if (!ms.length) return "dmy";
-    const dayFirst = ms.some((m) => +m[1] > 12), monthFirst = ms.some((m) => +m[2] > 12);
-    if (dayFirst !== monthFirst) return dayFirst ? "dmy" : "mdy";
-    // still ambiguous: form rows are appended in time order, and no answer comes from the future
-    const cost = (o) => { let bad = 0, prev = 0; const now = Date.now() + 86400000;
-      strs.forEach((s) => { const d = parseDate(s, o); if (!d) return; if (+d > now) bad += 1000; if (+d < prev) bad++; prev = +d; }); return bad; };
-    const last = (o) => Math.max(0, ...strs.map((s) => +(parseDate(s, o) || 0)));   // a tie goes to the reading with the more recent answers
-    const cm = cost("mdy"), cd = cost("dmy");
-    return cm < cd || (cm === cd && last("mdy") > last("dmy")) ? "mdy" : "dmy";
-  }
-  function parseDate(s, order = "dmy") {
-    s = (s || "").trim(); let m;
-    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T]?(\d{1,2})?:?(\d{2})?:?(\d{2})?/))) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
-    if ((m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/))) return new Date(+m[3], m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
-    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?\s*(AM|PM)?/i))) {
-      let h = +(m[4] || 0); if (m[7] && /pm/i.test(m[7]) && h < 12) h += 12; if (m[7] && /am/i.test(m[7]) && h === 12) h = 0;
-      const [mo, dd] = order === "mdy" ? [+m[1], +m[2]] : [+m[2], +m[1]];
-      return new Date(+m[3], mo - 1, dd, h, +(m[5] || 0), +(m[6] || 0));
-    }
-    const d = new Date(s); return isNaN(d) ? null : d;
-  }
+  // CSV reading, dates and student names are shared with the cabinet (formkit.js)
+  const { parseCSV, columns, slashOrder, parseDate } = window.FORMKIT;
   const norm = (n) => n.toLowerCase().replace(/ё/g, "е").replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
 
   function load(text, label) {
@@ -74,12 +25,17 @@
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
       const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: /\./.test(n) ? n : Number(n), tries: v === "-" ? [] : v.split(">") }; });
       const s2 = part.match(/2-я: (\d+)\/(\d+)/);   // on-screen parts also report the score after the second attempt
-      rows.push({ ts: parseDate(g("ts"), order), name: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
+      rows.push({ ts: parseDate(g("ts"), order), name: g("student"), raw: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
         a: +sc[1], b: +sc[2], pct: +sc[2] ? (100 * +sc[1]) / +sc[2] : 0, wrong: g("wrong").split(",").map((x) => x.trim()).filter(Boolean).map((x) => (/^\d+$/.test(x) ? Number(x) : x)), sec: Number(g("seconds")) || 0,
         attempt: Number(g("attempt")) || 1, answers });
     });
     if (!rows.length) throw new Error("Строки есть, но ни одна не похожа на результат с сайта.");
     rows.sort((x, y) => (x.ts || 0) - (y.ts || 0));
+    // one student, several spellings («Шер. Ж.», «Sher Zh», «Sherniyaz»): merged under one romanized name (formkit.js)
+    const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
+    const G = FORMKIT.group(counts, D.aliases);
+    if (G) rows.forEach((r) => { const x = G.of[r.raw]; if (x) { r.key = x.key; r.name = x.name; } });
+    D.groups = G ? G.groups : []; D.csv = text;
     D.rows = rows; D.label = label;
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
@@ -117,7 +73,7 @@
     });
     return Object.entries(sk).map(([k, v]) => ({ label: k, n: v.n, value: (100 * v.ok) / v.n })).sort((a, b) => a.value - b.value);
   }
-  const shade = (v) => (v === null ? null : v >= 90 ? ["#0A0A0A", "#FAF8F3"] : v >= 75 ? ["#3A3936", "#FAF8F3"] : v >= 60 ? ["#7A7872", "#FAF8F3"] : v >= 40 ? ["#BDBBB5", "#0A0A0A"] : ["#E2E0DA", "#0A0A0A"]);
+  const shade = (v) => (v === null ? null : v >= 90 ? ["#0F0F0F", "#F5F3EE"] : v >= 75 ? ["#3A3936", "#F5F3EE"] : v >= 60 ? ["#7A7872", "#F5F3EE"] : v >= 40 ? ["#BDBBB5", "#0F0F0F"] : ["#E2E0DA", "#0F0F0F"]);
 
   // ---------- charts (single series, black and white)
   const tip = $("tip");
@@ -128,12 +84,12 @@
     const max = Math.max(1, ...data.map((d) => d.value)), top = max <= 5 ? max : Math.ceil(max / 5) * 5;
     const step = (W - pad.l) / n, bw = Math.min(24, step - 2), y = (v) => H - pad.b - ((H - pad.b - pad.t) * v) / top;
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(unit)}">`;
-    [0, top / 2, top].forEach((t) => { s += `<line x1="${pad.l}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#E2E0DA" stroke-width="1"/><text x="${pad.l - 6}" y="${y(t) + 4}" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#5A5852">${Math.round(t)}</text>`; });
+    [0, top / 2, top].forEach((t) => { s += `<line x1="${pad.l}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#E2E0DA" stroke-width="1"/><text x="${pad.l - 6}" y="${y(t) + 4}" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#5E5A54">${Math.round(t)}</text>`; });
     data.forEach((d, i) => {
       const x = pad.l + i * step + (step - bw) / 2, h = H - pad.b - y(d.value), r = Math.min(4, h);
-      if (d.value > 0) s += `<path d="M${x},${H - pad.b} V${y(d.value) + r} q0,-${r} ${r},-${r} H${x + bw - r} q${r},0 ${r},${r} V${H - pad.b} Z" fill="#0A0A0A"/>`;
+      if (d.value > 0) s += `<path d="M${x},${H - pad.b} V${y(d.value) + r} q0,-${r} ${r},-${r} H${x + bw - r} q${r},0 ${r},${r} V${H - pad.b} Z" fill="#0F0F0F"/>`;
       s += `<rect class="hit" data-i="${i}" x="${pad.l + i * step}" y="${pad.t}" width="${step}" height="${H - pad.t}" fill="transparent"/>`;
-      if (d.tick) s += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5A5852">${esc(d.tick)}</text>`;
+      if (d.tick) s += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5E5A54">${esc(d.tick)}</text>`;
     });
     el.innerHTML = s + "</svg>";
     el.querySelectorAll(".hit").forEach((h) => { h.onmousemove = (e) => showTip(e, data[h.dataset.i].tip); h.onmouseleave = hideTip; });
@@ -201,7 +157,7 @@
         `${done(s, V)} / ${total(V)}`, `${done(s, M)} / ${total(M)}`, sk ? `${esc(sk.label)} · ${pct(sk.value)}` : "—"] }; });
     $("v-students").innerHTML = `<h2>Ученики</h2><p class="hint">Нажмите на ученика, чтобы открыть его карточку. Части = части рабочей тетради, сданные хотя бы раз.</p>` +
       table(["Ученик", "Активность", "Сдач", "С 1-й попытки", "Verbal: части", "Math: части", "Слабый навык"], rows, { click: true, num: [2, 3, 4, 5] }) +
-      '<p class="hint">Один ученик записан дважды? Значит, имя набрано по-разному (например, «Айгерим К.» и «Aigerim K»). Попросите писать имя одинаково.</p>';
+      '<p class="hint">Разные написания одного имени («Шер. Ж.», «Sher Zh») сайт объединяет сам, под латинским написанием. Если объединил не тех или не объединил своих, откройте ученика: там можно отделить или присоединить написание.</p>';
     clickStudents($("v-students"));
   }
   function studentDetail(s) {
@@ -211,15 +167,30 @@
     const used = D.lessons.filter((l) => s.rows.some((r) => r.lesson === l.tag));
     const rowsOf = (tag, pid) => s.rows.filter((r) => r.lesson === tag && r.pid === pid);
     let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button></div><h2 style="font:italic 300 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
+    const grp = (D.groups || []).find((g) => g.key === s.key), sps = grp ? Object.entries(grp.spellings) : [];
+    const others = D.students.filter((x) => x.key !== s.key);
+    html += `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
+      ${others.length ? `<div class="row" style="margin-top:10px"><select id="join-sel" aria-label="Присоединить другого ученика"><option value="">Присоединить: это тот же ученик…</option>${others.map((x) => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("")}</select><button class="btn ghost" id="join-go">Объединить</button></div>` : ""}
+      ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
     html += kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} частей тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? r.wrong.join(", ") : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     $("back-st").onclick = () => { D.student = null; render(); };
+    $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
+    if ($("join-go")) $("join-go").onclick = () => { const k = $("join-sel").value, o = D.students.find((x) => x.key === k); if (!o) return;
+      new Set(o.rows.map((r) => r.raw)).forEach((sp) => (D.aliases[sp] = s.key)); relink(); };
+    if ($("alias-reset")) $("alias-reset").onclick = (e) => { e.preventDefault(); D.aliases = {}; relink(); };
+  }
+  function relink() {   // apply the teacher's merges again and keep them with the saved answers
+    const keep = D.student, k = D.view; load(D.csv, D.label); D.view = k;
+    D.student = D.students.some((x) => x.key === keep) ? keep : (D.students.find((x) => Object.keys(D.aliases).some((sp) => x.rows.some((r) => r.raw === sp))) || {}).key || null;
+    try { localStorage.setItem("name_alias", JSON.stringify(D.aliases)); } catch (e) { /* private mode */ }
+    if (!D.demo) cloudSave(); render();
   }
   // ---------- mock tests: every question with its answer, explanation and what each student chose
   const MODN = { m1: "Модуль 1", m2h: "Модуль 2 · сложный", m2e: "Модуль 2 · лёгкий" };
@@ -329,7 +300,7 @@
     let s = `<div class="tw"><table class="heat"><tr><th></th>${L.parts.map((p) => `<th title="${esc(p.title)}">${esc(p.title.split(" ")[0].slice(0, 9))}</th>`).join("")}</tr>`;
     D.students.forEach((st) => {
       s += `<tr><th>${esc(st.name)}</th>` + L.parts.map((p) => { const rs = rows.filter((r) => r.key === st.key && r.pid === p.id), b = best(rs), c = shade(b ? b.pct : null);
-        return `<td data-tip="${esc(`<b>${st.name} · ${p.title}</b><br>${b ? `${b.a}/${b.b}, сдач: ${rs.length}` : "Не сдано"}`)}"${c ? ` style="background:${c[0]};color:${c[1]}"` : ""}>${b ? Math.round(b.pct) : "·"}</td>`; }).join("") + "</tr>";
+        return `<td data-tip="${esc(`<b>${esc(st.name)} · ${esc(p.title)}</b><br>${b ? `${b.a}/${b.b}, сдач: ${rs.length}` : "Не сдано"}`)}"${c ? ` style="background:${c[0]};color:${c[1]}"` : ""}>${b ? Math.round(b.pct) : "·"}</td>`; }).join("") + "</tr>";
     });
     return s + "</table></div>";
   }
@@ -355,7 +326,7 @@
     const q = (D.q || "").toLowerCase();
     const rows = [...D.rows].reverse().filter((r) => !q || (r.name + " " + whatOf(r) + " " + r.lesson).toLowerCase().includes(q));
     $("v-log").innerHTML = `<h2>Журнал</h2><div class="field"><input id="q" type="text" placeholder="Поиск: имя, урок, часть" value="${esc(D.q || "")}"></div><p class="hint">${rows.length} записей. Ответы: «3:B>C» — вопрос 3, первая попытка B, вторая C.</p>` +
-      table(["Когда", "Ученик", "Что", "Результат", "Ошибки", "Ответы"], rows.slice(0, 400).map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b}`, r.wrong.join(", ") || "—", `<span class="mono" style="font-size:12px">${esc(r.answers.map((a) => `${a.n}:${a.tries.join(">") || "-"}`).join(" "))}</span>`] })), { num: [3] });
+      table(["Когда", "Ученик", "Что", "Результат", "Ошибки", "Ответы"], rows.slice(0, 400).map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b}`, esc(r.wrong.join(", ")) || "—", `<span class="mono" style="font-size:12px">${esc(r.answers.map((a) => `${a.n}:${a.tries.join(">") || "-"}`).join(" "))}</span>`] })), { num: [3] });
     $("q").oninput = () => { D.q = $("q").value; const pos = $("q").selectionStart; render(); $("q").focus(); $("q").setSelectionRange(pos, pos); };
   }
 
@@ -377,13 +348,28 @@
   // ---------- sources
   async function fromUrl(u) {
     $("src-msg").textContent = "Загружаю…";
-    try { const r = await fetch(u, { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); D.demo = false; load(await r.text(), "живая ссылка · " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })); store("teacher_url", u); }
+    try { const r = await fetch(u, { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); D.demo = false; load(await r.text(), "живая ссылка · " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })); store("teacher_url", u); cloudSave(); }
     catch (e) { $("src-msg").textContent = "Не удалось загрузить по ссылке: " + e.message + ". Проверьте, что выбран формат CSV, или загрузите файл."; }
   }
   function fromFile(f) {
     const rd = new FileReader();
-    rd.onload = () => { try { D.demo = false; load(rd.result, "файл " + f.name); } catch (e) { $("src-msg").textContent = e.message; } };
+    rd.onload = () => { try { D.demo = false; load(rd.result, "файл " + f.name); cloudSave(); } catch (e) { $("src-msg").textContent = e.message; } };
     rd.readAsText(f, "utf-8");
+  }
+  // ---------- the answers in the cloud (api/admin/form, admin key only, encrypted here): the dashboard and the cabinet open them
+  // on any device without loading the file again
+  let lastSaved = "";
+  async function cloudSave() {
+    if (!SITE.adminKey() || !D.csv) return;
+    const body = JSON.stringify({ csv: D.csv, aliases: D.aliases }); if (body === lastSaved) return;
+    try { const r = await SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: D.csv, aliases: D.aliases, at: Date.now() }) }) });
+      if (r.ok) { lastSaved = body; $("st-line").insertAdjacentHTML("beforeend", ' <span class="pill">сохранено в кабинете</span>'); } } catch (e) { /* offline: the page still works */ }
+  }
+  async function cloudLoad() {
+    if (!SITE.adminKey()) return false;
+    try { const r = await SITE.api("admin/form"); if (!r.ok) return false; const f = await SITE.unsealBlob(r.data.data); if (!f || !f.csv) return false;
+      D.aliases = Object.assign({}, f.aliases || {}, D.aliases); D.demo = false; load(f.csv, "сохранено " + new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
+      lastSaved = JSON.stringify({ csv: f.csv, aliases: D.aliases }); return true; } catch (e) { return false; }
   }
   function sources(on) { $("src").classList.toggle("hidden", !on); $("demo-row").classList.toggle("hidden", !on); }
   $("change").onclick = () => sources($("src").classList.contains("hidden"));
@@ -395,7 +381,7 @@
   $("load-url").onclick = () => $("url").value.trim() && fromUrl($("url").value.trim());
   $("reload").onclick = () => { const u = store("teacher_url"); if (u && !D.demo) fromUrl(u); else $("file").click(); };
   $("forget").onclick = () => { store("teacher_url", null); D.rows = []; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
-  $("demo").onclick = () => { D.demo = true; load(demoCSV(), "пример"); };
+  $("demo").onclick = () => { D.demo = true; const a = D.aliases; D.aliases = {}; load(demoCSV(), "пример"); D.aliases = a; };
   $("tabs").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.view = b.dataset.v; if (D.view !== "students") D.student = null; render(); }));
   addEventListener("resize", () => { if (!$("dash").classList.contains("hidden") && D.view === "overview") render(); });
 
@@ -477,10 +463,10 @@
       ["salt", "iter", "wrap"].forEach((k) => delete ACC.a[k]); ACC.dirty = true; accMsg("Общий пароль будет выключен после «Сохранить на сайте»."); accRender();
     };
   }
-  function showNew(name, login, pw, reset) {
+  function showNew(name, login, pw, reset, live) {
     const text = `${reset ? "Новый пароль для сайта курса" : "Твой вход на сайт курса"}\n${siteUrl()}\nЛогин: ${login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
     const box = $("acc-new"); box.classList.remove("hidden");
-    box.innerHTML = `<span class="label">${esc(name)} · ${reset ? "новый пароль" : "новый логин"}</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику в Telegram. Логин заработает после «Сохранить на сайте».</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="acc-copy">Скопировать сообщение</button></div>`;
+    box.innerHTML = `<span class="label">${esc(name)} · ${reset ? "новый пароль" : "новый логин"}</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику в Telegram. ${live ? "Логин уже работает: он сохранён в аккаунтах сайта (список «Аккаунты учеников · регистрация»)." : "<b>Логин заработает только после «Сохранить на сайте».</b>"}</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="acc-copy">Скопировать сообщение</button></div>`;
     $("acc-copy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("acc-copy").textContent = "Скопировано"; } catch (e) { accMsg("Не удалось скопировать: выделите текст выше вручную."); } };
   }
   $("acc-add").onclick = async () => {
@@ -490,9 +476,16 @@
       const login = SITE.norm($("acc-login").value) || toLogin(name);
       if (!/^[a-z0-9][a-z0-9._-]{1,23}$/.test(login)) throw new Error("Логин: от 2 до 24 символов, латинские буквы, цифры, точка, дефис.");
       const id = await SITE.lid(login); if ((ACC.a.users || {})[id]) throw new Error(`Логин ${login} уже есть. Впишите другой логин.`);
-      const pw = genPw(); ACC.a.users = ACC.a.users || {}; ACC.a.v = 2;
-      ACC.a.users[id] = await SITE.account(login, name, pw); ACC.list.push({ id, login, name }); ACC.dirty = true;
-      $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false); accMsg(""); accRender();
+      const pw = genPw(), entry = await SITE.account(login, name, pw);
+      // with the administrator key the login goes straight into the site's accounts and works at once (no GitHub step)
+      if (SITE.adminKey()) {
+        const r = await SITE.api("admin/user?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ entry }) });
+        if (r.status === 409) throw new Error(`Логин ${login} уже занят. Впишите другой логин.`);
+        if (r.ok) { $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false, true); accMsg(""); regLoad(); return; }
+      }
+      ACC.a.users = ACC.a.users || {}; ACC.a.v = 2;
+      ACC.a.users[id] = entry; ACC.list.push({ id, login, name }); ACC.dirty = true;
+      $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false); accMsg("Логин ещё не работает: нажмите «Сохранить на сайте» ниже."); accRender();
     } catch (e) { accMsg(e.message); }
   };
   $("acc-save").onclick = async () => {
@@ -565,13 +558,46 @@
     const me = SITE.me();
     $("reg-list").innerHTML = REG.list.length ? table(["Ученик", "Логин", "Создан", ""], REG.list.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), "ru")).map((u) => ({ k: u.id,
       cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`, u.at ? when(new Date(u.at)) : "—",
-        u.login === me ? "" : `<button class="chip" data-regdel="${esc(u.id)}">Удалить</button>`] }))).replace('<table class="t">', '<table class="t acct">')
+        u.login === me ? "" : `<span class="chips"><button class="chip" data-regpw="${esc(u.id)}">Новый пароль</button><button class="chip" data-regdel="${esc(u.id)}">Удалить</button></span>`] }))).replace('<table class="t">', '<table class="t acct">')
       : '<p class="hint">Аккаунтов пока нет. Создайте себе аккаунт первым: выйдите, на странице входа нажмите «Создать аккаунт» и введите код класса.</p>';
+    // a student forgot the password: the teacher types a new one (or leaves it empty for a generated one); it works at once,
+    // and the old one stops working on every device
+    $("reg-list").querySelectorAll("[data-regpw]").forEach((b) => (b.onclick = () => {
+      const u = REG.list.find((x) => x.id === b.dataset.regpw);
+      if (!u || !u.login || u.login === "?") { regMsg("Не удалось прочитать логин этого аккаунта. Обновите страницу."); return; }
+      const box = regBox();
+      box.innerHTML = `<span class="label">${esc(u.name)} · ${esc(u.login)} · новый пароль</span>
+        <div class="field" style="margin-top:10px"><input id="reg-pwin" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Новый пароль" aria-label="Новый пароль"></div>
+        <p class="hint" style="margin:6px 0 10px">От 8 символов, нужны и буквы, и цифры. Оставьте поле пустым, и сайт придумает пароль сам. Старый пароль перестанет работать на всех устройствах.</p>
+        <div class="row" style="margin-top:0"><button class="btn" id="reg-pwgo">Сохранить пароль</button><button class="btn ghost" id="reg-pwno">Отмена</button></div><p class="hint" id="reg-pwmsg"></p>`;
+      const save = async () => {
+        const typed = $("reg-pwin").value.trim(), msg = (s) => ($("reg-pwmsg").textContent = s);
+        if (typed && !(typed.length >= 8 && /[a-zа-яё]/i.test(typed) && /\d/.test(typed))) { msg("Пароль: не короче 8 символов, нужны и буквы, и цифры."); return; }
+        const pw = typed || genPw(); msg("Сохраняю…");
+        const entry = await SITE.account(u.login, u.name, pw);
+        const sync = await SITE.syncToken(u.id, pw);   // the student's results in the account move to the new password
+        const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true, sync }) });
+        if (!r.ok) { msg(regExplain(r.status)); return; }
+        regMsg(""); regNewPw(u, pw);
+      };
+      $("reg-pwgo").onclick = save;
+      $("reg-pwin").onkeydown = (e) => { if (e.key === "Enter") save(); };
+      $("reg-pwno").onclick = () => box.remove();
+      $("reg-pwin").focus();
+    }));
     $("reg-list").querySelectorAll("[data-regdel]").forEach((b) => (b.onclick = async () => {
       const u = REG.list.find((x) => x.id === b.dataset.regdel); if (!u || !confirm(`Удалить аккаунт ${u.login} (${u.name})? Ученик больше не сможет войти.`)) return;
       const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "DELETE" }); if (!r.ok) { regMsg(regExplain(r.status)); return; }
       REG.list = REG.list.filter((x) => x !== u); regMsg(`Аккаунт ${u.login} удалён.`); regRender();
     }));
+  }
+  function regBox() { let box = $("reg-new"); if (!box) { box = document.createElement("div"); box.id = "reg-new"; box.className = "card"; box.style.marginTop = "10px"; $("reg-list").before(box); } box.scrollIntoView({ block: "center" }); return box; }
+  function regNewPw(u, pw) {
+    const text = `Новый пароль для сайта курса\n${siteUrl()}\nЛогин: ${u.login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
+    const box = regBox();
+    box.innerHTML = `<span class="label">${esc(u.name)} · новый пароль · уже работает</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику. Результаты, план и задания ученика остаются в аккаунте.</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="reg-pwcopy">Скопировать сообщение</button></div>`;
+    $("reg-pwcopy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("reg-pwcopy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст выше вручную."); } };
+    box.scrollIntoView({ block: "center" });
   }
   SITE.ready.then(regLoad);
 
@@ -584,7 +610,8 @@
 
   Promise.all(["lessons", "practice", "reading", "mocks"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t, m]) => {
     D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || []; D.mocks = m;
-    const u = store("teacher_url"); if (u) { $("url").value = u; fromUrl(u); }
+    try { D.aliases = JSON.parse(store("name_alias") || "{}") || {}; } catch (e) { D.aliases = {}; }
+    const u = store("teacher_url"); if (u) { $("url").value = u; fromUrl(u); } else SITE.ready.then(cloudLoad);
   });
   window.__teacher = { parseCSV, parseDate, columns };   // for testing
 })();

@@ -9,20 +9,36 @@
     if (calc) return calc;
     calc = document.createElement("div"); calc.className = "bb-calc hidden"; calc.setAttribute("role", "dialog"); calc.setAttribute("aria-label", "Калькулятор Desmos");
     calc.innerHTML = `<div class="bb-calc-h"><span class="label">Калькулятор · Desmos</span><span class="bb-calc-b"><button type="button" class="bb-wide" title="Шире">⇔</button><button type="button" class="bb-x" title="Закрыть">×</button></span></div>
-      <iframe title="Графический калькулятор Desmos" src="about:blank" allow="clipboard-write"></iframe>`;
+      <iframe title="Графический калькулятор Desmos" src="about:blank" allow="clipboard-write"></iframe><span class="bb-rs" title="Потяните, чтобы изменить размер" aria-hidden="true"></span>`;
     document.body.appendChild(calc);
     calc.querySelector(".bb-x").onclick = () => toggleCalc(false);
-    calc.querySelector(".bb-wide").onclick = () => calc.classList.toggle("wide");
-    // drag by the header (desktop)
+    const phone = () => matchMedia("(max-width:760px)").matches;
+    const SIZE = "bb_calc_size", keep = (v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(SIZE) || "null"); localStorage.setItem(SIZE, JSON.stringify(v)); } catch (e) { return null; } };
+    const saved = keep(); if (saved && !phone()) { calc.style.width = saved.w + "px"; calc.style.height = saved.h + "px"; }   // the size the student chose last time
+    calc.querySelector(".bb-wide").onclick = () => { ["width", "height", "left", "top", "right"].forEach((k) => (calc.style[k] = "")); calc.classList.toggle("wide"); keep(null); };
+    // drag by the header: moves the window on a computer; on a phone (bottom sheet) it changes the height
     const h = calc.querySelector(".bb-calc-h"); let sx, sy, ox, oy;
     h.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("button") || matchMedia("(max-width:760px)").matches) return;
+      if (e.target.closest("button")) return;
       const r = calc.getBoundingClientRect(); sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top; h.setPointerCapture(e.pointerId);
       calc.classList.add("drag");
     });
     h.addEventListener("pointermove", (e) => { if (!calc.classList.contains("drag")) return;
+      if (phone()) { calc.style.height = Math.round(Math.max(innerHeight * 0.3, Math.min(innerHeight - 8, innerHeight - e.clientY))) + "px"; return; }
       calc.style.left = Math.max(0, Math.min(innerWidth - 120, ox + e.clientX - sx)) + "px"; calc.style.top = Math.max(0, Math.min(innerHeight - 60, oy + e.clientY - sy)) + "px"; calc.style.right = "auto"; });
     h.addEventListener("pointerup", () => calc.classList.remove("drag"));
+    // resize by the lower-left corner (computer): the window sits on the right, so it grows to the left and down; the size is kept
+    const rs = calc.querySelector(".bb-rs"); let rx, ry, rw, rh, rr;
+    rs.addEventListener("pointerdown", (e) => {
+      const r = calc.getBoundingClientRect(); rx = e.clientX; ry = e.clientY; rw = r.width; rh = r.height; rr = r.right;
+      calc.style.left = r.left + "px"; calc.style.top = r.top + "px"; calc.style.right = "auto"; calc.classList.remove("wide");
+      rs.setPointerCapture(e.pointerId); calc.classList.add("drag"); e.preventDefault();
+    });
+    rs.addEventListener("pointermove", (e) => { if (!rs.hasPointerCapture(e.pointerId)) return;
+      const top = calc.getBoundingClientRect().top, w = Math.round(Math.max(300, Math.min(rr - 4, rw - (e.clientX - rx))));
+      calc.style.width = w + "px"; calc.style.left = rr - w + "px";
+      calc.style.height = Math.round(Math.max(280, Math.min(innerHeight - top - 4, rh + e.clientY - ry))) + "px"; });
+    rs.addEventListener("pointerup", () => { calc.classList.remove("drag"); const r = calc.getBoundingClientRect(); keep({ w: Math.round(r.width), h: Math.round(r.height) }); });
     return calc;
   }
   function toggleCalc(on) {
