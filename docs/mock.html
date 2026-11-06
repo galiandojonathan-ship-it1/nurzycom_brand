@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=20261105b">
-<script src="auth.js?v=20261105b"></script>
+<link rel="stylesheet" href="site.css?v=202611061445">
+<script src="auth.js?v=202611061445"></script>
 <style>
 .mocks{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:700px){.mocks{grid-template-columns:1fr 1fr}}
@@ -67,6 +67,10 @@
 .dom .bar2 i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0}
 .dom span.mono{font-size:13px;white-space:nowrap}
 .revmod{margin-top:26px}
+.wlist{border-top:1px solid var(--studio);margin-top:14px;padding-top:10px;font-size:14px;line-height:1.7}
+.wlist .label{margin-left:6px}
+.wlist > .label:first-child{display:block;margin:0 0 4px}
+.rv .vw:focus{background:var(--ink);color:var(--paper);outline:none}
 .onlybad{display:flex;gap:10px;align-items:center;margin-top:22px;font-size:15px;cursor:pointer}.onlybad input{width:18px;height:18px;accent-color:var(--ink)}
 .only-bad .rv:not(.bad){display:none}
 .rv{border-bottom:1px solid var(--studio)}
@@ -99,7 +103,7 @@
     <div class="hero">
       <span class="label">05 — Digital SAT · полный формат</span>
       <h1>Пробные тесты</h1>
-      <p class="sub">Двенадцать тестов в формате Bluebook. Тесты 1–4 и 9–12 полные: Reading and Writing — 2 модуля по 27 вопросов и 32 минуты, Math — 2 модуля по 22 вопроса и 35 минут, между разделами перерыв 10 минут. Тесты 5–8 — только Reading and Writing. Второй модуль адаптивный: сложнее или легче, по результату первого.</p>
+      <p class="sub">Девятнадцать тестов в формате Bluebook. Тесты 1–4 и 9–19 полные: Reading and Writing — 2 модуля по 27 вопросов и 32 минуты, Math — 2 модуля по 22 вопроса и 35 минут, между разделами перерыв 10 минут. Тесты 5–8 — только Reading and Writing. Второй модуль адаптивный: сложнее или легче, по результату первого.</p>
     </div>
     <div class="step">
       <div class="step-h"><span class="num">01</span><span class="label">Ученик</span></div>
@@ -123,7 +127,7 @@
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
       <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — примерный балл (200–800 за раздел, до 1600 за весь тест), разбор по разделам, как в отчёте Bluebook, ваши слабые места с уроком для повторения и разбор каждого вопроса. Балл примерный: официальный считает только College Board.</p></div>
     <div class="card" style="margin-top:8px"><span class="label">Откуда вопросы</span>
-      <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около четырёх пятых, в Math — около половины. Тесты 5–8 полностью авторские: тексты из литературы, истории, науки и статистики, грамматика и заметки, как на экзамене. Полные тесты 9–12 — тоже почти полностью авторские (официальных вопросов около 12%, и это в основном лёгкие): средний и сложный уровень, как в настоящих модулях. Первый модуль Reading and Writing во всех 12 тестах обновлён 3 ноября 2026: тексты длиной как на экзамене, в каждом модуле 6 лёгких, 12 средних и 9 сложных вопросов; тест, начатый до обновления, начнётся заново. Вопросов из официальных пробных тестов Bluebook здесь нет, поэтому эти тесты останутся для вас новыми.</p></div>
+      <p style="margin:8px 0 0">Часть вопросов — из банка College Board, которых не было в уроках курса. Остальные — авторские вопросы nurzycom в формате SAT, с разбором на русском; в разборе они отмечены. В Reading and Writing авторских около четырёх пятых, в Math — около половины. Тесты 5–8 полностью авторские: тексты из литературы, истории, науки и статистики, грамматика и заметки, как на экзамене. Полные тесты 9–12 — тоже почти полностью авторские (официальных вопросов около 12%, и это в основном лёгкие): средний и сложный уровень, как в настоящих модулях. Первый модуль Reading and Writing в тестах 1–12 обновлён 3 ноября 2026: тексты длиной как на экзамене, в каждом модуле 6 лёгких, 12 средних и 9 сложных вопросов; тест, начатый до обновления, начнётся заново. В тестах 1–12 нет вопросов из официальных пробных тестов Bluebook, поэтому те тесты останутся для вас новыми. Полные тесты 13–19 (с 6 ноября 2026) целиком из официального банка College Board: это вопросы, которые есть и в пробных тестах Bluebook, и нигде больше в курсе не встречаются. В разборе каждого вопроса Reading and Writing подчёркнуты трудные слова, перевод — по нажатию; эти же слова собраны в Словаре, колоды «Пробный тест 13–19».</p></div>
   </section>
 
   <section id="m-dir" class="hidden">
@@ -198,9 +202,9 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=20261105b"></script>
-<script src="tools.js?v=20261105b"></script>
-<script src="scale.js?v=20261105b"></script>
-<script src="mock.js?v=20261105b"></script>
+<script src="config.js?v=202611061445"></script>
+<script src="tools.js?v=202611061445"></script>
+<script src="scale.js?v=202611061445"></script>
+<script src="mock.js?v=202611061445"></script>
 </body>
 </html>

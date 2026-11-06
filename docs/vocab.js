@@ -14,8 +14,8 @@
   function show(id) { ["v-start", "v-run"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   const ARCH = new Set(["Местоимения", "Формы глаголов", "Короткие слова", "Старые значения"]);   // lesson A: its groups are words, not task terms
-  const catOf = (g) => (g.name === "Слова" || ARCH.has(g.name) ? "words" : g.name === "Повторение" ? "review" : "terms");
-  const short = (l) => `${l.tag[0] === "V" ? "Verbal" : "Math"} ${/^\D\d+$/.test(l.tag) ? Number(l.tag.slice(1)) : l.tag.slice(1)}`;
+  const catOf = (g) => (g.name === "Слова" || g.name === "Слова теста" || ARCH.has(g.name) ? "words" : g.name === "Повторение" ? "review" : "terms");
+  const short = (l) => `${l.tag[0] === "V" ? "Verbal" : l.tag[0] === "P" ? "PT" : "Math"} ${/^\D\d+$/.test(l.tag) ? Number(l.tag.slice(1)) : l.tag.slice(1)}`;
 
   // All words of the chosen lessons and categories, each word once (first lesson wins).
   function build(onlyHard) {
@@ -34,18 +34,19 @@
   const hardItems = () => build(true);
 
   function renderStart() {
-    const courses = [["V", "SAT Verbal"], ["M", "SAT Math"]];
+    const courses = [["V", "SAT Verbal"], ["M", "SAT Math"], ["P", "Пробные тесты 13–19 · трудные слова"]];
     $("lessons").innerHTML = courses.map(([c, name]) => {
       const ls = st.data.lessons.filter((l) => l.tag[0] === c);
-      return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} уроков</span></div><div class="tiles">${ls.map((l) => {
+      if (!ls.length) return "";
+      return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} ${c === "P" ? "тестов" : "уроков"}</span></div><div class="tiles">${ls.map((l) => {
         const n = l.groups.reduce((s, g) => s + g.items.length, 0);
-        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(l.title.split(" · ").slice(2).join(" · "))}</span><span class="dot">${n}</span></button>`;
+        return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(c === "P" ? "Пробный тест" : l.title.split(" · ").slice(2).join(" · "))}</span><span class="dot">${n}</span></button>`;
       }).join("")}</div></div>`;
     }).join("");
     $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { const t = b.dataset.l; st.sel.has(t) ? st.sel.delete(t) : st.sel.add(t); sync(); }));
     $("cats").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { const c = b.dataset.c; st.cats.has(c) ? st.cats.delete(c) : st.cats.add(c); sync(); }));
     const setAll = (c) => { st.data.lessons.filter((l) => l.tag[0] === c).forEach((l) => st.sel.add(l.tag)); sync(); };
-    $("all-v").onclick = () => setAll("V"); $("all-m").onclick = () => setAll("M");
+    $("all-v").onclick = () => setAll("V"); $("all-m").onclick = () => setAll("M"); if ($("all-p")) $("all-p").onclick = () => setAll("P");
     $("clear").onclick = () => { st.sel.clear(); sync(); };
     $("start-modes").querySelectorAll(".pick").forEach((b) => (b.onclick = () => start(b.dataset.m, false)));
     $("hard-go").onclick = () => start("cards", true);

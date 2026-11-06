@@ -55,11 +55,13 @@
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
     const num = (m) => Number(m.id.slice(2));
-    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4);
+    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"),
+      full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official");
     const group = (title, sub, ms, first) => (ms.length ? `<div class="course-h" style="grid-column:1/-1${first ? "" : ";margin-top:18px"}"><b>${title}</b><span class="label">${sub}</span></div>${ms.map(card).join("")}` : "");
     $("mocks").innerHTML = group("Полные тесты", "Reading and Writing и Math", full, true)
       + group("Тесты Reading and Writing", "только авторские вопросы nurzycom", rw)
-      + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2);
+      + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2)
+      + group(`Полные тесты ${full3.length ? full3[0].id.slice(2) + "–" + full3[full3.length - 1].id.slice(2) : ""}`, "Reading and Writing и Math · официальные вопросы College Board", full3);
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
     $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
     $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));
@@ -271,6 +273,26 @@
     $("review").classList.add("hidden"); $("res-review").textContent = "Разбор вопросов";
     show("m-result"); send();
   }
+  // difficult words (course vocabulary and the test's own words) are underlined in the review, with the translation on hover or tap
+  function markWords(h, ws) {
+    if (!ws || !ws.length) return h;
+    const box = document.createElement("div"); box.innerHTML = h;
+    const re = new RegExp("\\b(" + ws.map((w) => w.s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "gi");
+    const by = Object.fromEntries(ws.map((w) => [w.s.toLowerCase(), w]));
+    const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [];
+    while (walk.nextNode()) if (!walk.currentNode.parentElement.closest("math,svg,.vw")) nodes.push(walk.currentNode);
+    for (const n of nodes) {
+      const s = n.nodeValue; re.lastIndex = 0; if (!re.test(s)) continue; re.lastIndex = 0;
+      const f = document.createDocumentFragment(); let last = 0, m;
+      while ((m = re.exec(s))) {
+        f.append(s.slice(last, m.index)); const w = by[m[0].toLowerCase()], sp = document.createElement("span");
+        sp.className = "vw"; sp.tabIndex = 0; sp.title = w ? `${w.ru} · ${w.l}` : ""; sp.textContent = m[0]; f.append(sp); last = m.index + m[0].length;
+      }
+      f.append(s.slice(last)); n.replaceWith(f);
+    }
+    return box.innerHTML;
+  }
+  const wordList = (ws) => (ws && ws.length ? `<div class="wlist"><span class="label">Трудные слова в вопросе</span>${ws.map((w) => `<div><b>${esc(w.en)}</b> — ${esc(w.ru)} <span class="label">${esc(w.l)}</span></div>`).join("")}</div>` : "");
   $("res-review").onclick = () => {
     const r = $("review"); if (!r.classList.contains("hidden")) { r.classList.add("hidden"); $("res-review").textContent = "Разбор вопросов"; return; }
     r.innerHTML = `<label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
@@ -278,9 +300,9 @@
       return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
         const a = A[q.n], ok = right(q, a);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
-          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
+          return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml">${markWords(o, q.w)}</span>${c === q.ans ? '<span class="tg">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
         return `<details class="rv${ok ? "" : " bad"}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")} · верный: ${esc(q.ans)} · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
-          <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
+          <div class="rbody">${q.stim ? `<div class="qhtml">${markWords(q.stim, q.w)}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div>${wordList(q.w)}</div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
     $("rv-bad").onchange = (e) => r.classList.toggle("only-bad", e.target.checked);
