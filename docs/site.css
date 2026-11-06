@@ -404,3 +404,60 @@ input[type=text]:focus,input[type=password]:focus{box-shadow:inset 0 0 0 1px var
 .gpop b{font:600 20px/1.25 var(--sans);margin:2px 0 1px}
 .gpop-en{color:var(--paper)}
 .gpop-ru{color:var(--studio);border-top:1px solid rgba(250,248,243,.18);padding-top:7px;margin-top:2px}
+
+/* «Сегодня» panel on the homework page (today.js, 2026-11-06). Brand locked: ink on paper, hairlines, one bold element
+   (the next step in large serif italic); numbers in mono; no cards, shadows or accent colour. */
+.today{margin:6px 0 46px}
+.td-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--ink)}
+.td-head h2{font:500 21px/1.3 var(--sans);margin:0;letter-spacing:-.01em}
+.td-course{display:flex;gap:6px;flex-wrap:wrap}
+.td-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);grid-template-areas:"next prog" "tests recent"}
+.td-grid>section{padding:26px 28px 28px 0;min-width:0}
+.td-grid>section:nth-child(2n){padding-left:28px;padding-right:0;border-left:1px solid var(--studio)}
+.td-grid>section:nth-child(n+3){border-top:1px solid var(--studio)}
+.td-next{grid-area:next}.td-prog{grid-area:prog}.td-tests{grid-area:tests}.td-recent{grid-area:recent}
+.td-grid h3{font:500 15px/1.3 var(--sans);margin:0 0 12px}
+.td-where{display:flex;align-items:center;gap:9px;margin:0;font:13px/1.4 var(--mono);color:var(--stone)}
+.td-hex{width:18px;height:18px;flex:none}.td-hex path{fill:none;stroke:var(--ink);stroke-width:4}
+h3.td-title{font:italic 300 clamp(40px,4.6vw,56px)/1.04 var(--serif);letter-spacing:-.02em;margin:12px 0 10px;text-wrap:balance}
+.td-sub{color:var(--stone);margin:0 0 4px;font-size:15px;line-height:1.5;max-width:62ch}
+.td-next .row{margin-top:16px}
+.td-then{list-style:none;margin:22px 0 0;padding:0;border-top:1px solid var(--studio)}
+.td-then li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--studio);font-size:15px}
+.td-then small,.td-recent small{display:block;font:12px/1.4 var(--mono);color:var(--stone);margin-top:2px}
+.td-then a,.td-link{font-size:14px;color:var(--ink);text-underline-offset:3px}
+.td-then .tlink{font-size:14px}
+.td-num{margin:0 0 10px;color:var(--stone)}.td-num b{font:italic 300 48px/1 var(--serif);color:var(--ink);margin-right:6px;letter-spacing:-.02em}
+.td-prog .meter{height:3px;background:var(--studio);margin:0 0 12px}.td-prog .meter i{display:block;height:100%;background:var(--ink)}
+.td-prog .td-sub{margin-bottom:12px}
+.td-bars{display:flex;align-items:stretch;gap:6px;height:168px;border-bottom:1px solid var(--ink);margin-top:4px;overflow-x:auto}
+.td-bar{flex:0 0 48px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;text-decoration:none;color:var(--ink);padding-bottom:0}
+.td-bar i{width:12px;height:var(--h);background:var(--ink);transform-origin:bottom}
+.td-bar:hover i,.td-bar:focus-visible i{width:16px}
+.td-v{font:13px var(--mono)}.td-k{font:11px var(--mono);color:var(--stone);order:3;margin:2px 0 8px}
+.td-tests .td-bars{margin-bottom:14px}
+.td-note{font-size:13px;color:var(--stone);margin:0;max-width:52ch}
+.td-recent ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--studio)}
+.td-recent li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--studio);font-size:15px}
+.td-recent b{font:500 15px var(--mono);white-space:nowrap}
+@media(prefers-reduced-motion:no-preference){.today:not(.hidden) .td-bar i{animation:td-grow .7s cubic-bezier(.2,.7,.2,1) both}.td-bar:nth-child(2) i{animation-delay:.06s}.td-bar:nth-child(3) i{animation-delay:.12s}.td-bar:nth-child(4) i{animation-delay:.18s}}
+@keyframes td-grow{from{transform:scaleY(0)}}
+@media(max-width:760px){
+  .td-grid{grid-template-columns:1fr;grid-template-areas:"next" "prog" "tests" "recent"}
+  .td-grid>section,.td-grid>section:nth-child(2n){padding:22px 0;border-left:0}
+  .td-grid>section:nth-child(n+2){border-top:1px solid var(--studio)}
+  .td-prog .td-num b{font-size:40px}
+}
+/* with the «Сегодня» panel the opener steps back, so the next step is on the first screen of a phone */
+body.has-today #s-start .hero{padding-top:44px;padding-bottom:40px}
+body.has-today #s-start .hero h1{font-size:clamp(44px,6vw,76px);margin:12px 0 0}
+body.has-today #s-start .hero .sub,body.has-today #s-start .hero .hint{display:none}
+body.has-today #s-start .hero::before{display:none}
+body.has-today #s-start .hero::after{width:min(32vw,300px);opacity:.4}
+@media(max-width:760px){
+  body.has-today #s-start .hero{padding:26px 0 24px}
+  body.has-today #s-start .hero h1{font-size:44px}
+  .td-head{gap:10px}.td-head h2{font-size:19px}
+  .td-course .chip{padding:6px 10px;font-size:11px}
+  .td-next .row{margin-top:12px}
+}

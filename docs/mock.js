@@ -375,6 +375,8 @@
     renderStart();
     const want = new URLSearchParams(location.search).get("t");
     if (want) { T.mock = d.mocks.find((m) => m.id === want) || null; renderStart(); }
+    // from the «Сегодня» chart: open that test's result and review at once
+    if (want && new URLSearchParams(location.search).get("r") === "1" && T.mock && doneRun(T.mock.id)) $("open-res").click();
   }).catch(() => { $("start-msg").textContent = "Не удалось загрузить тесты. Обновите страницу."; });
   window.__mock = { parseSpr, state: () => T.st };   // for testing
 })();
