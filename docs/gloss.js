@@ -1,7 +1,7 @@
-// Hard words in test questions (2026-11-05). Words of the course vocabulary are underlined in every question; an original
-// nurzycom question of medium or hard level may also carry its own extra words (data/mockgloss.bin → add), and a College
-// Board question never gets a word that is not in the course vocabulary. A tap shows the English meaning and the Russian
-// equivalents. Data: vocab.bin (course words) and mockgloss.bin { words: { key: { w, pos, en, ru: [...], forms: [...] } },
+// Hard words in test questions (2026-11-05). Words of the course vocabulary are underlined in every question, and each
+// question can carry its own extra words (data/mockgloss.bin → add): words already in its text that a Russian-speaking
+// B2 student would not know (chosen 2026-11-06 for every question; the question text itself is never changed). A tap
+// shows the English meaning and the Russian equivalents. Data: vocab.bin (course words) and mockgloss.bin { words: { key: { w, pos, en, ru: [...], forms: [...] } },
 // add: { "PT1.rw.m1.5": ["key", ...] } }; mockgloss entries complete the course words (definition, more translations).
 // GLOSS.ready → GLOSS.apply(elements, { key, own }) underlines the first use of each word inside the elements.
 (function () {
@@ -66,7 +66,7 @@
   // underlines the first use of each word in the given elements (in reading order) and returns the keys found
   function apply(els, opt = {}) {
     if (!api.on) return [];
-    const own = !!opt.own, extra = own ? local(ADD[opt.key]) : { one: new Map(), many: new Map() };
+    const extra = local(ADD[opt.key]);
     const seen = new Set(opt.seen || []), found = [];
     const look = (lw, toks, i) => {   // → [key, word count] for the longest match starting at token i
       const cands = [...(extra.many.get(lw) || []), ...(MANY.get(lw) || [])];

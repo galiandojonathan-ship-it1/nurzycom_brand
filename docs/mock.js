@@ -172,13 +172,16 @@
       $("m-in").oninput = () => { const v = $("m-in").value.trim(); if (v) A[q.n] = v; else delete A[q.n]; save(); hint(); renderGrid(); };
       hint();
     }
-    glossQ(q, [$("passage"), $("stem"), $("opts")]);
+    glossQ(q, [$("passage"), $("stem")].concat(GIVEAWAY.test(q.sk || "") ? [] : [$("opts")]));
     $("prev").disabled = T.cur === 0;
     $("next").textContent = T.cur === its.length - 1 ? "К проверке →" : "Далее →";
     $("navbtn").textContent = `${q.n} из ${its.length} ▴`;
     renderGrid();
   }
   // hard words: underlined in the passage, the question and the options (gloss.js); the key finds a question's own extra words
+  // in these skills the options are the vocabulary or grammar being tested: during the test their meaning would give the answer
+  // away, so options are underlined only in the review
+  const GIVEAWAY = /words in context|transitions|boundaries|form, structure/i;
   const qkey = (sec, mod, q) => `${T.st.mid}.${sec}.${mod}.${q.n}`;
   function glossQ(q, els, sec = curSec(), mod = T.st.mod) {
     if (!window.GLOSS) return;
