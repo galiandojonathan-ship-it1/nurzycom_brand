@@ -572,13 +572,30 @@
     const me = SITE.me();
     $("reg-list").innerHTML = REG.list.length ? table(["Ученик", "Логин", "Создан", ""], REG.list.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), "ru")).map((u) => ({ k: u.id,
       cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`, u.at ? when(new Date(u.at)) : "—",
-        u.login === me ? "" : `<button class="chip" data-regdel="${esc(u.id)}">Удалить</button>`] }))).replace('<table class="t">', '<table class="t acct">')
+        u.login === me ? "" : `<span class="chips"><button class="chip" data-regpw="${esc(u.id)}">Новый пароль</button><button class="chip" data-regdel="${esc(u.id)}">Удалить</button></span>`] }))).replace('<table class="t">', '<table class="t acct">')
       : '<p class="hint">Аккаунтов пока нет. Создайте себе аккаунт первым: выйдите, на странице входа нажмите «Создать аккаунт» и введите код класса.</p>';
+    // a student forgot the password: a new one works at once; the old one stops working on every device
+    $("reg-list").querySelectorAll("[data-regpw]").forEach((b) => (b.onclick = async () => {
+      const u = REG.list.find((x) => x.id === b.dataset.regpw);
+      if (!u || !u.login || u.login === "?") { regMsg("Не удалось прочитать логин этого аккаунта. Обновите страницу."); return; }
+      if (!confirm(`Дать ${u.name} (${u.login}) новый пароль? Старый пароль перестанет работать на всех устройствах.`)) return;
+      const pw = genPw(), entry = await SITE.account(u.login, u.name, pw);
+      const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true }) });
+      if (!r.ok) { regMsg(regExplain(r.status)); return; }
+      regMsg(""); regNewPw(u, pw);
+    }));
     $("reg-list").querySelectorAll("[data-regdel]").forEach((b) => (b.onclick = async () => {
       const u = REG.list.find((x) => x.id === b.dataset.regdel); if (!u || !confirm(`Удалить аккаунт ${u.login} (${u.name})? Ученик больше не сможет войти.`)) return;
       const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "DELETE" }); if (!r.ok) { regMsg(regExplain(r.status)); return; }
       REG.list = REG.list.filter((x) => x !== u); regMsg(`Аккаунт ${u.login} удалён.`); regRender();
     }));
+  }
+  function regNewPw(u, pw) {
+    const text = `Новый пароль для сайта курса\n${siteUrl()}\nЛогин: ${u.login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
+    let box = $("reg-new"); if (!box) { box = document.createElement("div"); box.id = "reg-new"; box.className = "card"; box.style.marginTop = "10px"; $("reg-list").before(box); }
+    box.innerHTML = `<span class="label">${esc(u.name)} · новый пароль · уже работает</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику. Результаты ученика остаются на его устройствах и снова сохранятся в аккаунте при следующем входе.</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="reg-pwcopy">Скопировать сообщение</button></div>`;
+    $("reg-pwcopy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("reg-pwcopy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст выше вручную."); } };
+    box.scrollIntoView({ block: "center" });
   }
   SITE.ready.then(regLoad);
 
