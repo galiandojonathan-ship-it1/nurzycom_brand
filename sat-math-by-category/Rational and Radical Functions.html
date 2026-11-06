@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rational and Radical Functions</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Rational and Radical Functions</h1>
+<p class="intro">Rational functions, square root functions, absolute value functions and transformations of functions.</p>
+<div class="progress">Solved: <span id="count">0</span> of 10</div>
+<article class="card" id="RAD-01">
+<header><span class="num">RAD-01</span><span class="src">PDF 1 &middot; p. 16</span><label class="done"><input type="checkbox" data-id="RAD-01"> Solved</label></header>
+<div class="stem">The function $h$ is defined by $h(x)=-\sqrt{x^2+bx+c}$, where $b$ and $c$ are constants. In the $xy$-plane, the graph of $y=h(x)$ contains the points $(2,0)$ and $(0,-\sqrt{358})$. If $h(m)=0$, what is the greatest possible value of $m$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="RAD-02">
+<header><span class="num">RAD-02</span><span class="src">PDF 1 &middot; p. 25</span><label class="done"><input type="checkbox" data-id="RAD-02"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=\frac{|x|}{a}-14$, where $a&lt;0$. What is the product of $f(15a)$ and $f(8a)$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="RAD-03">
+<header><span class="num">RAD-03</span><span class="src">PDF 2 &middot; p. 5</span><label class="done"><input type="checkbox" data-id="RAD-03"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=\frac{x^2+ax+b}{2x+c}$, where $a$, $b$, and $c$ are constants. The graph of the function $f$ in the $xy$-plane, where $y=f(x)$, does not intersect the line $x=4$. If $f(5)=f(6)=0$, what is the value of $a+b+c$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="RAD-04">
+<header><span class="num">RAD-04</span><span class="src">PDF 2 &middot; p. 18</span><label class="done"><input type="checkbox" data-id="RAD-04"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=\frac{ax+b}{x+c}+k$, where $a$, $b$, $c$, and $k$ are constants. The graph of $y=f(x)$ is shown. For how many values of $x$ does $f(x)=0$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">Three</span></li><li><span class="letter">B</span><span class="ctext">Two</span></li><li><span class="letter">C</span><span class="ctext">One</span></li><li><span class="letter">D</span><span class="ctext">Zero</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 2, page 18). It is not reproduced here.</p></article>
+<article class="card" id="RAD-05">
+<header><span class="num">RAD-05</span><span class="src">PDF 2 &middot; p. 22</span><label class="done"><input type="checkbox" data-id="RAD-05"> Solved</label></header>
+<div class="stem">The function $v$ is defined by $v(x)=\frac{x^2+bx+c}{(x+5)(x-19)}$, where $b$ and $c$ are constants. In the $xy$-plane, the graph of $y=v(x)$ passes through the points $\left(0,\frac{66}{95}\right)$ and $(11,0)$. If $v(q)=0$, which of the following could be the value of $q$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-6$</span></li><li><span class="letter">B</span><span class="ctext">$-5$</span></li><li><span class="letter">C</span><span class="ctext">$5$</span></li><li><span class="letter">D</span><span class="ctext">$6$</span></li></ol></article>
+<article class="card" id="RAD-06">
+<header><span class="num">RAD-06</span><span class="src">PDF 2 &middot; p. 25</span><label class="done"><input type="checkbox" data-id="RAD-06"> Solved</label></header>
+<div class="stem">The function $j$ is defined by $j(x)=\frac{10x+5}{3p}$, and the function $k$ is defined by $k(x)=\frac{j(x)\cdot p}{x+1}$, where $p$ is a positive constant. What is the value of $k(9)$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{19}{6}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{10}{3}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{95}{13}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{85}{3}$</span></li></ol></article>
+<article class="card" id="RAD-07">
+<header><span class="num">RAD-07</span><span class="src">PDF 3 &middot; p. 9</span><label class="done"><input type="checkbox" data-id="RAD-07"> Solved</label></header>
+<div class="stem">The function $j$ is defined by $j(x)=\frac{4x+2}{9p}$, and the function $k$ is defined by $k(x)=\frac{j(x)\cdot p}{x+1}$, where $p$ is a positive constant. What is the value of $k(3)$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{7}{18}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{4}{9}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{14}{13}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{10}{9}$</span></li></ol></article>
+<article class="card" id="RAD-08">
+<header><span class="num">RAD-08</span><span class="src">PDF 3 &middot; p. 25</span><label class="done"><input type="checkbox" data-id="RAD-08"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=\sqrt{x^3+ax^2+bx+c}$, where $a$, $b$, and $c$ are integer constants. In the $xy$-plane, the graph of $y=f(x)$ passes through the point $(9,0)$, and $f(0)=27$. What is the value of $9a+b$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="RAD-09">
+<header><span class="num">RAD-09</span><span class="src">PDF 5 &middot; p. 12</span><label class="done"><input type="checkbox" data-id="RAD-09"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=11x^3$. The graph of $y=f(-x)+c$ in the $xy$-plane, where $c$ is a positive integer constant, has an $x$-intercept at $(r,0)$ and a $y$-intercept at $(0,t)$, where $r$ and $t$ are constants. Which of the following must be true about $r$ and $t$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$r&lt;0$ and $t&lt;0$</span></li><li><span class="letter">B</span><span class="ctext">$r&lt;0$ and $t&gt;0$</span></li><li><span class="letter">C</span><span class="ctext">$r&gt;0$ and $t&gt;0$</span></li><li><span class="letter">D</span><span class="ctext">$r&gt;0$ and $t&lt;0$</span></li></ol></article>
+<article class="card" id="RAD-10">
+<header><span class="num">RAD-10</span><span class="src">PDF 5 &middot; p. 17</span><label class="done"><input type="checkbox" data-id="RAD-10"> Solved</label></header>
+<div class="stem">$w(r)=\frac{1}{r-8}-\frac{r-5}{-r+4.25}$. What is the greatest possible value of $r$ such that $w(r)=0$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+</main>
+
+<script>
+(function(){
+  var slug = "RAD";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

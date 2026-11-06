@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wireframe · «Сегодня» on the homework page</title>
+<style>
+/* lo-fi wireframe: grey boxes and labels only, no brand styling */
+*{box-sizing:border-box} body{margin:0;font:14px/1.4 system-ui,sans-serif;color:#222;background:#fff}
+.wf{max-width:1080px;margin:0 auto;padding:16px}
+.box{border:2px solid #999;background:#f2f2f2;padding:12px;margin:8px 0;position:relative}
+.box.dash{border-style:dashed;background:#fff}
+.note{font-size:11px;color:#666;font-style:italic}
+.t{font-weight:700} .big{font-size:22px;font-weight:700}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 220px}
+.bar{height:10px;background:#ddd;border:1px solid #999}.bar i{display:block;height:100%;width:18%;background:#999}
+.btn{display:inline-block;border:2px solid #555;padding:6px 14px;margin-top:8px;background:#fff}
+.chart{height:90px;border:1px dashed #999;background:repeating-linear-gradient(90deg,#fff 0 60px,#f5f5f5 60px 120px);display:flex;align-items:flex-end;gap:30px;padding:8px 20px}
+.chart b{width:10px;background:#888;display:block}
+.list div{border-bottom:1px solid #ccc;padding:6px 0;display:flex;justify-content:space-between}
+@media(max-width:600px){.row{display:block}.big{font-size:19px}}
+</style></head><body><div class="wf">
+<div class="box dash"><span class="t">[ top nav: logo · План · Задания · Словарь · Тексты · Вопросы · Тесты · Полезное · Выйти ]</span></div>
+
+<div class="box"><span class="note">opener (existing ink hero, shorter)</span><div class="big">Домашние задания</div><div>one line of intro</div></div>
+
+<div class="box"><span class="note">NEW · «Сегодня» panel · only when logged in · greeting with the student's name</span>
+  <div class="t">Айгерим, что дальше</div>
+  <div class="row">
+    <div class="box" style="flex:2 1 320px"><span class="note">next required step from the course plan (first unticked)</span>
+      <div class="big">Урок 4 · Домашнее задание</div><div>Rhetorical Synthesis · 20 вопросов · примерно 30 мин</div>
+      <span class="btn">Открыть</span> <span class="note">opens that part directly</span>
+      <div class="list" style="margin-top:10px"><span class="note">then (next 2 steps)</span>
+        <div><span>Карточки урока 4</span><span>→</span></div><div><span>Текст 4 · «The River That Shimmered»</span><span>→</span></div></div>
+    </div>
+    <div class="box" style="flex:1 1 220px"><span class="note">plan progress</span>
+      <div class="t">План курса</div><div class="bar"><i></i></div><div>15 из 85 шагов · урок 4 из 12</div>
+      <span class="note">link: весь план</span></div>
+  </div>
+  <div class="row">
+    <div class="box"><span class="note">practice tests: estimated score per finished test (private, labelled «примерный балл»)</span>
+      <div class="t">Пробные тесты</div>
+      <div class="chart"><b style="height:40%"></b><b style="height:55%"></b><b style="height:0"></b><b style="height:0"></b></div>
+      <div>PT1 ≈ 1180 · PT2 ≈ 1260 · PT3, PT4 впереди</div><span class="note">tap a test → «Результат и разбор»</span></div>
+    <div class="box"><span class="note">recent submissions, newest first (from the synced results, with date)</span>
+      <div class="t">Последние сдачи</div>
+      <div class="list"><div><span>Урок 3 · Финальный тест</span><span>9/10</span></div><div><span>Текст 3</span><span>5/6</span></div><div><span>Урок 3 · ДЗ</span><span>16/20</span></div></div></div>
+  </div>
+  <span class="note">empty state (new student): one card «Начните с пробного теста 1: он покажет исходную точку» + button; no charts</span>
+</div>
+
+<div class="box"><span class="note">existing picker, unchanged: Урок → Часть тетради → Решать на экране / Ввести ответы. The «Ученик» name field is hidden when logged in (the login sets the name)</span>
+  <div class="t">Урок</div><div class="row"><div class="box">tiles V01…V12, A</div><div class="box">tiles M01…M12, D</div></div>
+  <div class="t">Часть тетради</div><div class="box">list of parts with last score</div>
+</div>
+<div class="box dash"><span class="t">[ footer ]</span></div>
+</div></body></html>

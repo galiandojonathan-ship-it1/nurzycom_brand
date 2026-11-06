@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exponential Functions</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Exponential Functions</h1>
+<p class="intro">Exponential growth and decay, exponent rules, fractional exponents and models based on repeated percent change.</p>
+<div class="progress">Solved: <span id="count">0</span> of 13</div>
+<article class="card" id="EXP-01">
+<header><span class="num">EXP-01</span><span class="src">PDF 1 &middot; p. 11</span><label class="done"><input type="checkbox" data-id="EXP-01"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=53(0.15)^x$. For any positive integer $n$, the value of $f(n)$ is $p\%$ less than the value of $f(n-1)$. What is the value of $p$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$15$</span></li><li><span class="letter">B</span><span class="ctext">$47$</span></li><li><span class="letter">C</span><span class="ctext">$53$</span></li><li><span class="letter">D</span><span class="ctext">$85$</span></li></ol></article>
+<article class="card" id="EXP-02">
+<header><span class="num">EXP-02</span><span class="src">PDF 1 &middot; p. 24</span><label class="done"><input type="checkbox" data-id="EXP-02"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=ab^{\frac{x}{n}}$, where $a$, $b$, and $n$ are constants, and $b$ and $n$ are integers. If $f(4)=5$ and $f(7)=135$, what is the value of $f(9)$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="EXP-03">
+<header><span class="num">EXP-03</span><span class="src">PDF 2 &middot; p. 9</span><label class="done"><input type="checkbox" data-id="EXP-03"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=b^x+c$, where $b$ and $c$ are positive constants. In the $xy$-plane, the graph of $y=f(x)$ passes through the point $(0,25)$. What is the value of $f(0)$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="EXP-04">
+<header><span class="num">EXP-04</span><span class="src">PDF 2 &middot; p. 16</span><label class="done"><input type="checkbox" data-id="EXP-04"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=55(0.19)^x$. For any positive integer $n$, the value of $f(n)$ is $p\%$ less than the value of $f(n-1)$. What is the value of $p$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$19$</span></li><li><span class="letter">B</span><span class="ctext">$45$</span></li><li><span class="letter">C</span><span class="ctext">$55$</span></li><li><span class="letter">D</span><span class="ctext">$81$</span></li></ol></article>
+<article class="card" id="EXP-05">
+<header><span class="num">EXP-05</span><span class="src">PDF 2 &middot; p. 20</span><label class="done"><input type="checkbox" data-id="EXP-05"> Solved</label></header>
+<div class="stem">The functions $f$ and $g$ are defined by the given equations, where $x\ge 0$, $a$ and $b$ are integer constants, $a&lt;b$, and $a&gt;1$. If $y=f(x)$ and $y=g(x)$ are graphed in the $xy$-plane, which of the following equations displays, as a constant or coefficient, the minimum value of the function it defines, where $x\ge 0$? I. $f(x)=a(0.63)^{-bx}$ II. $g(x)=a(1.37)^{x+2}+b$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I only</span></li><li><span class="letter">B</span><span class="ctext">II only</span></li><li><span class="letter">C</span><span class="ctext">I and II</span></li><li><span class="letter">D</span><span class="ctext">Neither I nor II</span></li></ol><p class="note">The source text of this question is partly garbled; the wording above is the closest reading.</p></article>
+<article class="card" id="EXP-06">
+<header><span class="num">EXP-06</span><span class="src">PDF 2 &middot; p. 23</span><label class="done"><input type="checkbox" data-id="EXP-06"> Solved</label></header>
+<div class="stem">How many times does the graph of the equation $y=3\left(\frac{a}{6}\right)^{x+c}-b$ cross the $x$-axis in the $xy$-plane, where $a$, $b$, and $c$ are positive constants such that $a&gt;6$ and $b&gt;c$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">Zero</span></li><li><span class="letter">B</span><span class="ctext">One</span></li><li><span class="letter">C</span><span class="ctext">Two</span></li><li><span class="letter">D</span><span class="ctext">Three</span></li></ol></article>
+<article class="card" id="EXP-07">
+<header><span class="num">EXP-07</span><span class="src">PDF 2 &middot; p. 28</span><label class="done"><input type="checkbox" data-id="EXP-07"> Solved</label></header>
+<div class="stem">For what value of $x$ is the expression $\sqrt[3]{304n}\,\left(\sqrt[4]{304n}\right)^2$ equivalent to $(304n)^{12x}$, where $n&gt;1$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="EXP-08">
+<header><span class="num">EXP-08</span><span class="src">PDF 3 &middot; p. 26</span><label class="done"><input type="checkbox" data-id="EXP-08"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=-22^x$. The function $g$ is a decreasing linear function. In the $xy$-plane, the graphs of $y=f(x)$ and $y=g(x)$ intersect at two points, $(h,j)$ and $(k,m)$, where $j&gt;m$. When $g(x)&lt;f(x)$, which of the following must also be true?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$x&gt;k$</span></li><li><span class="letter">B</span><span class="ctext">$x&lt;h$</span></li><li><span class="letter">C</span><span class="ctext">$x&gt;k$ or $x&lt;h$</span></li><li><span class="letter">D</span><span class="ctext">$h&lt;x&lt;k$</span></li></ol></article>
+<article class="card" id="EXP-09">
+<header><span class="num">EXP-09</span><span class="src">PDF 4 &middot; p. 7</span><label class="done"><input type="checkbox" data-id="EXP-09"> Solved</label></header>
+<div class="stem">For the function $f$, for each increase in the value of $x$ by $c$, where $c$ is a positive constant, the value of $f(x)$ increases by a factor of 27. Which of the following equivalent forms of the function $f$ displays $\frac{1}{c}$ as a coefficient of $x$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$f(x)=35(3)^{\frac{1}{2}x}$</span></li><li><span class="letter">B</span><span class="ctext">$f(x)=35(3^3)^{\frac{1}{6}x}$</span></li><li><span class="letter">C</span><span class="ctext">$f(x)=35(9)^{\frac{1}{4}x}$</span></li><li><span class="letter">D</span><span class="ctext">$f(x)=35\left(27^{\frac{1}{3}x}\right)^{\frac{1}{2}}$</span></li></ol><p class="note">Choice D is partly hard to read in the source.</p></article>
+<article class="card" id="EXP-10">
+<header><span class="num">EXP-10</span><span class="src">PDF 4 &middot; p. 17</span><label class="done"><input type="checkbox" data-id="EXP-10"> Solved</label></header>
+<div class="stem">At different times on a certain day, a manager at a theme park recorded the number of visitors. An exponential model gives the estimated number of visitors, $V$, at the theme park $t$ hours after the theme park opened, where $t\le 3$. Based on the model, 80 visitors were estimated to be at the theme park when it opened, and every 30 minutes the estimated number of visitors increased by 150% of the estimated number of visitors 30 minutes earlier. Which of the following equations best represents this model?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$V=80(2.50)^{2t}$</span></li><li><span class="letter">B</span><span class="ctext">$V=80(2.50)^{\frac{t}{30}}$</span></li><li><span class="letter">C</span><span class="ctext">$V=80(1.50)^{2t}$</span></li><li><span class="letter">D</span><span class="ctext">$V=80(1.50)^{\frac{t}{30}}$</span></li></ol></article>
+<article class="card" id="EXP-11">
+<header><span class="num">EXP-11</span><span class="src">PDF 4 &middot; p. 18</span><label class="done"><input type="checkbox" data-id="EXP-11"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=a^x-b$, where $a$ and $b$ are constants. In the $xy$-plane, the graph of $y=f(x)$ passes through the points $(c,5)$ and $(2c,137)$, where $c$ is a constant. Which of the following could be the value of $b$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$7$</span></li><li><span class="letter">B</span><span class="ctext">$16$</span></li><li><span class="letter">C</span><span class="ctext">$132$</span></li><li><span class="letter">D</span><span class="ctext">$142$</span></li></ol></article>
+<article class="card" id="EXP-12">
+<header><span class="num">EXP-12</span><span class="src">PDF 5 &middot; p. 11</span><label class="done"><input type="checkbox" data-id="EXP-12"> Solved</label></header>
+<div class="stem">A certain investment account offers a special interest rate for the first 6 months the account is open, followed by a lower interest rate for the remainder of the time the account is open. Bennett opened one of these accounts with an original account balance of \$600 and did not make any other deposits or withdrawals. 6 months after Bennett opened the account, the balance had increased by 0.4% of the original balance. 8 months after Bennett opened the account, the balance had increased by an additional 0.3% of the balance at the end of the first 6 months. Every 2 months after the first 8 months, the balance had increased by an additional 0.3% of the balance 2 months before. Which of the following equations could represent the account balance $B(x)$, in dollars, $x$ months after the account was opened, where $x\ge 6$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$B(x)=602.40(1.003)^{\frac{x}{2}-6}$</span></li><li><span class="letter">B</span><span class="ctext">$B(x)=602.40(1.003)^{\frac{x}{2}-\frac{6}{2}}$</span></li><li><span class="letter">C</span><span class="ctext">$B(x)=602.40(1.003)^{2x-12}$</span></li><li><span class="letter">D</span><span class="ctext">$B(x)=602.40(1.003)^{2x-6}$</span></li></ol></article>
+<article class="card" id="EXP-13">
+<header><span class="num">EXP-13</span><span class="src">PDF 5 &middot; p. 20</span><label class="done"><input type="checkbox" data-id="EXP-13"> Solved</label></header>
+<div class="stem">$g(x)=\frac{1}{11}\left(6(2)^x+7\right)$. For all values of $x$, the value of $g(x)$ is greater than $k$, where $k$ is a constant. What is the greatest possible value of $k$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$0$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{13}{11}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{7}{11}$</span></li><li><span class="letter">D</span><span class="ctext">$7$</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "EXP";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

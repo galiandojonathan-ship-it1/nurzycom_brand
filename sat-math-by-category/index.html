@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAT Math by Category</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<h1>SAT Math: Hardest Questions by Category</h1>
+<p class="intro">132 questions from the five PDFs "Hardest SAT math questions part 2" (DSATuz), sorted into 13 categories. Each category has its own page. Tick a question when you have solved it; progress is saved in this browser.</p>
+<table class="cats"><tr><th>Category</th><th>Questions</th></tr>
+<tr><td><a href="Linear Equations and Inequalities.html">Linear Equations and Inequalities</a></td><td>8</td></tr><tr><td><a href="Linear Functions and Graphs.html">Linear Functions and Graphs</a></td><td>9</td></tr><tr><td><a href="Systems of Equations.html">Systems of Equations</a></td><td>2</td></tr><tr><td><a href="Quadratic Equations.html">Quadratic Equations</a></td><td>18</td></tr><tr><td><a href="Polynomials and Factoring.html">Polynomials and Factoring</a></td><td>13</td></tr><tr><td><a href="Exponential Functions.html">Exponential Functions</a></td><td>13</td></tr><tr><td><a href="Rational and Radical Functions.html">Rational and Radical Functions</a></td><td>10</td></tr><tr><td><a href="Percentages and Rates.html">Percentages and Rates</a></td><td>8</td></tr><tr><td><a href="Statistics and Data Analysis.html">Statistics and Data Analysis</a></td><td>10</td></tr><tr><td><a href="Triangles and Similarity.html">Triangles and Similarity</a></td><td>15</td></tr><tr><td><a href="Trigonometry.html">Trigonometry</a></td><td>10</td></tr><tr><td><a href="Circles and Coordinate Geometry.html">Circles and Coordinate Geometry</a></td><td>4</td></tr><tr><td><a href="Area and Volume.html">Area and Volume</a></td><td>12</td></tr></table>
+<h2 style="font-size:20px;margin-top:32px">Notes on the source</h2>
+<ul class="index"><li>Questions are referenced as PDF number and page number, so you can check the original.</li><li>Diagrams are not reproduced. Questions that need one say so, and the original PDF page shows it.</li><li>Answers are not included. Some questions are copied from the PDF as they appear, including a few with small typos.</li><li>One question appears in two PDFs (rational function with f(5)=f(6)=0). It is listed once, under Rational and Radical Functions.</li><li>The PDFs contain 133 numbered questions in total, 132 unique. The brief asked for 135; if you can share the other pages, I will add them.</li></ul>
+
+</main>
+
+</body>
+</html>
