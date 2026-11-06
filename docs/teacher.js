@@ -574,15 +574,29 @@
       cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`, u.at ? when(new Date(u.at)) : "—",
         u.login === me ? "" : `<span class="chips"><button class="chip" data-regpw="${esc(u.id)}">Новый пароль</button><button class="chip" data-regdel="${esc(u.id)}">Удалить</button></span>`] }))).replace('<table class="t">', '<table class="t acct">')
       : '<p class="hint">Аккаунтов пока нет. Создайте себе аккаунт первым: выйдите, на странице входа нажмите «Создать аккаунт» и введите код класса.</p>';
-    // a student forgot the password: a new one works at once; the old one stops working on every device
-    $("reg-list").querySelectorAll("[data-regpw]").forEach((b) => (b.onclick = async () => {
+    // a student forgot the password: the teacher types a new one (or leaves it empty for a generated one); it works at once,
+    // and the old one stops working on every device
+    $("reg-list").querySelectorAll("[data-regpw]").forEach((b) => (b.onclick = () => {
       const u = REG.list.find((x) => x.id === b.dataset.regpw);
       if (!u || !u.login || u.login === "?") { regMsg("Не удалось прочитать логин этого аккаунта. Обновите страницу."); return; }
-      if (!confirm(`Дать ${u.name} (${u.login}) новый пароль? Старый пароль перестанет работать на всех устройствах.`)) return;
-      const pw = genPw(), entry = await SITE.account(u.login, u.name, pw);
-      const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true }) });
-      if (!r.ok) { regMsg(regExplain(r.status)); return; }
-      regMsg(""); regNewPw(u, pw);
+      const box = regBox();
+      box.innerHTML = `<span class="label">${esc(u.name)} · ${esc(u.login)} · новый пароль</span>
+        <div class="field" style="margin-top:10px"><input id="reg-pwin" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Новый пароль" aria-label="Новый пароль"></div>
+        <p class="hint" style="margin:6px 0 10px">От 8 символов, нужны и буквы, и цифры. Оставьте поле пустым, и сайт придумает пароль сам. Старый пароль перестанет работать на всех устройствах.</p>
+        <div class="row" style="margin-top:0"><button class="btn" id="reg-pwgo">Сохранить пароль</button><button class="btn ghost" id="reg-pwno">Отмена</button></div><p class="hint" id="reg-pwmsg"></p>`;
+      const save = async () => {
+        const typed = $("reg-pwin").value.trim(), msg = (s) => ($("reg-pwmsg").textContent = s);
+        if (typed && !(typed.length >= 8 && /[a-zа-яё]/i.test(typed) && /\d/.test(typed))) { msg("Пароль: не короче 8 символов, нужны и буквы, и цифры."); return; }
+        const pw = typed || genPw(); msg("Сохраняю…");
+        const entry = await SITE.account(u.login, u.name, pw);
+        const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true }) });
+        if (!r.ok) { msg(regExplain(r.status)); return; }
+        regMsg(""); regNewPw(u, pw);
+      };
+      $("reg-pwgo").onclick = save;
+      $("reg-pwin").onkeydown = (e) => { if (e.key === "Enter") save(); };
+      $("reg-pwno").onclick = () => box.remove();
+      $("reg-pwin").focus();
     }));
     $("reg-list").querySelectorAll("[data-regdel]").forEach((b) => (b.onclick = async () => {
       const u = REG.list.find((x) => x.id === b.dataset.regdel); if (!u || !confirm(`Удалить аккаунт ${u.login} (${u.name})? Ученик больше не сможет войти.`)) return;
@@ -590,9 +604,10 @@
       REG.list = REG.list.filter((x) => x !== u); regMsg(`Аккаунт ${u.login} удалён.`); regRender();
     }));
   }
+  function regBox() { let box = $("reg-new"); if (!box) { box = document.createElement("div"); box.id = "reg-new"; box.className = "card"; box.style.marginTop = "10px"; $("reg-list").before(box); } box.scrollIntoView({ block: "center" }); return box; }
   function regNewPw(u, pw) {
     const text = `Новый пароль для сайта курса\n${siteUrl()}\nЛогин: ${u.login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
-    let box = $("reg-new"); if (!box) { box = document.createElement("div"); box.id = "reg-new"; box.className = "card"; box.style.marginTop = "10px"; $("reg-list").before(box); }
+    const box = regBox();
     box.innerHTML = `<span class="label">${esc(u.name)} · новый пароль · уже работает</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику. Результаты ученика остаются на его устройствах и снова сохранятся в аккаунте при следующем входе.</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="reg-pwcopy">Скопировать сообщение</button></div>`;
     $("reg-pwcopy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("reg-pwcopy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст выше вручную."); } };
     box.scrollIntoView({ block: "center" });
