@@ -477,10 +477,10 @@
       ["salt", "iter", "wrap"].forEach((k) => delete ACC.a[k]); ACC.dirty = true; accMsg("Общий пароль будет выключен после «Сохранить на сайте»."); accRender();
     };
   }
-  function showNew(name, login, pw, reset) {
+  function showNew(name, login, pw, reset, live) {
     const text = `${reset ? "Новый пароль для сайта курса" : "Твой вход на сайт курса"}\n${siteUrl()}\nЛогин: ${login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
     const box = $("acc-new"); box.classList.remove("hidden");
-    box.innerHTML = `<span class="label">${esc(name)} · ${reset ? "новый пароль" : "новый логин"}</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику в Telegram. Логин заработает после «Сохранить на сайте».</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="acc-copy">Скопировать сообщение</button></div>`;
+    box.innerHTML = `<span class="label">${esc(name)} · ${reset ? "новый пароль" : "новый логин"}</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику в Telegram. ${live ? "Логин уже работает: он сохранён в аккаунтах сайта (список «Аккаунты учеников · регистрация»)." : "<b>Логин заработает только после «Сохранить на сайте».</b>"}</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="acc-copy">Скопировать сообщение</button></div>`;
     $("acc-copy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("acc-copy").textContent = "Скопировано"; } catch (e) { accMsg("Не удалось скопировать: выделите текст выше вручную."); } };
   }
   $("acc-add").onclick = async () => {
@@ -490,9 +490,16 @@
       const login = SITE.norm($("acc-login").value) || toLogin(name);
       if (!/^[a-z0-9][a-z0-9._-]{1,23}$/.test(login)) throw new Error("Логин: от 2 до 24 символов, латинские буквы, цифры, точка, дефис.");
       const id = await SITE.lid(login); if ((ACC.a.users || {})[id]) throw new Error(`Логин ${login} уже есть. Впишите другой логин.`);
-      const pw = genPw(); ACC.a.users = ACC.a.users || {}; ACC.a.v = 2;
-      ACC.a.users[id] = await SITE.account(login, name, pw); ACC.list.push({ id, login, name }); ACC.dirty = true;
-      $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false); accMsg(""); accRender();
+      const pw = genPw(), entry = await SITE.account(login, name, pw);
+      // with the administrator key the login goes straight into the site's accounts and works at once (no GitHub step)
+      if (SITE.adminKey()) {
+        const r = await SITE.api("admin/user?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ entry }) });
+        if (r.status === 409) throw new Error(`Логин ${login} уже занят. Впишите другой логин.`);
+        if (r.ok) { $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false, true); accMsg(""); regLoad(); return; }
+      }
+      ACC.a.users = ACC.a.users || {}; ACC.a.v = 2;
+      ACC.a.users[id] = entry; ACC.list.push({ id, login, name }); ACC.dirty = true;
+      $("acc-name").value = ""; $("acc-login").value = ""; showNew(name, login, pw, false); accMsg("Логин ещё не работает: нажмите «Сохранить на сайте» ниже."); accRender();
     } catch (e) { accMsg(e.message); }
   };
   $("acc-save").onclick = async () => {
