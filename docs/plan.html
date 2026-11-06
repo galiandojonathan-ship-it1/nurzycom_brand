@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611060947">
-<script src="auth.js?v=202611060947"></script>
+<link rel="stylesheet" href="site.css?v=202611061147">
+<script src="auth.js?v=202611061147"></script>
 <style>
 .ctl{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;margin-bottom:8px}
 .ctl .field{flex:1;min-width:240px;max-width:360px}
@@ -83,11 +83,11 @@
     <p class="sub">Порядок заданий на весь курс: после каждого урока — по шагам, от домашнего задания до пробных тестов. Отметки сохраняются на этом устройстве, а то, что вы сдали на сайте, отмечается само.</p>
   </div>
   <div class="ctl">
-    <div class="field"><span class="label">Ученик</span><input id="student" type="text" autocomplete="off" placeholder="Имя и первая буква фамилии: Айгерим К." aria-label="Имя и первая буква фамилии" style="margin-top:8px"></div>
+    <div class="field" id="plan-who"><span class="label">Ученик</span><input id="student" type="text" autocomplete="off" placeholder="Имя и первая буква фамилии: Айгерим К." aria-label="Имя и первая буква фамилии" style="margin-top:8px"></div>
     <div><span class="label">Курс</span><div class="chips" id="courses" style="margin-top:8px">
       <button class="chip" data-c="V" aria-pressed="true">SAT Verbal</button><button class="chip" data-c="M" aria-pressed="false">SAT Math</button><button class="chip" data-c="VM" aria-pressed="false">Оба курса</button></div></div>
   </div>
-  <p class="hint">Имя пишите так же, как в домашних заданиях: по нему сайт находит, что вы уже сдали.</p>
+  <p class="hint" id="plan-who-hint">Имя пишите так же, как в домашних заданиях: по нему сайт находит, что вы уже сдали.</p>
   <div class="prog-h"><span class="label">Прогресс</span><b id="prog-t"></b></div>
   <div class="meter2"><i id="prog-m" style="width:0"></i></div>
 
@@ -105,7 +105,7 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="planlogic.js?v=202611060947"></script>
-<script src="plan.js?v=202611060947"></script>
+<script src="planlogic.js?v=202611061147"></script>
+<script src="plan.js?v=202611061147"></script>
 </body>
 </html>

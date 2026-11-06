@@ -12,30 +12,32 @@
   const DAY = 864e5, WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
   let lessons = null;
 
-  const est = (s) => { const m = String(s || "").match(/≈\s*(\d+)/g); return m ? m.reduce((a, x) => a + Number(x.replace(/\D/g, "")), 0) : null; };
+  const est = (s) => PLAN.est(s);
   const midnight = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
   const ago = (t) => {
     if (!t) return "";
     const days = Math.round((midnight(Date.now()) - midnight(t)) / DAY);
     return days <= 0 ? "сегодня" : days === 1 ? "вчера" : days < 7 ? `${days} дн. назад` : new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
   };
-  function what(rest, kind) {   // a stored result key → what the student did, in the words of the menu
-    if (kind === "mk") return `Пробный тест ${rest.replace(/^PT/, "")}`;
-    if (kind === "rd") return `Текст ${Number(rest.slice(1))}`;
-    if (kind === "px") return `Сложные вопросы · набор ${Number(rest.slice(1))}`;
-    const [tag, pid] = rest.split("_"), l = lessons && lessons.find((x) => x.tag === tag), p = l && l.parts.find((x) => x.id === pid);
-    const head = /^[VM]\d\d$/.test(tag) ? `${tag[0] === "V" ? "Verbal" : "Math"} · урок ${Number(tag.slice(1))}` : /^[ADU]\d\d$/.test(tag) ? `Набор ${tag}` : `Урок ${tag.slice(1)}`;
-    return p ? `${head} · ${p.title}` : head;
-  }
-  function results(name) {   // every submitted result of this student with the time it changed (sync_meta)
-    let meta = {}; try { meta = JSON.parse(store("sync_meta") || "{}"); } catch (e) { /* none */ }
-    const out = [];
-    for (const [kind, pre] of [["hw", `hw_last_${name}_`], ["px", `px_last_${name}_`], ["rd", `rd_last_${name}_`], ["mk", `mk_last_${name}_`]])
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i); if (!k.startsWith(pre)) continue; const v = store(k); if (!v) continue;
-        out.push({ t: meta[k] || 0, label: what(k.slice(pre.length), kind), score: kind === "mk" ? (est(v) ? `≈ ${est(v)}` : v) : v });
-      }
-    return out.sort((a, b) => b.t - a.t);
+  const keys = () => { const out = []; for (let i = 0; i < localStorage.length; i++) out.push(localStorage.key(i)); return out; };
+  const meta = () => { try { return JSON.parse(store("sync_meta") || "{}"); } catch (e) { return {}; } };
+  const results = (name) => PLAN.results(name, keys(), store, meta(), lessons);   // every submitted result, newest first
+  const safe = (h) => /^(https:\/\/|[a-z0-9_-]+\.html(\?|#|$)|\.\/)/i.test(String(h || ""));   // task links: site pages or https only
+  const dueTxt = (d) => new Date(d + "T00:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+  function tasks(name) {   // homework the teacher assigned in the cabinet (synced key «tasks»)
+    const L = PLAN.taskState(name, store, meta()); if (!L.length) return "";
+    const open = L.filter((x) => !x.done), done = L.filter((x) => x.done);
+    const since = Date.now() - 7 * 864e5, recent = done.filter((x) => (x.at || 0) > since);
+    if (!open.length && !recent.length) return "";
+    const row = (x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
+        <span class="tk-t">${esc(x.t)}${x.note ? `<small>${esc(x.note)}</small>` : ""}</span>
+        <span class="tk-due">${x.done ? (x.result ? `сдано · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : "сделано") : x.due ? `${x.late ? "просрочено · " : "до "}${esc(dueTxt(x.due))}` : "без срока"}</span>
+        <span class="tk-go">${x.done ? "" : `${safe(x.href) ? `<a class="btn" href="${esc(x.href)}">Открыть</a>` : ""}${x.auto ? "" : `<button type="button" class="tlink" data-task="${esc(x.id)}">Сделано</button>`}`}</span></li>`;
+    return `<section class="td-tasks" aria-label="Задания от преподавателя">
+      <h3>Задания от преподавателя${open.length ? ` <b>${open.length}</b>` : ""}</h3>
+      <ul>${open.map(row).join("")}${recent.map(row).join("")}</ul>
+      ${open.length ? '<p class="td-note">Сданная работа отмечается сама. Задания без страницы отметьте кнопкой «Сделано».</p>' : '<p class="td-note">Все задания сделаны. Спасибо.</p>'}
+    </section>`;
   }
   function week(R) {   // this week Mon–Sun: the days with at least one submission, and the run of days up to today
     const today = midnight(Date.now()), dow = (new Date(today).getDay() + 6) % 7, mon = today - dow * DAY;
@@ -74,6 +76,7 @@
     box.innerHTML = `
       <div class="td-head"><div><h2>${hello}, ${esc(first)}.</h2><p class="td-sub">Шаг за шагом: регулярность даёт балл.</p></div>
         <div class="td-course" role="group" aria-label="Курс">${COURSES.map(([c, t]) => `<button type="button" class="chip" data-c="${c}" aria-pressed="${P.course === c}">${t}</button>`).join("")}</div></div>
+      ${tasks(name)}
       <div class="td-stats" aria-label="Прогресс">
         <div class="td-big"><span>План курса</span><b>${pctDone}%</b><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pctDone}"><i style="width:${pctDone}%"></i></div></div>
         <div><b>${lessonsDone}<small> / ${lessonsAll}</small></b><span>уроков сдано</span></div>
@@ -109,6 +112,10 @@
     box.classList.remove("hidden"); document.body.classList.add("has-today");
     box.querySelectorAll(".td-course .chip").forEach((b) => (b.onclick = () => { store("plan_course", b.dataset.c); render(); }));
     box.querySelectorAll("[data-tick]").forEach((b) => (b.onclick = () => { PLAN.tick(b.dataset.tick, true); render(); }));
+    box.querySelectorAll("[data-task]").forEach((b) => (b.onclick = () => {
+      let D = []; try { D = JSON.parse(store("tasks_done") || "[]"); } catch (e) { D = []; }
+      if (!D.includes(b.dataset.task)) D.push(b.dataset.task); store("tasks_done", JSON.stringify(D)); render();
+    }));
   }
 
   window.addEventListener("DOMContentLoaded", () => {

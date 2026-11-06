@@ -70,7 +70,7 @@
   const sessionRaw = () => { const k = get("site_key"); if (!k) throw new Error("Войдите на сайт заново."); return b64(k); };
   // ---- results on the account (added 2026-11-05): finished work, scores and progress follow the login to any device.
   // Which localStorage keys travel: finished results and progress; not the login itself, teacher settings or a test in progress.
-  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers|mk_gloss)$/;
+  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers|mk_gloss|tasks|tasks_done)$/;   // tasks: homework the teacher assigned in the cabinet
   const META = "sync_meta";   // when each synced key last changed on this device
   const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
   const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
@@ -102,14 +102,14 @@
     } catch (e) { /* storage full or blocked */ } finally { applying = false; }
     return { out, push };
   }
+  async function syncToken(id, pw) {   // proves the owner to api/progress without sending the password
+    const base = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+    return toB64(await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode("bynurzy-sync:" + id), iterations: 150000, hash: "SHA-256" }, base, 256));
+  }
   async function syncAuth() {
     const pw = get("site_pw"), login = get("site_login"), key = get("site_key"); if (!pw || !login || !key || !LS) return null;
     const id = await lid(login); let tok = get("site_sync");
-    if (!tok) {
-      const base = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
-      tok = toB64(await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode("bynurzy-sync:" + id), iterations: 150000, hash: "SHA-256" }, base, 256));
-      put("site_sync", tok, !!(LS && LS.getItem("site_pw")));
-    }
+    if (!tok) { tok = await syncToken(id, pw); put("site_sync", tok, !!(LS && LS.getItem("site_pw"))); }
     return { id, tok, raw: b64(key) };
   }
   async function sync() {
@@ -249,6 +249,10 @@
     },
     async inviteFor(code) { const raw = sessionRaw(), w = await wrap(raw, norm(code)), h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode("bynurzy-invite:" + norm(code))))].map((b) => b.toString(16).padStart(2, "0")).join(""); return { hash: h, salt: w.salt, iter: w.iter, wrap: w.wrap }; },
     async nameOf(n) { return unseal(sessionRaw(), n); },
+    // teacher's cabinet: a student's synced results ({ key: { v, t } }), encrypted with the master key like the student's own sync
+    async unsealBlob(s) { return unseal(sessionRaw(), s); },
+    async sealBlob(obj) { return seal(sessionRaw(), obj); },
+    syncToken, SYNC,
     remember(pw) { const keep = (function () { try { return !!localStorage.getItem("site_pw"); } catch (e) { return false; } })(); drop(); put("site_pw", pw, keep); },
     logout() { drop(); location.reload(); },
   };

@@ -464,11 +464,11 @@ body.has-today #s-start .hero::after{width:min(32vw,300px);opacity:.4}
 
 /* ---------- moodboard layer (2026-11-06, Nurassyl): Oxide red accent, used sparingly ---------- */
 /* the hand-drawn red underline under the big italic titles (page openers, login) */
-.hero h1::after,.auth-box h1::after,.auth-word::after{content:"";display:block;width:min(62%,460px);height:16px;margin-top:6px;
+.hero h1::after,.auth-box h1::after,.auth-word::after,.cb-name::after{content:"";display:block;width:min(62%,460px);height:16px;margin-top:6px;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 24' preserveAspectRatio='none'%3E%3Cpath d='M5 15 C 80 7 190 4 396 9' fill='none' stroke='%23A63328' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M28 19 C 130 12 250 11 372 13' fill='none' stroke='%23A63328' stroke-width='3' stroke-linecap='round' opacity='.75'/%3E%3C/svg%3E") left center/100% 100% no-repeat}
 .auth-box h1::after{width:min(70%,240px);height:12px;margin-top:2px}
 body.has-today #s-start .hero h1::after{width:min(52%,300px);height:12px}
-@media(prefers-reduced-motion:no-preference){.hero h1::after,.auth-box h1::after,.auth-word::after{animation:ink-draw .9s .35s cubic-bezier(.3,.7,.2,1) both}}
+@media(prefers-reduced-motion:no-preference){.hero h1::after,.auth-box h1::after,.auth-word::after,.cb-name::after{animation:ink-draw .9s .35s cubic-bezier(.3,.7,.2,1) both}}
 @keyframes ink-draw{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 /* small labels on the openers read as [ bracketed ] tags */
 .hero > span.label::before{content:"[ "}.hero > span.label::after{content:" ]"}
@@ -517,3 +517,19 @@ body.has-today #s-start .hero h1::after{width:min(52%,300px);height:12px}
 }
 .auth-word::after{width:min(78%%,420px);height:14px;margin-top:-2px}
 @media(max-width:760px){.td-head .td-sub{display:none}.td-head{padding-bottom:10px}}
+
+/* «Задания от преподавателя» on «Сегодня» (set in the teacher's cabinet, 2026-11-06) */
+.td-tasks{padding:20px 0 8px;border-bottom:1px solid var(--studio)}
+.td-tasks h3{font:500 15px/1.3 var(--sans);margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.td-tasks h3 b{font:500 12px/22px var(--mono);min-width:22px;height:22px;padding:0 6px;text-align:center;background:var(--ink);color:var(--paper)}
+.td-tasks ul{list-style:none;margin:0 0 10px;padding:0;border-top:1px solid var(--studio)}
+.td-tasks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--studio);font-size:15px}
+.td-tasks .tk-t small{display:block;font-size:13px;color:var(--stone);margin-top:2px}
+.td-tasks .tk-due{font:12px/1.4 var(--mono);color:var(--stone);white-space:nowrap}
+.td-tasks .tk-go{display:flex;gap:14px;align-items:center;justify-content:flex-end}
+.td-tasks .tk-go .btn{padding:9px 16px;font-size:14px}
+.td-tasks .tk-go .tlink{font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.td-tasks li.late .tk-due{color:var(--oxide)}
+.td-tasks li.late .tk-due::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--oxide);margin-right:7px;vertical-align:1px}
+.td-tasks li.ok .tk-t{color:var(--stone);text-decoration:line-through;text-decoration-color:var(--oxide);text-decoration-thickness:1.5px}
+@media(max-width:640px){.td-tasks li{grid-template-columns:minmax(0,1fr) auto}.td-tasks .tk-go{grid-column:1/-1;justify-content:flex-start}.td-tasks .tk-go:empty{display:none}}

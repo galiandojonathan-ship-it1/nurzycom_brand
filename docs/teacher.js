@@ -589,7 +589,8 @@
         if (typed && !(typed.length >= 8 && /[a-zа-яё]/i.test(typed) && /\d/.test(typed))) { msg("Пароль: не короче 8 символов, нужны и буквы, и цифры."); return; }
         const pw = typed || genPw(); msg("Сохраняю…");
         const entry = await SITE.account(u.login, u.name, pw);
-        const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true }) });
+        const sync = await SITE.syncToken(u.id, pw);   // the student's results in the account move to the new password
+        const r = await SITE.api("admin/user?id=" + encodeURIComponent(u.id), { method: "PUT", body: JSON.stringify({ entry, replace: true, sync }) });
         if (!r.ok) { msg(regExplain(r.status)); return; }
         regMsg(""); regNewPw(u, pw);
       };
@@ -608,7 +609,7 @@
   function regNewPw(u, pw) {
     const text = `Новый пароль для сайта курса\n${siteUrl()}\nЛогин: ${u.login}\nПароль: ${pw}\n\nПароль личный, не передавай его другим. Отметь «Запомнить на этом устройстве», и вводить его каждый раз не придётся. Забудешь — напиши мне.`;
     const box = regBox();
-    box.innerHTML = `<span class="label">${esc(u.name)} · новый пароль · уже работает</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику. Результаты ученика остаются на его устройствах и снова сохранятся в аккаунте при следующем входе.</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="reg-pwcopy">Скопировать сообщение</button></div>`;
+    box.innerHTML = `<span class="label">${esc(u.name)} · новый пароль · уже работает</span><pre>${esc(text)}</pre><p class="hint">Пароль виден только сейчас. Скопируйте сообщение и отправьте ученику. Результаты, план и задания ученика остаются в аккаунте.</p><div class="row" style="margin-top:6px"><button class="btn ghost" id="reg-pwcopy">Скопировать сообщение</button></div>`;
     $("reg-pwcopy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("reg-pwcopy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст выше вручную."); } };
     box.scrollIntoView({ block: "center" });
   }

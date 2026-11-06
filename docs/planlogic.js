@@ -4,6 +4,9 @@
 (function () {
   "use strict";
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+  // Reads go through rd(): this browser's storage, or, for the teacher's cabinet, one student's synced copy (PLAN.state(c, src))
+  let SRC = null;
+  const rd = (k) => (SRC ? SRC.get(k) : store(k));
   const nn = (n) => String(n).padStart(2, "0");
 
   const TOPIC = {
@@ -28,16 +31,16 @@
   const inClass = (tag) => (tag === "V01" ? "Холодный старт, Практика, Финальный тест" : tag === "V04" ? "Две части практики, Финальный тест" : "Практика, Финальный тест");
 
   let course = "V";
-  const student = () => (store("hw_student") || "").trim();
+  const student = () => (SRC ? SRC.name : (store("hw_student") || "").trim());
   const doneKey = () => `plan_done_${student()}`;
   let manual = new Set();
-  const loadManual = () => { try { manual = new Set(JSON.parse(store(doneKey()) || "[]")); } catch (e) { manual = new Set(); } };
+  const loadManual = () => { try { manual = new Set(JSON.parse(rd(doneKey()) || "[]")); } catch (e) { manual = new Set(); } };
 
   // results the other pages store after a submission
-  const hwScore = (tag, pid) => store(`hw_last_${student()}_${tag}_${pid}`);
+  const hwScore = (tag, pid) => rd(`hw_last_${student()}_${tag}_${pid}`);
   const pct = (s) => { const m = /^(\d+)\/(\d+)$/.exec(s || ""); return m && +m[2] ? (100 * +m[1]) / +m[2] : null; };
   function mockDone(id, secs) {
-    const last = store(`mk_last_${student()}_${id}`) || "";
+    const last = rd(`mk_last_${student()}_${id}`) || "";
     return secs.every((s) => last.includes(s === "rw" ? "RW " : "Math ")) ? last : null;
   }
 
@@ -62,16 +65,16 @@
         const hs = hwScore(tag, hwPart(tag)), hp = pct(hs);
         now.push({ id: `${tag}-hw`, crs: tg, t: "Домашнее задание", s: `Решайте на экране: две попытки и объяснение после ответа · ≈ ${c === "V" ? 40 : 50} мин`, href: `./?l=${tag}&p=${hwPart(tag)}`, need: true, res: hs });
         week.push({ id: `${tag}-cards`, crs: tg, t: c === "V" ? "Слова урока: карточки" : "Термины урока: карточки", s: "Пометьте трудные слова — они соберутся в отдельную колоду · ≈ 10 мин", href: `vocab.html?l=${tag}` });
-        if (c === "V") week.push({ id: `T${nn(n)}`, crs: tg, t: `Текст ${n}: «${TEXT[n - 1]}»`, s: "Рассказ со словами урока и 6 вопросов · ≈ 15 мин", href: `reading.html?t=T${nn(n)}`, res: store(`rd_last_${student()}_T${nn(n)}`) });
+        if (c === "V") week.push({ id: `T${nn(n)}`, crs: tg, t: `Текст ${n}: «${TEXT[n - 1]}»`, s: "Рассказ со словами урока и 6 вопросов · ≈ 15 мин", href: `reading.html?t=T${nn(n)}`, res: rd(`rd_last_${student()}_T${nn(n)}`) });
         const xs = hwScore(tag, xPart(tag));
         week.push({ id: `${tag}-extra`, crs: tg, t: "Дополнительное ДЗ", s: `${hp === null ? "Нужно, если в домашнем задании меньше 80% с первой попытки" : `В домашнем задании ${Math.round(hp)}% с первой попытки${hp < 80 ? ", это меньше 80%" : ""}`} · ≈ ${c === "V" ? 30 : 40} мин`,
           href: `./?l=${tag}&p=${xPart(tag)}`, need: hp !== null && hp < 80, opt: hp !== null && hp >= 80, res: xs });
         if (c === "M" && DESMOS_AFTER[n]) { const x = DESMOS_AFTER[n];
-          week.push({ id: x, crs: tg, t: `Desmos: набор ${Number(x.slice(1))} · ${DESMOS[x]}`, s: "8 задач с подсказкой «как набрать» и разбором в Desmos · ≈ 20 мин", href: `desmos.html?s=${x}`, res: store(`hw_last_${student()}_${x}_p1`) }); }
+          week.push({ id: x, crs: tg, t: `Desmos: набор ${Number(x.slice(1))} · ${DESMOS[x]}`, s: "8 задач с подсказкой «как набрать» и разбором в Desmos · ≈ 20 мин", href: `desmos.html?s=${x}`, res: rd(`hw_last_${student()}_${x}_p1`) }); }
         if (c === "M" && n === 10) week.push({ id: "unit-circle", crs: tg, t: "Единичная окружность: правила и 4 набора задач", s: "Радианы, особые углы, четверти, sin и cos дополнительных углов · по набору за раз, ≈ 15 мин каждый", href: "circle.html",
-          res: ["U01", "U02", "U03", "U04"].every((u) => store(`hw_last_${student()}_${u}_p1`)) ? "4 набора" : null });
+          res: ["U01", "U02", "U03", "U04"].every((u) => rd(`hw_last_${student()}_${u}_p1`)) ? "4 набора" : null });
         if (c === "V" && HARD_AFTER[n]) { const x = HARD_AFTER[n];
-          week.push({ id: x, crs: tg, t: `Сложные вопросы: ${HARD[x]}`, s: "12 авторских вопросов повышенной сложности, таймер 14 мин · ≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }); }
+          week.push({ id: x, crs: tg, t: `Сложные вопросы: ${HARD[x]}`, s: "12 авторских вопросов повышенной сложности, таймер 14 мин · ≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: rd(`px_last_${student()}_${x}`) }); }
       }
       if (MOCK_AFTER[n] && n < 12) week.push(mockItem(MOCK_AFTER[n]));
       if (n === 11) week.push({ id: "bluebook", t: "Официальный пробный тест в Bluebook", need: true,
@@ -87,7 +90,7 @@
           items: [{ when: "Сразу после урока", list: [{ id: "VA-hw", crs: tg, t: "Домашнее задание", s: "20 вопросов на старых текстах: подсказка со словарём по кнопке · ≈ 35 мин", href: "./?l=VA&p=p3", need: true, res: hwScore("VA", "p3") }] },
             { when: "В течение недели", list: [{ id: "VA-cards", crs: tg, t: "Архаичные слова: карточки", s: "59 слов: thou, hath, wherefore, старые значения · ≈ 10 мин", href: "vocab.html?l=VA" },
               { id: "VA-page", crs: tg, t: "Полезное → Архаичные слова: 3 набора", s: "Правила, словарь и наборы A01–A03 по 8 вопросов · ≈ 15 мин каждый", href: "archaic.html",
-                res: ["A01", "A02", "A03"].every((u) => store(`hw_last_${student()}_${u}_p1`)) ? "3 набора" : null }] }] });
+                res: ["A01", "A02", "A03"].every((u) => rd(`hw_last_${student()}_${u}_p1`)) ? "3 набора" : null }] }] });
       }
       if (n === 6 && cs.includes("M")) {
         const tg = course === "VM" ? "M" : "";
@@ -98,7 +101,7 @@
       }
     }
     const fin = [mockItem("PT4")];
-    if (course !== "M") ["X05", "X06", "X07"].forEach((x) => fin.push({ id: x, t: `Сложные вопросы: ${HARD[x]}`, s: "≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: store(`px_last_${student()}_${x}`) }));
+    if (course !== "M") ["X05", "X06", "X07"].forEach((x) => fin.push({ id: x, t: `Сложные вопросы: ${HARD[x]}`, s: "≈ 25 мин с разбором", href: `practice.html?s=${x}`, res: rd(`px_last_${student()}_${x}`) }));
     if (course !== "M") ["PT5", "PT6", "PT7", "PT8"].forEach((x) => fin.push({ id: x, t: `Пробный тест ${x.slice(2)} · Reading and Writing`, opt: true,
       s: "Ещё практика до экзамена, по одному тесту в неделю · 64 мин, лучше за один раз", href: `mock.html?t=${x}`, res: mockDone(x, ["rw"]) }));
     ["PT9", "PT10", "PT11", "PT12"].forEach((x) => { const it = mockItem(x); fin.push(Object.assign(it, { need: false, opt: true, s: `Ещё практика до экзамена, по одному тесту в неделю · ${it.s}` })); });
@@ -109,12 +112,57 @@
   }
 
   // the whole plan with every item marked ok, plus the first required step not done yet
-  function state(c) {
-    course = ["V", "M", "VM"].includes(c) ? c : store("plan_course") || "V"; loadManual();
-    const S = stages(), flat = []; let total = 0, done = 0;
-    S.forEach((st) => st.items.forEach((g) => g.list.forEach((it) => { it.ok = !!it.res || manual.has(it.id); total++; if (it.ok) done++; flat.push(Object.assign(it, { stage: st, when: g.when })); })));
-    return { S, flat, total, done, course };
+  // src (optional): { name, get(key) } to read another student's copy instead of this browser
+  function state(c, src) {
+    SRC = src || null;
+    try {
+      course = ["V", "M", "VM"].includes(c) ? c : rd("plan_course") || "V"; loadManual();
+      const S = stages(), flat = []; let total = 0, done = 0;
+      S.forEach((st) => st.items.forEach((g) => g.list.forEach((it) => { it.ok = !!it.res || manual.has(it.id); it.hand = !it.res && manual.has(it.id); total++; if (it.ok) done++; flat.push(Object.assign(it, { stage: st, when: g.when })); })));
+      return { S, flat, total, done, course };
+    } finally { SRC = null; loadManual(); }
+  }
+
+  // ---- shared by «Сегодня» and the teacher's cabinet: results, labels, estimated scores, assigned tasks
+  const est = (s) => { const m = String(s || "").match(/≈\s*(\d+)/g); return m ? m.reduce((a, x) => a + Number(x.replace(/\D/g, "")), 0) : null; };
+  function label(rest, kind, lessons) {   // a stored result key → what the student did, in the words of the menu
+    if (kind === "mk") return `Пробный тест ${rest.replace(/^PT/, "")}`;
+    if (kind === "rd") return `Текст ${Number(rest.slice(1))}`;
+    if (kind === "px") return `Сложные вопросы · набор ${Number(rest.slice(1))}`;
+    const [tag, pid] = rest.split("_"), l = lessons && lessons.find((x) => x.tag === tag), p = l && l.parts.find((x) => x.id === pid);
+    const head = /^[VM]\d\d$/.test(tag) ? `${tag[0] === "V" ? "Verbal" : "Math"} · урок ${Number(tag.slice(1))}` : /^[ADU]\d\d$/.test(tag) ? `Набор ${tag}` : `Урок ${tag.slice(1)}`;
+    return p ? `${head} · ${p.title}` : head;
+  }
+  const KINDS = [["hw", "hw_last_"], ["px", "px_last_"], ["rd", "rd_last_"], ["mk", "mk_last_"]];
+  // every submitted result of this student: keys(), get(k), meta = { key: time it changed }
+  function results(name, keys, get, meta, lessons) {
+    const out = [];
+    for (const k of keys) for (const [kind, pre] of KINDS) {
+      const p = `${pre}${name}_`; if (!k.startsWith(p)) continue; const v = get(k); if (!v) continue;
+      const rest = k.slice(p.length);
+      out.push({ key: k, kind, rest, t: meta[k] || 0, raw: v, label: label(rest, kind, lessons), score: kind === "mk" ? (est(v) ? `≈ ${est(v)}` : v) : v });
+    }
+    return out.sort((a, b) => b.t - a.t);
+  }
+  // the keys a reset removes, so the student can do that work again (attempt counts start over too)
+  function resetKeys(name, kind, rest) {
+    if (kind === "hw") return [`hw_last_${name}_${rest}`, `hw_att_${name}_${rest}`];
+    if (kind === "px") return [`px_last_${name}_${rest}`, `px_att_${name}_${rest}`];
+    if (kind === "rd") return [`rd_last_${name}_${rest}`, `rd_att_${name}_${rest}`];
+    return [`mk_last_${name}_${rest}`, `mk_done_${name}_${rest}`, `mk_att_${name}_${rest}_rw`, `mk_att_${name}_${rest}_math`];
+  }
+  // tasks the teacher assigned: [{ id, t, href, due, note, at, rk: [prefix, rest] }]; done when the result came after the task
+  // was given (rk), or the student ticked it (tasks_done)
+  function taskState(name, get, meta) {
+    let T = [], D = []; try { T = JSON.parse(get("tasks") || "[]"); } catch (e) { T = []; } try { D = JSON.parse(get("tasks_done") || "[]"); } catch (e) { D = []; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return (Array.isArray(T) ? T : []).filter((x) => x && x.id && x.t).map((x) => {
+      const k = x.rk ? `${x.rk[0]}${name}_${x.rk[1]}` : null, r = k && get(k);
+      const done = (r && (meta[k] || 0) >= (x.at || 0) - 6e4) || D.includes(x.id);
+      const late = !done && x.due && new Date(x.due + "T23:59:59") < Date.now();
+      return Object.assign({}, x, { done: !!done, late: !!late, result: r || null, auto: !!x.rk, soon: !done && !late && x.due && (new Date(x.due + "T00:00:00") - today) / 864e5 <= 1 });
+    }).sort((a, b) => a.done - b.done || String(a.due || "9999").localeCompare(String(b.due || "9999")) || b.at - a.at);
   }
   function tick(id, on) { loadManual(); on ? manual.add(id) : manual.delete(id); store(doneKey(), JSON.stringify([...manual])); }
-  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
+  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
 })();

@@ -7,9 +7,13 @@
 //   admin    hash of the teacher's admin key (claimed once from the teacher page)
 //   p:<id>   the student's results and progress, encrypted in the browser with the master key; only the account owner can
 //            read or write it: the browser sends a token derived from the password (PBKDF2, never the password itself), the
-//            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew
+//            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew.
+//            The teacher's cabinet (admin key) may read and write it too, to tick plan steps, reset a result or assign homework;
+//            a record the teacher made before the student's first sync has no hash yet ("unclaimed") and is claimed by the
+//            student's first save. When the teacher sets a new password, the record moves to it (the teacher's browser derives
+//            the new sync token), so the student keeps the cloud copy.
 // Routes: GET user?id · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · PUT admin/user?id · GET admin/users · DELETE admin/user?id
-//         POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
+//         GET/PUT admin/progress?id · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
 const MAX_USERS = 300;
@@ -79,7 +83,7 @@ export async function onRequest(context) {
     if (!okId(id) || !okB64(tok, 64) || tok.length < 40) return fail(400, "bad request");
     const w = await accountWrap(env, request, id); if (!w) return fail(404, "no such login");
     const rec = await env.USERS.get("p:" + id, "json"), h = await sha("bynurzy-sync:" + tok);
-    const stale = rec && rec.w !== w, mine = rec && !stale && rec.h === h;   // stale: the password changed after the record was made
+    const stale = rec && rec.w !== w, open = rec && !stale && !rec.h, mine = rec && !stale && (rec.h === h || open);   // stale: the password changed; open: made by the teacher, not claimed yet
     if (m === "GET") { if (!rec || stale) return fail(404, "nothing saved"); if (!mine) return fail(403, "not yours"); return json({ data: rec.data, at: rec.at }); }
     if (rec && !stale && !mine) return fail(403, "not yours");
     const b = await body(request); if (!b || !okB64(b.data, 600000)) return fail(400, "bad data");
@@ -105,12 +109,27 @@ export async function onRequest(context) {
       const id = url.searchParams.get("id"), b = await body(request); if (!okId(id) || !b || !okEntry(b.entry)) return fail(400, "bad request");
       if (!b.replace && (await env.USERS.get("u:" + id))) return fail(409, "login taken");
       if (!b.replace && (await count(env)) >= MAX_USERS) return fail(429, "too many accounts");
-      await env.USERS.put("u:" + id, JSON.stringify({ salt: b.entry.salt, iter: b.entry.iter, wrap: b.entry.wrap, n: b.entry.n, at: new Date().toISOString(), by: "teacher" }));
+      const old = await env.USERS.get("u:" + id, "json");
+      await env.USERS.put("u:" + id, JSON.stringify({ salt: b.entry.salt, iter: b.entry.iter, wrap: b.entry.wrap, n: b.entry.n, at: (old && old.at) || new Date().toISOString(), by: (old && old.by) || "teacher" }));
+      if (b.replace && okB64(b.sync, 64) && b.sync.length >= 40) {   // a new password: the cloud copy of results moves to it
+        const rec = await env.USERS.get("p:" + id, "json");
+        if (rec) await env.USERS.put("p:" + id, JSON.stringify(Object.assign(rec, { h: await sha("bynurzy-sync:" + b.sync), w: b.entry.wrap })));
+      }
       return json({ ok: true });
     }
     if (route === "admin/user" && m === "DELETE") {
       const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
       await env.USERS.delete("u:" + id); await env.USERS.delete("p:" + id); return json({ ok: true });
+    }
+    if (route === "admin/progress" && (m === "GET" || m === "PUT")) {   // the teacher's cabinet: a student's results, plan and tasks
+      const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
+      const w = await accountWrap(env, request, id); if (!w) return fail(404, "no such login");
+      const rec = await env.USERS.get("p:" + id, "json");
+      if (m === "GET") return rec ? json({ data: rec.data, at: rec.at, claimed: !!rec.h && rec.w === w }) : fail(404, "nothing saved");
+      const b = await body(request); if (!b || !okB64(b.data, 600000)) return fail(400, "bad data");
+      const h = rec && rec.w === w ? rec.h || null : null;   // keep the owner's claim; after a password change the next login claims it
+      await env.USERS.put("p:" + id, JSON.stringify({ h, w, data: b.data, at: new Date().toISOString(), by: "teacher" }));
+      return json({ ok: true });
     }
     if (route === "admin/invite" && m === "POST") {
       const b = await body(request);

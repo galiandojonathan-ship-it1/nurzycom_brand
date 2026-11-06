@@ -41,6 +41,7 @@
   }
 
   $("student").value = student();
+  if (window.SITE && SITE.me()) ["plan-who", "plan-who-hint"].forEach((id) => $(id) && $(id).classList.add("hidden"));   // the login already sets the name
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); render(); };
   $("courses").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { course = b.dataset.c; store("plan_course", course); render(); }));
   $("print").onclick = () => window.print();
