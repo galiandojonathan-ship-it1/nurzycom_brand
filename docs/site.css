@@ -160,6 +160,10 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
 .flag{border:1px solid transparent;background:transparent;font:12px var(--mono);letter-spacing:.06em;padding:6px 8px}
 .flag[aria-pressed=true]{border-color:var(--ink)}
 .flag[aria-pressed=true]::before{content:"▲ "}
+.qtools{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.gloss-tg{text-decoration:underline dotted;text-underline-offset:4px}
+.gloss-tg[aria-pressed=true]::before{content:none}
+.gloss-tg[aria-pressed=false]{color:var(--stone);text-decoration:none;border-color:transparent}
 .stem{font-size:17px;line-height:1.6;font-weight:500;margin:0 0 16px}
 .opt{display:flex;align-items:stretch;gap:0;margin-bottom:8px}
 .opt .ch{flex:1;display:flex;gap:14px;align-items:flex-start;text-align:left;padding:13px 14px;border:1px solid var(--studio);background:var(--white);font-size:16px;line-height:1.5;transition:border-color .1s}
@@ -235,7 +239,8 @@ html.locked body > *:not(#auth){display:none !important}
 .auth-keep{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--stone)}
 .nav a.out{color:var(--stone);margin-left:6px;position:relative}
 .nav a.out::before{content:"";position:absolute;left:-4px;top:9px;bottom:9px;border-left:1px solid var(--studio)}   /* log out is not a section: a hairline sets it apart */
-input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
+input[type=checkbox]{accent-color:var(--ink);width:18px;height:18px}
+.gloss-sw{display:inline-flex;align-items:center;gap:8px;min-height:32px}
 
 /* ===================== brand layer (matches the main site: thin hexagon, ink bands, serif italic, mono labels) ===================== */
 :root{--hex:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4l24.2 14v28L32 60 7.8 46V18z' fill='none' stroke='%230F0F0F' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -251,6 +256,7 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 /* page opener: a full-width ink band with a large serif title and a hexagon watermark */
 .hero{position:relative;max-width:none;background:var(--ink);color:var(--paper);box-shadow:0 0 0 100vmax var(--ink);clip-path:inset(0 -100vmax);
   margin:-40px 0 44px;padding:64px 0 60px;overflow:visible;isolation:isolate}
+html{overflow-x:clip}   /* the opener's hexagon watermark bleeds 60px to the right: never a sideways scroll (teacher page, 2026-11-08) */
 .hero::after{content:"";position:absolute;z-index:-1;right:-60px;top:50%;width:min(56vw,560px);aspect-ratio:1;transform:translateY(-50%);background:var(--hex-paper) center/contain no-repeat;opacity:.55;pointer-events:none}
 .hero::before{content:"";position:absolute;z-index:-1;right:calc(min(56vw,560px)*.22 - 60px);top:50%;width:min(28vw,280px);aspect-ratio:1;transform:translateY(-50%);background:var(--hex-paper) center/contain no-repeat;opacity:.35;pointer-events:none}
 .hero .label{color:rgba(245,243,238,.62)}
@@ -298,7 +304,7 @@ input[type=checkbox]{accent-color:var(--ink);width:16px;height:16px}
 .foot-links{display:flex;gap:8px}
 .foot-links a{color:var(--paper);text-decoration:none;font:500 13px var(--sans);padding:8px 14px;border:1px solid rgba(245,243,238,.4)}
 .foot-links a:hover{background:var(--paper);color:var(--ink)}
-.foot-small{max-width:1080px;margin:22px auto 0;padding-top:14px;border-top:1px solid rgba(245,243,238,.14);font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(245,243,238,.45)}
+.foot-small{max-width:1080px;margin:22px auto 0;padding-top:14px;border-top:1px solid rgba(245,243,238,.14);font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(245,243,238,.62)}
 
 /* login: the main site's portrait hero on one side, the form on the other */
 #auth{flex:1;display:grid;grid-template-columns:1fr;padding:0;min-height:100vh;place-items:stretch}

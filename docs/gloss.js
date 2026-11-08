@@ -13,6 +13,7 @@
   const W = {};                 // key → { w, pos, en, ru: [], src: "course" | "q" }
   const ONE = new Map();        // one-word surface form → key
   const MANY = new Map();       // first word of a phrase → [{ toks, key }]
+  const WIDE = { one: new Map() };   // the question words of all tests, matched anywhere (homework: opt.wide)
   let ADD = {}, QSKIP = {}, OFF = new Set();   // OFF: course words never carded in the tests; QSKIP: per question (wrong sense there)
 
   // the usual English endings of a word, so «undermines», «undermined», «undermining» all find «undermine»
@@ -49,6 +50,10 @@
       });
     }));
     for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q" };
+    // homework has no per-question word lists: the test words (rare, single-sense words chosen for B2 readers) are matched
+    // anywhere there, single words of 5+ letters only, so short or common spellings never get a card
+    for (const [key, e] of Object.entries(W)) if (e.src === "q") for (const v of variants(e.w).concat(e.forms || []))
+      if (!v.includes(" ") && v.length >= 5) for (const f of forms(v)) if (!WIDE.one.has(f) && !ONE.has(f)) WIDE.one.set(f, key);
     ADD = (extra && extra.add) || {}; QSKIP = (extra && extra.skip) || {}; OFF = new Set((extra && extra.off) || []);
   }
   // the extra words of one question, matched only inside it
@@ -101,11 +106,11 @@
     const extra = local(ADD[opt.key]);
     const seen = new Set(opt.seen || []), found = [];
     const look = (lw, toks, i, text) => {   // → [key, word count] for the longest allowed match starting at token i
-      const ok = (key, n) => !OFF.has(key) && !(QSKIP[opt.key] || []).includes(key) && allowed(key, toks, i, n, text, W[key] && W[key].src === "course" && !extra.one.has(lw));
+      const ok = (key, n) => !OFF.has(key) && !(QSKIP[opt.key] || []).includes(key) && allowed(key, toks, i, n, text, !!W[key] && (W[key].src === "course" || !!opt.wide) && !extra.one.has(lw));
       const cands = [...(extra.many.get(lw) || []), ...(MANY.get(lw) || [])];
       for (const c of cands.sort((a, b) => b.toks.length - a.toks.length))
         if (c.toks.every((t, j) => toks[i + 1 + j] && toks[i + 1 + j].lw === t) && ok(c.key, c.toks.length + 1)) return [c.key, c.toks.length + 1];
-      const k = extra.one.get(lw) || ONE.get(lw); return k && ok(k, 1) ? [k, 1] : null;
+      const k = extra.one.get(lw) || ONE.get(lw) || (opt.wide && WIDE.one.get(lw)); return k && ok(k, 1) ? [k, 1] : null;
     };
     for (const root of [].concat(els).filter(Boolean)) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.nodeValue.trim() && !(n.parentElement && n.parentElement.closest(NO)) ? 1 : 2) });

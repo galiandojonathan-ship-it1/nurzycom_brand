@@ -83,12 +83,32 @@
       : `<button class="hint-btn" id="sv-hint">${hBtn}</button>`;
     if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc) BBTools.calc(true); };
     $("sv-expl").classList.toggle("hidden", !revealed(s));
+    glossNow(q, s);
     $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);
     $("sv-check").textContent = s.tries.length ? "Проверить ещё раз" : "Проверить";
     $("sv-prev").disabled = S.cur === 0;
     $("sv-next").textContent = S.cur === n - 1 ? (S.review ? "Закрыть" : "Сдать →") : "Далее →";
     $("navbtn").textContent = `${S.cur + 1} / ${n} ▴`;
     renderGrid();
+  }
+  // Difficult words (gloss.js, 2026-11-08): Verbal homework underlines course words and the hard words of the tests;
+  // a tap shows the meaning and the translation. Words in Context questions are never underlined (the passage words are
+  // what the question tests). In Transitions and grammar questions the options are the answer, so they are underlined only
+  // after the question is closed. Lesson A keeps its own glossary of old words; Math has no word cards.
+  const WIC = /most logical and precise word or phrase|what does the word .{1,40} most nearly mean/i;
+  const GIVEAWAY = /most logical transition|conventions of standard english/i;
+  const glossable = () => !!window.GLOSS && !isMath(S.ctx.lesson.tag) && !/^(VA|A\d)/.test(S.ctx.lesson.tag);
+  function glossNow(q, s) {
+    const sw = $("sv-gloss"); if (sw) sw.classList.toggle("hidden", !glossable());
+    if (!glossable() || !sw) return;
+    GLOSS.hide();
+    sw.setAttribute("aria-pressed", String(GLOSS.on)); sw.textContent = GLOSS.on ? "Трудные слова: вкл" : "Трудные слова: выкл";
+    const text = (q.stem || "").replace(/<[^>]+>/g, " ");
+    if (!GLOSS.on || WIC.test(text)) return;
+    const els = [$("sv-passage"), $("sv-stem")];
+    if (!GIVEAWAY.test(text) || revealed(s)) els.push(...$("sv-opts").querySelectorAll(".tx"));
+    const at = S.cur;
+    GLOSS.ready.then(() => { if (S.cur === at && els.every((e) => e.isConnected)) GLOSS.apply(els, { wide: true }); });
   }
   function renderGrid() {
     $("sv-grid").innerHTML = S.items.map((q, k) => { const s = S.st[q.i];
@@ -152,6 +172,7 @@
   $("navbtn").onclick = () => $("sv-nav").classList.toggle("hidden");
   $("sv-close").onclick = () => $("sv-nav").classList.add("hidden");
   $("sv-finish").onclick = finish;
+  if ($("sv-gloss")) $("sv-gloss").onclick = () => { if (window.GLOSS) { GLOSS.on = !GLOSS.on; render(); } };
   $("sv-flag").onclick = () => { const q = S.items[S.cur]; S.mk.has(q.i) ? S.mk.delete(q.i) : S.mk.add(q.i); save(); render(); };
   $("sv-clock-t").onclick = () => $("sv-clock").classList.toggle("blur");
   document.addEventListener("keydown", (e) => {
