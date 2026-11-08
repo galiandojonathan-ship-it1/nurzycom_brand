@@ -52,8 +52,9 @@
     for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q" };
     // homework has no per-question word lists: the test words (rare, single-sense words chosen for B2 readers) are matched
     // anywhere there, single words of 5+ letters only, so short or common spellings never get a card; «word#PT…» entries carry
-    // the sense of one question (surface, ground, shift) and stay there
-    for (const [key, e] of Object.entries(W)) if (e.src === "q" && !key.includes("#")) for (const v of variants(e.w).concat(e.forms || []))
+    // the sense of one question (surface, ground, shift) and stay there; so do archaic senses («hence: (old) from now»,
+    // while SAT transitions mean «therefore»)
+    for (const [key, e] of Object.entries(W)) if (e.src === "q" && !key.includes("#") && !/^\s*\(old\)/i.test(e.en)) for (const v of variants(e.w).concat(e.forms || []))
       if (!v.includes(" ") && v.length >= 5) for (const f of forms(v)) if (!WIDE.one.has(f) && !ONE.has(f)) WIDE.one.set(f, key);
     ADD = (extra && extra.add) || {}; QSKIP = (extra && extra.skip) || {}; OFF = new Set((extra && extra.off) || []);
   }

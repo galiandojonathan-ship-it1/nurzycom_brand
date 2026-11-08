@@ -57,7 +57,7 @@
     const card = (m) => {
       const run = load(m.id), last = store(lastKey(m.id));
       const status = run && run.phase !== "done" ? "в процессе" : last ? `последний: ${esc(last)}` : "не начат";
-      return `<button class="mcard" data-m="${m.id}" aria-pressed="${T.mock && T.mock.id === m.id}"><span class="no">${m.id.slice(2)}</span>
+      return `<button class="mcard" data-m="${m.id}" aria-pressed="${!!(T.mock && T.mock.id === m.id)}"><span class="no">${m.id.slice(2)}</span>
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
     const num = (m) => Number(m.id.slice(2));

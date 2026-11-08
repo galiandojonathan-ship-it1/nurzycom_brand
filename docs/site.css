@@ -45,8 +45,8 @@ h1{font:italic 300 clamp(44px,8vw,72px)/1.02 var(--serif);margin:12px 0 14px;let
 .step-h .aside{margin-left:auto}
 
 /* fields and buttons */
-input[type=text],input[type=password]{width:100%;font:inherit;font-size:17px;padding:14px 14px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0;-webkit-appearance:none;appearance:none}
-input[type=text]:focus,input[type=password]:focus{border-color:var(--ink);outline:none}
+input[type=text],input[type=password],input[type=search]{width:100%;font:inherit;font-size:17px;padding:14px 14px;border:1px solid var(--studio);background:var(--white);color:var(--ink);border-radius:0;-webkit-appearance:none;appearance:none}
+input[type=text]:focus,input[type=password]:focus,input[type=search]:focus{border-color:var(--ink);outline:none}
 .field{max-width:420px}
 .btn{display:inline-flex;align-items:center;gap:10px;padding:15px 24px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);font-weight:500;text-decoration:none;transition:opacity .15s}
 .btn:hover{opacity:.86}
@@ -381,7 +381,7 @@ html{overflow-x:clip}   /* the opener's hexagon watermark bleeds 60px to the rig
 .gloss b{font-weight:600}
 
 /* ---------- polish 2026-11-05: phones, login screen, focus */
-input[type=text]:focus,input[type=password]:focus{box-shadow:inset 0 0 0 1px var(--ink)}   /* the active field reads clearly: 2px ink line */
+input[type=text]:focus,input[type=password]:focus,input[type=search]:focus{box-shadow:inset 0 0 0 1px var(--ink)}   /* the active field reads clearly: 2px ink line */
 .hero :focus-visible,.foot :focus-visible,.auth-name :focus-visible{outline-color:var(--paper)}   /* keyboard focus stays visible on ink sections */
 .auth-f{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.35;color:var(--stone)}   /* sign-up hints stay visible above each field */
 .auth-foot a{color:inherit;text-decoration:underline;text-underline-offset:3px;padding:8px 0}

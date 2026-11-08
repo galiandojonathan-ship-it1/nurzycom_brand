@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611081918">
+<link rel="stylesheet" href="site.css?v=202611082023">
 <style>
 .dnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 30px}
 .rules{counter-reset:r;display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--ink)}
@@ -43,10 +43,10 @@
 .glt td.ex{color:var(--stone);font-style:italic;font-size:14px}
 .glt tr.gh td{background:var(--mist);font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);font-weight:400}
 @media(max-width:640px){.glt td.ex{display:none}.glt th.ex{display:none}}
-.crumb{display:inline-block;margin-bottom:10px;font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--stone)}
+.crumb{display:inline-block;margin-bottom:4px;padding:7px 0;font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--stone)}
 .tw{overflow-x:auto}
 </style>
-<script src="auth.js?v=202611081918"></script>
+<script src="auth.js?v=202611082023"></script>
 </head>
 <body>
 <header class="top"><div class="top-in">
@@ -75,7 +75,7 @@
     <div class="sec-h" id="gloss"><span class="num">02</span><span class="label">Словарь</span></div>
     <p class="hint" style="margin:-4px 0 14px">Примеры — точные цитаты из текстов урока A и тех же изданий. Эти же слова — колода «Урок A» в разделе «Словарь»: карточки и тест.</p>
     <div class="gl-tools"><input id="gl-q" type="search" placeholder="Найти слово: hath, still, почему…" aria-label="Найти слово"><div id="gl-chips"></div></div>
-    <div class="tw"><table class="glt" id="gl-table"></table></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Словарь старых слов: таблица прокручивается вбок"><table class="glt" id="gl-table"></table></div>
 
     <div class="sec-h" id="practice"><span class="num">03</span><span class="label">Практика</span></div>
     <p class="hint" style="margin:-4px 0 14px">3 набора по 8 авторских вопросов в формате SAT на старых текстах. Две попытки, кнопка «Подсказка» со словарём старых слов текста, после ответа — объяснение. Результат уходит преподавателю.</p>
@@ -132,8 +132,8 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611081918"></script>
-<script src="solve.js?v=202611081918"></script>
-<script src="archaic.js?v=202611081918"></script>
+<script src="config.js?v=202611082023"></script>
+<script src="solve.js?v=202611082023"></script>
+<script src="archaic.js?v=202611082023"></script>
 </body>
 </html>
