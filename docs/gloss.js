@@ -140,7 +140,7 @@
         for (const h of hits) {
           if (h.s > at) frag.appendChild(document.createTextNode(text.slice(at, h.s)));
           const sp = document.createElement("span"); sp.className = "vw gw"; sp.dataset.k = h.key; sp.textContent = text.slice(h.s, h.e);
-          if (!node.parentElement.closest("button")) { sp.tabIndex = 0; sp.setAttribute("role", "button"); }
+          if (!node.parentElement.closest("button")) { sp.tabIndex = 0; sp.setAttribute("role", "button"); sp.setAttribute("aria-expanded", "false"); }
           frag.appendChild(sp); at = h.e;
         }
         if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
@@ -153,15 +153,24 @@
   // ---- the card with the meaning
   let pop = null, cur = null;
   const POS = { v: "глагол", verb: "глагол", n: "сущ.", noun: "сущ.", adj: "прил.", adjective: "прил.", adv: "нареч.", adverb: "нареч.", phr: "выражение", phrase: "выражение", prep: "предлог", conj: "союз" };
+  // toggletip pattern: the word is a button with aria-expanded, and the card's text is also read out by a polite live region
+  // (screen readers announce it without moving focus); Escape or a tap elsewhere closes it
+  let live = null;
+  function say(t) {
+    if (!live) { live = document.createElement("div"); live.className = "sr-only"; live.setAttribute("role", "status"); live.setAttribute("aria-live", "polite"); document.body.appendChild(live); }
+    live.textContent = ""; setTimeout(() => { live.textContent = t; }, 30);
+  }
   function show(el) {
     const e = W[el.dataset.k]; if (!e) return;
     if (!pop) { pop = document.createElement("div"); pop.className = "gpop hidden"; pop.setAttribute("role", "dialog"); document.body.appendChild(pop); }
-    if (cur) cur.classList.remove("on"); cur = el; el.classList.add("on");
+    if (cur) { cur.classList.remove("on"); if (cur.hasAttribute("aria-expanded")) cur.setAttribute("aria-expanded", "false"); }
+    cur = el; el.classList.add("on"); if (el.hasAttribute("aria-expanded")) el.setAttribute("aria-expanded", "true");
     const pos = POS[String(e.pos).toLowerCase().replace(/\.$/, "")] || e.pos;   // «v» read like a lesson code: say it in Russian
     pop.innerHTML = `<span class="label">${e.src === "course" ? "Словарь курса" : "Слово вопроса"}${pos ? " · " + esc(pos) : ""}</span><b lang="en">${esc(e.w)}</b>`
       + (e.en ? `<span class="gpop-en" lang="en">${esc(e.en)}</span>` : "") + (e.ru.length ? `<span class="gpop-ru">${esc(e.ru.join(", "))}</span>` : "");
     pop.setAttribute("aria-label", e.w);
     pop.classList.remove("hidden"); place();
+    say(`${e.w}. ${e.en || ""} ${e.ru.length ? "Перевод: " + e.ru.join(", ") : ""}`.trim());
   }
   // next to the word: below it, or above when there is no room; it follows the word while the page scrolls
   function place() {
@@ -171,7 +180,7 @@
     pop.style.left = Math.max(8, Math.min(innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + "px";
     pop.style.top = (r.bottom + 8 + ph <= innerHeight - 8 ? r.bottom + 8 : Math.max(8, r.top - ph - 8)) + "px";
   }
-  function hide() { if (pop) pop.classList.add("hidden"); if (cur) cur.classList.remove("on"); cur = null; }
+  function hide() { if (pop) pop.classList.add("hidden"); if (cur) { cur.classList.remove("on"); if (cur.hasAttribute("aria-expanded")) cur.setAttribute("aria-expanded", "false"); } cur = null; }
   // capture phase: a tap on a word inside an answer option shows the meaning and does not choose the option
   document.addEventListener("click", (ev) => {
     const el = ev.target.closest && ev.target.closest(".gw");
@@ -189,9 +198,12 @@
     get on() { try { return localStorage.getItem(PREF) !== "0"; } catch (e) { return true; } },
     set on(v) { try { localStorage.setItem(PREF, v ? "1" : "0"); } catch (e) { /* private mode */ } },
     apply, hide, entry: (k) => W[k],
-    ready: null,
+    // the word data (~380 KB) loads on first use only: Math students and pages that never show a card don't download it
+    get ready() {
+      return loading || (loading = (window.SITE ? Promise.all([SITE.json("vocab").catch(() => null), SITE.json("mockgloss").catch(() => null)]) : Promise.resolve([null, null]))
+        .then(([v, g]) => { setup(v, g); return api; }));
+    },
   };
-  api.ready = (window.SITE ? Promise.all([SITE.json("vocab").catch(() => null), SITE.json("mockgloss").catch(() => null)]) : Promise.resolve([null, null]))
-    .then(([v, g]) => { setup(v, g); return api; });
+  let loading = null;
   window.GLOSS = api;
 })();

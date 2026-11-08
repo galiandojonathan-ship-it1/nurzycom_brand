@@ -161,7 +161,7 @@
   function gate() {
     if (!document.documentElement.classList.contains("locked")) return;
     const d = document.createElement("div"); d.id = "auth";
-    d.innerHTML = `<div class="auth-art" aria-hidden="true"><img src="assets/portrait.webp" alt="">
+    d.innerHTML = `<div class="auth-art" aria-hidden="true"><img src="assets/portrait.webp" srcset="assets/portrait-512.webp 512w, assets/portrait.webp 1024w" sizes="(max-width: 899px) 230px, 600px" width="1024" height="1536" alt="">
         <div class="auth-name"><span class="label">Ваш преподаватель</span><span class="auth-word">Нурасыл</span><span class="label auth-cred">SAT 1560 · IELTS 8.0 · Nazarbayev University</span></div></div>
       <form class="auth-box" id="auth-in" autocomplete="on">
       <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
