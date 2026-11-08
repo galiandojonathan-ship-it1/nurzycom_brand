@@ -196,7 +196,10 @@
       $("send-status").textContent = "Результат отправлен преподавателю.";
       $("backup").classList.add("hidden");
     } catch (e) {
-      $("send-status").textContent = "Не удалось отправить (нет интернета?).";
+      // retry by hand or by itself when the connection returns; the code below stays as the last resort
+      $("send-status").innerHTML = 'Не удалось отправить (нет интернета?). <button class="tlink resend" id="resend">Отправить ещё раз</button>';
+      $("resend").onclick = () => send(r);
+      addEventListener("online", () => { const b = $("resend"); if (b && b.isConnected && !$("s-result").classList.contains("hidden")) send(r); }, { once: true });   // only while still unsent
       $("backup").classList.remove("hidden");
     }
   }

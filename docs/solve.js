@@ -82,7 +82,7 @@
     const hBtn = archHint ? "Подсказка: старые слова этого текста" : desmosHint ? "Подсказка: как решить в Desmos" : "Подсказка";
     hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">${hLabel}</span>${q.hint}</div>`
       : `<button class="hint-btn" id="sv-hint">${hBtn}</button>`;
-    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc) BBTools.calc(true); };
+    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc && !matchMedia("(max-width:760px)").matches) BBTools.calc(true); };   // on phones the calculator sheet would cover the hint and «Проверить»: the student opens it with «Калькулятор»
     $("sv-expl").classList.toggle("hidden", !revealed(s));
     glossNow(q, s);
     $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);

@@ -365,7 +365,13 @@
         store(ak, String(attempt)); T.st.sent[sec] = true; save();
       }
       $("send-status").textContent = "Результат отправлен преподавателю.";
-    } catch (e) { $("send-status").textContent = "Не удалось отправить (нет интернета?). Сделайте скриншот результата и пришлите преподавателю в Telegram."; }
+    } catch (e) {
+      // offline or the form unreachable: offer a retry and try again by itself when the connection returns (unsent sections stay
+      // in T.st.sent, so a retry sends only what is missing)
+      $("send-status").innerHTML = 'Не удалось отправить (нет интернета?). <button class="tlink resend" id="resend">Отправить ещё раз</button> Если не получится, сделайте скриншот результата и пришлите преподавателю в Telegram.';
+      $("resend").onclick = send;
+      addEventListener("online", () => { const b = $("resend"); if (b && b.isConnected && T.st && T.st.secs.some((s) => !T.st.sent[s])) send(); }, { once: true });
+    }
   }
 
   $("go").onclick = begin;

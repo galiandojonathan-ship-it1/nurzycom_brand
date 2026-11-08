@@ -119,7 +119,7 @@
     $("send-status").textContent = "Отправляю…";
     const body = new URLSearchParams(); Object.keys(r).forEach((k) => body.append(f[k], r[k]));
     try { await fetch(CFG.formAction, { method: "POST", mode: "no-cors", body }); $("send-status").textContent = "Результат отправлен преподавателю."; $("backup").classList.add("hidden"); }
-    catch (e) { $("send-status").textContent = "Не удалось отправить (нет интернета?)."; $("backup").classList.remove("hidden"); }
+    catch (e) { /* retry by hand, or by itself when the connection returns */ (() => { $("send-status").innerHTML = 'Не удалось отправить (нет интернета?). <button class="tlink resend" id="resend">Отправить ещё раз</button>'; $("resend").onclick = () => send(r); addEventListener("online", () => { const b = $("resend"); if (b && b.isConnected) send(r); }, { once: true }); })(); $("backup").classList.remove("hidden"); }
   }
 
   $("go").onclick = start;

@@ -114,7 +114,7 @@
     if (!(CFG.formAction && Object.keys(r).every((k) => f[k]))) { $("send-status").textContent = "Отправка не настроена."; return; }
     const body = new URLSearchParams(); Object.keys(r).forEach((k) => body.append(f[k], r[k]));
     try { await fetch(CFG.formAction, { method: "POST", mode: "no-cors", body }); $("send-status").textContent = "Результат отправлен преподавателю."; }
-    catch (e) { $("send-status").textContent = "Не удалось отправить (нет интернета?). Пришлите счёт преподавателю в Telegram."; }
+    catch (e) { /* retry by hand, or by itself when the connection returns */ (() => { $("send-status").innerHTML = 'Не удалось отправить (нет интернета?). <button class="tlink resend" id="resend">Отправить ещё раз</button> Если не получится, пришлите счёт преподавателю в Telegram.'; $("resend").onclick = () => send(r); addEventListener("online", () => { const b = $("resend"); if (b && b.isConnected) send(r); }, { once: true }); })(); }
   }
   $("to-quiz").onclick = startQuiz;
   $("check").onclick = check;
