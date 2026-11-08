@@ -36,7 +36,8 @@
     $("plan").querySelectorAll("input[data-auto]").forEach((c) => (c.onclick = (e) => e.preventDefault()));   // submitted on the site: stays ticked
     $("plan").querySelectorAll("input[type=checkbox]:not([data-auto])").forEach((c) => (c.onchange = () => {
       c.checked ? manual.add(c.dataset.id) : manual.delete(c.dataset.id);
-      store(doneKey(), JSON.stringify([...manual])); render();
+      store(doneKey(), JSON.stringify([...manual])); const id = c.dataset.id; render();
+      const again = $("plan").querySelector(`input[data-id="${CSS.escape(id)}"]`); if (again) again.focus({ preventScroll: true });   // the list is redrawn: keep keyboard focus on the same step
     }));
   }
 

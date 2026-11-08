@@ -28,6 +28,7 @@
     clearInterval(S.timer);
     if (!S.review) { S.timer = setInterval(tick, 1000); tick(); } else $("sv-clock").textContent = "разбор";
     $("sv-finish").textContent = S.review ? "Закрыть разбор" : "Сдать";
+    if ($("sv-exit")) $("sv-exit").classList.toggle("hidden", !S.review);   // review: a visible way back to the result on every question
     ctx.show("s-solve"); render();
   }
   function tick() { const s = Math.floor((Date.now() - S.t0) / 1000); $("sv-clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
@@ -172,6 +173,7 @@
   $("navbtn").onclick = () => $("sv-nav").classList.toggle("hidden");
   $("sv-close").onclick = () => $("sv-nav").classList.add("hidden");
   $("sv-finish").onclick = finish;
+  if ($("sv-exit")) $("sv-exit").onclick = finish;
   if ($("sv-gloss")) $("sv-gloss").onclick = () => { if (window.GLOSS) { GLOSS.on = !GLOSS.on; render(); } };
   $("sv-flag").onclick = () => { const q = S.items[S.cur]; S.mk.has(q.i) ? S.mk.delete(q.i) : S.mk.add(q.i); save(); render(); };
   $("sv-clock-t").onclick = () => $("sv-clock").classList.toggle("blur");
