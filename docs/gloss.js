@@ -20,7 +20,7 @@
   function forms(w) {
     const out = new Set([w]), last = w.slice(-1), cons = (c) => /[bcdfghjklmnpqrstvwxz]/.test(c);
     out.add(w + "s"); out.add(w + "es"); out.add(w + "ed"); out.add(w + "ing"); out.add(w + "er"); out.add(w + "ly");
-    if (last === "e") { out.add(w + "d"); out.add(w.slice(0, -1) + "ing"); out.add(w.slice(0, -1) + "ion"); }
+    if (last === "e") { out.add(w + "d"); out.add(w.slice(0, -1) + "ing"); if (/[aiu]te$/.test(w)) out.add(w.slice(0, -1) + "ion"); }   // illustrate → illustration; not verse → version
     if (last === "y" && cons(w.slice(-2, -1))) { out.add(w.slice(0, -1) + "ies"); out.add(w.slice(0, -1) + "ied"); out.add(w.slice(0, -1) + "ily"); }
     if (/[^aeiou][aeiou][bdgmnprt]$/.test(w) && w.length <= 7) { out.add(w + last + "ed"); out.add(w + last + "ing"); }
     if (/le$/.test(w)) out.add(w.slice(0, -1) + "y");
@@ -51,8 +51,9 @@
     }));
     for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q" };
     // homework has no per-question word lists: the test words (rare, single-sense words chosen for B2 readers) are matched
-    // anywhere there, single words of 5+ letters only, so short or common spellings never get a card
-    for (const [key, e] of Object.entries(W)) if (e.src === "q") for (const v of variants(e.w).concat(e.forms || []))
+    // anywhere there, single words of 5+ letters only, so short or common spellings never get a card; «word#PT…» entries carry
+    // the sense of one question (surface, ground, shift) and stay there
+    for (const [key, e] of Object.entries(W)) if (e.src === "q" && !key.includes("#")) for (const v of variants(e.w).concat(e.forms || []))
       if (!v.includes(" ") && v.length >= 5) for (const f of forms(v)) if (!WIDE.one.has(f) && !ONE.has(f)) WIDE.one.set(f, key);
     ADD = (extra && extra.add) || {}; QSKIP = (extra && extra.skip) || {}; OFF = new Set((extra && extra.off) || []);
   }
@@ -77,7 +78,9 @@
   const RULES = {
     "novel": { adj: true }, "grave": { adj: true },
     "champion": { verb: true }, "coin": { verb: true }, "moderate": { verb: true }, "address": { verb: true },
-    "trace": { notAfter: DET, notBefore: ["of"] }, "reserve": { forms: ["reserved"] }, "lend": { forms: ["lend", "lends"] },
+    "trace": { notAfter: DET, notBefore: ["of", "amount", "amounts", "element", "elements", "quantities", "quantity", "minerals", "metals"] },
+    // checked on all 695 Verbal homework questions (2026-11-08): the card's sense only
+    "contemporary": { noun: true }, "politic": { notForms: ["politics"] }, "blend": { before: ["in", "into"] }, "breed": { verb: true }, "stage": { forms: ["staging", "stagings"] }, "reserve": { forms: ["reserved"] }, "lend": { forms: ["lend", "lends"] },
     "long to": { notAfter: new Set(["as", "how", "so", "too", "no", "any", "very", "much", "take", "takes", "took"]), notForms: ["longer", "longest"] },
     "instrumental": { before: ["in"] }, "qualify": { notBefore: ["as", "for"] }, "afford": { notBefore: ["to"] },
     "profit from": { notAfter: new Set([...DET, "in"]) }, "contend / maintain": { maintainThat: true },
@@ -97,6 +100,7 @@
     if (r.adj && /'s$|’s$/i.test(text.slice(t.s, toks[i + n - 1].e + 2).trim())) return false;   // the novel's events
     if (r.adj && !(nw && /^[a-z]/.test(text[next.s]) && !FUNC.has(nw) && !(pw && /^\d{4}$/.test(pw)))) return false;
     if (r.verb && pw && (DET.has(pw) || !SUBJ.has(pw))) return false;
+    if (r.noun && next && /^[\s“”"‘’'-]*$/.test(text.slice(toks[i + n - 1].e, next.s)) && !FUNC.has(next.lw)) return false;   // «contemporary styles», «Contemporary Potawatomi» are the adjective
     if (r.maintainThat && /^maintain/.test(t.lw) && nw !== "that") return false;
     return true;
   }
@@ -148,11 +152,13 @@
 
   // ---- the card with the meaning
   let pop = null, cur = null;
+  const POS = { v: "глагол", verb: "глагол", n: "сущ.", noun: "сущ.", adj: "прил.", adjective: "прил.", adv: "нареч.", adverb: "нареч.", phr: "выражение", phrase: "выражение", prep: "предлог", conj: "союз" };
   function show(el) {
     const e = W[el.dataset.k]; if (!e) return;
     if (!pop) { pop = document.createElement("div"); pop.className = "gpop hidden"; pop.setAttribute("role", "dialog"); document.body.appendChild(pop); }
     if (cur) cur.classList.remove("on"); cur = el; el.classList.add("on");
-    pop.innerHTML = `<span class="label">${e.src === "course" ? "Словарь курса" : "Слово вопроса"}${e.pos ? " · " + esc(e.pos) : ""}</span><b lang="en">${esc(e.w)}</b>`
+    const pos = POS[String(e.pos).toLowerCase().replace(/\.$/, "")] || e.pos;   // «v» read like a lesson code: say it in Russian
+    pop.innerHTML = `<span class="label">${e.src === "course" ? "Словарь курса" : "Слово вопроса"}${pos ? " · " + esc(pos) : ""}</span><b lang="en">${esc(e.w)}</b>`
       + (e.en ? `<span class="gpop-en" lang="en">${esc(e.en)}</span>` : "") + (e.ru.length ? `<span class="gpop-ru">${esc(e.ru.join(", "))}</span>` : "");
     pop.setAttribute("aria-label", e.w);
     pop.classList.remove("hidden"); place();

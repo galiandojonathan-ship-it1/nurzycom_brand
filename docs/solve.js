@@ -92,7 +92,7 @@
     renderGrid();
   }
   // Difficult words (gloss.js, 2026-11-08): Verbal homework underlines course words and the hard words of the tests;
-  // a tap shows the meaning and the translation. Words in Context questions are never underlined (the passage words are
+  // a tap shows the meaning and the translation. The passage and the options are underlined, not the question line. Words in Context questions are never underlined (the passage words are
   // what the question tests). In Transitions and grammar questions the options are the answer, so they are underlined only
   // after the question is closed. Lesson A keeps its own glossary of old words; Math has no word cards.
   const WIC = /most logical and precise word or phrase|what does the word .{1,40} most nearly mean/i;
@@ -105,7 +105,7 @@
     sw.setAttribute("aria-pressed", String(GLOSS.on)); sw.textContent = GLOSS.on ? "Трудные слова: вкл" : "Трудные слова: выкл";
     const text = (q.stem || "").replace(/<[^>]+>/g, " ");
     if (!GLOSS.on || WIC.test(text)) return;
-    const els = [$("sv-passage"), $("sv-stem")];
+    const els = [$("sv-passage")];   // the question line is a standard prompt («conforms to», «support»): never underlined
     if (!GIVEAWAY.test(text) || revealed(s)) els.push(...$("sv-opts").querySelectorAll(".tx"));
     const at = S.cur;
     GLOSS.ready.then(() => { if (S.cur === at && els.every((e) => e.isConnected)) GLOSS.apply(els, { wide: true }); });
