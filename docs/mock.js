@@ -4,6 +4,7 @@
 // and the clock keeps running, as on the real test. Results: raw counts per module and section (no 200–800 estimate).
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -58,7 +59,7 @@
       const run = load(m.id), last = store(lastKey(m.id));
       const status = run && run.phase !== "done" ? "в процессе" : last ? `последний: ${esc(last)}` : "не начат";
       return `<button class="mcard" data-m="${m.id}" aria-pressed="${!!(T.mock && T.mock.id === m.id)}"><span class="no">${m.id.slice(2)}</span>
-        <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} вопросов`).join(" · ")}</small><span class="label">${status}</span></button>`;
+        <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} ${pl(2 * s.n, "вопрос", "вопроса", "вопросов")}`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
     const num = (m) => Number(m.id.slice(2));
     const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw"), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official");
@@ -126,7 +127,7 @@
     show("m-dir");
   }
   $("dir-go").onclick = () => {
-    T.st.phase = "test"; T.st.deadline = Date.now() + secInfo(curSec()).min * 60000;
+    T.st.phase = "test"; T.st.deadline = Date.now() + secInfo(curSec()).min * 60000; if ($("timeup")) $("timeup").classList.add("hidden");
     T.st.ans[mkey()] = T.st.ans[mkey()] || {}; T.st.mk[mkey()] = T.st.mk[mkey()] || [];
     save(); resume();
   };
@@ -241,10 +242,16 @@
     const raw = its.filter((q) => right(q, A[q.n])).length;
     const used = Math.min(s.min * 60, s.min * 60 - Math.max(0, Math.ceil((T.st.deadline - Date.now()) / 1000)));
     (T.st.res[sec] = T.st.res[sec] || {})[T.st.mod] = { raw, n: its.length, sec: used, auto };
-    if (T.st.mod === "m1") { T.st.mod = raw >= s.route ? "m2h" : "m2e"; T.st.phase = "dir"; save(); if (auto) alert("Время модуля 1 закончилось: модуль сдан."); return resume(); }
-    if (auto) alert("Время модуля 2 закончилось: модуль сдан.");
+    if (T.st.mod === "m1") { T.st.mod = raw >= s.route ? "m2h" : "m2e"; T.st.phase = "dir"; save(); if (auto) timeUp("Время модуля 1 закончилось: модуль сдан автоматически."); return resume(); }
+    if (auto) timeUp("Время модуля 2 закончилось: модуль сдан автоматически.");
     if (T.st.si < T.st.secs.length - 1) { T.st.phase = "break"; T.st.deadline = Date.now() + BREAK * 1000; save(); return resume(); }
     T.st.phase = "done"; save(); resume();
+  }
+  // time up: a notice on the next screen instead of a blocking alert (the real exam just moves on); it stays until the next module starts
+  function timeUp(msg) {
+    let n = $("timeup");
+    if (!n) { n = document.createElement("p"); n.id = "timeup"; n.className = "timeup"; n.setAttribute("role", "status"); document.querySelector("main").prepend(n); }
+    n.textContent = msg; n.classList.remove("hidden");
   }
   function tickBreak() { const s = left(); $("brk-clock").textContent = mmss(s); if (s === 0) nextSection(); }
   function nextSection() { clearInterval(T.timer); T.st.si++; T.st.mod = "m1"; T.st.phase = "dir"; save(); resume(); }

@@ -1,6 +1,7 @@
 // nurzycom homework checker: grades answers against hashed keys, sends the result to a Google Form.
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const state = { data: null, lesson: null, part: null, answers: {}, t0: 0, timer: null };
@@ -43,7 +44,7 @@
     const courses = [["V", "SAT Verbal", "Reading & Writing"], ["M", "SAT Math", "Math"]];
     $("lessons").innerHTML = courses.map(([c, name, sub]) => {
       const ls = state.data.lessons.filter((l) => l.tag[0] === c);
-      return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} уроков · ${sub}</span></div><div class="tiles">${ls.map((l) => {
+      return `<div><div class="course-h"><b>${name}</b><span class="label">${ls.length} ${pl(ls.length, "урок", "урока", "уроков")} · ${sub}</span></div><div class="tiles">${ls.map((l) => {
         const nm = l.title.split(" · ").slice(2).join(" · ");
         const done = l.parts.filter((p) => store(lastKey(l.tag, p.id))).length;
         return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(nm)}</span>${done ? `<span class="dot">${done}/${l.parts.length}</span>` : ""}</button>`;
@@ -69,7 +70,7 @@
     $("part-lesson").textContent = l ? l.title.replace(/ · Урок /, " · ") : "";
     $("parts").innerHTML = l ? l.parts.map((p) => {
       const last = store(lastKey(l.tag, p.id));
-      return `<button class="pick part" data-p="${p.id}" aria-pressed="false"><span><span class="t">${esc(p.title)}</span><span class="tag">${p.mode === "test" ? "как на экзамене" : "2 попытки · объяснения"}</span><small>${p.q.length} вопросов · ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></span><span class="r">${last ? "последний: " + last : "→"}</span></button>`;
+      return `<button class="pick part" data-p="${p.id}" aria-pressed="false"><span><span class="t">${esc(p.title)}</span><span class="tag">${p.mode === "test" ? "как на экзамене" : "2 попытки · объяснения"}</span><small>${p.q.length} ${pl(p.q.length, "вопрос", "вопроса", "вопросов")} · ${p.q[0].n}–${p.q[p.q.length - 1].n}</small></span><span class="r">${last ? "последний: " + last : "→"}</span></button>`;
     }).join("") : "";
     $("parts").querySelectorAll(".pick").forEach((b) => (b.onclick = () => {
       $("parts").querySelectorAll(".pick").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));

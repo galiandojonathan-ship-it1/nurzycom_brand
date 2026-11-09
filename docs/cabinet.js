@@ -7,6 +7,7 @@
 // newer side wins on the student's devices; the student sees it at the next page they open.
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
@@ -135,7 +136,7 @@
     const T = Array.from({ length: 19 }, (_, i) => `PT${i + 1}`).map((id) => ({ id, v: PLAN.est(I.get(`mk_last_${u.nm}_${id}`)) })).filter((x) => x.v);
     const lessons = I.P.flat.filter((it) => /^[VM]\d\d-hw$/.test(it.id)), ld = lessons.filter((it) => it.ok).length;
     return `<div class="cb-kpis">
-        <div><span>План курса</span><b>${I.pct}%</b><div class="meter"><i style="width:${I.pct}%"></i></div><small>${I.P.done} из ${I.P.total} шагов</small></div>
+        <div><span>План курса</span><b>${I.pct}%</b><div class="meter"><i style="width:${I.pct}%"></i></div><small>${I.P.done} из ${I.P.total} ${pl(I.P.total, "шаг", "шага", "шагов")}</small></div>
         <div><span>Уроков сдано</span><b>${ld}<small> / ${lessons.length}</small></b></div>
         <div><span>Задания</span><b>${I.open}</b><small>${I.late ? `<em class="late">просрочено: ${I.late}</em>` : "открытых"}</small></div>
         <div><span>Последняя сдача</span><b class="sm">${esc(I.R[0] ? ago(I.R[0].t) : "—")}</b></div></div>

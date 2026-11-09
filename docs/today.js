@@ -4,6 +4,7 @@
 // the account sync keeps. Estimated test scores are always «примерный балл», private to the student (hard rule 2).
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
@@ -80,7 +81,7 @@
       <div class="td-stats" aria-label="Прогресс">
         <div class="td-big"><span>План курса</span><b>${pctDone}%</b><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pctDone}"><i style="width:${pctDone}%"></i></div></div>
         <div><b>${lessonsDone}<small> / ${lessonsAll}</small></b><span>уроков сдано</span></div>
-        <div><b>${stageLeft}</b><span>${next ? `шагов в «${esc(next.stage.cap.toLowerCase())}»` : "шагов осталось"}</span></div>
+        <div><b>${stageLeft}</b><span>${next ? `${pl(stageLeft, "шаг", "шага", "шагов")} в «${esc(next.stage.cap.toLowerCase())}»` : `${pl(stageLeft, "шаг остался", "шага осталось", "шагов осталось")}`}</span></div>
         <div><b>${nextMock ? nextMock.id : "—"}</b><span>${nextMock ? "следующий пробный тест" : "пробные тесты пройдены"}</span></div>
       </div>
       <div class="td-grid">
