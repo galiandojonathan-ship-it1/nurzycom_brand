@@ -13,7 +13,6 @@
   const DAY = 864e5, WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
   let lessons = null;
 
-  const est = (s) => PLAN.est(s);
   const midnight = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
   const ago = (t) => {
     if (!t) return "";
@@ -54,7 +53,7 @@
     return `<svg class="td-trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Примерный балл по пробным тестам: ${T.map((t) => `${t.id} ${t.v}`).join(", ")}">
       ${ticks.map((v) => `<line x1="${L}" x2="${W - Rp}" y1="${y(v)}" y2="${y(v)}" class="g"/><text x="${L - 6}" y="${y(v) + 3}" class="ax" text-anchor="end">${v}</text>`).join("")}
       ${n > 1 ? `<polyline class="ln" points="${T.map((t, i) => `${x(i)},${y(t.v)}`).join(" ")}"/>` : ""}
-      ${T.map((t, i) => `<a href="mock.html?t=${t.id}&r=1" aria-label="Пробный тест ${t.id.slice(2)}: результат и разбор"><circle cx="${x(i)}" cy="${y(t.v)}" r="4.5" class="pt"/><text x="${x(i)}" y="${y(t.v) - 10}" class="vl" text-anchor="middle">${t.v}</text><text x="${x(i)}" y="${H - 8}" class="ax" text-anchor="middle">${t.id}</text></a>`).join("")}
+      ${T.map((t, i) => `<a href="mock.html?t=${t.id}&r=1" aria-label="${/^PR/.test(t.id) ? "Прогноз" : "Пробный тест"} ${t.id.slice(2)}: результат и разбор"><circle cx="${x(i)}" cy="${y(t.v)}" r="4.5" class="pt"/><text x="${x(i)}" y="${y(t.v) - 10}" class="vl" text-anchor="middle">${t.v}</text><text x="${x(i)}" y="${H - 8}" class="ax" text-anchor="middle">${t.id}</text></a>`).join("")}
     </svg>`;
   }
 
@@ -64,7 +63,7 @@
     const P = PLAN.state(PLAN.course()), todo = P.flat.filter((it) => !it.ok && !it.opt);
     const next = todo.find((it) => it.need) || todo[0], then = todo.filter((it) => it !== next).slice(0, 2);
     const R = results(name), Wk = week(R), first = name.split(" ")[0];
-    const T = Array.from({ length: 19 }, (_, i) => `PT${i + 1}`).map((id) => ({ id, v: est(store(`mk_last_${name}_${id}`)) })).filter((x) => x.v);
+    const T = PLAN.trend(P.course, name, store);
     const full = P.course === "VM", lo = full ? 400 : 200, hi = full ? 1600 : 800;
     const vals = T.map((t) => t.v), min = Math.max(lo, Math.floor((Math.min(...vals, hi) - 60) / 100) * 100), max = Math.min(hi, Math.ceil((Math.max(...vals, lo) + 60) / 100) * 100);
     const lessonsDone = P.flat.filter((it) => /^[VM]\d\d-hw$/.test(it.id) && it.ok).length, lessonsAll = P.flat.filter((it) => /^[VM]\d\d-hw$/.test(it.id)).length;

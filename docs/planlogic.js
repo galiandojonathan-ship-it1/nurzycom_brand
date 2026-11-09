@@ -128,6 +128,12 @@
 
   // ---- shared by «Сегодня» and the teacher's cabinet: results, labels, estimated scores, assigned tasks
   const est = (s) => { const m = String(s || "").match(/≈\s*(\d+)/g); return m ? m.reduce((a, x) => a + Number(x.replace(/\D/g, "")), 0) : null; };
+  // the trend of practice-test scores on one scale per course: Verbal → RW only, Math → Math only, both → runs with both sections
+  // (an RW-only test on the full course would read as a fall to ~600 of 1600). get(key) reads a stored value.
+  const TREND_IDS = [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1"];
+  function onScale(c, s) { const secs = c === "V" ? ["RW"] : c === "M" ? ["Math"] : ["RW", "Math"];
+    const v = secs.map((k) => (String(s || "").match(new RegExp(`(?:^|· )${k} \\d+/\\d+ ≈ (\\d+)`)) || [])[1]); return v.every(Boolean) ? v.reduce((a, x) => a + Number(x), 0) : null; }
+  const trend = (c, name, get) => TREND_IDS.map((id) => ({ id, v: onScale(c, get(`mk_last_${name}_${id}`)) })).filter((x) => x.v);
   function label(rest, kind, lessons) {   // a stored result key → what the student did, in the words of the menu
     if (kind === "mk") return /^PR/.test(rest) ? `Прогноз ${rest.slice(2)}` : `Пробный тест ${rest.replace(/^PT/, "")}`;
     if (kind === "rd") return `Текст ${Number(rest.slice(1))}`;
@@ -167,5 +173,5 @@
     }).sort((a, b) => a.done - b.done || String(a.due || "9999").localeCompare(String(b.due || "9999")) || b.at - a.at);
   }
   function tick(id, on) { loadManual(); on ? manual.add(id) : manual.delete(id); store(doneKey(), JSON.stringify([...manual])); }
-  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
+  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, trend, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
 })();

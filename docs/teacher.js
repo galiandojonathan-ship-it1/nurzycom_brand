@@ -119,7 +119,7 @@
   function bindTips(root) { root.querySelectorAll("[data-tip]").forEach((el) => { el.onmousemove = (e) => showTip(e, el.dataset.tip); el.onmouseleave = hideTip; }); }
   const kpis = (items) => `<div class="kpis">${items.map(([l, v, s]) => `<div class="kpi"><span class="label">${l}</span><div class="v">${v}</div>${s ? `<small>${s}</small>` : ""}</div>`).join("")}</div>`;
   function table(cols, rows, opts = {}) {
-    return `<div class="tw"><table class="t"><thead><tr>${cols.map((c, i) => `<th data-c="${i}">${c}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr${opts.click ? ` class="click" data-k="${esc(r.k)}"` : ""}>${r.cells.map((c, i) => `<td${opts.num && opts.num.includes(i) ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    return `<div class="tw" tabindex="0" role="region" aria-label="${esc(String(opts.label || cols.join(" · ")).replace(/<[^>]+>/g, ""))}"><table class="t"><thead><tr>${cols.map((c, i) => `<th data-c="${i}">${c}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr${opts.click ? ` class="click" data-k="${esc(r.k)}"` : ""}>${r.cells.map((c, i) => `<td${opts.num && opts.num.includes(i) ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
 
   // ---------- views
@@ -312,8 +312,8 @@
     const who = D.students.filter((s) => !s.rows.some((r) => r.lesson === L.tag && r.pid === P.id));
     const did = D.students.filter((s) => s.rows.some((r) => r.lesson === L.tag && r.pid === P.id));
     $("v-missing").innerHTML = `<h2>Кто не сдал</h2><p class="hint">Выберите урок и часть. Список учеников — все, кто хотя бы раз что-то сдавал.</p>
-      <div class="row" style="margin-top:0"><select id="m-l">${D.lessons.map((l) => `<option value="${l.tag}"${l.tag === L.tag ? " selected" : ""}>${esc(l.title)}</option>`).join("")}</select>
-      <select id="m-p">${L.parts.map((p) => `<option value="${p.id}"${p.id === P.id ? " selected" : ""}>${esc(p.title)}</option>`).join("")}</select></div>
+      <div class="row" style="margin-top:0"><select id="m-l" aria-label="Урок">${D.lessons.map((l) => `<option value="${l.tag}"${l.tag === L.tag ? " selected" : ""}>${esc(l.title)}</option>`).join("")}</select>
+      <select id="m-p" aria-label="Часть урока">${L.parts.map((p) => `<option value="${p.id}"${p.id === P.id ? " selected" : ""}>${esc(p.title)}</option>`).join("")}</select></div>
       <h2>Не сдали · ${who.length}</h2>${who.length ? `<div class="miss">${who.map((s) => `<span>${esc(s.name)} <small class="hint">· ${ago(s.last)}</small></span>`).join("")}</div>
       <div class="row"><button class="btn ghost" id="m-copy">Скопировать напоминание</button><span class="hint" id="m-msg"></span></div>` : '<p class="hint">Все сдали.</p>'}
       <h2>Сдали · ${did.length}</h2><div class="miss">${did.map((s) => { const b = best(s.rows.filter((r) => r.lesson === L.tag && r.pid === P.id)); return `<span>${esc(s.name)} <small class="hint">· ${b.a}/${b.b}</small></span>`; }).join("") || '<p class="hint">Пока никто.</p>'}</div>`;
@@ -441,7 +441,7 @@
   function accRender() {
     if (!ACC.a) return;
     const me = SITE.me();
-    $("acc-list").innerHTML = ACC.list.length ? table(["Ученик", "Логин", ""], ACC.list.slice().sort((x, y) => x.name.localeCompare(y.name, "ru")).map((u) => ({ k: u.id,
+    $("acc-list").innerHTML = ACC.list.length ? table(["Ученик", "Логин", '<span class="sr-only">Действия</span>'], ACC.list.slice().sort((x, y) => x.name.localeCompare(y.name, "ru")).map((u) => ({ k: u.id,
       cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`,
         `<span class="chips"><button class="chip" data-np="${esc(u.id)}">Новый пароль</button><button class="chip" data-del="${esc(u.id)}">Удалить</button></span>`] })))
       .replace('<table class="t">', '<table class="t acct">') : '<p class="hint">Логинов пока нет. Начните с себя: добавьте своё имя, сохраните и войдите на сайт со своим логином.</p>';
@@ -558,7 +558,7 @@
       const r = await SITE.api("admin/invite", { method: "DELETE" }); if (!r.ok) { regMsg(regExplain(r.status)); return; } REG.invite = false; regRender();
     };
     const me = SITE.me();
-    $("reg-list").innerHTML = REG.list.length ? table(["Ученик", "Логин", "Создан", ""], REG.list.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), "ru")).map((u) => ({ k: u.id,
+    $("reg-list").innerHTML = REG.list.length ? table(["Ученик", "Логин", "Создан", '<span class="sr-only">Действия</span>'], REG.list.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), "ru")).map((u) => ({ k: u.id,
       cells: [esc(u.name) + (u.login === me ? '<span class="me">· это вы</span>' : ""), `<span class="mono">${esc(u.login)}</span>`, u.at ? when(new Date(u.at)) : "—",
         u.login === me ? "" : `<span class="chips"><button class="chip" data-regpw="${esc(u.id)}">Новый пароль</button><button class="chip" data-regdel="${esc(u.id)}">Удалить</button></span>`] }))).replace('<table class="t">', '<table class="t acct">')
       : '<p class="hint">Аккаунтов пока нет. Создайте себе аккаунт первым: выйдите, на странице входа нажмите «Создать аккаунт» и введите код класса.</p>';

@@ -133,7 +133,7 @@
   }
   function over(u, I) {
     const todo = I.P.flat.filter((it) => !it.ok && !it.opt), next = todo.find((it) => it.need) || todo[0];
-    const T = Array.from({ length: 19 }, (_, i) => `PT${i + 1}`).map((id) => ({ id, v: PLAN.est(I.get(`mk_last_${u.nm}_${id}`)) })).filter((x) => x.v);
+    const T = PLAN.trend(I.course, u.nm, I.get);
     const lessons = I.P.flat.filter((it) => /^[VM]\d\d-hw$/.test(it.id)), ld = lessons.filter((it) => it.ok).length;
     return `<div class="cb-kpis">
         <div><span>План курса</span><b>${I.pct}%</b><div class="meter"><i style="width:${I.pct}%"></i></div><small>${I.P.done} из ${I.P.total} ${pl(I.P.total, "шаг", "шага", "шагов")}</small></div>

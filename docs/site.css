@@ -150,6 +150,7 @@ input[type=text]:focus,input[type=password]:focus,input[type=search]:focus{borde
 .passage u{text-decoration-thickness:1px;text-underline-offset:3px}
 .blank{letter-spacing:-.05em}
 .tw{overflow-x:auto;margin:0 0 18px;-webkit-overflow-scrolling:touch}
+.tw:focus-visible{outline:2px solid var(--ink,#0F0F0F);outline-offset:2px}
 table.dt{border-collapse:collapse;width:100%;min-width:420px;font-size:14px}
 table.dt caption{text-align:left;font-weight:600;font-size:14px;padding-bottom:8px}
 table.dt th,table.dt td{border:1px solid var(--studio);padding:8px 10px;text-align:left;vertical-align:top}
