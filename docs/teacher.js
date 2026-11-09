@@ -178,15 +178,44 @@
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    html += `<h2>История</h2>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    html += `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     $("v-students").innerHTML = html;
-    $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key }); D.view = "tests"; D.student = null; render(); }));
+    $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
+    $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
     if ($("join-go")) $("join-go").onclick = () => { const k = $("join-sel").value, o = D.students.find((x) => x.key === k); if (!o) return;
       new Set(o.rows.map((r) => r.raw)).forEach((sp) => (D.aliases[sp] = s.key)); relink(); };
     if ($("alias-reset")) $("alias-reset").onclick = (e) => { e.preventDefault(); D.aliases = {}; relink(); };
+  }
+  // one result of one student, question by question: only this student's answers (for discussing mistakes together)
+  async function hwReview(s, r) {
+    const box = $("st-hw"), P = r && partOf(r.lesson, r.pid); if (!box || !P) return;
+    box.innerHTML = '<p class="hint">Загружаю вопросы…</p>';
+    box.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    let items; try { items = await bundleT(P.b); } catch (e) { box.innerHTML = '<p class="hint">Не удалось загрузить вопросы этой части. Обновите страницу.</p>'; return; }
+    if ($("st-hw") !== box || D.student !== s.key) return;   // the view changed while loading
+    const tries = {}; r.answers.forEach((a) => (tries[String(a.n)] = a.tries));
+    const bad = new Set(r.wrong.map(String)), list = items.filter((q) => D.hwAll || bad.has(String(q.n)));
+    const nWrong = items.filter((q) => bad.has(String(q.n))).length;
+    const q1 = (q) => {
+      const T = tries[String(q.n)] || [], ok = !bad.has(String(q.n)), acc = [].concat(q.acc || q.ans).filter(Boolean);
+      const opts = q.t === "mc" && q.opts ? q.opts.map((o, k) => { const L = "ABCD"[k], tg = [L === q.ans ? "верный" : "", T[0] === L ? "1-я попытка" : "", T[1] === L && T[1] !== T[0] ? "2-я попытка" : ""].filter(Boolean);
+          return `<div class="ropt${L === q.ans ? " right" : ""}${T[0] === L && L !== q.ans ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${tg.join(" · ")}</span></div>`; }).join("")
+        : `<p class="hint">Ответ ученика: <b>${esc(T.join(" → ") || "—")}</b> · принимаются: ${esc(acc.join(", "))}</p>`;
+      return `<details class="rv tq${ok ? "" : " bad"}"${ok ? "" : " open"}><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span class="tq-s"><b>${esc(q.sk || "Вопрос " + q.n)}</b>
+        <br><small>${T.length ? `ответ: ${esc(T.join(" → "))}` : "без ответа"} · верный: ${esc(acc.join(", "))} · ${ok ? "✓ с первой попытки" : T.length > 1 && acc.includes(T[T.length - 1]) ? "✗ с первой, ✓ со второй" : "✗ ошибка"}</small></span></summary>
+        <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem || ""}</div>${opts}
+        ${q.rat ? `<div class="sv-expl"><span class="label">Объяснение</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div>` : ""}</div></details>`;
+    };
+    box.innerHTML = `<div class="card hwrev"><span class="label">Разбор · только ответы ученика</span>
+      <h3 style="margin:6px 0 4px">${esc(s.name)} · ${esc(whatOf(r))}</h3>
+      <p class="hint" style="margin:0 0 10px">Сдано ${when(r.ts)} · ${r.a}/${r.b} с первой попытки · ошибок: ${nWrong}${r.screen ? " · решал(а) на экране" : ""}</p>
+      <div class="row t-filters"><label class="onlybad"><input type="checkbox" id="hw-all"${D.hwAll ? " checked" : ""}> Показать все вопросы</label><button class="btn ghost" id="hw-close">Закрыть разбор</button></div>
+      <div id="hw-list">${list.length ? list.map(q1).join("") : `<p class="hint">${nWrong ? "" : "Ошибок с первой попытки нет. "}Отметьте «Показать все вопросы», чтобы пройти часть целиком.</p>`}</div></div>`;
+    $("hw-all").onchange = () => { D.hwAll = $("hw-all").checked; hwReview(s, r); };
+    $("hw-close").onclick = () => { box.innerHTML = ""; };
   }
   function relink() {   // apply the teacher's merges again and keep them with the saved answers
     const keep = D.student, k = D.view; load(D.csv, D.label); D.view = k;
@@ -221,20 +250,23 @@
     const mock = M.find((m) => m.id === T.mid) || M[0]; T.mid = mock.id;
     if (!mock.sections.some((s) => s.k === T.sec)) T.sec = mock.sections[0].k;
     const S = mock.sections.find((s) => s.k === T.sec), runs = mockRuns(mock.id, S.k);
-    const took = (mod) => runs.filter((x) => mod === "m1" || x.m2 === mod);
+    const solo = !!T.who && !T.others, shown = solo ? runs.filter((x) => x.r.key === T.who) : runs;   // one student: nobody else's answers, names or scores on screen
+    const soloName = solo ? ((D.students.find((x) => x.key === T.who) || {}).name || "") : "";
+    const took = (mod) => shown.filter((x) => mod === "m1" || x.m2 === mod);
     if (!MODN[T.mod]) T.mod = "m1";
     const nSub = (m) => new Set(D.rows.filter((r) => r.lesson.split("·")[0] === m.id).map((r) => r.key)).size;
-    let html = `<h2>Пробные тесты</h2><p class="hint">Все вопросы каждого теста с верным ответом и разбором. Под каждым вопросом — что выбрал каждый ученик (последняя сдача этого раздела). Число на кнопке теста — сколько учеников его сдали.</p>
-      <div class="chips" id="t-mock">${M.map((m) => { const k = nSub(m); return `<button class="chip" data-m="${m.id}" aria-pressed="${m.id === mock.id}">${m.id}${k ? ` · ${k}` : ""}</button>`; }).join("")}</div>
+    let html = `${solo ? '<div class="row" style="margin-top:0"><button class="btn ghost" id="t-back">← Карточка ученика</button></div>' : ""}<h2>Пробные тесты${solo ? ` · ${esc(soloName)}` : ""}</h2><p class="hint">${solo ? "Показаны только ответы этого ученика: ответы, имена и баллы других учеников скрыты. Удобно разбирать ошибки вместе с учеником." : "Все вопросы каждого теста с верным ответом и разбором. Под каждым вопросом — что выбрал каждый ученик (последняя сдача этого раздела). Число на кнопке теста — сколько учеников его сдали."}</p>
+      <div class="chips" id="t-mock">${M.map((m) => { const k = nSub(m); return `<button class="chip" data-m="${m.id}" aria-pressed="${m.id === mock.id}">${m.id}${k && !solo ? ` · ${k}` : ""}</button>`; }).join("")}</div>
       <div class="chips" id="t-sec" style="margin-top:8px">${mock.sections.map((s) => `<button class="chip" data-s="${s.k}" aria-pressed="${s.k === S.k}">${esc(s.name)}</button>`).join("")}</div>`;
-    if (runs.length) {
-      html += `<h2>Кто сдал · ${runs.length}</h2>` + table(["Ученик", "Когда", "Модуль 1", "Модуль 2", "Верно", "Примерный балл", "Сдач"], runs.map((x) => ({ k: x.r.key,
+    if (shown.length) {
+      html += `<h2>${solo ? "Результат ученика" : `Кто сдал · ${runs.length}`}</h2>` + table(["Ученик", "Когда", "Модуль 1", "Модуль 2", "Верно", "Примерный балл", "Сдач"], shown.map((x) => ({ k: x.r.key,
         cells: [`<b>${esc(x.r.name)}</b>`, when(x.r.ts), `${x.m1}/${S.n}`, `${x.m2 === "m2h" ? "сложный" : "лёгкий"} · ${x.m2raw}/${S.n}`, `${x.r.a}/${x.r.b} · ${pct(x.r.pct)}`, x.est ? `≈ ${x.est}` : "—", x.count] })), { click: true, num: [2, 4, 5, 6] });
-    } else html += '<p class="hint" style="margin-top:18px">Этот раздел пока никто не сдал. Вопросы и разборы ниже всё равно доступны.</p>';
-    html += `<div class="chips" id="t-mod" style="margin-top:22px">${Object.keys(MODN).map((m) => `<button class="chip" data-d="${m}" aria-pressed="${m === T.mod}">${MODN[m]}${runs.length ? ` · ${took(m).length}` : ""}</button>`).join("")}</div>
+    } else html += `<p class="hint" style="margin-top:18px">${solo ? `${esc(soloName)} пока не сдавал(а) этот раздел.` : "Этот раздел пока никто не сдал."} Вопросы и разборы ниже всё равно доступны.</p>`;
+    html += `<div class="chips" id="t-mod" style="margin-top:22px">${Object.keys(MODN).map((m) => `<button class="chip" data-d="${m}" aria-pressed="${m === T.mod}">${MODN[m]}${runs.length && !solo ? ` · ${took(m).length}` : ""}</button>`).join("")}</div>
       <div class="row t-filters"><select id="t-who" aria-label="Ученик"><option value="">Все ученики</option>${runs.map((x) => `<option value="${esc(x.r.key)}"${x.r.key === T.who ? " selected" : ""}>${esc(x.r.name)}</option>`).join("")}</select>
       <label class="onlybad"><input type="checkbox" id="t-bad"${T.bad ? " checked" : ""}> Только вопросы с ошибками</label>
       <label class="onlybad"><input type="checkbox" id="t-sort"${T.sort ? " checked" : ""}> Сначала самые трудные</label>
+      ${T.who ? `<label class="onlybad"><input type="checkbox" id="t-oth"${T.others ? " checked" : ""}> Показать других учеников</label>` : ""}
       <button class="btn ghost" id="t-open">Раскрыть все</button></div><div id="t-list"><p class="hint">Загружаю вопросы…</p></div>`;
     box.innerHTML = html;
     box.querySelectorAll("#t-mock .chip").forEach((b) => (b.onclick = () => { T.mid = b.dataset.m; T.mod = "m1"; T.who = ""; render(); }));
@@ -244,6 +276,8 @@
     $("t-who").onchange = () => { T.who = $("t-who").value; const x = runs.find((y) => y.r.key === T.who); if (x && T.mod !== "m1" && T.mod !== x.m2) T.mod = x.m2; render(); };
     $("t-bad").onchange = () => { T.bad = $("t-bad").checked; render(); };
     $("t-sort").onchange = () => { T.sort = $("t-sort").checked; render(); };
+    if ($("t-oth")) $("t-oth").onchange = () => { T.others = $("t-oth").checked; render(); };
+    if ($("t-back")) $("t-back").onclick = () => { D.view = "students"; D.student = T.who; render(); };
     let b;
     try { b = await bundleT(S.b); } catch (e) { $("t-list").innerHTML = '<p class="hint">Не удалось загрузить вопросы этого теста.</p>'; return; }
     if (D.view !== "tests" || !$("t-list")) return;   // the view changed while the questions were loading
@@ -260,11 +294,11 @@
       const mine = focus && ch.find((c) => c.x === focus);
       const tag = (c) => `<span class="who ${c.ok ? "ok" : "no"}">${esc(c.x.r.name)}: <b>${esc(c.a || "—")}</b></span>`;
       const opts = q.t === "mc" ? q.opts.map((o, k) => { const L = "ABCD"[k], by = ch.filter((c) => c.a === L);
-        return `<div class="ropt${L === q.ans ? " right" : ""}${mine && mine.a === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${L === q.ans ? "верный · " : ""}${by.length}${by.length ? ` · ${by.map((c) => esc(c.x.r.name)).join(", ")}` : ""}</span></div>`; }).join("")
+        return `<div class="ropt${L === q.ans ? " right" : ""}${mine && mine.a === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${solo ? [L === q.ans ? "верный" : "", by.length ? "ответ ученика" : ""].filter(Boolean).join(" · ") : `${L === q.ans ? "верный · " : ""}${by.length}${by.length ? ` · ${by.map((c) => esc(c.x.r.name)).join(", ")}` : ""}`}</span></div>`; }).join("")
         : `<p class="hint">Ответ вводится. Принимаются: ${esc(q.acc.join(", "))}.${ch.length ? ` Ответы учеников: ${ch.map(tag).join(" ")}` : ""}</p>`;
       return `<details class="rv tq${right < ch.length ? " bad" : ""}"><summary><span class="mk ${!ch.length ? "" : right === ch.length ? "ok" : "no"}">${q.n}</span>
         <span class="tq-s"><b>${esc(q.sk)}</b> <small>· ${DOMN[q.dom] || q.dom} · ${DIFN[q.d] || q.d}${q.own ? " · авторский" : " · College Board"} · ответ ${esc(q.ans)}</small>
-        <br><small>${ch.length ? `верно ${right} из ${ch.length}${mine ? ` · ${esc(focus.r.name)}: ${esc(mine.a || "без ответа")} ${mine.ok ? "✓" : "✗"}` : ""}` : "никто не решал"}</small>
+        <br><small>${solo ? (mine ? `ответ ученика: ${esc(mine.a || "без ответа")} ${mine.ok ? "✓ верно" : "✗ ошибка"}` : "ученик не решал этот модуль") : ch.length ? `верно ${right} из ${ch.length}${mine ? ` · ${esc(focus.r.name)}: ${esc(mine.a || "без ответа")} ${mine.ok ? "✓" : "✗"}` : ""}` : "никто не решал"}</small>
         ${!focus && ch.some((c) => !c.ok) ? `<span class="whos">${ch.filter((c) => !c.ok).map(tag).join("")}</span>` : ""}</span></summary>
         <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}
         <div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
