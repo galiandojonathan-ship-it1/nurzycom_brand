@@ -61,6 +61,11 @@ Where it is:
   - a profile header in the group colour;
   - three-step assigning.
 
+## 2a. Added 9 November (later session)
+
+- **Прогноз 2 and Прогноз 3:** full adaptive tests (RW + Math), 294 original questions on the pattern templates, live in the «Прогнозы» group and in the plan (optional, after the course). Sources, builder and spec are in the encrypted bundle under `pred/` (see `CLAUDE.md`).
+- **Group analysis tool:** `analysis/` in the bundle reads the Google Form CSV and writes a group report (hardest questions, skills with the most misses, shared traps). It needs the CSV from Nurassyl (Google Sheets → File → Download → CSV).
+
 ## 3. Waiting on Nurassyl
 
 - **Прогноз 2+ and Math predictions:** he has not said yes yet. Do not write them until he does.

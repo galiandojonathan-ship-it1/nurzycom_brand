@@ -108,6 +108,7 @@
     ["PT13", "PT14", "PT15", "PT16", "PT17", "PT18", "PT19"].forEach((x) => { const it = mockItem(x); fin.push(Object.assign(it, { need: false, opt: true, s: `Официальные вопросы College Board, по одному тесту в неделю · ${it.s}` })); });
     if (course !== "M") fin.push({ id: "PR1", t: "Прогноз 1 · Reading and Writing", opt: true,
       s: "Авторские вопросы по шаблонам последних реальных тестов · 64 мин, лучше за неделю до экзамена", href: "mock.html?t=PR1", res: mockDone("PR1", ["rw"]) });
+    ["PR2", "PR3"].forEach((x) => { const it = mockItem(x); fin.push(Object.assign(it, { t: `Прогноз ${x.slice(2)}`, need: false, opt: true, s: `Авторские вопросы по шаблонам последних реальных тестов, лучше за 1–2 недели до экзамена · ${it.s}` })); });
     fin.push({ id: "hard-words", t: "Повторите трудные слова", s: "Словарь → колода трудных слов, карточки и тест · по 10 минут в день до экзамена", href: "vocab.html" });
     fin.push({ id: "compare", t: "Сравните пробный тест 4 с тестом 1", s: "Тесты разные по составу, поэтому смотрите не на точный счёт, а на модуль 2 (сложный или лёгкий) и на разделы, которые выросли" });
     out.push({ no: "13", cap: "После курса", title: "Финальная проверка", items: [{ when: "После урока 12", list: fin }] });
@@ -142,7 +143,7 @@
   }
   // the trend of practice-test scores on one scale per course: Verbal → RW only, Math → Math only, both → runs with both sections
   // (an RW-only test on the full course would read as a fall to ~600 of 1600). get(key) reads a stored value.
-  const TREND_IDS = [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1"];
+  const TREND_IDS = [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1", "PR2", "PR3"];
   function onScale(c, s) { const secs = c === "V" ? ["RW"] : c === "M" ? ["Math"] : ["RW", "Math"];
     const v = secs.map((k) => (String(s || "").match(new RegExp(`(?:^|· )${k} \\d+/\\d+ ≈ (\\d+)`)) || [])[1]); return v.every(Boolean) ? v.reduce((a, x) => a + Number(x), 0) : null; }
   const trend = (c, name, get) => TREND_IDS.map((id) => ({ id, v: onScale(c, get(`mk_last_${name}_${id}`)) })).filter((x) => x.v);

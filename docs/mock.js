@@ -62,13 +62,13 @@
         <span class="t">${esc(m.title)}</span><small>${m.sections.map((s) => `${s.name}: ${2 * s.n} ${pl(2 * s.n, "вопрос", "вопроса", "вопросов")}`).join(" · ")}</small><span class="label">${status}</span></button>`;
     };
     const num = (m) => Number(m.id.slice(2));
-    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4), rw = T.index.mocks.filter((m) => m.only === "rw" && !m.group), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official"), pred = T.index.mocks.filter((m) => m.group === "prediction");
+    const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4 && !m.group), rw = T.index.mocks.filter((m) => m.only === "rw" && !m.group), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official"), pred = T.index.mocks.filter((m) => m.group === "prediction");
     const group = (title, sub, ms, first) => (ms.length ? `<div class="course-h" style="grid-column:1/-1${first ? "" : ";margin-top:18px"}"><b>${title}</b><span class="label">${sub}</span></div>${ms.map(card).join("")}` : "");
     $("mocks").innerHTML = group("Полные тесты", "Reading and Writing и Math", full, true)
       + group("Тесты Reading and Writing", "только авторские вопросы nurzycom", rw)
       + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2)
       + group("Полные тесты 13–19", "Reading and Writing и Math · официальные вопросы College Board", full3)
-      + group("Прогнозы", "Reading and Writing · авторские вопросы по шаблонам, которые повторяются на недавних экзаменах", pred);
+      + group("Прогнозы", "авторские вопросы по шаблонам, которые повторяются на недавних экзаменах", pred);
     $("mocks").querySelectorAll(".mcard").forEach((b) => (b.onclick = () => { T.mock = T.index.mocks.find((m) => m.id === b.dataset.m); renderStart(); }));
     $("formats").querySelectorAll(".pick").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === fmt())); b.disabled = !!(T.mock && T.mock.only && b.dataset.f !== T.mock.only); });
     $("fmt-note").classList.toggle("hidden", !(T.mock && T.mock.only));
