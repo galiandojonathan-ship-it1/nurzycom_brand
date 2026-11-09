@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
+  const mockName = (id) => (/^PR/.test(id) ? "Прогноз " : "Пробный тест ") + id.slice(2);   // PT3 → Пробный тест 3, PR1 → Прогноз 1
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
@@ -58,7 +59,7 @@
     if (r.kind === "U") { const l = lessonOf(r.lesson); return `Окружность · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "A") { const l = lessonOf(r.lesson); return `Архаичные слова · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "D") { const l = lessonOf(r.lesson); return `Desmos · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
-    if (r.kind === "P") return `Пробный тест ${r.lesson.slice(2).replace("·", " · ")} · ${r.part.replace(/^\S+ · /, "")}`;
+    if (r.kind === "P") return `${mockName(r.lesson).replace("·", " · ")} · ${r.part.replace(/^\S+ · /, "")}`;
     if (r.kind === "T") { const t = D.texts.find((x) => x.id === r.lesson); return `Текст · ${t ? t.title : r.lesson}`; }
     const p = partOf(r.lesson, r.pid); return `${r.lesson} · ${p ? p.title : r.part}`;
   };
@@ -289,7 +290,7 @@
       html += `<h2>Ученики × части</h2><p class="hint">Лучший результат с первой попытки, %.</p>` + heatStudents(L, rows);
       $("v-lessons").innerHTML = html; hbars($("les-miss"), miss.slice(0, 10));
     } else {
-      html += `<h2>${esc(D.lesson[0] === "P" ? `Пробный тест ${D.lesson.slice(2).replace("·", " · ")}` : whatOf(rows[0] || { kind: D.lesson[0], lesson: D.lesson }))}</h2>` + table(["Ученик", "Лучший", "Сдач", "Последняя"], D.students.filter((s) => rows.some((r) => r.key === s.key)).map((s) => { const rs = rows.filter((r) => r.key === s.key), b = best(rs);
+      html += `<h2>${esc(D.lesson[0] === "P" ? mockName(D.lesson).replace("·", " · ") : whatOf(rows[0] || { kind: D.lesson[0], lesson: D.lesson }))}</h2>` + table(["Ученик", "Лучший", "Сдач", "Последняя"], D.students.filter((s) => rows.some((r) => r.key === s.key)).map((s) => { const rs = rows.filter((r) => r.key === s.key), b = best(rs);
         return { k: s.key, cells: [esc(s.name), `${b.a}/${b.b} · ${pct(b.pct)}`, rs.length, when(rs[rs.length - 1].ts)] }; }), { num: [1, 2] });
       const qs = {}; rows.forEach((r) => r.wrong.forEach((n) => (qs[n] = (qs[n] || 0) + 1)));
       html += `<h2>Чаще всего ошибаются</h2><div id="les-miss"></div>`;
