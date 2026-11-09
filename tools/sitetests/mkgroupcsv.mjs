@@ -8,7 +8,7 @@ const L = (await open("data/lessons.bin")).lessons, M = (await open("data/mocks.
 let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const other = (a) => "ABCD".replace(a, "")[Math.floor(rnd() * 3)];
 const rows = [["Timestamp", "Student", "Lesson", "Part", "Answers", "Score", "Wrong", "Seconds", "Attempt"]];
-const names = ["Aru K", "Bek S", "Dana M", "Erlan T", "Zhan B", "Mira O"];
+const names = (process.env.NAMES || "Aru K,Bek S,Dana M,Erlan T,Zhan B,Mira O").split(",");
 for (const [si, nm] of names.entries()) {
   for (const tag of ["V01", "V02", "M01"]) for (const p of L.find((l) => l.tag === tag).parts.slice(0, 3)) {
     const b = await open(p.b); const wrong = [], ans = [];

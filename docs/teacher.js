@@ -37,7 +37,7 @@
     const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
     const G = FORMKIT.group(counts, D.aliases);
     if (G) rows.forEach((r) => { const x = G.of[r.raw]; if (x) { r.key = x.key; r.name = x.name; } });
-    D.groups = G ? G.groups : []; D.csv = text;
+    D.groups = G ? G.groups : []; D.csv = text; D.cbg = null;   // cabinet groups are read again with the new names
     D.rows = rows; D.label = label;
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
@@ -339,11 +339,31 @@
   }
   // ---------- the whole group (2026-11-09, Nurassyl: «analysis of the group, not individuals: the most difficult questions and where people miss
   // very much»). Every student's FIRST submission of each homework part and test section counts once; no names are shown.
-  const GA = { sec: "all", days: 0, min: 3, top: 15, kind: "all" };
+  const GA = { sec: "all", days: 0, min: 3, top: 15, kind: "all", gid: null };
+  // the cabinet's groups (2026-11-09, Nurassyl: «the group of students who I conduct the group lessons to; I assigned students to the
+  // group»): members are account ids; their account names are matched to the form's merged names (FORMKIT.key, same rule as the
+  // cabinet's import). Needs the admin key in this browser, like the cabinet.
+  const GCOLT = { blue: "#1F4FA3", green: "#2B6E2F", amber: "#8A5300", violet: "#6A3D9E", teal: "#165F6E", rose: "#9E2456" };
+  async function gaGroups() {
+    if (D.cbg) return D.cbg;
+    if (!SITE.adminKey()) return (D.cbg = { err: "nokey", groups: [] });
+    const r = await SITE.api("admin/users").catch(() => ({ status: 0 }));
+    if (!r.ok) return (D.cbg = { err: "users", groups: [] });
+    const users = {}; for (const x of r.data.users) { try { users[x.id] = await SITE.nameOf(x.n); } catch (e) { /* unreadable */ } }
+    let G = null; const g = await SITE.api("admin/groups").catch(() => ({ status: 0 }));
+    if (g.ok) { try { G = (await SITE.unsealBlob(g.data.data)).groups; } catch (e) { G = null; } }
+    if (!Array.isArray(G)) { try { G = (JSON.parse(localStorage.getItem("cb_groups") || "null") || {}).groups; } catch (e) { G = null; } }
+    const groups = (Array.isArray(G) ? G : []).filter((x) => x && x.id && Array.isArray(x.members) && x.members.length).map((x) => {
+      const names = x.members.map((id) => users[id] && users[id].name).filter(Boolean);
+      return { id: String(x.id), name: String(x.name || "Группа"), kind: x.kind === "solo" ? "solo" : "group", color: GCOLT[x.color] || GCOLT.blue, names, keys: new Set(names.map((n) => FORMKIT.key(n)).filter(Boolean)) };
+    });
+    return (D.cbg = { groups });
+  }
   const WORK = (r, P) => (r.kind === "P" ? "Пробные тесты" : "DUA".includes(r.kind) ? "Наборы «Полезное»" : !P ? "Другое" : /Холодный/.test(P.title) ? "Холодный старт" : /Финальный/.test(P.title) ? "Финальный тест" : /Дополнительное/.test(P.title) ? "Дополнительное ДЗ" : /Домашнее/.test(P.title) ? "Домашнее задание" : "Практика на уроке");
   async function gaCollect() {
     const now = Date.now(), seen = new Set(), Q = {};
-    const rows = D.rows.filter((r) => (!GA.days || (r.ts && now - r.ts < GA.days * DAY)) && "VMDUAP".includes(r.kind));
+    const grp = GA.gid && D.cbg && D.cbg.groups.find((g) => g.id === GA.gid);
+    const rows = D.rows.filter((r) => (!GA.days || (r.ts && now - r.ts < GA.days * DAY)) && "VMDUAP".includes(r.kind) && (!grp || grp.keys.has(r.key)));
     for (const r of rows) {
       const mock = r.kind === "P", sec = mock ? (/·Math$/.test(r.lesson) ? "math" : "rw") : r.lesson[0] === "V" || r.lesson[0] === "A" ? "rw" : "math";
       if (GA.sec !== "all" && GA.sec !== sec) continue;
@@ -369,8 +389,12 @@
   const trapOf = (q) => { const e = Object.entries(q.picks).filter(([o]) => /^[A-D]$/.test(o)).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 && e[1] / q.wrong >= 0.6 ? e : null; };
   async function groupView() {
     const box = $("v-group");
-    box.innerHTML = '<h2>Анализ группы</h2><p class="hint">Считаю ответы и загружаю вопросы…</p>';
+    box.innerHTML = '<h2>Анализ группы</h2><p class="hint">Загружаю группы из кабинета и считаю ответы…</p>';
+    const CB = await gaGroups(); if (D.view !== "group") return;
+    if (GA.gid === null) { const first = CB.groups.find((g) => g.kind === "group" && D.students.some((st) => g.keys.has(st.key))); GA.gid = first ? first.id : ""; }
+    if (GA.gid && !CB.groups.some((g) => g.id === GA.gid)) GA.gid = "";
     const all = await gaCollect(); if (D.view !== "group") return;
+    const grp = CB.groups.find((g) => g.id === GA.gid);
     const err = (x) => (x.n ? (100 * x.wrong) / x.n : 0);
     const agg = (key) => { const g = {}; all.forEach((q) => { const k = key(q); if (!k) return; const s = (g[k] = g[k] || { n: 0, wrong: 0, q: 0 }); s.n += q.n; s.wrong += q.wrong; s.q++; });
       return Object.entries(g).map(([label, s]) => ({ label, n: s.n, value: err(s), q: s.q })).sort((a, b) => b.value - a.value); };
@@ -380,7 +404,13 @@
     const traps = ranked.filter(trapOf).sort((a, b) => trapOf(b)[1] - trapOf(a)[1]).slice(0, 10);
     const skills = agg((q) => q.sk).filter((s) => s.n >= 4);
     const chips = (id, cur, list) => `<div class="chips" id="${id}">${list.map(([v, t]) => `<button class="chip" data-x="${v}" aria-pressed="${String(v) === String(cur)}">${t}</button>`).join("")}</div>`;
-    let html = `<h2>Анализ группы</h2><p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
+    const gchips = `<div class="chips" id="ga-grp" role="group" aria-label="Группа из кабинета"><button class="chip" data-x="" aria-pressed="${!GA.gid}">Все ученики</button>${CB.groups.map((g) => `<button class="chip" data-x="${esc(g.id)}" aria-pressed="${g.id === GA.gid}"><i aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${g.color};margin-right:7px"></i>${esc(g.name)}<small style="opacity:.7"> · ${g.names.length}</small></button>`).join("")}</div>`;
+    const found = grp ? grp.names.filter((n) => D.students.some((st) => st.key === FORMKIT.key(n))) : [], lost = grp ? grp.names.filter((n) => !found.includes(n)) : [];
+    const gnote = CB.err === "nokey" ? '<p class="hint">Группы из кабинета появятся здесь в браузере, где сохранён ключ администратора (раздел «Аккаунты учеников · регистрация»). Пока показаны все ученики.</p>'
+      : CB.err ? '<p class="hint">Не удалось загрузить группы из кабинета. Пока показаны все ученики; обновите страницу позже.</p>'
+      : !CB.groups.length ? '<p class="hint">В кабинете пока нет групп с учениками. Показаны все ученики.</p>'
+      : grp ? `<p class="hint">В группе «${esc(grp.name)}» ${grp.names.length} ${pl(grp.names.length, "ученик", "ученика", "учеников")}; в ответах формы найдены: ${found.length ? esc(found.join(", ")) : "никто"}.${lost.length ? ` Нет ответов в форме: ${esc(lost.join(", "))} (не сдавали или подписывались другим именем: объедините написания на вкладке «Ученики»).` : ""}</p>` : "";
+    let html = `<h2>Анализ группы</h2>${gchips}${gnote}<p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
       <div class="row t-filters">${chips("ga-sec", GA.sec, [["all", "Всё"], ["rw", "Reading and Writing"], ["math", "Math"]])}${chips("ga-kind", GA.kind, [["all", "ДЗ и тесты"], ["hw", "Только уроки и ДЗ"], ["mk", "Только пробные тесты"]])}
       ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
     html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
@@ -411,7 +441,7 @@
     gaBind(box);
   }
   function gaBind(box) {
-    [["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
+    [["ga-grp", "gid"], ["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
   }
   async function gaOpen(d, q) {
     const body = d.querySelector(".rbody"); if (body.dataset.done) return;
