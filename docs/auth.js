@@ -168,7 +168,7 @@
       <span class="label">nurzycom · SAT</span><h1>Вход</h1>
       <p class="sub">Домашние задания, словарь и тексты курса. Первый раз здесь? Создайте аккаунт с кодом класса от преподавателя.</p>
       <label class="auth-f">Логин<input id="auth-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
-      <label class="auth-f">Пароль<input id="auth-pw" type="password" autocomplete="current-password" required></label>
+      <label class="auth-f">Пароль<input id="auth-pw" type="password" name="password" autocomplete="current-password" required></label>
       <label class="auth-keep auth-show"><input type="checkbox" data-show="auth-pw"> Показать пароль</label>
       <label class="auth-keep"><input id="auth-keep" type="checkbox" checked> Запомнить на этом устройстве</label>
       <button class="btn" id="auth-go" type="submit">Войти <span class="arr">→</span></button>

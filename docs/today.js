@@ -11,7 +11,7 @@
   const HEX = '<svg class="td-hex" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/></svg>';
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
   const DAY = 864e5, WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-  let lessons = null;
+  let lessons = null, allTasks = false;   // allTasks: the student opened the full list of teacher's tasks
 
   const midnight = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
   const ago = (t) => {
@@ -34,7 +34,8 @@
         <span class="tk-go">${x.done ? "" : `${safe(x.href) ? `<a class="btn" href="${esc(x.href)}">Открыть</a>` : ""}${x.auto ? "" : `<button type="button" class="tlink" data-task="${esc(x.id)}">Сделано</button>`}`}</span></li>`;
     return `<section class="td-tasks" aria-label="Задания от преподавателя">
       <h3>Задания от преподавателя${open.length ? ` <b>${open.length}</b>` : ""}</h3>
-      <ul>${open.map(row).join("")}${recent.map(row).join("")}</ul>
+      ${(() => { const SHOW = 3, long = open.length > SHOW + 1, list = long && !allTasks ? open.slice(0, SHOW) : open.concat(recent);   // a long list shows the 3 most urgent first
+        return `<ul id="tk-list">${list.map(row).join("")}</ul>${long ? `<button type="button" class="btn ghost tk-more" data-alltasks="1" aria-expanded="${allTasks}" aria-controls="tk-list">${allTasks ? "Свернуть список" : `Показать все задания · ещё ${open.length - SHOW}${recent.length ? ` и ${recent.length} сделанных` : ""}`}</button>` : ""}`; })()}
       ${open.length ? '<p class="td-note">Сданная работа отмечается сама. Задания без страницы отметьте кнопкой «Сделано».</p>' : '<p class="td-note">Все задания сделаны. Спасибо.</p>'}
     </section>`;
   }
@@ -111,6 +112,7 @@
     box.classList.remove("hidden"); document.body.classList.add("has-today");
     box.querySelectorAll(".td-course .chip").forEach((b) => (b.onclick = () => { store("plan_course", b.dataset.c); render(); }));
     box.querySelectorAll("[data-tick]").forEach((b) => (b.onclick = () => { PLAN.tick(b.dataset.tick, true); render(); }));
+    box.querySelectorAll("[data-alltasks]").forEach((b) => (b.onclick = () => { allTasks = !allTasks; render(); const n = $("today").querySelector("[data-alltasks]"); if (n) n.focus({ preventScroll: true }); }));
     box.querySelectorAll("[data-task]").forEach((b) => (b.onclick = () => {
       let D = []; try { D = JSON.parse(store("tasks_done") || "[]"); } catch (e) { D = []; }
       if (!D.includes(b.dataset.task)) D.push(b.dataset.task); store("tasks_done", JSON.stringify(D)); render();

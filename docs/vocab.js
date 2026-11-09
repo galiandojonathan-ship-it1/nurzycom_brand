@@ -159,14 +159,21 @@
     $("t-in").value = ""; $("t-fb").innerHTML = ""; $("t-fb").className = "fb"; $("t-check").textContent = "Проверить"; $("t-check").dataset.next = "";
     $("t-in").focus();
   }
+  // the Russian layout was on: «сщтмуке» is «convert» typed on the same keys (ЙЦУКЕН → QWERTY)
+  const RU = "йцукенгшщзхъфывапролджэячсмитьбю", EN = "qwertyuiop[]asdfghjkl;'zxcvbnm,.";
+  const fromRu = (v) => v.toLowerCase().replace(/ё/g, "`").split("").map((c) => { const i = RU.indexOf(c); return i < 0 ? c : EN[i]; }).join("");
   function checkTest(skip) {
     const it = st.test[st.ti];
     if ($("t-check").dataset.next) { st.ti++; return askTest(); }
-    const ok = !skip && accepted(it.en).has(norm($("t-in").value));
+    const raw = $("t-in").value, cyr = /[а-яё]/i.test(raw);
+    if (!skip && cyr && !accepted(it.en).has(norm(fromRu(raw)))) {   // not counted: ask to switch the keyboard
+      $("t-fb").className = "fb"; $("t-fb").innerHTML = "<b>Похоже, включена русская раскладка.</b> Переключите клавиатуру на английскую и напишите слово ещё раз."; $("t-in").focus(); return;
+    }
+    const ok = !skip && (accepted(it.en).has(norm(raw)) || (cyr && accepted(it.en).has(norm(fromRu(raw)))));
     if (!ok) { st.miss.push(it); hard.add(keyOf(it)); } else hard.delete(keyOf(it));
     saveHard();
     $("t-fb").className = "fb " + (ok ? "ok" : "no");
-    $("t-fb").innerHTML = (ok ? "<b>Верно.</b> " : "<b>Ответ:</b> ") + esc(it.en) + (it.ex ? `<br><span class="hint"><i>${esc(it.ex)}</i></span>` : "");
+    $("t-fb").innerHTML = (ok ? `<b>Верно.</b> ${cyr ? "(набрано в русской раскладке, засчитано) " : ""}` : "<b>Ответ:</b> ") + esc(it.en) + (it.ex ? `<br><span class="hint"><i>${esc(it.ex)}</i></span>` : "");
     $("t-check").textContent = "Дальше →"; $("t-check").dataset.next = "1";
   }
   function finishTest() {
