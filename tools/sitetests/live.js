@@ -1,0 +1,12 @@
+const { chromium } = require("playwright");
+(async () => { const br = await chromium.launch(); const pg = await br.newPage({ viewport: { width: 390, height: 844 } });
+  const errs = []; pg.on("pageerror", (e) => errs.push(e.message)); pg.on("dialog", (d) => d.dismiss());
+  await pg.goto("https://study.bynurzy.com/index.html?l=V04&p=p3", { waitUntil: "networkidle" });
+  await pg.fill("#auth-login", process.env.L); await pg.fill("#auth-pw", process.env.P); await pg.press("#auth-pw", "Enter");
+  await pg.waitForSelector(".tile", { timeout: 30000 }); await pg.click('.pick[data-p="p3"]');
+  if (!(await pg.inputValue("#student"))) await pg.fill("#student", "Claude T");
+  await pg.click("#go"); await pg.waitForSelector("#s-solve:not(.hidden)");
+  for (let i = 0; i < 60 && !(await pg.textContent("#sv-qn")).startsWith("Вопрос 15 "); i++) await pg.click("#sv-next");
+  await pg.waitForTimeout(800);
+  console.log("LIVE switch:", await pg.textContent("#sv-gloss"), "| underlined:", await pg.$$eval("#sv-passage .gw", (a) => a.map((x) => x.textContent)), "| errors:", errs.length ? errs : "none");
+  await br.close(); })();
