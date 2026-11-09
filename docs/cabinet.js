@@ -12,7 +12,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
-  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null };
+  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "" };
 
   // ---------- groups (2026-11-09, Nurassyl: «one group I need to distinguish clearly, and my individual students»). Each group has a
   // name, a kind (a class group or individual students), a colour and its members (account ids; a student is in one group at most).
@@ -25,18 +25,23 @@
   const groupOf = (u) => S.groups.find((g) => g.members.includes(u.id)) || null;
   const membersOf = (g) => S.users.filter((u) => (g ? g.members.includes(u.id) : !groupOf(u)));
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
-  async function loadGroups() {
-    let G = null;
+  async function loadGroups() {   // the newer of the server copy and this browser's copy wins; a newer local copy is sent back up
+    let srv = null, loc = null;
     const r = await SITE.api("admin/groups").catch(() => ({ status: 0 }));
-    if (r.ok) { try { G = (await SITE.unsealBlob(r.data.data)).groups; } catch (e) { G = null; } }
-    if (!G) { try { G = JSON.parse(localStorage.getItem("cb_groups") || "null"); } catch (e) { G = null; } }
-    if (!Array.isArray(G)) G = [{ id: newId(), name: "Группа", kind: "group", color: "blue", members: [] }, { id: newId(), name: "Индивидуальные ученики", kind: "solo", color: "green", members: [] }];
+    if (r.ok) { try { srv = await SITE.unsealBlob(r.data.data); } catch (e) { srv = null; } }
+    try { loc = JSON.parse(localStorage.getItem("cb_groups") || "null"); } catch (e) { loc = null; }
+    if (Array.isArray(loc)) loc = { groups: loc, at: 0 };   // older format: a bare list
+    const pick = srv && Array.isArray(srv.groups) && (!loc || !Array.isArray(loc.groups) || (srv.at || 0) >= (loc.at || 0)) ? srv : loc && Array.isArray(loc.groups) ? loc : null;
+    const G = pick ? pick.groups : [{ id: newId(), name: "Группа", kind: "group", color: "blue", members: [] }, { id: newId(), name: "Индивидуальные ученики", kind: "solo", color: "green", members: [] }];
     S.groups = G.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || "Группа").slice(0, 60), kind: g.kind === "solo" ? "solo" : "group", color: GCOL[g.color] ? g.color : "blue", members: Array.isArray(g.members) ? g.members.map(String) : [] }));
+    S.groupsAt = pick ? pick.at || 0 : 0;
+    if (pick && pick === loc && r.status !== 0 && r.status !== 503 && (r.ok || r.status === 404)) saveGroups("Группы из этого браузера сохранены на сервере", true);
   }
-  async function saveGroups(msg) {
-    try { localStorage.setItem("cb_groups", JSON.stringify(S.groups)); } catch (e) { /* private mode */ }
-    const r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: S.groups, at: Date.now() }) }) }).catch(() => ({ status: 0 }));
-    toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${why(r.status || 0)})`, !r.ok);
+  async function saveGroups(msg, quiet) {
+    S.groupsAt = Date.now();
+    try { localStorage.setItem("cb_groups", JSON.stringify({ groups: S.groups, at: S.groupsAt })); } catch (e) { /* private mode */ }
+    const r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: S.groups, at: S.groupsAt }) }) }).catch(() => ({ status: 0 }));
+    if (!quiet || r.ok) toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${why(r.status || 0)})`, !r.ok);
   }
   function moveTo(uid, gid) { S.groups.forEach((g) => (g.members = g.members.filter((x) => x !== uid))); const g = S.groups.find((x) => x.id === gid); if (g) g.members.push(uid); }
 
@@ -173,7 +178,7 @@
   function groupHTML() {
     const E = S.editG, isNew = !S.groups.some((g) => g.id === E.id);
     return `<form class="cb-assign cb-gform" id="cb-gform"${gStyle(E)}>
-      <div class="cb-ah"><h2>${isNew ? "Новая группа" : `Настройки: ${esc(E.name)}`}</h2><button class="tlink" type="button" id="cb-gcancel">Закрыть ✕</button></div>
+      <div class="cb-ah"><h2 tabindex="-1">${isNew ? "Новая группа" : `Настройки: ${esc(E.name)}`}</h2><button class="tlink" type="button" id="cb-gcancel">Закрыть ✕</button></div>
       <div class="cb-grid"><label class="f"><span>Название</span><input id="g-name" type="text" maxlength="60" required value="${esc(E.name)}" placeholder="Например: SAT группа · ноябрь"></label>
         <fieldset class="f g-kind"><legend>Тип</legend>${Object.entries(KINDS).map(([k, t]) => `<label class="radio"><input type="radio" name="g-kind" value="${k}" ${E.kind === k ? "checked" : ""}> ${t}</label>`).join("")}</fieldset></div>
       <fieldset class="g-colors"><legend>Цвет</legend>${Object.entries(GCOL).map(([k, [t, c]]) => `<label class="sw" style="--g:${c}"><input type="radio" name="g-color" value="${k}" ${E.color === k ? "checked" : ""}><i aria-hidden="true"></i>${t}</label>`).join("")}</fieldset>
@@ -235,7 +240,7 @@
     return `<div class="cb-bar"><button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>
         <p class="hint">Ученик видит задания вверху страницы «Домашние задания». Работа с результатом отмечается сама, когда ученик её сдаст.</p></div>
       ${I.T.length ? `<ul class="cb-rows cb-tasks">${I.T.map((x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
-          <span>${esc(x.t)}<small>${x.done ? `сделано${x.result ? ` · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : ""}` : x.due ? `${x.late ? "просрочено · " : "до "}${esc(dateTxt(x.due))}` : "без срока"}${x.note ? ` · ${esc(x.note)}` : ""} · задано ${esc(ago(x.at))}</small></span>
+          <span>${esc(x.t)}<small>${x.done ? `сделано${x.result ? ` · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : ""}` : esc(PLAN.dueTxt(x.due))}${x.note ? ` · ${esc(x.note)}` : ""} · задано ${esc(ago(x.at))}</small></span>
           <button class="chip" type="button" data-deltask="${esc(x.id)}">Убрать</button></li>`).join("")}</ul>` : '<p class="td-sub">Заданий пока нет.</p>'}`;
   }
 
@@ -265,7 +270,7 @@
     const whoList = (g, list) => `<div class="who-g"${gStyle(g)}><span class="who-h">${g ? '<i class="gdot" aria-hidden="true"></i>' : ""}${esc(g ? g.name : "Без группы")}</span>
         <div class="cb-whol">${list.map((u) => `<label class="cb-tick"><input type="checkbox" data-who="${esc(u.id)}" ${A.ids.has(u.id) ? "checked" : ""} ${u.err ? "disabled" : ""}><span>${esc(u.name)}<small>${esc(u.login)}</small></span></label>`).join("")}</div></div>`;
     return `<form class="cb-assign" id="cb-assign">
-      <div class="cb-ah"><h2>Новое задание</h2><button class="tlink" type="button" id="cb-acancel">Закрыть ✕</button></div>
+      <div class="cb-ah"><h2 tabindex="-1">Новое задание</h2><button class="tlink" type="button" id="cb-acancel">Закрыть ✕</button></div>
       <section class="step"><h3><span class="sn">1</span> Кому <small>· выбрано ${n}</small></h3>
         <div class="chips gsel-row">${groupsWith.map((g) => { const ids = membersOf(g).filter((u) => !u.err).map((u) => u.id), on = ids.length && ids.every((x) => A.ids.has(x));
           return `<button class="gsel" type="button" data-gsel="${esc(g.id)}" aria-pressed="${!!on}"${gStyle(g)}><i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${ids.length}</button>`; }).join("")}
@@ -289,7 +294,7 @@
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
     S.editG = null; S.imp = null;
     S.assign = { kind: S.lessons.length ? "hw" : "mk", item: first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
-    fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
+    S.focus = "#cb-assign h2"; fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
   }
   function fixAssign() {   // keep item and part valid for the chosen kind
     const A = S.assign, its = items(A.kind);
@@ -381,7 +386,7 @@
       <p class="hint">Ученики без аккаунта остаются только в «Ответах из Google Form». «Пробные тесты»: переносится последний результат с примерным баллом; разбор вопросов откроется только на устройстве, где тест решали.</p></div>`;
   }
   function bindImport() {
-    if ($("cb-icancel")) $("cb-icancel").onclick = () => { S.imp = null; render(); };
+    if ($("cb-icancel")) $("cb-icancel").onclick = closeForm;
     if ($("cb-ifile")) $("cb-ifile").onchange = () => { const f = $("cb-ifile").files[0]; if (!f) return; const rd = new FileReader();
       rd.onload = async () => { useForm(rd.result, {}, "файл " + f.name);
         if (S.imp && S.imp.rows) SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: rd.result, aliases: {}, at: Date.now() }) }) }).catch(() => {}); };
@@ -433,8 +438,18 @@
     }
     main.innerHTML = toolbar() + `<section class="cb-detail" aria-live="polite">${detail}</section>`;
     bind(u);
+    if (S.focus) { const el = main.querySelector(S.focus); S.focus = ""; if (el) el.focus({ preventScroll: true }); }
     if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
+  // close whichever form is open (button «Закрыть ✕» or Escape) and put focus back on the button that opens it
+  function closeForm() {
+    if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
+    else if (S.editG) { const id = S.editG.id; S.editG = null; S.focus = S.groups.some((g) => g.id === id) ? `[data-gedit="${id}"]` : ".gtab.add"; }
+    else if (S.imp) { S.imp = null; S.focus = "[data-imp]"; }
+    else return false;
+    render(); return true;
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp) && closeForm()) e.preventDefault(); });
   const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
   function bind(u) {
     const main = $("cb"), on = (sel, fn) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn(el, e)));
@@ -447,8 +462,8 @@
     on("[data-assign1]", (b) => openAssign([b.dataset.assign1]));
     on("[data-imp]", () => { S.editG = null; openImport(); });
     on("[data-tab]", (b) => { S.tab = b.dataset.tab; render(); });
-    on("[data-gnew]", () => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; render(); top(); });
-    on("[data-gedit]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; render(); top(); } });
+    on("[data-gnew]", () => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; S.focus = "#cb-gform h2"; render(); top(); });
+    on("[data-gedit]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; S.focus = "#cb-gform h2"; render(); top(); } });
     main.querySelectorAll("[data-place]").forEach((sel) => (sel.onchange = () => { if (!sel.value) return; const st = S.users.find((x) => x.id === sel.dataset.place), g = S.groups.find((x) => x.id === sel.value);
       moveTo(sel.dataset.place, sel.value); render(); saveGroups(`${st.name} → ${g.name}`); }));
     $("cb-reload").onclick = async () => { S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
@@ -474,7 +489,7 @@
     const gf = $("cb-gform");
     if (gf) {
       const E = S.editG;
-      $("cb-gcancel").onclick = () => { S.editG = null; render(); };
+      $("cb-gcancel").onclick = closeForm;
       $("g-name").oninput = (e) => (E.name = e.target.value);
       gf.querySelectorAll("[name=g-kind]").forEach((r) => (r.onchange = () => (E.kind = r.value)));
       gf.querySelectorAll("[name=g-color]").forEach((r) => (r.onchange = () => { E.color = r.value; render(); }));
@@ -497,7 +512,7 @@
     if ($("cb-link")) $("cb-link").oninput = (e) => (A.link = e.target.value);
     main.querySelectorAll("[data-who]").forEach((c) => (c.onchange = () => { c.checked ? A.ids.add(c.dataset.who) : A.ids.delete(c.dataset.who); render(); }));
     $("cb-all").onclick = () => { const ok = S.users.filter((x) => !x.err); if (A.ids.size === ok.length) A.ids.clear(); else ok.forEach((x) => A.ids.add(x.id)); render(); };
-    $("cb-acancel").onclick = () => { S.assign = null; render(); };
+    $("cb-acancel").onclick = closeForm;
     f.onsubmit = (e) => { e.preventDefault(); submitAssign(); };
   }
 

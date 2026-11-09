@@ -23,7 +23,6 @@
   const meta = () => { try { return JSON.parse(store("sync_meta") || "{}"); } catch (e) { return {}; } };
   const results = (name) => PLAN.results(name, keys(), store, meta(), lessons);   // every submitted result, newest first
   const safe = (h) => /^(https:\/\/|[a-z0-9_-]+\.html(\?|#|$)|\.\/)/i.test(String(h || ""));   // task links: site pages or https only
-  const dueTxt = (d) => new Date(d + "T00:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   function tasks(name) {   // homework the teacher assigned in the cabinet (synced key «tasks»)
     const L = PLAN.taskState(name, store, meta()); if (!L.length) return "";
     const open = L.filter((x) => !x.done), done = L.filter((x) => x.done);
@@ -31,7 +30,7 @@
     if (!open.length && !recent.length) return "";
     const row = (x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
         <span class="tk-t">${esc(x.t)}${x.note ? `<small>${esc(x.note)}</small>` : ""}</span>
-        <span class="tk-due">${x.done ? (x.result ? `сдано · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : "сделано") : x.due ? `${x.late ? "просрочено · " : "до "}${esc(dueTxt(x.due))}` : "без срока"}</span>
+        <span class="tk-due">${x.done ? (x.result ? `сдано · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : "сделано") : esc(PLAN.dueTxt(x.due))}</span>
         <span class="tk-go">${x.done ? "" : `${safe(x.href) ? `<a class="btn" href="${esc(x.href)}">Открыть</a>` : ""}${x.auto ? "" : `<button type="button" class="tlink" data-task="${esc(x.id)}">Сделано</button>`}`}</span></li>`;
     return `<section class="td-tasks" aria-label="Задания от преподавателя">
       <h3>Задания от преподавателя${open.length ? ` <b>${open.length}</b>` : ""}</h3>

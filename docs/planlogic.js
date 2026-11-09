@@ -128,6 +128,18 @@
 
   // ---- shared by «Сегодня» and the teacher's cabinet: results, labels, estimated scores, assigned tasks
   const est = (s) => { const m = String(s || "").match(/≈\s*(\d+)/g); return m ? m.reduce((a, x) => a + Number(x.replace(/\D/g, "")), 0) : null; };
+  // a task deadline in words a student reads at a glance: «срок сегодня», «срок завтра», «до пятницы, 13 ноября», «просрочено на 2 дня · 7 ноября»
+  function dueTxt(due) {
+    if (!due) return "без срока";
+    const d = new Date(due + "T00:00:00"), t = new Date(); t.setHours(0, 0, 0, 0);
+    const n = Math.round((d - t) / 864e5), date = d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    const dn = (k) => `${k} ${k % 10 === 1 && k % 100 !== 11 ? "день" : [2, 3, 4].includes(k % 10) && ![12, 13, 14].includes(k % 100) ? "дня" : "дней"}`;
+    if (n < 0) return `просрочено на ${dn(-n)} · ${date}`;
+    if (n === 0) return "срок сегодня";
+    if (n === 1) return "срок завтра";
+    if (n < 7) return `до ${["воскресенья", "понедельника", "вторника", "среды", "четверга", "пятницы", "субботы"][d.getDay()]}, ${date}`;
+    return `до ${date}`;
+  }
   // the trend of practice-test scores on one scale per course: Verbal → RW only, Math → Math only, both → runs with both sections
   // (an RW-only test on the full course would read as a fall to ~600 of 1600). get(key) reads a stored value.
   const TREND_IDS = [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1"];
@@ -173,5 +185,5 @@
     }).sort((a, b) => a.done - b.done || String(a.due || "9999").localeCompare(String(b.due || "9999")) || b.at - a.at);
   }
   function tick(id, on) { loadManual(); on ? manual.add(id) : manual.delete(id); store(doneKey(), JSON.stringify([...manual])); }
-  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, trend, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
+  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, trend, dueTxt, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
 })();
