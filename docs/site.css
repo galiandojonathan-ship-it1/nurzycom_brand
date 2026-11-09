@@ -543,7 +543,7 @@ body.has-today #s-start .hero h1::after{width:min(52%,300px);height:12px}
 .td-tasks li.late .tk-due::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--oxide);margin-right:7px;vertical-align:1px}
 .td-tasks li.ok .tk-t{color:var(--stone);text-decoration:line-through;text-decoration-color:var(--oxide);text-decoration-thickness:1.5px}
 @media(max-width:640px){.td-tasks li{grid-template-columns:minmax(0,1fr) auto}.td-tasks .tk-go{grid-column:1/-1;justify-content:flex-start}.td-tasks .tk-go:empty{display:none}}
-body > .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}   /* gloss.js live region */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}   /* screen-reader-only text (gloss.js live region, hidden table headers, group kinds) */
 #sv-exit{padding:8px 0;margin-left:14px;text-decoration:underline;text-underline-offset:4px;white-space:nowrap}   /* review: always-visible way back */
 .resend{text-decoration:underline;text-underline-offset:4px;padding:6px 0;font-weight:500}   /* «Отправить ещё раз» after a failed send */
 /* Windows High Contrast / forced colours (2026-11-09): backgrounds and box-shadows are dropped there, which hid the chosen answer,

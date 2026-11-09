@@ -12,7 +12,33 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
-  const S = { users: [], cur: null, tab: "over", filter: "all", q: "", lessons: [], assign: null, imp: null, loaded: false };
+  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null };
+
+  // ---------- groups (2026-11-09, Nurassyl: «one group I need to distinguish clearly, and my individual students»). Each group has a
+  // name, a kind (a class group or individual students), a colour and its members (account ids; a student is in one group at most).
+  // Saved encrypted in KV «groups» (api/admin/groups) and kept in this browser too, so a missing server still leaves the groups here.
+  const GCOL = { blue: ["Синий", "#1F4FA3", "#E4EBF7"], green: ["Зелёный", "#2B6E2F", "#E3EFE1"], amber: ["Охра", "#8A5300", "#F6EBD8"],
+    violet: ["Фиолетовый", "#6A3D9E", "#EDE5F6"], teal: ["Бирюзовый", "#165F6E", "#DCEDF0"], rose: ["Малиновый", "#9E2456", "#F6E2EB"] };
+  const KINDS = { group: "Группа", solo: "Индивидуальные" };
+  const col = (g) => GCOL[(g && g.color) || ""] || null;
+  const gStyle = (g) => { const c = col(g); return c ? ` style="--g:${c[1]};--gt:${c[2]}"` : ""; };
+  const groupOf = (u) => S.groups.find((g) => g.members.includes(u.id)) || null;
+  const membersOf = (g) => S.users.filter((u) => (g ? g.members.includes(u.id) : !groupOf(u)));
+  const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
+  async function loadGroups() {
+    let G = null;
+    const r = await SITE.api("admin/groups").catch(() => ({ status: 0 }));
+    if (r.ok) { try { G = (await SITE.unsealBlob(r.data.data)).groups; } catch (e) { G = null; } }
+    if (!G) { try { G = JSON.parse(localStorage.getItem("cb_groups") || "null"); } catch (e) { G = null; } }
+    if (!Array.isArray(G)) G = [{ id: newId(), name: "Группа", kind: "group", color: "blue", members: [] }, { id: newId(), name: "Индивидуальные ученики", kind: "solo", color: "green", members: [] }];
+    S.groups = G.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || "Группа").slice(0, 60), kind: g.kind === "solo" ? "solo" : "group", color: GCOL[g.color] ? g.color : "blue", members: Array.isArray(g.members) ? g.members.map(String) : [] }));
+  }
+  async function saveGroups(msg) {
+    try { localStorage.setItem("cb_groups", JSON.stringify(S.groups)); } catch (e) { /* private mode */ }
+    const r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: S.groups, at: Date.now() }) }) }).catch(() => ({ status: 0 }));
+    toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${why(r.status || 0)})`, !r.ok);
+  }
+  function moveTo(uid, gid) { S.groups.forEach((g) => (g.members = g.members.filter((x) => x !== uid))); const g = S.groups.find((x) => x.id === gid); if (g) g.members.push(uid); }
 
   // ---------- a student's synced copy: { key: { v, t } }; v: null is a removed key
   const getter = (u) => (k) => (u.B && u.B[k] && u.B[k].v != null ? String(u.B[k].v) : null);
@@ -75,7 +101,8 @@
     const seen = new Set(), users = [];
     for (const x of r.data.users) { let me = { login: "?", name: "?" }; try { me = await SITE.nameOf(x.n); } catch (e) { /* unreadable */ } seen.add(x.id); users.push(Object.assign({ id: x.id, at: x.at }, me)); }
     try { for (const a of await SITE.accounts(await SITE.access())) if (!seen.has(a.id)) users.push(Object.assign({ old: true }, a)); } catch (e) { /* access.json is optional */ }
-    S.users = users.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));
+    const me = SITE.me(); S.users = users.filter((u) => !me || u.login !== me).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
+    await loadGroups();
     let i = 0; const next = async () => { while (i < S.users.length) await fetchCopy(S.users[i++]); };
     await Promise.all(Array.from({ length: Math.min(5, S.users.length) }, next));
     S.loaded = true; render();
@@ -93,25 +120,67 @@
   const iso = (t) => { const d = new Date(t); return `${d.getFullYear()}-${nn(d.getMonth() + 1)}-${nn(d.getDate())}`; };
   const stepCap = (it) => `${it.stage.cap}${it.crs ? ` · ${it.crs === "V" ? "Verbal" : "Math"}` : ""}`;
 
-  // ---------- the list of students
-  function listHTML() {
+  // ---------- overview: who needs attention, then one coloured block per group with a card per student
+  const pctTxt = (I) => (I ? `${I.pct}%` : "—");
+  function shown() {   // the students of the chosen group tab, filtered by the search
     const q = S.q.trim().toLowerCase();
-    const rows = S.users.map((u) => ({ u, I: u.B ? info(u) : null })).filter(({ u, I }) => {
-      if (q && !`${u.name} ${u.login}`.toLowerCase().includes(q)) return false;
-      if (S.filter === "late") return I && I.late;
-      if (S.filter === "quiet") return !I || !I.last || Date.now() - I.last > 7 * DAY;
-      return true;
-    });
-    const all = S.users.length, late = S.users.filter((u) => u.B && info(u).late).length;
-    return `<div class="cb-find"><input id="cb-q" type="search" placeholder="Поиск: имя или логин" aria-label="Поиск ученика" value="${esc(S.q)}" autocomplete="off"></div>
-      <div class="chips cb-filters" role="group" aria-label="Фильтр">
-        ${[["all", `Все · ${all}`], ["late", `Просрочено · ${late}`], ["quiet", "Не заходили 7+ дней"]].map(([f, t]) => `<button class="chip" type="button" data-f="${f}" aria-pressed="${S.filter === f}">${t}</button>`).join("")}</div>
-      <ul class="cb-sts">${rows.length ? rows.map(({ u, I }) => `<li><button type="button" class="cb-st" data-u="${esc(u.id)}" aria-current="${S.cur === u.id}">
-          <span class="nm">${esc(u.name)}${I && I.late ? '<i class="dot" title="Есть просроченные задания"></i>' : ""}</span>
-          <span class="pc">${I ? `${I.pct}%` : "—"}</span>
-          <small>${esc(u.login)} · ${u.err ? "не прочитать" : esc(ago(I && I.last))}${I && I.open ? ` · заданий: ${I.open}` : ""}</small>
-          <span class="cb-meter" aria-hidden="true"><i style="width:${I ? I.pct : 0}%"></i></span></button></li>`).join("")
-        : `<li class="cb-none">${all ? "Никого не нашлось." : "Учеников пока нет."}</li>`}</ul>`;
+    return S.users.filter((u) => (S.gview === "all" ? true : S.gview === "none" ? !groupOf(u) : (groupOf(u) || {}).id === S.gview) && (!q || `${u.name} ${u.login}`.toLowerCase().includes(q)));
+  }
+  function toolbar() {
+    const none = membersOf(null).length, tab = (v, label, n, g, sr) => `<button class="gtab" type="button" data-g="${esc(v)}" aria-pressed="${S.gview === v}"${gStyle(g)}>${g ? '<i class="gdot" aria-hidden="true"></i>' : ""}${esc(label)} <b>${n}</b>${sr ? `<span class="sr-only">, ${esc(sr)}</span>` : ""}</button>`;
+    return `<div class="cb-tool">
+      <div class="cb-gtabs" role="group" aria-label="Группы учеников">${tab("all", "Все ученики", S.users.length)}${S.groups.map((g) => tab(g.id, g.name, membersOf(g).length, g, KINDS[g.kind])).join("")}${none ? tab("none", "Без группы", none) : ""}
+        <button class="gtab add" type="button" data-gnew="1">+ Новая группа</button></div>
+      <div class="cb-tool2"><input id="cb-q" type="search" placeholder="Найти ученика: имя или логин" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">
+        <button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
+        <button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button>
+        <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>`;
+  }
+  function card(u) {
+    const I = u.B ? info(u) : null, g = groupOf(u), T = I ? PLAN.trend(I.course, u.nm, I.get) : [], pt = T[T.length - 1];
+    return `<li class="scard${I && I.late ? " is-late" : ""}"${gStyle(g)}>
+      <button class="sc-open" type="button" data-u="${esc(u.id)}" aria-label="Открыть: ${esc(u.name)}">
+        <span class="sc-nm">${esc(u.name)}</span>
+        <span class="sc-sub">${esc(u.login)}${I ? ` · ${esc(COURSES.find((c) => c[0] === I.course)[1])}` : ""}</span>
+        <span class="sc-pc"><b>${pctTxt(I)}</b> плана</span><span class="cb-meter" aria-hidden="true"><i style="width:${I ? I.pct : 0}%"></i></span>
+        <span class="sc-meta">${u.err ? "копию не прочитать" : `последняя сдача: ${esc(I && I.R[0] ? ago(I.R[0].t) : "нет")}`}</span>
+        <span class="sc-tags">${I && I.late ? `<em class="tag late">просрочено ${I.late}</em>` : ""}${I && I.open ? `<em class="tag">заданий ${I.open}</em>` : ""}${pt ? `<em class="tag">${esc(pt.id)} ≈ ${pt.v}</em>` : ""}${I && I.last && Date.now() - I.last > 7 * DAY ? '<em class="tag quiet">не заходил(а) 7+ дней</em>' : ""}</span></button>
+      <div class="sc-act"><button class="chip" type="button" data-assign1="${esc(u.id)}">Задать</button>
+        ${!g ? `<select data-place="${esc(u.id)}" aria-label="В группу: ${esc(u.name)}"><option value="">В группу…</option>${S.groups.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : ""}</div></li>`;
+  }
+  function block(g, list) {
+    const I = list.map((u) => (u.B ? info(u) : null)).filter(Boolean), avg = I.length ? Math.round(I.reduce((a, x) => a + x.pct, 0) / I.length) : 0, late = I.reduce((a, x) => a + (x.late ? 1 : 0), 0);
+    return `<section class="gblock${g ? "" : " nogroup"}"${gStyle(g)} aria-label="${esc(g ? g.name : "Без группы")}">
+      <header class="gb-h"><div><span class="gb-kind">${g ? esc(KINDS[g.kind]) : "Не распределены"}</span><h2>${esc(g ? g.name : "Без группы")}</h2>
+        <p class="gb-stats">${list.length} ${pl(list.length, "ученик", "ученика", "учеников")}${I.length ? ` · план в среднем ${avg}%` : ""}${late ? ` · <em class="late">с просрочкой: ${late}</em>` : ""}</p></div>
+        <div class="gb-act">${g ? `${list.length ? `<button class="btn gbtn" type="button" data-bulkg="${esc(g.id)}">Задать задание ${g.kind === "solo" ? "этим ученикам" : "группе"}</button>` : ""}<button class="btn ghost sm" type="button" data-gedit="${esc(g.id)}">Настроить</button>` : ""}</div></header>
+      ${list.length ? `<ul class="gb-cards">${list.map(card).join("")}</ul>` : `<p class="gb-empty">${g ? "В группе пока никого. Нажмите «Настроить» и отметьте учеников." : ""}</p>`}</section>`;
+  }
+  function overviewHTML() {
+    const list = shown(), q = S.q.trim();
+    const late = list.filter((u) => u.B && info(u).late), quiet = list.filter((u) => u.B && (() => { const I = info(u); return !I.last || Date.now() - I.last > 7 * DAY; })()), none = membersOf(null);
+    const who = (us) => us.map((u) => `<button class="tlink" type="button" data-u="${esc(u.id)}">${esc(u.name)}</button>`).join(", ");
+    const att = [late.length ? `<li class="att late"><b>Просрочены задания</b><span>${who(late)}</span></li>` : "", quiet.length ? `<li class="att quiet"><b>Не заходили 7+ дней</b><span>${who(quiet)}</span></li>` : "",
+      none.length && S.gview === "all" ? `<li class="att place"><b>Без группы: ${none.length}</b><span>Выберите группу в карточке ученика («В группу…») или нажмите «Настроить» у группы.</span></li>` : ""].join("");
+    let blocks;
+    if (q) blocks = list.length ? block(S.gview !== "all" && S.gview !== "none" ? S.groups.find((g) => g.id === S.gview) : null, list).replace('<h2>Без группы</h2>', `<h2>Поиск: «${esc(q)}»</h2>`) : '<p class="gb-empty">Никого не нашлось.</p>';
+    else if (S.gview === "all") blocks = S.groups.map((g) => block(g, membersOf(g))).join("") + (none.length ? block(null, none) : "");
+    else if (S.gview === "none") blocks = block(null, none);
+    else { const g = S.groups.find((x) => x.id === S.gview); blocks = g ? block(g, membersOf(g)) : ""; }
+    return `${att ? `<ul class="cb-att" aria-label="Требуют внимания">${att}</ul>` : ""}${blocks}${S.users.length ? "" : '<p class="gb-empty">Учеников пока нет: аккаунты создаются на странице «Аккаунты учеников».</p>'}`;
+  }
+  // ---------- group settings: name, kind, colour, members
+  function groupHTML() {
+    const E = S.editG, isNew = !S.groups.some((g) => g.id === E.id);
+    return `<form class="cb-assign cb-gform" id="cb-gform"${gStyle(E)}>
+      <div class="cb-ah"><h2>${isNew ? "Новая группа" : `Настройки: ${esc(E.name)}`}</h2><button class="tlink" type="button" id="cb-gcancel">Закрыть ✕</button></div>
+      <div class="cb-grid"><label class="f"><span>Название</span><input id="g-name" type="text" maxlength="60" required value="${esc(E.name)}" placeholder="Например: SAT группа · ноябрь"></label>
+        <fieldset class="f g-kind"><legend>Тип</legend>${Object.entries(KINDS).map(([k, t]) => `<label class="radio"><input type="radio" name="g-kind" value="${k}" ${E.kind === k ? "checked" : ""}> ${t}</label>`).join("")}</fieldset></div>
+      <fieldset class="g-colors"><legend>Цвет</legend>${Object.entries(GCOL).map(([k, [t, c]]) => `<label class="sw" style="--g:${c}"><input type="radio" name="g-color" value="${k}" ${E.color === k ? "checked" : ""}><i aria-hidden="true"></i>${t}</label>`).join("")}</fieldset>
+      <fieldset class="cb-who"><legend>Ученики · выбрано ${E.members.length}</legend>
+        <div class="cb-whol">${S.users.map((u) => { const g = groupOf(u); return `<label class="cb-tick"><input type="checkbox" data-gm="${esc(u.id)}" ${E.members.includes(u.id) ? "checked" : ""}><span>${esc(u.name)}<small>${esc(u.login)}${g && g.id !== E.id ? ` · сейчас: ${esc(g.name)}` : ""}</small></span></label>`; }).join("")}</div></fieldset>
+      <p class="hint">Ученик может быть только в одной группе: если отметить ученика из другой группы, он перейдёт сюда. Группы видите только вы.</p>
+      <div class="row"><button class="btn" type="submit">Сохранить группу</button>${isNew ? "" : '<button class="btn ghost" type="button" id="g-del">Удалить группу</button>'}</div></form>`;
   }
 
   // ---------- the student's card
@@ -191,26 +260,34 @@
   function assignHTML() {
     const A = S.assign, its = items(A.kind), P = A.kind === "hw" ? parts(A.item) : [];
     const opts = (list, sel) => list.map((x) => `<option value="${esc(x.v)}"${x.v === sel ? " selected" : ""}>${esc(x.t)}</option>`).join("");
-    const n = A.ids.size;
+    const n = A.ids.size, t = taskOf(true), quick = [["Завтра", 1], ["Через 3 дня", 3], ["Через неделю", 7]];
+    const groupsWith = S.groups.filter((g) => membersOf(g).length), none = membersOf(null);
+    const whoList = (g, list) => `<div class="who-g"${gStyle(g)}><span class="who-h">${g ? '<i class="gdot" aria-hidden="true"></i>' : ""}${esc(g ? g.name : "Без группы")}</span>
+        <div class="cb-whol">${list.map((u) => `<label class="cb-tick"><input type="checkbox" data-who="${esc(u.id)}" ${A.ids.has(u.id) ? "checked" : ""} ${u.err ? "disabled" : ""}><span>${esc(u.name)}<small>${esc(u.login)}</small></span></label>`).join("")}</div></div>`;
     return `<form class="cb-assign" id="cb-assign">
       <div class="cb-ah"><h2>Новое задание</h2><button class="tlink" type="button" id="cb-acancel">Закрыть ✕</button></div>
-      <div class="cb-grid">
-        <label class="f"><span>Что задать</span><select id="cb-kind">${KIND.map(([k, t]) => `<option value="${k}"${k === A.kind ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-        ${A.kind === "own" ? `<label class="f"><span>Задание</span><input id="cb-own" type="text" maxlength="140" placeholder="Например: выписать 10 слов из урока 3" value="${esc(A.own)}" required></label>
+      <section class="step"><h3><span class="sn">1</span> Кому <small>· выбрано ${n}</small></h3>
+        <div class="chips gsel-row">${groupsWith.map((g) => { const ids = membersOf(g).filter((u) => !u.err).map((u) => u.id), on = ids.length && ids.every((x) => A.ids.has(x));
+          return `<button class="gsel" type="button" data-gsel="${esc(g.id)}" aria-pressed="${!!on}"${gStyle(g)}><i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${ids.length}</button>`; }).join("")}
+          <button class="chip" type="button" id="cb-all">${n && n === S.users.filter((u) => !u.err).length ? "Снять всех" : "Все ученики"}</button></div>
+        ${groupsWith.map((g) => whoList(g, membersOf(g))).join("")}${none.length ? whoList(null, none) : ""}</section>
+      <section class="step"><h3><span class="sn">2</span> Что задать</h3>
+        <div class="chips kind-row" role="radiogroup" aria-label="Что задать">${KIND.map(([k, t]) => `<button class="chip" type="button" role="radio" data-kind="${k}" aria-checked="${k === A.kind}">${t}</button>`).join("")}</div>
+        <div class="cb-grid">${A.kind === "own" ? `<label class="f"><span>Задание</span><input id="cb-own" type="text" maxlength="140" placeholder="Например: выписать 10 слов из урока 3" value="${esc(A.own)}" required></label>
           <label class="f"><span>Ссылка (необязательно)</span><input id="cb-link" type="text" maxlength="300" placeholder="https://… или vocab.html" value="${esc(A.link)}"></label>`
         : its.length ? `<label class="f"><span>${A.kind === "hw" || A.kind === "vc" ? "Урок" : "Что именно"}</span><select id="cb-item">${opts(its, A.item)}</select></label>
           ${A.kind === "hw" ? `<label class="f"><span>Часть тетради</span><select id="cb-part">${opts(P, A.part)}</select></label>` : ""}`
-        : '<p class="hint f">Список уроков не загрузился. Обновите страницу или выберите другое задание.</p>'}
-        <label class="f"><span>Срок</span><input id="cb-due" type="date" value="${esc(A.due)}" min="${iso(Date.now())}"></label>
-        <label class="f wide"><span>Комментарий для ученика (необязательно)</span><input id="cb-note" type="text" maxlength="200" placeholder="Например: обратите внимание на вопросы 5–8" value="${esc(A.note)}"></label>
-      </div>
-      <fieldset class="cb-who"><legend>Кому · выбрано ${n}</legend>
-        <div class="chips"><button class="chip" type="button" id="cb-all">${n === S.users.length ? "Снять всех" : "Выбрать всех"}</button></div>
-        <div class="cb-whol">${S.users.map((u) => `<label class="cb-tick"><input type="checkbox" data-who="${esc(u.id)}" ${A.ids.has(u.id) ? "checked" : ""} ${u.err ? "disabled" : ""}><span>${esc(u.name)}<small>${esc(u.login)}</small></span></label>`).join("")}</div></fieldset>
-      <div class="row"><button class="btn" type="submit" id="cb-ago" ${n ? "" : "disabled"}>Задать${n > 1 ? ` · ${n} ${pl(n, "ученику", "ученикам", "ученикам")}` : ""} <span class="arr">→</span></button><span class="hint" id="cb-amsg"></span></div></form>`;
+        : '<p class="hint f">Список уроков не загрузился. Обновите страницу или выберите другое задание.</p>'}</div></section>
+      <section class="step"><h3><span class="sn">3</span> Срок и комментарий</h3>
+        <div class="chips due-row">${quick.map(([l, d]) => { const v = iso(Date.now() + d * DAY); return `<button class="chip" type="button" data-due="${v}" aria-pressed="${A.due === v}">${l}</button>`; }).join("")}<button class="chip" type="button" data-due="" aria-pressed="${!A.due}">Без срока</button></div>
+        <div class="cb-grid"><label class="f"><span>Срок</span><input id="cb-due" type="date" value="${esc(A.due)}" min="${iso(Date.now())}"></label>
+          <label class="f"><span>Комментарий для ученика (необязательно)</span><input id="cb-note" type="text" maxlength="200" placeholder="Например: обратите внимание на вопросы 5–8" value="${esc(A.note)}"></label></div></section>
+      <div class="cb-sum" aria-live="polite">${t && n ? `<b>«${esc(t.t)}»</b> → ${n} ${pl(n, "ученику", "ученикам", "ученикам")}${A.due ? `, до ${esc(dateTxt(A.due))}` : ", без срока"}` : n ? "Выберите задание." : "Выберите, кому задать."}</div>
+      <div class="row"><button class="btn" type="submit" id="cb-ago" ${n && t ? "" : "disabled"}>Задать${n > 1 ? ` · ${n} ${pl(n, "ученику", "ученикам", "ученикам")}` : ""} <span class="arr">→</span></button><span class="hint" id="cb-amsg"></span></div></form>`;
   }
   function openAssign(ids) {
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
+    S.editG = null; S.imp = null;
     S.assign = { kind: S.lessons.length ? "hw" : "mk", item: first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
     fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
   }
@@ -219,8 +296,8 @@
     if (!its.some((x) => x.v === A.item)) A.item = its.length ? its[0].v : "";
     if (A.kind === "hw") { const P = parts(A.item); if (!P.some((x) => x.v === A.part)) A.part = (P.find((x) => /домаш/i.test(x.t)) || P[0] || {}).v || ""; }
   }
-  function taskOf() {
-    const A = S.assign, id = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
+  function taskOf(preview) {
+    const A = S.assign, id = preview ? "" : Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
     const base = { id, at: Date.now(), due: A.due || "", note: A.note.trim(), kind: A.kind };
     if (A.kind === "own") { const t = A.own.trim(); if (!t) return null; const link = A.link.trim(); return Object.assign(base, { t, href: /^(https:\/\/|[a-z0-9_-]+\.html|\.\/)/i.test(link) ? link : "", rk: null }); }
     if (A.kind === "hw") { const p = parts(A.item).find((x) => x.v === A.part); return p ? Object.assign(base, { t: p.label, href: p.href, rk: p.rk }) : null; }
@@ -323,43 +400,60 @@
   }
 
   // ---------- page
+  function profileHead(u, I) {
+    const g = groupOf(u), names = Object.keys(I.names), mates = (g ? membersOf(g) : membersOf(null)), k = mates.findIndex((x) => x.id === u.id);
+    const prev = k > 0 ? mates[k - 1] : null, next = k >= 0 && k < mates.length - 1 ? mates[k + 1] : null;
+    return `<header class="cb-head"${gStyle(g)}>
+        <nav class="crumbs" aria-label="Навигация"><button class="tlink" type="button" data-back="1">← ${esc(g ? g.name : "Все ученики")}</button>
+          <span class="pn">${prev ? `<button class="tlink" type="button" data-u="${esc(prev.id)}" aria-label="Предыдущий: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : ""}${next ? `<button class="tlink" type="button" data-u="${esc(next.id)}" aria-label="Следующий: ${esc(next.name)}">${esc(next.name)} ›</button>` : ""}</span></nav>
+        <div class="ph-row"><div class="ph-id">
+          <span class="gpill">${g ? `<i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${esc(KINDS[g.kind])}` : "Без группы"}</span>
+          <h1 class="cb-name">${esc(u.name)}</h1>
+          <span class="label">[ ${esc(u.login)} · ${esc(COURSES.find((c) => c[0] === I.course)[1])} · ${I.last ? `был(а) ${esc(ago(I.last))}` : "ещё не сдавал(а)"} ]</span></div>
+          <div class="ph-act"><button class="btn" type="button" data-new="1">Задать задание <span class="arr">+</span></button>
+            <label class="cb-as"><span>Группа</span><select id="cb-grp"><option value="">Без группы</option>${S.groups.map((x) => `<option value="${esc(x.id)}"${g && g.id === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label></div></div>
+        ${names.length > 1 || (names.length && !I.names[u.name]) ? `<label class="cb-as"><span>Результаты под именем</span><select id="cb-nm">${[...new Set([u.name, ...names])].map((x) => `<option${x === u.nm ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>` : ""}
+        ${u.none ? '<p class="hint">Ученик ещё ничего не сохранил в аккаунте. Задание всё равно можно задать: оно появится, когда ученик войдёт.</p>' : ""}
+      </header>`;
+  }
   function render() {
     const main = $("cb"); if (!S.loaded) return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
-    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp);
-    let detail = "";
+    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG);
+    let detail;
     if (S.imp) detail = importHTML();
     else if (S.assign) detail = assignHTML();
-    else if (!u) detail = `<div class="cb-empty"><span class="label">[ Кабинет ]</span><h2>Выберите ученика слева</h2><p class="td-sub">Прогресс, план, результаты и задания. Или задайте одно задание сразу нескольким ученикам.</p>
-        <div class="row"><button class="btn" type="button" data-bulk="1">Задать задание группе <span class="arr">→</span></button></div></div>`;
-    else if (u.err) detail = `<div class="cb-empty"><h2>${esc(u.name)}</h2><p class="td-sub">${u.err === "key" ? "Копию этого ученика не удалось расшифровать." : esc(why(u.err))}</p></div>`;
+    else if (S.editG) detail = groupHTML();
+    else if (!u) detail = overviewHTML();
+    else if (u.err) detail = `<div class="cb-empty"><button class="tlink" type="button" data-back="1">← Все ученики</button><h2>${esc(u.name)}</h2><p class="td-sub">${u.err === "key" ? "Копию этого ученика не удалось расшифровать." : esc(why(u.err))}</p></div>`;
     else {
-      const I = info(u), names = Object.keys(I.names);
-      detail = `<header class="cb-head"><button class="tlink cb-back" type="button" data-back="1">← Все ученики</button>
-          <span class="label">[ ${esc(u.login)} · ${esc(COURSES.find((c) => c[0] === I.course)[1])} · ${I.last ? `был(а) ${esc(ago(I.last))}` : "ещё не сдавал(а)"} ]</span>
-          <h1 class="cb-name">${esc(u.name)}</h1>
-          ${names.length > 1 || (names.length && !I.names[u.name]) ? `<label class="cb-as"><span>Результаты под именем</span><select id="cb-nm">${[...new Set([u.name, ...names])].map((x) => `<option${x === u.nm ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>` : ""}
-          ${u.none ? '<p class="hint">Ученик ещё ничего не сохранил в аккаунте. Задание всё равно можно задать: оно появится, когда ученик войдёт.</p>' : ""}
-        </header>
-        <div class="chips cb-tabs" role="tablist">${[["over", "Обзор"], ["plan", "План"], ["res", `Результаты · ${I.R.length}`], ["tasks", `Задания${I.open ? ` · ${I.open}` : ""}`]].map(([k, t]) => `<button class="chip" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab === k}" aria-pressed="${S.tab === k}">${t}</button>`).join("")}</div>
+      const I = info(u);
+      detail = profileHead(u, I) + `<div class="chips cb-tabs" role="tablist">${[["over", "Обзор"], ["plan", "План"], ["res", `Результаты · ${I.R.length}`], ["tasks", `Задания${I.open ? ` · ${I.open}` : ""}`]].map(([k, t]) => `<button class="chip" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join("")}</div>
         <div class="cb-body">${S.tab === "plan" ? plan(u, I) : S.tab === "res" ? results(u, I) : S.tab === "tasks" ? tasks(u, I) : over(u, I)}</div>`;
     }
-    main.innerHTML = `<aside class="cb-side">${listHTML()}<div class="row cb-bulk"><button class="btn ghost" type="button" data-bulk="1">Задать задание группе</button><button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button><button class="tlink" type="button" id="cb-reload">Обновить</button></div></aside>
-      <section class="cb-detail" aria-live="polite">${detail}</section>`;
+    main.innerHTML = toolbar() + `<section class="cb-detail" aria-live="polite">${detail}</section>`;
     bind(u);
     if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
+  const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
   function bind(u) {
     const main = $("cb"), on = (sel, fn) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn(el, e)));
-    $("cb-q").oninput = (e) => { S.q = e.target.value; render(); };
-    on("[data-f]", (b) => { S.filter = b.dataset.f; render(); });
-    on(".cb-st", (b) => { S.cur = b.dataset.u; S.assign = null; S.tab = "over"; render(); window.scrollTo({ top: 0 }); });
-    on("[data-back]", () => { S.cur = null; render(); });
-    on("[data-bulk]", () => { S.imp = null; openAssign(S.cur ? [S.cur] : []); });
-    on("[data-imp]", () => openImport());
+    $("cb-q").oninput = (e) => { S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
+    on("[data-g]", (b) => { S.gview = b.dataset.g; S.cur = null; S.assign = null; S.editG = null; S.imp = null; render(); });
+    on("[data-u]", (b) => { S.cur = b.dataset.u; S.assign = null; S.editG = null; S.imp = null; S.tab = "over"; render(); top(); });
+    on("[data-back]", () => { S.cur = null; render(); top(); });
+    on("[data-bulk]", () => openAssign(S.cur ? [S.cur] : S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : []));
+    on("[data-bulkg]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.bulkg); openAssign(membersOf(g).filter((x) => !x.err).map((x) => x.id)); });
+    on("[data-assign1]", (b) => openAssign([b.dataset.assign1]));
+    on("[data-imp]", () => { S.editG = null; openImport(); });
     on("[data-tab]", (b) => { S.tab = b.dataset.tab; render(); });
+    on("[data-gnew]", () => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; render(); top(); });
+    on("[data-gedit]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; render(); top(); } });
+    main.querySelectorAll("[data-place]").forEach((sel) => (sel.onchange = () => { if (!sel.value) return; const st = S.users.find((x) => x.id === sel.dataset.place), g = S.groups.find((x) => x.id === sel.value);
+      moveTo(sel.dataset.place, sel.value); render(); saveGroups(`${st.name} → ${g.name}`); }));
     $("cb-reload").onclick = async () => { S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
     if ($("cb-nm")) $("cb-nm").onchange = (e) => { u.nm = e.target.value; render(); };
+    if ($("cb-grp")) $("cb-grp").onchange = (e) => { const g = S.groups.find((x) => x.id === e.target.value); moveTo(u.id, e.target.value); render(); saveGroups(g ? `${u.name} → ${g.name}` : `${u.name}: без группы`); };
     if (u) {
       const I = u.B ? info(u) : null, nm = u.nm;
       on("[data-course]", (b) => act(u, (B, set) => set("plan_course", b.dataset.course), `Курс: ${b.textContent}`));
@@ -377,17 +471,32 @@
         act(u, (B, set, get) => { let L = []; try { L = JSON.parse(get("tasks") || "[]"); } catch (e) { L = []; } set("tasks", JSON.stringify(L.filter((t) => t.id !== x.id))); }, "Задание убрано"); });
     }
     if (S.imp) bindImport();
+    const gf = $("cb-gform");
+    if (gf) {
+      const E = S.editG;
+      $("cb-gcancel").onclick = () => { S.editG = null; render(); };
+      $("g-name").oninput = (e) => (E.name = e.target.value);
+      gf.querySelectorAll("[name=g-kind]").forEach((r) => (r.onchange = () => (E.kind = r.value)));
+      gf.querySelectorAll("[name=g-color]").forEach((r) => (r.onchange = () => { E.color = r.value; render(); }));
+      gf.querySelectorAll("[data-gm]").forEach((c) => (c.onchange = () => { E.members = E.members.filter((x) => x !== c.dataset.gm); if (c.checked) E.members.push(c.dataset.gm); render(); }));
+      gf.onsubmit = (e) => { e.preventDefault(); E.name = E.name.trim() || "Группа";
+        const old = S.groups.find((g) => g.id === E.id); if (old) Object.assign(old, { name: E.name, kind: E.kind, color: E.color, members: [] }); else S.groups.push({ id: E.id, name: E.name, kind: E.kind, color: E.color, members: [] });
+        E.members.forEach((uid) => moveTo(uid, E.id)); S.gview = E.id; S.editG = null; render(); saveGroups(`Группа «${E.name}» сохранена`); };
+      if ($("g-del")) $("g-del").onclick = () => { if (!confirm(`Удалить группу «${E.name}»? Ученики останутся, но без группы.`)) return; S.groups = S.groups.filter((g) => g.id !== E.id); S.gview = "all"; S.editG = null; render(); saveGroups(`Группа «${E.name}» удалена`); };
+    }
     const f = $("cb-assign"); if (!f) return;
     const A = S.assign, keep = (fn) => (e) => { fn(e.target.value); fixAssign(); render(); };
-    $("cb-kind").onchange = keep((v) => (A.kind = v));
+    on("[data-kind]", (b) => { A.kind = b.dataset.kind; fixAssign(); render(); });
+    on("[data-due]", (b) => { A.due = b.dataset.due; render(); });
+    on("[data-gsel]", (b) => { const ids = membersOf(S.groups.find((g) => g.id === b.dataset.gsel)).filter((x) => !x.err).map((x) => x.id), all = ids.every((x) => A.ids.has(x)); ids.forEach((x) => (all ? A.ids.delete(x) : A.ids.add(x))); render(); });
     if ($("cb-item")) $("cb-item").onchange = keep((v) => (A.item = v));
-    if ($("cb-part")) $("cb-part").onchange = (e) => (A.part = e.target.value);
-    $("cb-due").onchange = (e) => (A.due = e.target.value);
+    if ($("cb-part")) $("cb-part").onchange = keep((v) => (A.part = v));
+    $("cb-due").onchange = keep((v) => (A.due = v));
     $("cb-note").oninput = (e) => (A.note = e.target.value);
-    if ($("cb-own")) $("cb-own").oninput = (e) => (A.own = e.target.value);
+    if ($("cb-own")) $("cb-own").oninput = (e) => { A.own = e.target.value; const b = $("cb-ago"); if (b) b.disabled = !(A.ids.size && A.own.trim()); };
     if ($("cb-link")) $("cb-link").oninput = (e) => (A.link = e.target.value);
     main.querySelectorAll("[data-who]").forEach((c) => (c.onchange = () => { c.checked ? A.ids.add(c.dataset.who) : A.ids.delete(c.dataset.who); render(); }));
-    $("cb-all").onclick = () => { if (A.ids.size === S.users.length) A.ids.clear(); else S.users.filter((x) => !x.err).forEach((x) => A.ids.add(x.id)); render(); };
+    $("cb-all").onclick = () => { const ok = S.users.filter((x) => !x.err); if (A.ids.size === ok.length) A.ids.clear(); else ok.forEach((x) => A.ids.add(x.id)); render(); };
     $("cb-acancel").onclick = () => { S.assign = null; render(); };
     f.onsubmit = (e) => { e.preventDefault(); submitAssign(); };
   }
