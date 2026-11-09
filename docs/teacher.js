@@ -126,8 +126,8 @@
   function render() {
     $("st-line").innerHTML = `${D.demo ? '<span class="demo-flag">Демо · вымышленные данные</span> ' : ""}${D.rows.length} записей · ${D.students.length} ${pl(D.students.length, "ученик", "ученика", "учеников")} · ${esc(D.label || "")}`;
     $("tabs").querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === D.view)));
-    ["overview", "students", "lessons", "tests", "missing", "log"].forEach((v) => $("v-" + v).classList.toggle("hidden", v !== D.view));
-    ({ overview, students, lessons, tests, missing, log })[D.view]();
+    ["overview", "students", "lessons", "tests", "group", "missing", "log"].forEach((v) => $("v-" + v).classList.toggle("hidden", v !== D.view));
+    ({ overview, students, lessons, tests, group: groupView, missing, log })[D.view]();
     bindTips(document);
   }
   function overview() {
@@ -336,6 +336,95 @@
       $("v-lessons").innerHTML = html; hbars($("les-miss"), Object.entries(qs).map(([n, k]) => ({ label: /\./.test(n) ? `Модуль ${n.split(".")[0]} · вопрос ${n.split(".")[1]}` : `Вопрос ${n}`, value: (100 * k) / rows.length, n: rows.length })).sort((a, b) => b.value - a.value).slice(0, 10));
     }
     $("les-pick").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.lesson = b.dataset.t; render(); }));
+  }
+  // ---------- the whole group (2026-11-09, Nurassyl: «analysis of the group, not individuals: the most difficult questions and where people miss
+  // very much»). Every student's FIRST submission of each homework part and test section counts once; no names are shown.
+  const GA = { sec: "all", days: 0, min: 3, top: 15, kind: "all" };
+  const WORK = (r, P) => (r.kind === "P" ? "Пробные тесты" : "DUA".includes(r.kind) ? "Наборы «Полезное»" : !P ? "Другое" : /Холодный/.test(P.title) ? "Холодный старт" : /Финальный/.test(P.title) ? "Финальный тест" : /Дополнительное/.test(P.title) ? "Дополнительное ДЗ" : /Домашнее/.test(P.title) ? "Домашнее задание" : "Практика на уроке");
+  async function gaCollect() {
+    const now = Date.now(), seen = new Set(), Q = {};
+    const rows = D.rows.filter((r) => (!GA.days || (r.ts && now - r.ts < GA.days * DAY)) && "VMDUAP".includes(r.kind));
+    for (const r of rows) {
+      const mock = r.kind === "P", sec = mock ? (/·Math$/.test(r.lesson) ? "math" : "rw") : r.lesson[0] === "V" || r.lesson[0] === "A" ? "rw" : "math";
+      if (GA.sec !== "all" && GA.sec !== sec) continue;
+      if (GA.kind === "hw" && mock || GA.kind === "mk" && !mock) continue;
+      const id = `${r.key}|${r.lesson}|${r.pid}`; if (seen.has(id) || r.attempt > 1) continue; seen.add(id);
+      const bad = new Set(r.wrong.map(String)), pick = {}; r.answers.forEach((a) => (pick[String(a.n)] = a.tries[0] || ""));
+      if (mock) {
+        const mid = r.lesson.split("·")[0], M = ((D.mocks && D.mocks.mocks) || []).find((m) => m.id === mid), S = M && M.sections.find((s) => s.k === sec); if (!S) continue;
+        let b; try { b = await bundleT(S.b); } catch (e) { continue; }
+        const m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
+        Object.keys(pick).forEach((k) => { const [mn, qn] = k.split("."); const mod = mn === "1" ? "m1" : m2, q = (b.mods[mod] || [])[+qn - 1]; if (!q) return;
+          const st = (Q[`${mid}.${sec}.${mod}.${qn}`] = Q[`${mid}.${sec}.${mod}.${qn}`] || { src: { b: S.b, mod, i: +qn - 1 }, title: `${mockName(mid)} · ${S.name} · ${MODN[mod]} · №${qn}`, sec, sk: q.sk, d: q.d, work: "Пробные тесты", n: 0, wrong: 0, picks: {}, who: new Set() });
+          st.n++; st.who.add(r.key); if (bad.has(k)) { st.wrong++; const p = pick[k] || "—"; st.picks[p] = (st.picks[p] || 0) + 1; } });
+      } else {
+        const P = partOf(r.lesson, r.pid); if (!P) continue;
+        P.q.forEach((q) => { const k = String(q.n); if (!(k in pick) && !bad.has(k)) return;
+          const st = (Q[`${r.lesson}.${r.pid}.${k}`] = Q[`${r.lesson}.${r.pid}.${k}`] || { src: { b: P.b, n: q.n }, title: `${r.lesson} · ${P.title} · №${k}`, sec, sk: q.sk, d: "", work: WORK(r, P), n: 0, wrong: 0, picks: {}, who: new Set() });
+          st.n++; st.who.add(r.key); if (bad.has(k)) { st.wrong++; const p = pick[k] || "—"; st.picks[p] = (st.picks[p] || 0) + 1; } });
+      }
+    }
+    return Object.values(Q);
+  }
+  const trapOf = (q) => { const e = Object.entries(q.picks).filter(([o]) => /^[A-D]$/.test(o)).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 && e[1] / q.wrong >= 0.6 ? e : null; };
+  async function groupView() {
+    const box = $("v-group");
+    box.innerHTML = '<h2>Анализ группы</h2><p class="hint">Считаю ответы и загружаю вопросы…</p>';
+    const all = await gaCollect(); if (D.view !== "group") return;
+    const err = (x) => (x.n ? (100 * x.wrong) / x.n : 0);
+    const agg = (key) => { const g = {}; all.forEach((q) => { const k = key(q); if (!k) return; const s = (g[k] = g[k] || { n: 0, wrong: 0, q: 0 }); s.n += q.n; s.wrong += q.wrong; s.q++; });
+      return Object.entries(g).map(([label, s]) => ({ label, n: s.n, value: err(s), q: s.q })).sort((a, b) => b.value - a.value); };
+    const tot = (s) => all.filter((q) => q.sec === s).reduce((a, q) => [a[0] + q.n, a[1] + q.wrong], [0, 0]);
+    const rw = tot("rw"), ma = tot("math"), who = new Set(all.flatMap((q) => [...q.who]));
+    const ranked = all.filter((q) => q.who.size >= GA.min).sort((a, b) => err(b) - err(a) || b.n - a.n), hard = ranked.slice(0, GA.top);
+    const traps = ranked.filter(trapOf).sort((a, b) => trapOf(b)[1] - trapOf(a)[1]).slice(0, 10);
+    const skills = agg((q) => q.sk).filter((s) => s.n >= 4);
+    const chips = (id, cur, list) => `<div class="chips" id="${id}">${list.map(([v, t]) => `<button class="chip" data-x="${v}" aria-pressed="${String(v) === String(cur)}">${t}</button>`).join("")}</div>`;
+    let html = `<h2>Анализ группы</h2><p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
+      <div class="row t-filters">${chips("ga-sec", GA.sec, [["all", "Всё"], ["rw", "Reading and Writing"], ["math", "Math"]])}${chips("ga-kind", GA.kind, [["all", "ДЗ и тесты"], ["hw", "Только уроки и ДЗ"], ["mk", "Только пробные тесты"]])}
+      ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
+    html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
+      ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
+    if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); return; }
+    const top = skills.filter((s) => s.n >= 8).slice(0, 3);
+    if (top.length) html += `<div class="card" style="margin:0 0 18px"><b>Главное.</b> Больше всего ошибок: ${top.map((s) => `${esc(s.label)} (${pct(s.value)})`).join(", ")}.${traps.length ? ` Общих ловушек: ${traps.length} (вопросы, где большинство ошибившихся выбрали один и тот же неверный вариант).` : ""}</div>`;
+    html += `<h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
+    html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
+      return `<details class="rv tq ga-q" data-i="${all.indexOf(q)}"><summary><span class="mk${e >= 50 ? " no" : ""}">${i + 1}</span><span class="tq-s"><b>${esc(q.title)}</b><br><small>${esc(q.sk || "—")}${q.d ? " · " + DIFN[q.d] : ""} · ${esc(q.work)}${t ? ` · <span style="color:var(--oxide,#A63328)">общая ловушка ${t[0]}</span>` : ""}</small></span>
+        <span class="rate">${pct(e)}<small>${q.wrong} из ${q.n}</small></span></summary><div class="rbody"><p class="hint">Загружаю…</p></div></details>`; }).join("") + (hard.length ? "" : '<p class="hint">Пока ни один вопрос не решили столько учеников. Выберите «от 2 учеников».</p>') + "</div>";
+    html += `<h2>2. Где группа ошибается больше всего</h2><h3>По навыкам</h3><p class="hint">Доля ошибок с первой попытки · число ответов.</p><div id="ga-sk"></div>`;
+    html += `<h3>По доменам</h3><div id="ga-dom"></div><h3>По типу работы</h3><div id="ga-work"></div><h3>По урокам и тестам</h3><p class="hint">Уроки и тесты, где ответов не меньше 10.</p><div id="ga-les"></div>`;
+    const difs = agg((q) => (q.d ? `${q.sec === "rw" ? "Reading and Writing" : "Math"} · ${DIFN[q.d]}` : null));
+    if (difs.length) html += `<h3>По уровню (пробные тесты)</h3><div id="ga-dif"></div>`;
+    html += `<h3>Общие ловушки</h3><p class="hint">Вопросы, где 60% и больше ошибившихся выбрали один и тот же неверный вариант. Обычно за этим стоит одна и та же ошибка мышления: такие вопросы стоит разобрать на уроке.</p>` +
+      (traps.length ? table(["Вопрос", "Навык", "Ловушка", "Выбрали"], traps.map((q) => { const t = trapOf(q); return { k: "", cells: [esc(q.title), esc(q.sk || "—"), `<b>${t[0]}</b>`, `${t[1]} из ${q.wrong}`] }; }), { num: [3] }) : '<p class="hint">Таких вопросов пока нет.</p>');
+    box.innerHTML = html;
+    const DOMSK = { "Words in Context": "Craft and Structure", "Text Structure and Purpose": "Craft and Structure", "Cross-Text Connections": "Craft and Structure", "Central Ideas and Details": "Information and Ideas",
+      "Command of Evidence": "Information and Ideas", "Inferences": "Information and Ideas", "Boundaries": "Standard English Conventions", "Form, Structure, and Sense": "Standard English Conventions", "Transitions": "Expression of Ideas", "Rhetorical Synthesis": "Expression of Ideas" };
+    const MDOM = (s) => (/^Linear|^Systems/.test(s) ? "Algebra" : /^Equivalent|^Nonlinear/.test(s) ? "Advanced Math" : /^Area|^Lines|^Right|^Circles/.test(s) ? "Geometry and Trigonometry" : s ? "Problem-Solving and Data Analysis" : null);
+    hbars($("ga-sk"), skills.slice(0, 14).map((s) => ({ label: s.label, value: s.value, n: s.n })));
+    hbars($("ga-dom"), agg((q) => (q.sec === "rw" ? DOMSK[q.sk] : MDOM(q.sk || ""))).map((s) => ({ label: s.label, value: s.value, n: s.n })));
+    hbars($("ga-work"), agg((q) => q.work).map((s) => ({ label: s.label, value: s.value, n: s.n })));
+    hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
+    if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
+    box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
+    gaBind(box);
+  }
+  function gaBind(box) {
+    [["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
+  }
+  async function gaOpen(d, q) {
+    const body = d.querySelector(".rbody"); if (body.dataset.done) return;
+    let item; try { const b = await bundleT(q.src.b); item = q.src.mod ? b.mods[q.src.mod][q.src.i] : b.find((x) => x.n === q.src.n); } catch (e) { body.innerHTML = '<p class="hint">Не удалось загрузить вопрос. Обновите страницу.</p>'; return; }
+    if (!item) { body.innerHTML = '<p class="hint">Вопрос не найден.</p>'; return; }
+    const t = trapOf(q), acc = [].concat(item.acc || item.ans).filter(Boolean), ok = q.n - q.wrong;
+    const opts = item.t === "mc" && item.opts && item.opts.length ? item.opts.map((o, k) => { const L = "ABCD"[k], c = L === item.ans ? ok : q.picks[L] || 0;
+        return `<div class="ropt${L === item.ans ? " right" : ""}${t && t[0] === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${L === item.ans ? "верный · " : ""}${c} ${pl(c, "ученик", "ученика", "учеников")}</span></div>`; }).join("")
+      : `<p class="hint">Принимаются: ${esc(acc.join(", "))} · неверные ответы: ${esc(Object.entries(q.picks).map(([v, c]) => `${v} (${c})`).join(", ") || "—")}</p>`;
+    body.innerHTML = `${item.stim ? `<div class="qhtml">${item.stim}</div>` : ""}<div class="qhtml">${item.stem || ""}</div>${opts}
+      ${t ? `<p class="ga-trap">Общая ловушка: вариант <b>${t[0]}</b> выбрали ${t[1]} из ${q.wrong} ошибившихся. Стоит разобрать, почему он кажется верным.</p>` : ""}
+      ${item.rat ? `<div class="sv-expl"><span class="label">Объяснение</span><div class="qhtml">${item.rat}</div>${item.dz || ""}</div>` : ""}`;
+    body.dataset.done = "1";
   }
   function heatStudents(L, rows) {
     let s = `<div class="tw"><table class="heat"><tr><th></th>${L.parts.map((p) => `<th title="${esc(p.title)}">${esc(p.title.split(" ")[0].slice(0, 9))}</th>`).join("")}</tr>`;

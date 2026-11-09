@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611091056">
-<script src="auth.js?v=202611091056"></script>
+<link rel="stylesheet" href="site.css?v=202611091110">
+<script src="auth.js?v=202611091110"></script>
 <style>
 main{max-width:1200px}
 .src{display:grid;grid-template-columns:1fr;gap:10px}
@@ -73,6 +73,9 @@ table.t td.num{font-family:var(--mono);font-size:13px;white-space:nowrap}
 .hwrev > .label{color:var(--oxide,#A63328)}
 .ropt .tg{margin-left:auto;font:11px var(--mono);color:var(--stone);text-align:right;max-width:45%}
 .sv-expl{margin-top:14px;padding:14px 16px;background:var(--mist)}
+.ga-q summary .rate{margin-left:auto;flex:none;text-align:right;font:300 italic 30px/1 var(--serif,'Noto Serif Display',Georgia,serif);color:var(--oxide,#A63328)}
+.ga-q summary .rate small{display:block;font:11px var(--mono);color:var(--stone);font-style:normal;margin-top:4px}
+.ga-trap{border-left:3px solid var(--oxide,#A63328);padding:2px 0 2px 10px;margin:8px 0}
 .t-filters{align-items:center;gap:14px;flex-wrap:wrap}
 #t-mock{display:grid;gap:10px}
 .tgrp .label{display:block;margin-bottom:4px}
@@ -202,6 +205,7 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
       <button class="chip" data-v="students" aria-pressed="false">Ученики</button>
       <button class="chip" data-v="lessons" aria-pressed="false">Уроки</button>
       <button class="chip" data-v="tests" aria-pressed="false">Пробные тесты</button>
+      <button class="chip" data-v="group" aria-pressed="false">Анализ группы</button>
       <button class="chip" data-v="missing" aria-pressed="false">Не сдали</button>
       <button class="chip" data-v="log" aria-pressed="false">Журнал</button>
     </div>
@@ -209,6 +213,7 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
     <section id="v-students" class="hidden"></section>
     <section id="v-lessons" class="hidden"></section>
     <section id="v-tests" class="hidden"></section>
+    <section id="v-group" class="hidden"></section>
     <section id="v-missing" class="hidden"></section>
     <section id="v-log" class="hidden"></section>
   </div>
@@ -219,9 +224,9 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611091056"></script>
-<script src="scale.js?v=202611091056"></script>
-<script src="formkit.js?v=202611091056"></script>
-<script src="teacher.js?v=202611091056"></script>
+<script src="config.js?v=202611091110"></script>
+<script src="scale.js?v=202611091110"></script>
+<script src="formkit.js?v=202611091110"></script>
+<script src="teacher.js?v=202611091110"></script>
 </body>
 </html>
