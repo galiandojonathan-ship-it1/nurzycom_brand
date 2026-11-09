@@ -551,3 +551,5 @@ body > .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;ove
   .prog i,.meter i{forced-color-adjust:none;background:Highlight}
 }
 .timeup{border-left:3px solid var(--oxide);background:var(--mist);padding:10px 14px;margin:0 0 18px;font-size:15px}   /* practice test: «time up, module submitted» notice */
+.auth-show{margin-top:-2px}   /* «Показать пароль» under the password field */
+.sv-words{margin-top:16px;border-top:1px solid var(--studio);padding-top:12px}.sv-words ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}.sv-words li{font-size:15px;line-height:1.45}.sv-words small{display:block;color:var(--stone);font-size:14px}   /* homework: the question's difficult words after the answer */

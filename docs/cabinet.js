@@ -212,7 +212,7 @@
   function openAssign(ids) {
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
     S.assign = { kind: S.lessons.length ? "hw" : "mk", item: first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
-    fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: "smooth" }); }, 30);
+    fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
   }
   function fixAssign() {   // keep item and part valid for the chosen kind
     const A = S.assign, its = items(A.kind);

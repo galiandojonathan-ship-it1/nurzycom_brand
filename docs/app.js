@@ -50,7 +50,7 @@
         return `<button class="tile" data-l="${l.tag}" aria-pressed="false" title="${esc(l.title)}"><span class="no">${/^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))).padStart(2, "0") : l.tag.slice(1)}</span><span class="nm">${esc(nm)}</span>${done ? `<span class="dot">${done}/${l.parts.length}</span>` : ""}</button>`;
       }).join("")}</div></div>`;
     }).join("");
-    $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { pickLesson(b.dataset.l); $("step-part").scrollIntoView({ behavior: "smooth", block: "start" }); }));
+    $("lessons").querySelectorAll(".tile").forEach((b) => (b.onclick = () => { pickLesson(b.dataset.l); $("step-part").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); }));
     $("student").value = store("hw_student") || "";
     $("student").oninput = check;
     const params = new URLSearchParams(location.search);

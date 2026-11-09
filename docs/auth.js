@@ -167,11 +167,12 @@
       <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
       <span class="label">nurzycom · SAT</span><h1>Вход</h1>
       <p class="sub">Домашние задания, словарь и тексты курса. Первый раз здесь? Создайте аккаунт с кодом класса от преподавателя.</p>
-      <input id="auth-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Логин" aria-label="Логин">
-      <input id="auth-pw" type="password" autocomplete="current-password" placeholder="Пароль" aria-label="Пароль" required>
+      <label class="auth-f">Логин<input id="auth-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="auth-f">Пароль<input id="auth-pw" type="password" autocomplete="current-password" required></label>
+      <label class="auth-keep auth-show"><input type="checkbox" data-show="auth-pw"> Показать пароль</label>
       <label class="auth-keep"><input id="auth-keep" type="checkbox" checked> Запомнить на этом устройстве</label>
       <button class="btn" id="auth-go" type="submit">Войти <span class="arr">→</span></button>
-      <p class="hint" id="auth-msg"></p>
+      <p class="hint" id="auth-msg" role="status" aria-live="polite"></p>
       <button class="btn ghost" id="auth-to-up" type="button">Создать аккаунт</button>
       <p class="label auth-foot"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram @nurzycom</a></p></form>
       <form class="auth-box hidden" id="auth-up" autocomplete="on">
@@ -183,11 +184,15 @@
       <label class="auth-f"><span>Придумайте логин: латиница, например aigerim.k</span><input id="up-login" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
       <label class="auth-f"><span>Пароль: от 8 символов, буквы и цифры</span><input id="up-pw" type="password" autocomplete="new-password" required></label>
       <label class="auth-f"><span>Пароль ещё раз</span><input id="up-pw2" type="password" autocomplete="new-password" required></label>
+      <label class="auth-keep auth-show"><input type="checkbox" data-show="up-pw up-pw2"> Показать пароль</label>
       <label class="auth-keep"><input id="up-keep" type="checkbox" checked> Запомнить на этом устройстве</label>
       <button class="btn" id="up-go" type="submit">Создать аккаунт <span class="arr">→</span></button>
-      <p class="hint" id="up-msg"></p>
+      <p class="hint" id="up-msg" role="status" aria-live="polite"></p>
       <button class="btn ghost" id="auth-to-in" type="button">У меня уже есть аккаунт</button></form>`;
     document.body.prepend(d);
+    // «Показать пароль»: phones make typos in hidden passwords; the fields go back to hidden on submit
+    d.querySelectorAll("[data-show]").forEach((c) => (c.onchange = () => c.dataset.show.split(" ").forEach((id) => (document.getElementById(id).type = c.checked ? "text" : "password"))));
+    d.querySelectorAll("form").forEach((f) => f.addEventListener("submit", () => f.querySelectorAll("[data-show]").forEach((c) => { if (c.checked) { c.checked = false; c.onchange(); } }), true));
     const show = (up) => { document.getElementById("auth-in").classList.toggle("hidden", up); document.getElementById("auth-up").classList.toggle("hidden", !up); document.getElementById(up ? "up-code" : "auth-login").focus(); };
     document.getElementById("auth-to-up").onclick = () => show(true);
     document.getElementById("auth-to-in").onclick = () => show(false);

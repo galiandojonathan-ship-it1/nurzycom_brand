@@ -73,7 +73,7 @@
     $("q-n").textContent = `${st.t.q.length} ${pl(st.t.q.length, "вопрос", "вопроса", "вопросов")} · подсказки выключены`;
     $("q-res").classList.add("hidden"); $("check").classList.remove("hidden"); $("q-msg").textContent = "";
     renderQuiz({});
-    $("quiz").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("quiz").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }
   function renderQuiz(info) {
     const done = !!st.ok;
@@ -106,7 +106,7 @@
     $("check").classList.add("hidden"); $("q-res").classList.remove("hidden"); $("q-msg").textContent = "";
     st.quiz = false; setQuiet(false); $("gl").classList.remove("hidden");
     await reveal();
-    $("q-res").scrollIntoView({ behavior: "smooth", block: "center" });
+    $("q-res").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
     send(res);
   }
   async function reveal() {

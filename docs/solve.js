@@ -109,7 +109,15 @@
     const els = [$("sv-passage")];   // the question line is a standard prompt («conforms to», «support»): never underlined
     if (!GIVEAWAY.test(text) || revealed(s)) els.push(...$("sv-opts").querySelectorAll(".tx"));
     const at = S.cur;
-    GLOSS.ready.then(() => { if (S.cur === at && els.every((e) => e.isConnected)) GLOSS.apply(els, { wide: true }); });
+    GLOSS.ready.then(() => {
+      if (S.cur !== at || !els.every((e) => e.isConnected)) return;
+      const found = GLOSS.apply(els, { wide: true });
+      // after the answer: the question's words in one list under the explanation (as in the hard sets), to review at once
+      const ex = $("sv-expl"); if (!revealed(s) || !found.length || !ex || ex.classList.contains("hidden")) return;
+      const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const li = found.map((k) => GLOSS.entry(k)).filter(Boolean).map((e) => `<li><b lang="en">${esc(e.w)}</b>${e.en ? ` <span lang="en">— ${esc(e.en)}</span>` : ""}${e.ru.length ? `<small>${esc(e.ru.join(", "))}</small>` : ""}</li>`).join("");
+      ex.insertAdjacentHTML("beforeend", `<div class="sv-words"><span class="label">Слова этого вопроса</span><ul>${li}</ul></div>`);
+    });
   }
   function renderGrid() {
     $("sv-grid").innerHTML = S.items.map((q, k) => { const s = S.st[q.i];
@@ -144,7 +152,7 @@
     s.tries.push(raw); S.sel = null; S.spr = null;
     if (ok || s.tries.length >= 2) { s.done = true; s.ok = ok; }
     save(); render();
-    if (s.done) $("sv-fb").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (s.done) $("sv-fb").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   }
   function go(k) { S.cur = Math.max(0, Math.min(S.items.length - 1, k)); S.sel = null; S.spr = null; $("sv-nav").classList.add("hidden"); render(); window.scrollTo(0, 0); }
 
