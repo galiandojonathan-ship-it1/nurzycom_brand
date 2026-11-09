@@ -74,7 +74,7 @@ Nurassyl's loop, word for word:
 
 > every 1 hour recheck the website for bugs and enhance UI/UX experience as much as possible, finding at least 3 flaws. Also, put unfamiliar and difficult words option to homeworks except for Words in Context. For these all, do research on the internet to find the best ways to handle the task over and over. Before each run, create the plan and how you will test whether you succeeded. After each run, question yourself what you can do better next run.
 
-- It runs until **2026-11-15**, through scheduled messages bound to the session of 8–9 November. A new chat does not inherit them: to continue there, start it again with `/loop` and the same text.
+- **Stopped by Nurassyl on 2026-11-09 after run 14** (it had been set to run until 2026-11-15). Do not restart it unless he asks; if he does, start it with `/loop` and the text above.
 - Each run: confirm the previous run is live, find and fix at least 3 flaws (reproduce each with a script first), run the suites, bump the cache tags, push to `main` and `claude/ecstatic-mayer-3asg7r`, check the live site, then schedule the next run.
 - Ideas for run 13 and later:
   - CSS classes used in JS or HTML but defined nowhere;
