@@ -148,7 +148,7 @@
     let items;
     try {
       items = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(part.b, { cache: "no-store" })).arrayBuffer())));
-    } catch (e) { $("start-msg").textContent = "Не удалось загрузить вопросы. Обновите страницу."; return; }
+    } catch (e) { $("start-msg").textContent = SITE.failMsg("нажмите «Решать на экране» ещё раз"); return; }
     $("start-msg").textContent = "";
     state.items = items;
     HWSolve.open({ lesson, part, items, student: store("hw_student"), sha, parseSpr, show,

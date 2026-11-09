@@ -194,5 +194,5 @@
     if (want.length) { st.sel = new Set(want); st.cats = new Set(["words", "terms", "review"]); }
     renderStart();
     if (want.length) start("cards", false);
-  });
+  }).catch(() => { $("sum").setAttribute("role", "alert"); $("sum").textContent = SITE.failMsg(); });
 })();

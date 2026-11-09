@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611090335">
+<link rel="stylesheet" href="site.css?v=202611090342">
 <style>
 .dnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 30px}
 .rules{counter-reset:r;display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--ink)}
@@ -52,9 +52,10 @@
 .set[aria-pressed=true] .label{color:var(--studio)}
 .crumb{display:inline-block;margin-bottom:4px;padding:7px 0;font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--stone)}
 </style>
-<script src="auth.js?v=202611090335"></script>
+<script src="auth.js?v=202611090342"></script>
 </head>
 <body>
+<a class="skip" href="#main">Перейти к содержанию</a>
 <header class="top"><div class="top-in">
   <a class="brand" href="./" aria-label="NK nurzycom · SAT, главная">
     <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
@@ -64,7 +65,7 @@
   <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
 </div></header>
 
-<main>
+<main id="main" tabindex="-1">
   <section id="s-start">
     <div class="hero">
       <a class="crumb" href="useful.html">← Полезное</a><br>
@@ -141,9 +142,9 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611090335"></script>
-<script src="tools.js?v=202611090335"></script>
-<script src="solve.js?v=202611090335"></script>
-<script src="desmos.js?v=202611090335"></script>
+<script src="config.js?v=202611090342"></script>
+<script src="tools.js?v=202611090342"></script>
+<script src="solve.js?v=202611090342"></script>
+<script src="desmos.js?v=202611090342"></script>
 </body>
 </html>

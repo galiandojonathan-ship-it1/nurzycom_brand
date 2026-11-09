@@ -232,10 +232,17 @@
   }
   document.addEventListener("DOMContentLoaded", async () => { logoutLink(); if (!(await resume())) gate(); });
 
+  const JTXT = {};   // data file name → promise of its decrypted text
   window.SITE = {
+    // a failed data load: say whether the connection is the problem (a reload while offline loses the whole page)
+    failMsg(retry) { return navigator.onLine === false ? `Нет подключения к интернету. Подключитесь и ${retry || "обновите страницу"}.` : "Не удалось загрузить данные. Обновите страницу; если не поможет, напишите преподавателю."; },
     ready,
     async open(bytes) { const k = await ready; const u = new Uint8Array(bytes); return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, k, u.slice(12))); },
-    async json(name) { const r = await fetch(`data/${name}.bin`, { cache: "no-store" }); return JSON.parse(dec.decode(await SITE.open(await r.arrayBuffer()))); },
+    // one download per data file per page (the homework page asked for lessons.bin twice: list + «Сегодня»); each caller gets its own parsed copy
+    async json(name) {
+      const p = JTXT[name] || (JTXT[name] = fetch(`data/${name}.bin`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("data " + r.status); return r.arrayBuffer(); }).then((b) => SITE.open(b)).then((u) => dec.decode(u)));
+      try { return JSON.parse(await p); } catch (e) { delete JTXT[name]; throw e; }
+    },
     async sealed(s) { return JSON.parse(dec.decode(await SITE.open(b64(s)))); },   // per-item encrypted fields (explanations)
     // teacher page: the shared password (kept until it is switched off) and the students' own logins
     async rewrap(current, next) { const a = await access(); const raw = a.wrap ? await unwrap(current, a) : sessionRaw(); return Object.assign({}, a, await wrap(raw, next)); },

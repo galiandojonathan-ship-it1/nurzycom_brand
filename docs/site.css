@@ -553,3 +553,8 @@ body > .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;ove
 .timeup{border-left:3px solid var(--oxide);background:var(--mist);padding:10px 14px;margin:0 0 18px;font-size:15px}   /* practice test: «time up, module submitted» notice */
 .auth-show{margin-top:-2px}   /* «Показать пароль» under the password field */
 .sv-words{margin-top:16px;border-top:1px solid var(--studio);padding-top:12px}.sv-words ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}.sv-words li{font-size:15px;line-height:1.45}.sv-words small{display:block;color:var(--stone);font-size:14px}   /* homework: the question's difficult words after the answer */
+/* skip link (2026-11-09): hidden until the first Tab, then jumps past the menu to the page content (WCAG 2.4.1) */
+.skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--ink);color:var(--paper);padding:10px 14px;font:500 15px var(--sans);text-decoration:none}
+.skip:focus{top:12px;outline:2px solid var(--oxide);outline-offset:2px}
+html.locked .skip{display:none}
+main:focus{outline:none}

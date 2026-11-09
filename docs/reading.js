@@ -131,5 +131,5 @@
     st.data = d; renderStart();
     const want = new URLSearchParams(location.search).get("t");
     if (want) openText(want);
-  });
+  }).catch(() => { $("texts").innerHTML = `<p class="hint" role="alert">${SITE.failMsg()}</p>`; });
 })();
