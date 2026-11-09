@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611090707">
-<script src="auth.js?v=202611090707"></script>
+<link rel="stylesheet" href="site.css?v=202611090736">
+<script src="auth.js?v=202611090736"></script>
 <style>
 .mocks{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:700px){.mocks{grid-template-columns:1fr 1fr}}
@@ -162,7 +162,7 @@
       <div class="mtimer" id="timer"><b id="clock">32:00</b><button id="hide-t">Скрыть</button></div>
       <span class="mtools" id="t-tools"></span>
     </div>
-    <div id="navpanel" class="navpanel hidden">
+    <div id="navpanel" class="navpanel hidden" role="region" aria-label="Все вопросы модуля">
       <div class="legend"><span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span></div>
       <div class="grid12" id="grid"></div>
       <div class="row" style="margin-top:6px"><button class="btn" id="to-check">Проверить ответы модуля</button><button class="btn ghost" id="closenav">Закрыть</button></div>
@@ -170,14 +170,14 @@
     <div class="qwrap" id="wrap">
       <div class="passage qhtml" id="passage"></div>
       <div class="ask">
-        <div class="qhead"><span><span class="qnum" id="qnum"></span><span class="qn" id="qn"></span></span><button class="flag" id="flag" aria-pressed="false">Отметить</button></div>
+        <div class="qhead"><span><span class="qnum" id="qnum" tabindex="-1"></span><span class="qn" id="qn"></span></span><button class="flag" id="flag" aria-pressed="false">Отметить</button></div>
         <div class="stem qhtml" id="stem"></div>
         <div id="opts"></div>
       </div>
     </div>
     <div class="navrow">
       <button class="btn ghost" id="prev">← Назад</button>
-      <button id="navbtn" aria-label="Все вопросы"></button>
+      <button id="navbtn" aria-label="Все вопросы" aria-expanded="false" aria-controls="navpanel"></button>
       <button class="btn" id="next">Далее →</button>
     </div>
   </section>
@@ -185,7 +185,7 @@
   <section id="m-check" class="hidden">
     <div class="checkbox">
       <span class="label" id="chk-label"></span>
-      <h2>Проверьте ответы</h2>
+      <h2 id="chk-h" tabindex="-1">Проверьте ответы</h2>
       <p class="sub" style="color:var(--stone)">Здесь видно, на какие вопросы вы ответили и какие отметили. Нажмите на номер, чтобы вернуться к вопросу. Когда будете готовы, сдайте модуль: вернуться к нему будет нельзя.</p>
       <div class="legend" style="margin-top:14px"><span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span></div>
       <div class="grid12" id="chk-grid"></div>
@@ -217,10 +217,10 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611090707"></script>
-<script src="tools.js?v=202611090707"></script>
-<script src="scale.js?v=202611090707"></script>
-<script src="gloss.js?v=202611090707"></script>
-<script src="mock.js?v=202611090707"></script>
+<script src="config.js?v=202611090736"></script>
+<script src="tools.js?v=202611090736"></script>
+<script src="scale.js?v=202611090736"></script>
+<script src="gloss.js?v=202611090736"></script>
+<script src="mock.js?v=202611090736"></script>
 </body>
 </html>

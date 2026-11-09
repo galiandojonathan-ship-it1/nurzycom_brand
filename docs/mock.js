@@ -130,7 +130,7 @@
   $("dir-go").onclick = () => {
     T.st.phase = "test"; T.st.deadline = Date.now() + secInfo(curSec()).min * 60000; if ($("timeup")) $("timeup").classList.add("hidden");
     T.st.ans[mkey()] = T.st.ans[mkey()] || {}; T.st.mk[mkey()] = T.st.mk[mkey()] || [];
-    save(); resume();
+    save(); resume(); focusQ();
   };
   $("dir-exit").onclick = home;
   function home() { clearInterval(T.timer); if (window.BBTools) BBTools.close(); renderStart(); show("m-start"); }
@@ -197,7 +197,7 @@
   }
   function renderGrid() {
     $("grid").innerHTML = gridHtml(true);
-    $("grid").querySelectorAll("button").forEach((b) => (b.onclick = () => go(Number(b.dataset.k))));
+    $("grid").querySelectorAll("button").forEach((b) => (b.onclick = () => { go(Number(b.dataset.k)); focusQ(); }));
   }
   function choose(c) { const q = items()[T.cur]; T.st.ans[mkey()][q.n] = c; if (T.out[q.n]) T.out[q.n].delete(c); save(); render(); }
   function strike(c) {
@@ -205,15 +205,21 @@
     if (o.has(c)) o.delete(c); else { o.add(c); if (A[q.n] === c) { delete A[q.n]; save(); } }
     render();
   }
-  function go(k) { T.cur = Math.max(0, Math.min(items().length - 1, k)); $("navpanel").classList.add("hidden"); if (T.st.phase !== "test") { T.st.phase = "test"; save(); show("m-test"); } render(); window.scrollTo(0, 0); }
+  function go(k) { T.cur = Math.max(0, Math.min(items().length - 1, k)); navClose(false); if (T.st.phase !== "test") { T.st.phase = "test"; save(); show("m-test"); } render(); window.scrollTo(0, 0); }
   $("prev").onclick = () => go(T.cur - 1);
   $("next").onclick = () => (T.cur === items().length - 1 ? openCheck() : go(T.cur + 1));
-  $("navbtn").onclick = () => $("navpanel").classList.toggle("hidden");
-  $("closenav").onclick = () => $("navpanel").classList.add("hidden");
+  // keyboard: the question panel opens on the current number, Escape closes it back to «N из 27»; screen changes put focus on the question or the heading
+  const focusQ = () => { if (!$("m-test").classList.contains("hidden")) $("qnum").focus({ preventScroll: true }); };
+  function navClose(back) { $("navpanel").classList.add("hidden"); $("navbtn").setAttribute("aria-expanded", "false"); if (back) $("navbtn").focus(); }
+  $("navbtn").onclick = () => { const open = $("navpanel").classList.toggle("hidden") === false; $("navbtn").setAttribute("aria-expanded", String(open));
+    if (open) { const c = $("grid").querySelector(".cur") || $("grid").querySelector("button"); if (c) c.focus(); } };
+  $("closenav").onclick = () => navClose(true);
   $("to-check").onclick = () => openCheck();
   $("flag").onclick = () => { const n = items()[T.cur].n, M = T.st.mk[mkey()], k = M.indexOf(n); k < 0 ? M.push(n) : M.splice(k, 1); save(); render(); };
   document.addEventListener("keydown", (e) => {
-    if ($("m-test").classList.contains("hidden") || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if ($("m-test").classList.contains("hidden")) return;
+    if (e.key === "Escape" && !$("navpanel").classList.contains("hidden")) { navClose(true); return; }
+    if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
     const k = e.key.toUpperCase(), q = items()[T.cur];
     if (q.t === "mc" && k.length === 1 && "ABCD".includes(k)) choose(k);
     else if (e.key === "ArrowRight" && T.cur < items().length - 1) go(T.cur + 1);
@@ -222,17 +228,17 @@
 
   // ---- check your work, then submit the module
   function openCheck() {
-    $("navpanel").classList.add("hidden"); if (window.BBTools) BBTools.close();
+    navClose(false); if (window.BBTools) BBTools.close();
     T.st.phase = "check"; save();
     const its = items(), A = T.st.ans[mkey()], M = T.st.mk[mkey()];
     $("chk-label").textContent = `${secInfo(curSec()).name} · Модуль ${T.st.mod === "m1" ? 1 : 2}`;
     $("chk-grid").innerHTML = gridHtml(false);
-    $("chk-grid").querySelectorAll("button").forEach((b) => (b.onclick = () => go(Number(b.dataset.k))));
+    $("chk-grid").querySelectorAll("button").forEach((b) => (b.onclick = () => { go(Number(b.dataset.k)); focusQ(); }));
     const blank = its.filter((q) => !A[q.n]).map((q) => q.n);
     $("chk-sum").textContent = `Отвечено: ${its.length - blank.length} из ${its.length}.${blank.length ? ` Без ответа: ${blank.join(", ")}.` : ""}${M.length ? ` Отмечены: ${[...M].sort((a, b) => a - b).join(", ")}.` : ""}`;
-    show("m-check"); tick();
+    show("m-check"); tick(); $("chk-h").focus({ preventScroll: true });
   }
-  $("chk-back").onclick = () => go(T.cur);
+  $("chk-back").onclick = () => { go(T.cur); focusQ(); };
   $("chk-submit").onclick = () => submitModule(false);
 
   const right = (q, a) => !!a && (q.t === "mc" ? a === q.acc[0] : q.acc.includes(parseSpr(a)));

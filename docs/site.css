@@ -2,7 +2,10 @@
 :root{--ink:#0F0F0F;--paper:#F5F3EE;--mist:#ECE9E2;--studio:#D9D5CD;--stone:#5E5A54;--graphite:#77736D;--oxide:#A63328;--white:#FFFFFF;
   --serif:"Noto Serif Display",Georgia,serif;--sans:Geist,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-padding-bottom:84px}   /* WCAG 2.4.11 (technique C43): a control reached by Tab is never left under the sticky answer bar */
+@media(min-width:761px){html{scroll-padding-top:80px}}   /* …or under the sticky top menu (sticky only above 760px) */
+html:has(section:not(.hidden) > .bar){scroll-padding-top:52px}   /* solving screens add the sticky question bar (40px) */
+@media(min-width:761px){html:has(section:not(.hidden) > .bar){scroll-padding-top:112px}}
 html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--sans)}
 body{min-height:100vh;display:flex;flex-direction:column}
 a{color:var(--ink)}

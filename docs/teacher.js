@@ -243,6 +243,10 @@
       return { r, count: rs.length, m2, ans, bad, m1: raw("m1"), m2raw: raw("m2"), est: window.SATSCALE ? SATSCALE.section(sec, m2 === "m2h", r.a) : null };
     }).sort((x, y) => x.r.name.localeCompare(y.r.name, "ru"));
   }
+  const tnum = (m) => +m.id.replace(/\D/g, "");   // the five groups of mock.html, in its order
+  const TGROUPS = [["Полные тесты 1–4", (m) => !m.group && !m.only && tnum(m) <= 4], ["Reading and Writing 5–8", (m) => !m.group && m.only === "rw"],
+    ["Полные тесты 9–12", (m) => !m.group && !m.only && tnum(m) > 4], ["Официальные вопросы College Board", (m) => m.group === "official"],
+    ["Прогнозы", (m) => m.group === "prediction"], ["Другие", (m) => m.group && !["official", "prediction"].includes(m.group)]];
   async function tests() {
     const box = $("v-tests"), M = (D.mocks && D.mocks.mocks) || [], T = D.t;
     if (!M.length) { box.innerHTML = '<h2>Пробные тесты</h2><p class="hint">Не удалось загрузить тесты. Обновите страницу.</p>'; return; }
@@ -256,7 +260,8 @@
     if (!MODN[T.mod]) T.mod = "m1";
     const nSub = (m) => new Set(D.rows.filter((r) => r.lesson.split("·")[0] === m.id).map((r) => r.key)).size;
     let html = `${solo ? '<div class="row" style="margin-top:0"><button class="btn ghost" id="t-back">← Карточка ученика</button></div>' : ""}<h2>Пробные тесты${solo ? ` · ${esc(soloName)}` : ""}</h2><p class="hint">${solo ? "Показаны только ответы этого ученика: ответы, имена и баллы других учеников скрыты. Удобно разбирать ошибки вместе с учеником." : "Все вопросы каждого теста с верным ответом и разбором. Под каждым вопросом — что выбрал каждый ученик (последняя сдача этого раздела). Число на кнопке теста — сколько учеников его сдали."}</p>
-      <div class="chips" id="t-mock">${M.map((m) => { const k = nSub(m); return `<button class="chip" data-m="${m.id}" aria-pressed="${m.id === mock.id}">${m.id}${k && !solo ? ` · ${k}` : ""}</button>`; }).join("")}</div>
+      <div id="t-mock">${TGROUPS.map(([cap, f]) => { const ms = M.filter(f); return ms.length ? `<div class="tgrp"><span class="label">${cap}</span><div class="chips" role="group" aria-label="${cap}">${ms.map((m) => { const k = nSub(m);
+        return `<button class="chip" data-m="${m.id}" aria-pressed="${m.id === mock.id}">${m.id}${k && !solo ? ` · ${k}` : ""}</button>`; }).join("")}</div></div>` : ""; }).join("")}</div>
       <div class="chips" id="t-sec" style="margin-top:8px">${mock.sections.map((s) => `<button class="chip" data-s="${s.k}" aria-pressed="${s.k === S.k}">${esc(s.name)}</button>`).join("")}</div>`;
     if (shown.length) {
       html += `<h2>${solo ? "Результат ученика" : `Кто сдал · ${runs.length}`}</h2>` + table(["Ученик", "Когда", "Модуль 1", "Модуль 2", "Верно", "Примерный балл", "Сдач"], shown.map((x) => ({ k: x.r.key,
