@@ -21,7 +21,7 @@
     body.forEach((r) => {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
       let lesson = g("lesson").toUpperCase(); const sc = g("score").match(/^(\d+)\/(\d+)$/);
-      if (!/^([VMXTDUA]\d\d|PT\d\d?|MD|VA)$/.test(lesson) || !sc) return;
+      if (!/^([VMXTDUA]\d\d|P[TR]\d\d?|MD|VA)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
       const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: /\./.test(n) ? n : Number(n), tries: v === "-" ? [] : v.split(">") }; });

@@ -19,7 +19,7 @@
   const metaOf = (u) => { const m = {}; if (u.B) for (const [k, r] of Object.entries(u.B)) m[k] = (r && r.t) || 0; return m; };
   const keysOf = (u) => (u.B ? Object.keys(u.B).filter((k) => u.B[k] && u.B[k].v != null) : []);
   // the name the results are stored under (the login sets it; results made earlier with the shared password may use another)
-  const NAME_RE = [/^hw_last_(.+)_(?:[VM]\d\d|VA|MD|[ADU]\d\d)_p\d+$/, /^px_last_(.+)_X\d\d$/, /^rd_last_(.+)_T\d\d$/, /^mk_last_(.+)_PT\d+$/, /^plan_done_(.+)$/];
+  const NAME_RE = [/^hw_last_(.+)_(?:[VM]\d\d|VA|MD|[ADU]\d\d)_p\d+$/, /^px_last_(.+)_X\d\d$/, /^rd_last_(.+)_T\d\d$/, /^mk_last_(.+)_P[TR]\d+$/, /^plan_done_(.+)$/];
   function namesOf(u) {
     const c = {}; for (const k of keysOf(u)) for (const re of NAME_RE) { const m = re.exec(k); if (m) { c[m[1]] = (c[m[1]] || 0) + 1; break; } }
     return c;

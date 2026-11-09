@@ -127,7 +127,7 @@
   // ---- shared by «Сегодня» and the teacher's cabinet: results, labels, estimated scores, assigned tasks
   const est = (s) => { const m = String(s || "").match(/≈\s*(\d+)/g); return m ? m.reduce((a, x) => a + Number(x.replace(/\D/g, "")), 0) : null; };
   function label(rest, kind, lessons) {   // a stored result key → what the student did, in the words of the menu
-    if (kind === "mk") return `Пробный тест ${rest.replace(/^PT/, "")}`;
+    if (kind === "mk") return /^PR/.test(rest) ? `Прогноз ${rest.slice(2)}` : `Пробный тест ${rest.replace(/^PT/, "")}`;
     if (kind === "rd") return `Текст ${Number(rest.slice(1))}`;
     if (kind === "px") return `Сложные вопросы · набор ${Number(rest.slice(1))}`;
     const [tag, pid] = rest.split("_"), l = lessons && lessons.find((x) => x.tag === tag), p = l && l.parts.find((x) => x.id === pid);

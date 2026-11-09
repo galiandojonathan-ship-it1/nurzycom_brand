@@ -61,7 +61,7 @@
     Object.entries(NAMES).forEach(([k, re]) => { const i = head.findIndex((h) => re.test(h.trim())); if (i >= 0) col[k] = i; });
     const sample = body.slice(0, 50), used = new Set(Object.values(col));
     const guess = (k, test) => { if (col[k] !== undefined) return; for (let i = 0; i < head.length; i++) if (!used.has(i) && sample.length && sample.filter((r) => test(r[i] || "")).length >= sample.length * 0.8) { col[k] = i; used.add(i); return; } };
-    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTDUA]\d\d|PT\d\d?|MD|VA)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
+    guess("ts", (v) => /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(v)); guess("lesson", (v) => /^([VMXTDUA]\d\d|P[TR]\d\d?|MD|VA)$/.test(v.trim())); guess("score", (v) => /^\d+\/\d+$/.test(v.trim()));
     guess("answers", (v) => /^\d+:/.test(v.trim())); guess("part", (v) => /·|^p\d/.test(v)); guess("attempt", (v) => /^\d{1,2}$/.test(v.trim()));
     guess("seconds", (v) => /^\d+$/.test(v.trim())); guess("wrong", (v) => /^[\d,]*$/.test(v.trim())); guess("student", (v) => v.trim().length > 1);
     return col;
@@ -99,10 +99,10 @@
     const order = c.ts === undefined ? "dmy" : slashOrder(body.map((r) => r[c.ts]));
     for (const r of body) {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
-      const lesson = g("lesson").toUpperCase(), sc = g("score").match(/^(\d+)\/(\d+)$/); if (!/^([VMXTDUA]\d\d|PT\d\d?|MD|VA)$/.test(lesson) || !sc) continue;
+      const lesson = g("lesson").toUpperCase(), sc = g("score").match(/^(\d+)\/(\d+)$/); if (!/^([VMXTDUA]\d\d|P[TR]\d\d?|MD|VA)$/.test(lesson) || !sc) continue;
       const part = g("part");
       out.push({ ts: parseDate(g("ts"), order), raw: g("student"), lesson, kind: lesson[0], part, pid: (part.match(/^p\d+/) || [""])[0], a: +sc[1], b: +sc[2],
-        attempt: Number(g("attempt")) || 1, sec: Number(g("seconds")) || 0, sec2: lesson.startsWith("PT") ? (/^Math/.test(part) ? "math" : "rw") : "", hard: /M2 сложный/.test(part) });
+        attempt: Number(g("attempt")) || 1, sec: Number(g("seconds")) || 0, sec2: /^P[TR]/.test(lesson) ? (/^Math/.test(part) ? "math" : "rw") : "", hard: /M2 сложный/.test(part) });
     }
     return out.sort((x, y) => (x.ts || 0) - (y.ts || 0));
   }

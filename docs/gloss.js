@@ -49,12 +49,12 @@
         index(key, W[key], x.forms);
       });
     }));
-    for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q" };
+    for (const [key, x] of Object.entries(E)) if (!W[key]) W[key] = { w: x.w || key, pos: x.pos || "", en: x.en || "", ru: ruList(x.ru), forms: x.forms || [], src: "q", tag: x.tag || "", local: !!x.local };
     // homework has no per-question word lists: the test words (rare, single-sense words chosen for B2 readers) are matched
     // anywhere there, single words of 5+ letters only, so short or common spellings never get a card; «word#PT…» entries carry
     // the sense of one question (surface, ground, shift) and stay there; so do archaic senses («hence: (old) from now»,
     // while SAT transitions mean «therefore»)
-    for (const [key, e] of Object.entries(W)) if (e.src === "q" && !key.includes("#") && !/^\s*\(old\)/i.test(e.en)) for (const v of variants(e.w).concat(e.forms || []))
+    for (const [key, e] of Object.entries(W)) if (e.src === "q" && !e.local && !key.includes("#") && !/^\s*\(old\)/i.test(e.en)) for (const v of variants(e.w).concat(e.forms || []))
       if (!v.includes(" ") && v.length >= 5) for (const f of forms(v)) if (!WIDE.one.has(f) && !ONE.has(f)) WIDE.one.set(f, key);
     ADD = (extra && extra.add) || {}; QSKIP = (extra && extra.skip) || {}; OFF = new Set((extra && extra.off) || []);
   }
@@ -167,7 +167,7 @@
     if (cur) { cur.classList.remove("on"); if (cur.hasAttribute("aria-expanded")) cur.setAttribute("aria-expanded", "false"); }
     cur = el; el.classList.add("on"); if (el.hasAttribute("aria-expanded")) el.setAttribute("aria-expanded", "true");
     const pos = POS[String(e.pos).toLowerCase().replace(/\.$/, "")] || e.pos;   // «v» read like a lesson code: say it in Russian
-    pop.innerHTML = `<span class="label">${e.src === "course" ? "Словарь курса" : "Слово вопроса"}${pos ? " · " + esc(pos) : ""}</span><b lang="en">${esc(e.w)}</b>`
+    pop.innerHTML = `<span class="label">${e.src === "course" ? "Словарь курса" : e.tag ? esc(e.tag) : "Слово вопроса"}${pos ? " · " + esc(pos) : ""}</span><b lang="en">${esc(e.w)}</b>`
       + (e.en ? `<span class="gpop-en" lang="en">${esc(e.en)}</span>` : "") + (e.ru.length ? `<span class="gpop-ru">${esc(e.ru.join(", "))}</span>` : "");
     pop.setAttribute("aria-label", e.w);
     pop.classList.remove("hidden"); place();
