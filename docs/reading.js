@@ -1,6 +1,7 @@
 // Reading texts: course words in context, a glossary on tap, then a 6-question check graded by hashed keys.
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -36,8 +37,8 @@
     $("a-label").textContent = `Текст ${t.id.slice(1)} · Verbal ${Number(t.lesson.slice(1))} · ${t.lt}`;
     $("a-title").textContent = t.title;
     $("a-meta").textContent = `${t.genre} · ${words(t.len)} · около ${Math.max(2, Math.round(t.len / 150))} мин · из словаря курса: ${t.own} этого урока, ${t.w.length - t.own} из прошлых`;
-    $("story").innerHTML = t.paras.map((p) => `<p>${esc(p).replace(MK, (m, w, k) => `<span class="vw" data-k="${k}" tabindex="0" role="button">${w}</span>`)}</p>`).join("");
-    $("story").querySelectorAll(".vw").forEach((el) => { el.onclick = (e) => { e.stopPropagation(); pop(el); }; el.onkeydown = (e) => { if (e.key === "Enter") pop(el); }; });
+    $("story").innerHTML = t.paras.map((p) => `<p>${esc(p).replace(MK, (m, w, k) => `<span class="vw" data-k="${k}" tabindex="0" role="button" aria-expanded="false">${w}</span>`)}</p>`).join("");
+    $("story").querySelectorAll(".vw").forEach((el) => { el.onclick = (e) => { e.stopPropagation(); pop(el); }; el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pop(el); } }; });   // button pattern: Enter and Space
     $("gl-n").textContent = `Словарик текста · ${t.w.length}`;
     $("gl-list").innerHTML = t.w.map((k) => { const g = st.data.gloss[k]; return `<div class="gi"><b>${esc(g.en)}</b><span>${esc(g.ru)}</span><span class="label">${g.l}</span></div>`; }).join("");
     $("gl").open = false;
@@ -48,16 +49,20 @@
   function setQuiet(q) {
     $("story").classList.toggle("quiet", q || $("hl").getAttribute("aria-pressed") !== "true");
     $("hl").disabled = q; hidePop();
+    // hints off (quiz, or underlining switched off): the words are plain text, not dead keyboard stops
+    const off = $("story").classList.contains("quiet");
+    $("story").querySelectorAll(".vw").forEach((x) => { if (off) { x.removeAttribute("tabindex"); x.removeAttribute("role"); x.removeAttribute("aria-expanded"); } else { x.tabIndex = 0; x.setAttribute("role", "button"); x.setAttribute("aria-expanded", "false"); } });
   }
   function pop(el) {
     if ($("story").classList.contains("quiet")) return;
     const g = st.data.gloss[el.dataset.k];
-    $("story").querySelectorAll(".vw.on").forEach((x) => x.classList.remove("on")); el.classList.add("on");
+    $("story").querySelectorAll(".vw.on").forEach((x) => { x.classList.remove("on"); x.setAttribute("aria-expanded", "false"); }); el.classList.add("on"); el.setAttribute("aria-expanded", "true");
     $("pop").innerHTML = `<span class="label">${g.l}</span><b>${esc(g.en)}</b>${esc(g.ru)}`;
     $("pop").classList.remove("hidden");
   }
-  function hidePop() { $("pop").classList.add("hidden"); $("story").querySelectorAll(".vw.on").forEach((x) => x.classList.remove("on")); }
+  function hidePop() { $("pop").classList.add("hidden"); $("story").querySelectorAll(".vw.on").forEach((x) => { x.classList.remove("on"); x.setAttribute("aria-expanded", "false"); }); }
   document.addEventListener("click", hidePop);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePop(); });
   $("hl").onclick = () => { $("hl").setAttribute("aria-pressed", String($("hl").getAttribute("aria-pressed") !== "true")); setQuiet(st.quiz); };
 
   // ---- quiz
@@ -65,7 +70,7 @@
     st.quiz = true; st.ans = {}; st.ok = null; setQuiet(true);
     $("gl").classList.add("hidden"); $("to-quiz-row").classList.add("hidden"); $("quiz").classList.remove("hidden");
     $("name-row").classList.toggle("hidden", !!store("hw_student"));
-    $("q-n").textContent = `${st.t.q.length} вопросов · подсказки выключены`;
+    $("q-n").textContent = `${st.t.q.length} ${pl(st.t.q.length, "вопрос", "вопроса", "вопросов")} · подсказки выключены`;
     $("q-res").classList.add("hidden"); $("check").classList.remove("hidden"); $("q-msg").textContent = "";
     renderQuiz({});
     $("quiz").scrollIntoView({ behavior: "smooth", block: "start" });

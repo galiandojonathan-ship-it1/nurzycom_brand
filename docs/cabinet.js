@@ -207,7 +207,7 @@
       <fieldset class="cb-who"><legend>Кому · выбрано ${n}</legend>
         <div class="chips"><button class="chip" type="button" id="cb-all">${n === S.users.length ? "Снять всех" : "Выбрать всех"}</button></div>
         <div class="cb-whol">${S.users.map((u) => `<label class="cb-tick"><input type="checkbox" data-who="${esc(u.id)}" ${A.ids.has(u.id) ? "checked" : ""} ${u.err ? "disabled" : ""}><span>${esc(u.name)}<small>${esc(u.login)}</small></span></label>`).join("")}</div></fieldset>
-      <div class="row"><button class="btn" type="submit" id="cb-ago" ${n ? "" : "disabled"}>Задать${n > 1 ? ` · ${n} ученикам` : ""} <span class="arr">→</span></button><span class="hint" id="cb-amsg"></span></div></form>`;
+      <div class="row"><button class="btn" type="submit" id="cb-ago" ${n ? "" : "disabled"}>Задать${n > 1 ? ` · ${n} ${pl(n, "ученику", "ученикам", "ученикам")}` : ""} <span class="arr">→</span></button><span class="hint" id="cb-amsg"></span></div></form>`;
   }
   function openAssign(ids) {
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
@@ -237,7 +237,7 @@
       catch (e) { bad.push(u.name); }
     }
     S.assign = null; render();
-    toast(bad.length ? `Задано ${ok} из ${who.length}. Не получилось: ${bad.join(", ")}` : `«${t.t}» задано ${ok === 1 ? `ученику ${who[0].name}` : `${ok} ученикам`} · появится при следующем открытии сайта`, !!bad.length);
+    toast(bad.length ? `Задано ${ok} из ${who.length}. Не получилось: ${bad.join(", ")}` : `«${t.t}» задано ${ok === 1 ? `ученику ${who[0].name}` : `${ok} ${pl(ok, "ученику", "ученикам", "ученикам")}`} · появится при следующем открытии сайта`, !!bad.length);
   }
 
   // ---------- results from the Google Form → the students' accounts (2026-11-06). Work sent before the logins existed, or from

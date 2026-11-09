@@ -1,6 +1,7 @@
 // Hard practice sets: one question at a time (as in Bluebook), graded by hashed keys; explanations open after submitting.
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -37,7 +38,7 @@
     const card = (s) => {
       const last = store(lastKey(s.id)), nw = s.q.reduce((a, q) => a + (q.w || []).length, 0);
       return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id.slice(1)}</span><span class="t">${esc(s.title)}</span>
-        <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} вопросов · ${s.minutes} мин${nw ? ` · ${nw} из словаря курса` : ""}${last ? " · " + last : ""}</span></span></button>`;
+        <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} ${pl(s.q.length, "вопрос", "вопроса", "вопросов")} · ${s.minutes} мин${nw ? ` · ${nw} из словаря курса` : ""}${last ? " · " + last : ""}</span></span></button>`;
     };
     const groups = [["Разные темы", (s) => s.id < "X05"], ["Американская литература", (s) => s.id >= "X05"]];
     $("sets").innerHTML = groups.map(([name, f]) => { const ss = st.data.sets.filter(f);

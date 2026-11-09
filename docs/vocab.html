@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611090004">
-<script src="auth.js?v=202611090004"></script>
+<link rel="stylesheet" href="site.css?v=202611090119">
+<script src="auth.js?v=202611090119"></script>
 <style>
 .modes{display:grid;grid-template-columns:1fr;gap:6px}
 @media(min-width:700px){.modes{grid-template-columns:repeat(3,1fr)}}
@@ -101,7 +101,8 @@
         <button class="pick" data-m="test"><span class="t">Тест</span><small>Видите перевод, пишете слово по-английски</small><span class="r">Начать →</span></button>
         <button class="pick" data-m="list"><span class="t">Список</span><small>Все слова с переводом и примером</small><span class="r">Открыть →</span></button>
       </div>
-      <div class="row"><button class="btn ghost" id="hard-go">Только трудные слова · <span id="hard-n">0</span></button></div>
+      <div class="row"><button class="btn ghost" id="hard-go" aria-describedby="hard-hint">Только трудные слова · <span id="hard-n">0</span></button></div>
+      <p class="hint" id="hard-hint">Сюда попадают слова, на которых вы нажали «Ещё раз» в карточках или ошиблись в тесте. Ответили верно в тесте — слово уходит из колоды.</p>
       <p class="hint">Слова в живом тексте: <a href="reading.html">12 рассказов со словами уроков Verbal</a>.</p>
       <p class="hint">Трудные слова — те, что вы отметили «Ещё раз» или не написали в тесте. Они хранятся на этом устройстве и уходят из списка, когда вы вспомните их с первого раза в новой колоде или напишете в тесте.</p>
     </div>
@@ -167,6 +168,6 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="vocab.js?v=202611090004"></script>
+<script src="vocab.js?v=202611090119"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 // solved on screen with solve.js (glossary hint on request, two attempts, explanation) and sent to the Google Form.
 (function () {
   "use strict";
+  const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
   const state = { guide: null, lessons: [], set: null, items: null, review: null, group: "" };
@@ -62,7 +63,7 @@
     $("sets").innerHTML = state.guide.sets.map((s) => {
       const L = state.lessons.find((l) => l.tag === s.id); if (!L) return "";
       const last = store(lastKey(s.id));
-      return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id}</span><span class="t">${esc(s.title)}</span><span class="label">${esc(s.en)}</span><span class="label">${L.parts[0].q.length} вопросов${last ? " · последний: " + last : ""}</span></button>`;
+      return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id}</span><span class="t">${esc(s.title)}</span><span class="label">${esc(s.en)}</span><span class="label">${L.parts[0].q.length} ${pl(L.parts[0].q.length, "вопрос", "вопроса", "вопросов")}${last ? " · последний: " + last : ""}</span></button>`;
     }).join("");
     $("sets").querySelectorAll(".set").forEach((b) => (b.onclick = () => {
       $("sets").querySelectorAll(".set").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
