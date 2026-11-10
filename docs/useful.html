@@ -12,10 +12,11 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611091119">
+<link rel="stylesheet" href="site.css?v=202611101701">
 <style>
 .ucards{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
-@media(min-width:760px){.ucards{grid-template-columns:1fr 1fr 1fr}}
+@media(min-width:760px){.ucards{grid-template-columns:1fr 1fr}}
+@media(min-width:1100px){.ucards{grid-template-columns:repeat(4,1fr)}}
 .ucard{display:flex;flex-direction:column;gap:6px;min-height:250px;padding:20px;border:1px solid var(--studio);background:var(--white);color:var(--ink);text-decoration:none;transition:border-color .15s}
 .ucard:hover{border-color:var(--ink)}
 .ucard .no{font:italic 300 48px/1 var(--serif)}
@@ -24,7 +25,7 @@
 .ucard .label{margin-top:8px}
 .ucard .go{margin-top:auto;padding-top:14px;font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase}
 </style>
-<script src="auth.js?v=202611091119"></script>
+<script src="auth.js?v=202611101701"></script>
 </head>
 <body>
 <a class="skip" href="#main">Перейти к содержанию</a>
@@ -44,7 +45,7 @@
       <h1>Полезное</h1>
       <p class="sub">Темы, которые идут рядом с уроками: старый английский в литературных текстах, калькулятор Desmos, единичная окружность. Новые разделы будут появляться здесь.</p>
     </div>
-    <div class="ucards" id="ucards"><a class="ucard" href="archaic.html"><span class="no">07.1</span><b>Архаичные слова</b><span class="label">SAT Reading & Writing</span><p>Thou, thee, hath, wherefore и старые значения знакомых слов. 10 правил, словарь из 59 слов, 3 набора вопросов на старых текстах.</p><span class="go">Открыть →</span></a><a class="ucard" href="desmos.html"><span class="no">07.2</span><b>Desmos</b><span class="label">SAT Math</span><p>Калькулятор Bluebook: 10 правил, таблица ввода, 12 приёмов с примерами и 6 наборов задач с подсказками.</p><span class="go">Открыть →</span></a><a class="ucard" href="circle.html"><span class="no">07.3</span><b>Единичная окружность</b><span class="label">SAT Math</span><p>Радианы, особые углы, знаки по четвертям, дуги и секторы. Интерактивная окружность и 4 набора задач.</p><span class="go">Открыть →</span></a></div>
+    <div class="ucards" id="ucards"><a class="ucard" href="archaic.html"><span class="no">07.1</span><b>Архаичные слова</b><span class="label">SAT Reading & Writing</span><p>Thou, thee, hath, wherefore и старые значения знакомых слов. 10 правил, словарь из 59 слов, 3 набора вопросов на старых текстах.</p><span class="go">Открыть →</span></a><a class="ucard" href="desmos.html"><span class="no">07.2</span><b>Desmos</b><span class="label">SAT Math</span><p>Калькулятор Bluebook: 10 правил, таблица ввода, 12 приёмов с примерами и 6 наборов задач с подсказками.</p><span class="go">Открыть →</span></a><a class="ucard" href="circle.html"><span class="no">07.3</span><b>Единичная окружность</b><span class="label">SAT Math</span><p>Радианы, особые углы, знаки по четвертям, дуги и секторы. Интерактивная окружность и 4 набора задач.</p><span class="go">Открыть →</span></a><a class="ucard" href="mytest.html"><span class="no">07.4</span><b>Тесты преподавателя</b><span class="label">SAT Reading & Writing · Math</span><p>Тесты, которые преподаватель составил сам: заданные вам и открытые для всех. Результат сохраняется в вашем аккаунте.</p><span class="go">Открыть →</span></a></div>
   </section>
 </main>
 <footer class="foot"><div class="foot-in">

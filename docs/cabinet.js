@@ -12,7 +12,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
-  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "" };
+  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false };
 
   // ---------- groups (2026-11-09, Nurassyl: «one group I need to distinguish clearly, and my individual students»). Each group has a
   // name, a kind (a class group or individual students), a colour and its members (account ids; a student is in one group at most).
@@ -50,7 +50,7 @@
   const metaOf = (u) => { const m = {}; if (u.B) for (const [k, r] of Object.entries(u.B)) m[k] = (r && r.t) || 0; return m; };
   const keysOf = (u) => (u.B ? Object.keys(u.B).filter((k) => u.B[k] && u.B[k].v != null) : []);
   // the name the results are stored under (the login sets it; results made earlier with the shared password may use another)
-  const NAME_RE = [/^hw_last_(.+)_(?:[VM]\d\d|VA|MD|[ADU]\d\d)_p\d+$/, /^px_last_(.+)_X\d\d$/, /^rd_last_(.+)_T\d\d$/, /^mk_last_(.+)_P[TR]\d+$/, /^plan_done_(.+)$/];
+  const NAME_RE = [/^hw_last_(.+)_(?:[VM]\d\d|VA|MD|[ADU]\d\d)_p\d+$/, /^px_last_(.+)_X\d\d$/, /^rd_last_(.+)_T\d\d$/, /^mk_last_(.+)_P[TR]\d+$/, /^ct_last_(.+)_C[a-z0-9]{8}$/, /^plan_done_(.+)$/];
   function namesOf(u) {
     const c = {}; for (const k of keysOf(u)) for (const re of NAME_RE) { const m = re.exec(k); if (m) { c[m[1]] = (c[m[1]] || 0) + 1; break; } }
     return c;
@@ -108,6 +108,7 @@
     try { for (const a of await SITE.accounts(await SITE.access())) if (!seen.has(a.id)) users.push(Object.assign({ old: true }, a)); } catch (e) { /* access.json is optional */ }
     const me = SITE.me(); S.users = users.filter((u) => !me || u.login !== me).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
     await loadGroups();
+    try { await CTED.load(); } catch (e) { /* the tests are optional: the rest of the cabinet works without them */ }
     let i = 0; const next = async () => { while (i < S.users.length) await fetchCopy(S.users[i++]); };
     await Promise.all(Array.from({ length: Math.min(5, S.users.length) }, next));
     S.loaded = true; render();
@@ -138,6 +139,7 @@
         <button class="gtab add" type="button" data-gnew="1">+ Новая группа</button></div>
       <div class="cb-tool2"><input id="cb-q" type="search" placeholder="Найти ученика: имя или логин" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">
         <button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
+        <button class="btn ghost" type="button" data-ct="1" aria-pressed="${S.ct}">Мои тесты</button>
         <button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button>
         <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>`;
   }
@@ -246,7 +248,7 @@
 
   // ---------- assign homework to one or several students
   const KIND = [["hw", "Часть тетради"], ["rd", "Текст для чтения"], ["px", "Сложные вопросы"], ["mk", "Пробный тест"], ["ds", "Desmos: набор"], ["uc", "Единичная окружность: набор"],
-    ["ar", "Архаичные слова: набор"], ["vc", "Карточки слов урока"], ["own", "Своё задание"]];
+    ["ar", "Архаичные слова: набор"], ["vc", "Карточки слов урока"], ["ct", "Мой тест"], ["own", "Своё задание"]];
   function items(kind) {   // [{ v, t, href, rk }] for one kind
     const L = S.lessons;
     if (kind === "rd") return PLAN.TEXT.map((x, i) => ({ v: `T${nn(i + 1)}`, t: `Текст ${i + 1} · «${x}»`, href: `reading.html?t=T${nn(i + 1)}`, rk: ["rd_last_", `T${nn(i + 1)}`] }));
@@ -257,6 +259,7 @@
     if (kind === "ar") return ["A01", "A02", "A03"].map((x, i) => ({ v: x, t: `Архаичные слова · набор ${i + 1}`, href: `archaic.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
     if (kind === "vc") return L.map((l) => ({ v: l.tag, t: `Карточки · ${short(l)}`, href: `vocab.html?l=${l.tag}`, rk: null }));
     if (kind === "hw") return L.map((l) => ({ v: l.tag, t: short(l) }));
+    if (kind === "ct") return window.CTED ? CTED.items() : [];
     return [];
   }
   const short = (l) => { const p = String(l.title || l.tag).split(" · "); return p.length > 2 ? `${p[0].replace("SAT ", "")} · ${p.slice(1).join(" · ")}` : l.title || l.tag; };
@@ -282,7 +285,7 @@
           <label class="f"><span>Ссылка (необязательно)</span><input id="cb-link" type="text" maxlength="300" placeholder="https://… или vocab.html" value="${esc(A.link)}"></label>`
         : its.length ? `<label class="f"><span>${A.kind === "hw" || A.kind === "vc" ? "Урок" : "Что именно"}</span><select id="cb-item">${opts(its, A.item)}</select></label>
           ${A.kind === "hw" ? `<label class="f"><span>Часть тетради</span><select id="cb-part">${opts(P, A.part)}</select></label>` : ""}`
-        : '<p class="hint f">Список уроков не загрузился. Обновите страницу или выберите другое задание.</p>'}</div></section>
+        : A.kind === "ct" ? '<p class="hint f">Готовых тестов пока нет. Создайте тест: кнопка «Мои тесты» вверху.</p>' : '<p class="hint f">Список уроков не загрузился. Обновите страницу или выберите другое задание.</p>'}</div></section>
       <section class="step"><h3><span class="sn">3</span> Срок и комментарий</h3>
         <div class="chips due-row">${quick.map(([l, d]) => { const v = iso(Date.now() + d * DAY); return `<button class="chip" type="button" data-due="${v}" aria-pressed="${A.due === v}">${l}</button>`; }).join("")}<button class="chip" type="button" data-due="" aria-pressed="${!A.due}">Без срока</button></div>
         <div class="cb-grid"><label class="f"><span>Срок</span><input id="cb-due" type="date" value="${esc(A.due)}" min="${iso(Date.now())}"></label>
@@ -290,10 +293,10 @@
       <div class="cb-sum" aria-live="polite">${t && n ? `<b>«${esc(t.t)}»</b> → ${n} ${pl(n, "ученику", "ученикам", "ученикам")}${A.due ? `, до ${esc(dateTxt(A.due))}` : ", без срока"}` : n ? "Выберите задание." : "Выберите, кому задать."}</div>
       <div class="row"><button class="btn" type="submit" id="cb-ago" ${n && t ? "" : "disabled"}>Задать${n > 1 ? ` · ${n} ${pl(n, "ученику", "ученикам", "ученикам")}` : ""} <span class="arr">→</span></button><span class="hint" id="cb-amsg"></span></div></form>`;
   }
-  function openAssign(ids) {
+  function openAssign(ids, kind, item) {
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
-    S.editG = null; S.imp = null;
-    S.assign = { kind: S.lessons.length ? "hw" : "mk", item: first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
+    S.editG = null; S.imp = null; S.ct = false;
+    S.assign = { kind: kind || (S.lessons.length ? "hw" : "mk"), item: item || first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
     S.focus = "#cb-assign h2"; fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
   }
   function fixAssign() {   // keep item and part valid for the chosen kind
@@ -424,9 +427,10 @@
   function render() {
     const main = $("cb"); if (!S.loaded) return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
-    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG);
+    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG || S.ct);
     let detail;
-    if (S.imp) detail = importHTML();
+    if (S.ct) detail = CTED.html();
+    else if (S.imp) detail = importHTML();
     else if (S.assign) detail = assignHTML();
     else if (S.editG) detail = groupHTML();
     else if (!u) detail = overviewHTML();
@@ -438,32 +442,37 @@
     }
     main.innerHTML = toolbar() + `<section class="cb-detail" aria-live="polite">${detail}</section>`;
     bind(u);
+    if (S.ct) CTED.bind(main);
     if (S.focus) { const el = main.querySelector(S.focus); S.focus = ""; if (el) el.focus({ preventScroll: true }); }
     if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
   // close whichever form is open (button «Закрыть ✕» or Escape) and put focus back on the button that opens it
   function closeForm() {
-    if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
+    if (S.ct) { if (CTED.escape()) return true; if (!CTED.leave()) return true; S.ct = false; S.focus = "[data-ct]"; }
+    else if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
     else if (S.editG) { const id = S.editG.id; S.editG = null; S.focus = S.groups.some((g) => g.id === id) ? `[data-gedit="${id}"]` : ".gtab.add"; }
     else if (S.imp) { S.imp = null; S.focus = "[data-imp]"; }
     else return false;
     render(); return true;
   }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp) && closeForm()) e.preventDefault(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct) && closeForm()) e.preventDefault(); });
   const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
+  const offCt = () => { if (S.ct && !CTED.leave()) return false; S.ct = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
   function bind(u) {
-    const main = $("cb"), on = (sel, fn) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn(el, e)));
-    $("cb-q").oninput = (e) => { S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
-    on("[data-g]", (b) => { S.gview = b.dataset.g; S.cur = null; S.assign = null; S.editG = null; S.imp = null; render(); });
-    on("[data-u]", (b) => { S.cur = b.dataset.u; S.assign = null; S.editG = null; S.imp = null; S.tab = "over"; render(); top(); });
-    on("[data-back]", () => { S.cur = null; render(); top(); });
-    on("[data-bulk]", () => openAssign(S.cur ? [S.cur] : S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : []));
-    on("[data-bulkg]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.bulkg); openAssign(membersOf(g).filter((x) => !x.err).map((x) => x.id)); });
-    on("[data-assign1]", (b) => openAssign([b.dataset.assign1]));
-    on("[data-imp]", () => { S.editG = null; openImport(); });
+    const main = $("cb"), on = (sel, fn0) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn0(el, e)));
+    const away = (fn) => (el, e) => { if (offCt()) fn(el, e); };
+    $("cb-q").oninput = (e) => { if (!offCt()) { e.target.value = S.q; return; } S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
+    on("[data-ct]", () => { if (S.ct) return; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ct = true; CTED.open(); S.focus = ".ct h2"; render(); top(); });
+    on("[data-g]", away((b) => { S.gview = b.dataset.g; S.cur = null; S.assign = null; S.editG = null; S.imp = null; render(); }));
+    on("[data-u]", away((b) => { S.cur = b.dataset.u; S.assign = null; S.editG = null; S.imp = null; S.tab = "over"; render(); top(); }));
+    on("[data-back]", away(() => { S.cur = null; render(); top(); }));
+    on("[data-bulk]", away(() => openAssign(S.cur ? [S.cur] : S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : [])));
+    on("[data-bulkg]", away((b) => { const g = S.groups.find((x) => x.id === b.dataset.bulkg); openAssign(membersOf(g).filter((x) => !x.err).map((x) => x.id)); }));
+    on("[data-assign1]", away((b) => openAssign([b.dataset.assign1])));
+    on("[data-imp]", away(() => { S.editG = null; openImport(); }));
     on("[data-tab]", (b) => { S.tab = b.dataset.tab; render(); });
-    on("[data-gnew]", () => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; S.focus = "#cb-gform h2"; render(); top(); });
-    on("[data-gedit]", (b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; S.focus = "#cb-gform h2"; render(); top(); } });
+    on("[data-gnew]", away(() => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; S.focus = "#cb-gform h2"; render(); top(); }));
+    on("[data-gedit]", away((b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; S.focus = "#cb-gform h2"; render(); top(); } }));
     main.querySelectorAll("[data-place]").forEach((sel) => (sel.onchange = () => { if (!sel.value) return; const st = S.users.find((x) => x.id === sel.dataset.place), g = S.groups.find((x) => x.id === sel.value);
       moveTo(sel.dataset.place, sel.value); render(); saveGroups(`${st.name} → ${g.name}`); }));
     $("cb-reload").onclick = async () => { S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
@@ -516,6 +525,11 @@
     f.onsubmit = (e) => { e.preventDefault(); submitAssign(); };
   }
 
+  // «Мои тесты» (cted.js): what the editor needs from the cabinet
+  if (window.CTED) CTED.init({ toast, render, users: () => S.users, focus: (sel) => (S.focus = sel),
+    close: () => { S.ct = false; S.focus = "[data-ct]"; render(); },
+    give: (id) => openAssign(S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : [], "ct", id),
+    copy: (u) => { if (!u.B || u.err) return null; const I = info(u); return { nm: u.nm, get: I.get, meta: I.meta, tasks: I.T }; } });
   window.addEventListener("DOMContentLoaded", () => {
     if (!window.SITE) return;
     SITE.ready.then(async () => {

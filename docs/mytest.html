@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F5F3EE">
+<title>Тесты преподавателя · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="site.css?v=202611101701">
+<script src="auth.js?v=202611101701"></script>
+<style>
+.sets{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:700px){.sets{grid-template-columns:1fr 1fr}}
+.set{display:flex;flex-direction:column;gap:4px;min-height:168px;padding:18px 18px 16px;border:1px solid var(--studio);background:var(--white);text-align:left;transition:border-color .15s,background .15s}
+.set:hover{border-color:var(--ink)}
+.set .no{font:italic 300 48px/1 var(--serif);margin-bottom:auto}
+.set .t{font-size:19px;font-weight:500;margin-top:14px}
+.set .meta{display:flex;justify-content:space-between;gap:4px 10px;margin-top:6px}
+@media(max-width:560px){.set .meta{flex-direction:column}}
+.set[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.set[aria-pressed=true] .label{color:var(--studio)}
+.types{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.types span{font:11px var(--mono);letter-spacing:.06em;border:1px solid var(--studio);padding:5px 8px;color:var(--stone)}
+/* review */
+.rev{border-top:1px solid var(--studio)}
+.rev details{border-bottom:1px solid var(--studio)}
+.rev summary{list-style:none;display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer}
+.rev summary::-webkit-details-marker{display:none}
+.rev .mk{flex:none;width:30px;height:30px;display:grid;place-items:center;font:13px var(--mono);border:1px solid var(--ink)}
+.rev .mk.ok{background:var(--ink);color:var(--paper)}
+.rev .mk.no{border-style:dashed;border-color:var(--stone);color:var(--stone)}
+.rev .sm{flex:1;min-width:0}
+.rev .sm small{display:block;color:var(--stone);font-size:13px}
+.rev .sm b{font-weight:500}
+.rev .ar{font:12px var(--mono);color:var(--stone)}
+.rev details[open] .ar{transform:rotate(90deg)}
+.rbody{padding:4px 0 22px}
+.expl{background:var(--mist);padding:16px;margin-top:6px;font-size:15px;line-height:1.6}
+.expl .label{display:block;margin-bottom:6px}
+.ropt{display:flex;gap:10px;padding:8px 10px;border:1px solid var(--mist);margin-bottom:4px;font-size:15px}
+.ropt .lt{font:13px var(--mono);flex:none;width:18px}
+.ropt.right{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ropt.mine:not(.right){border-style:dashed;border-color:var(--stone)}
+.ropt .tg{margin-left:auto;font:11px var(--mono);letter-spacing:.06em;color:var(--stone);white-space:nowrap}
+.wlist{border-top:1px solid var(--studio);margin-top:14px;padding-top:10px;font-size:14px;line-height:1.7}
+.wlist .label{margin-left:6px}
+.wlist > .label:first-child{display:block;margin:0 0 4px}
+
+.spr{display:flex;flex-direction:column;gap:8px;max-width:360px}
+.spr input{font:500 22px var(--mono);padding:14px 16px;border:1px solid var(--ink);background:var(--white);color:var(--ink);border-radius:0}
+.spr input:focus{outline:none;box-shadow:inset 0 0 0 1px var(--ink)}
+.spr small{color:var(--stone);font-size:13px;line-height:1.5}
+.clock.low{color:var(--oxide)}
+.tmeta{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 4px}
+.tnote{white-space:pre-line;font-size:16px;line-height:1.6;max-width:720px;margin:10px 0 0}
+.empty{padding:26px 0;color:var(--stone);font-size:15px;line-height:1.6;max-width:640px}
+.set .due{font:12px var(--mono);color:var(--oxide)}
+.ropt.right .tg{color:var(--ink)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержанию</a>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="NK nurzycom · SAT, главная">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="plan.html">План<span class="lg"> курса</span></a><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a><a href="mock.html"><span class="lg">Пробные </span>тесты</a><a href="useful.html" aria-current="page">Полезное</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
+</div></header>
+
+<main id="main" tabindex="-1">
+  <section id="p-list">
+    <div class="hero">
+      <a class="crumb" href="useful.html">← Полезное</a><br>
+      <span class="label">07.4 — Полезное · тесты преподавателя</span>
+      <h1>Тесты преподавателя</h1>
+      <p class="sub">Вопросы и тесты, которые преподаватель составил сам. Сначала те, что задал вам он, потом открытые для всех. Результат сохраняется в вашем аккаунте, преподаватель видит его в кабинете.</p>
+    </div>
+    <div class="step">
+      <div class="step-h"><span class="num">01</span><span class="label">Тесты</span></div>
+      <div class="sets" id="sets"></div>
+      <p class="hint" id="list-msg" role="status"></p>
+    </div>
+  </section>
+
+  <section id="p-start" class="hidden">
+    <div class="hero">
+      <a class="crumb" href="mytest.html">← Все тесты преподавателя</a><br>
+      <span class="label">07.4 — Тест преподавателя</span>
+      <h1 id="s-title" tabindex="-1"></h1>
+      <div class="tmeta" id="s-meta"></div>
+      <p class="sub tnote" id="s-note"></p>
+    </div>
+    <div class="step" id="s-name-step">
+      <div class="step-h"><span class="num">01</span><span class="label">Ученик</span></div>
+      <div class="field"><input id="student" type="text" autocomplete="off" placeholder="Имя и первая буква фамилии: Айгерим К." aria-label="Имя и первая буква фамилии"></div>
+      <p class="hint">Вы вошли без своего логина: результат останется только на этом устройстве. Войдите своим логином, чтобы его увидел преподаватель.</p>
+    </div>
+    <div class="row" style="margin-top:22px"><button class="btn" id="go">Начать <span class="arr">→</span></button><button class="btn ghost hidden" id="restart">Начать заново</button></div>
+    <p class="hint" id="s-msg" role="status"></p>
+  </section>
+
+  <section id="p-test" class="hidden">
+    <div class="bar"><div class="bar-in"><span class="label" id="t-title"></span><span class="label"><span id="t-pos"></span> · <span id="clock" class="clock">00:00</span></span></div><div class="prog"><i id="prog"></i></div></div>
+    <div id="navpanel" class="navpanel hidden">
+      <div class="legend"><span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span></div>
+      <div class="grid12" id="grid"></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="finish2">Сдать тест</button><button class="btn ghost" id="closenav">Закрыть</button></div>
+    </div>
+    <div class="qwrap" id="qwrap">
+      <div class="passage" id="passage"></div>
+      <div class="ask">
+        <div class="qhead"><span class="qn" id="qn" tabindex="-1"></span><button class="flag" id="flag" aria-pressed="false">Отметить</button></div>
+        <div class="stem" id="stem"></div>
+        <div id="opts"></div>
+      </div>
+    </div>
+    <div class="navrow">
+      <button class="btn ghost" id="prev">← Назад</button>
+      <button id="navbtn" aria-label="Все вопросы"></button>
+      <button class="btn" id="next">Далее →</button>
+    </div>
+  </section>
+
+  <section id="p-result" class="hidden">
+    <span class="label" id="res-title"></span>
+    <div class="result-grid">
+      <div><div class="big" id="res-score"></div><div class="meter"><i id="res-meter"></i></div></div>
+      <div class="stats"><div><span class="label">Время</span><b id="res-time"></b></div><div><span class="label">На вопрос</span><b id="res-per"></b></div></div>
+    </div>
+    <p id="send-status" class="hint" role="status"></p>
+    <div class="step" style="margin-top:28px" id="rev-step">
+      <div class="step-h"><span class="label">Вопросы</span><span class="label aside">нажмите, чтобы открыть</span></div>
+      <div class="rev" id="rev"></div>
+    </div>
+    <div class="row"><button class="btn" id="again">Пройти заново</button><a class="btn ghost" href="mytest.html">Другие тесты</a><a class="btn ghost" href="./">Задания</a></div>
+  </section>
+</main>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
+<script src="planlogic.js?v=202611101701"></script>
+<script src="ctlogic.js?v=202611101701"></script>
+<script src="mytest.js?v=202611101701"></script>
+</body>
+</html>

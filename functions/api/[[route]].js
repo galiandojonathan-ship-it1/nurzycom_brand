@@ -7,6 +7,8 @@
 //   admin    hash of the teacher's admin key (claimed once from the teacher page)
 //   form     the Google Form answers and the teacher's name merges, encrypted in the browser; admin key only, students never read it
 //   groups   the cabinet's student groups (name, colour, kind, member ids), encrypted in the browser; admin key only
+//   custom   the teacher's own questions and tests («Мои тесты»), sealed in the browser with the master key; any visitor may
+//            read it (like the encrypted question files in docs/q, only a logged-in browser can open it), the admin key writes it
 //   p:<id>   the student's results and progress, encrypted in the browser with the master key; only the account owner can
 //            read or write it: the browser sends a token derived from the password (PBKDF2, never the password itself), the
 //            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew.
@@ -14,8 +16,8 @@
 //            a record the teacher made before the student's first sync has no hash yet ("unclaimed") and is claimed by the
 //            student's first save. When the teacher sets a new password, the record moves to it (the teacher's browser derives
 //            the new sync token), so the student keeps the cloud copy.
-// Routes: GET user?id · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · PUT admin/user?id · GET admin/users · DELETE admin/user?id
-//         GET/PUT admin/progress?id · GET/PUT admin/form · GET/PUT admin/groups · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
+// Routes: GET user?id · GET custom · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · PUT admin/user?id · GET admin/users · DELETE admin/user?id
+//         GET/PUT admin/progress?id · GET/PUT admin/form · GET/PUT admin/groups · PUT admin/custom · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
 const MAX_USERS = 300;
@@ -62,6 +64,7 @@ export async function onRequest(context) {
     const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
     const e = await env.USERS.get("u:" + id, "json"); return e ? json(e) : fail(404, "no such login");
   }
+  if (route === "custom" && m === "GET") { const c = await env.USERS.get("custom", "json"); return c ? json(c) : fail(404, "nothing saved"); }
   if (route === "invite" && m === "POST") {
     const b = await body(request); if (!b || typeof b.invite !== "string" || b.invite.length > 200) return fail(400, "bad request");
     const inv = await env.USERS.get("invite", "json"); if (!inv) return fail(404, "sign-up closed");
@@ -142,6 +145,10 @@ export async function onRequest(context) {
     if (route === "admin/groups" && m === "PUT") {   // the cabinet's groups (names, colours, members), encrypted in the browser
       const b = await body(request); if (!b || !okB64(b.data, 200000)) return fail(400, "bad data");
       await env.USERS.put("groups", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
+    }
+    if (route === "admin/custom" && m === "PUT") {   // the teacher's tests, sealed in the browser (up to about 3 MB)
+      const b = await body(request); if (!b || !okB64(b.data, 4000000)) return fail(400, "bad data");
+      await env.USERS.put("custom", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
     }
     if (route === "admin/invite" && m === "POST") {
       const b = await body(request);

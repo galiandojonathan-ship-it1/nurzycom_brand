@@ -147,7 +147,9 @@
   function onScale(c, s) { const secs = c === "V" ? ["RW"] : c === "M" ? ["Math"] : ["RW", "Math"];
     const v = secs.map((k) => (String(s || "").match(new RegExp(`(?:^|· )${k} \\d+/\\d+ ≈ (\\d+)`)) || [])[1]); return v.every(Boolean) ? v.reduce((a, x) => a + Number(x), 0) : null; }
   const trend = (c, name, get) => TREND_IDS.map((id) => ({ id, v: onScale(c, get(`mk_last_${name}_${id}`)) })).filter((x) => x.v);
+  const CT = {};   // the teacher's own tests («Мои тесты»): id → title, filled by the pages that load the bank
   function label(rest, kind, lessons) {   // a stored result key → what the student did, in the words of the menu
+    if (kind === "ct") return `Тест · ${CT[rest] || "от преподавателя"}`;
     if (kind === "mk") return /^PR/.test(rest) ? `Прогноз ${rest.slice(2)}` : `Пробный тест ${rest.replace(/^PT/, "")}`;
     if (kind === "rd") return `Текст ${Number(rest.slice(1))}`;
     if (kind === "px") return `Сложные вопросы · набор ${Number(rest.slice(1))}`;
@@ -155,7 +157,7 @@
     const head = /^[VM]\d\d$/.test(tag) ? `${tag[0] === "V" ? "Verbal" : "Math"} · урок ${Number(tag.slice(1))}` : /^[ADU]\d\d$/.test(tag) ? `Набор ${tag}` : `Урок ${tag.slice(1)}`;
     return p ? `${head} · ${p.title}` : head;
   }
-  const KINDS = [["hw", "hw_last_"], ["px", "px_last_"], ["rd", "rd_last_"], ["mk", "mk_last_"]];
+  const KINDS = [["hw", "hw_last_"], ["px", "px_last_"], ["rd", "rd_last_"], ["mk", "mk_last_"], ["ct", "ct_last_"]];
   // every submitted result of this student: keys(), get(k), meta = { key: time it changed }
   function results(name, keys, get, meta, lessons) {
     const out = [];
@@ -171,6 +173,7 @@
     if (kind === "hw") return [`hw_last_${name}_${rest}`, `hw_att_${name}_${rest}`];
     if (kind === "px") return [`px_last_${name}_${rest}`, `px_att_${name}_${rest}`];
     if (kind === "rd") return [`rd_last_${name}_${rest}`, `rd_att_${name}_${rest}`];
+    if (kind === "ct") return [`ct_last_${name}_${rest}`, `ct_att_${name}_${rest}`, `ct_ans_${name}_${rest}`];
     return [`mk_last_${name}_${rest}`, `mk_done_${name}_${rest}`, `mk_att_${name}_${rest}_rw`, `mk_att_${name}_${rest}_math`];
   }
   // tasks the teacher assigned: [{ id, t, href, due, note, at, rk: [prefix, rest] }]; done when the result came after the task
@@ -186,5 +189,5 @@
     }).sort((a, b) => a.done - b.done || String(a.due || "9999").localeCompare(String(b.due || "9999")) || b.at - a.at);
   }
   function tick(id, on) { loadManual(); on ? manual.add(id) : manual.delete(id); store(doneKey(), JSON.stringify([...manual])); }
-  window.PLAN = { stages: (c) => { course = c; return stages(); }, state, tick, est, trend, dueTxt, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
+  window.PLAN = { CT, stages: (c) => { course = c; return stages(); }, state, tick, est, trend, dueTxt, label, results, resetKeys, taskState, TEXT, HARD, DESMOS, NAME, manual: () => (loadManual(), manual), doneKey, student, course: () => store("plan_course") || "V" };
 })();
