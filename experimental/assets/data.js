@@ -75,7 +75,7 @@ window.COURSE = {
     ["B8", "Your range", "Mock review and a realistic range"]
   ],
 
-  /* Proposal only: 5-minute IELTS fragments inside the running SAT lessons. The live SAT course is not changed. */
+  /* Proposal only: short IELTS fragments inside the running SAT lessons. The live SAT course is not changed. */
   fragments: [
     ["L01", "Words in Context", "Spot the paraphrase: the same idea in other words"],
     ["L02", "Boundaries", "Say one complex sentence aloud, then write it"],
@@ -146,12 +146,12 @@ window.LESSONS.C01 = {
         { kind: "mcq", chk: 2,
           text: "A map drawn at a small scale cannot show every street or stream. The cartographer must therefore ______ some features so that the remaining ones stay readable.",
           stem: "Which choice completes the text with the most logical and precise word?",
-          opts: ["omit", "exaggerate", "invent", "criticize"], key: 0,
+          opts: ["exaggerate", "invent", "omit", "criticize"], key: 2,
           ru: "«Cannot show every street» и «the remaining ones» показывают, что часть объектов убрана. Это omit. Exaggerate не объясняет слово «remaining». Invent добавляет то, чего нет. Criticize не связано с задачей картографа." },
         { kind: "mcq", chk: 2,
           text: "Because the Earth's surface is curved and a page is flat, no map can render the planet without some compromise; each projection keeps certain properties true and sacrifices others.",
           stem: "As used in the text, what does the word “render” most nearly mean?",
-          opts: ["represent", "surrender", "provide", "repeat"], key: 0,
+          opts: ["surrender", "provide", "repeat", "represent"], key: 3,
           ru: "Карта изображает планету на плоскости: render = represent. Provide — частое значение render («render a service»), но карта не «предоставляет» планету. Surrender похоже только по форме. Repeat не подходит по смыслу." }
       ] },
 
@@ -162,7 +162,7 @@ window.LESSONS.C01 = {
         "Before 1933, maps of the London Underground tried to be geographically faithful. Lines curved as the tunnels curved, and stations in the crowded centre were squeezed together while those in the suburbs were spread far apart. The result was accurate but hard to read.",
         "Harry Beck, a technical draughtsman, took a different view. A passenger travelling underground, he argued, cannot see the city and has little use for its geography. What matters is the sequence of stations and the points where lines meet. Beck therefore drew every line as a straight segment, running horizontally, vertically or at forty-five degrees, and spaced the stations at even intervals. The only feature of the surface that he retained was the River Thames.",
         "His proposal was initially turned down as too unusual. When a pocket edition was finally printed in 1933, however, passengers adopted it quickly, and the approach has since been imitated by transport networks around the world.",
-        "Beck's diagram is not without costs. Because distances are distorted, two stations that look far apart on the page may in fact be a short walk from each other. The map conveys one kind of information very clearly precisely because it omits another."
+        "Beck's diagram is not without costs. It is a reliable guide to the order of the stations, but it has no consistent scale. Because distances are distorted, two stations that look far apart on the page may in fact be a short walk from each other. The map conveys one kind of information very clearly precisely because it omits another."
       ],
       items: [
         { kind: "tfng", chk: 2, stem: "On earlier Underground maps, stations in the centre of London were drawn close to one another.", key: "T",
@@ -175,7 +175,7 @@ window.LESSONS.C01 = {
           ru: "NOT GIVEN. О деньгах в тексте нет ни слова. Нельзя отвечать по догадке." },
         { kind: "tfng", chk: 2, stem: "Stations that appear distant on the diagram are always far apart in reality.", key: "F",
           ru: "FALSE. Они «may in fact be a short walk from each other». Слово «always» делает утверждение неверным." },
-        { kind: "mcq", chk: 2, stem: "In the third paragraph, the word “imitated” is closest in meaning to", opts: ["copied", "criticized", "replaced", "improved"], key: 0,
+        { kind: "mcq", chk: 2, stem: "In the third paragraph, the word “imitated” is closest in meaning to", opts: ["criticized", "replaced", "copied", "improved"], key: 2,
           ru: "Подход оказался успешным, и его повторили другие сети: imitated = copied. Об улучшении или замене текст не говорит." }
       ] },
 
@@ -189,7 +189,7 @@ window.LESSONS.C01 = {
       prep: 20, talk: 90,
       pron: { title: "Pronunciation: word stress", ru: "В глаголах distort, convey и omit ударение на втором слоге. Произнеси каждое слово три раза, ударный слог громче и длиннее.",
         items: ["dis-TORT", "con-VEY", "o-MIT", "REN-der (здесь ударение на первом слоге)", "re-LI-a-ble", "de-LIB-er-ate", "ap-PROX-i-mate"] },
-      model: "I use maps on my phone almost every day, mainly because the bus routes in my city change quite often. Last month a map helped me find a clinic in a district I had never visited. It was reliable, although it omitted a small side street, so I still had to ask someone for directions." },
+      model: "I use maps on my phone almost every day, mainly because the bus routes in my city change quite often. Last month a map helped me find a clinic in a district I had never visited. It was reliable, although it omitted a small side street and gave only an approximate walking time, so I still had to ask someone for directions." },
 
     { type: "writing", id: "write", label: "Writing micro-task", title: "Paraphrase two sentences",
       ru: "Перепиши каждое предложение так, чтобы смысл остался тем же. Поменяй и слова, и строение предложения. Это основа и для IELTS Writing, и для вопросов SAT, где верный ответ пересказывает текст.",
@@ -210,12 +210,12 @@ window.LESSONS.C01 = {
         { kind: "mcq", chk: 2,
           text: "The survey's figures are only ______: the researchers questioned a sample of households rather than every one.",
           stem: "Which choice completes the text with the most logical and precise word?",
-          opts: ["approximate", "deliberate", "reliable", "distorted"], key: 0,
+          opts: ["deliberate", "approximate", "reliable", "distorted"], key: 1,
           ru: "Опросили выборку, а не всех, значит цифры приблизительные: approximate. «Only reliable» нелогично: only вводит ограничение. Distorted означало бы, что цифры искажены, а текст говорит лишь о неполном охвате." },
         { kind: "tfng", chk: 2,
-          text: "Beck drew every line as a straight segment and spaced the stations at even intervals.",
+          text: "Beck drew every line as a straight segment and spaced the stations at even intervals, regardless of the real distances between them.",
           stem: "The gaps between stations on Beck's diagram reflect the real distances between them.", key: "F",
-          ru: "FALSE. «Even intervals» = одинаковые промежутки, они не зависят от настоящих расстояний." }
+          ru: "FALSE. «Even intervals» = одинаковые промежутки. «Regardless of the real distances» = независимо от настоящих расстояний. Значит, промежутки их не отражают." }
       ] }
   ],
   handoff: { text: "Beck left distance out. Next, a line on the map that decides what time it is.", next: "C02" }
@@ -290,7 +290,7 @@ window.LESSONS.C02 = {
       passage: [
         "Because the Earth turns through fifteen degrees of longitude every hour, the world can be divided into twenty-four time zones, each one hour apart from its neighbours. In theory, the boundaries between adjacent zones are straight lines running from pole to pole. In practice they rarely are, since governments prefer a boundary that coincides with a national or regional border.",
         "The system needed a starting point, and any choice was bound to be arbitrary, because no meridian is marked by nature. In October 1884, delegates from twenty-five nations met in Washington to settle the question. They voted to adopt the meridian that passes through Greenwich, in London, which most ships' charts already used. France abstained from the vote and continued to set its clocks by Paris until 1911.",
-        "On the opposite side of the globe lies the International Date Line, where each calendar day begins. Although it roughly follows the 180th meridian, it deviates from that line in several places so that island groups are not split between two dates. Unlike the prime meridian, the date line was never fixed by an international conference; it is only a convention, and individual states have moved it. In 1995 Kiribati, whose islands span a wide stretch of the Pacific, shifted the line eastwards so that the whole country would share one day. Samoa made a similar change in 2011, when it skipped 30 December altogether in order to match the calendars of its main trading partners."
+        "On the opposite side of the globe lies the International Date Line, where each calendar day begins. Although it roughly follows the 180th meridian, it deviates from that line in several places so that island groups are not split between two dates. Unlike the prime meridian, the date line was never fixed by an international conference; it is only a convention, and individual states have moved it. At the start of 1995 Kiribati, whose islands span a wide stretch of the Pacific, shifted the line eastwards so that the whole country would share one day. Samoa made a similar change in 2011, when it skipped 30 December altogether in order to match the calendars of its main trading partners."
       ],
       items: [
         { kind: "tfng", chk: 2, stem: "Most boundaries between time zones are straight lines from pole to pole.", key: "F",
@@ -461,7 +461,7 @@ window.LESSONS.C03 = {
       minWords: 50,
       checklist: ["У каждого глагола я нашёл(ла) подлежащее и проверил(а) число: a town keeps, towns keep.", "События 1840-х стоят в прошедшем времени, без случайного перехода в настоящее.", "То, что случилось раньше другого прошедшего события, стоит в Past Perfect (had + третья форма).", "Its без апострофа для принадлежности; it's только там, где можно сказать it is.", "Я использовал(а) минимум три слова урока."],
       model: [
-        "Before the railways, each British town kept its own time, and nobody had worried about the discrepancy between one town clock and the next. Fast trains made these differences a problem, so the railway companies imposed a uniform time on their stations. Some towns resisted at first. The change was gradual, but railway time prevailed, and by the middle of the 1850s most towns had abandoned local time."
+        "Before the railways, each British town kept its own time, and nobody worried about the discrepancy between one town clock and the next. Fast trains made these differences a problem, so the railway companies imposed a uniform time on their stations. Some towns resisted at first. The change was gradual, but railway time prevailed, and by the middle of the 1850s most towns had abandoned local time."
       ] },
 
     { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
@@ -486,7 +486,7 @@ window.LESSONS.C04 = {
   id: "C04",
   title: "The Clock That Found Longitude",
   thread: "To know where you are, know what time it is.",
-  intro: "Сегодня логические связки. На SAT это Transitions: выбрать слово, которое верно соединяет две мысли. В IELTS Writing это критерий Coherence and Cohesion, а в Reading связки помогают следить за ходом мысли. Все тексты урока о том, как часы решили задачу, которую не решили карты.",
+  intro: "Сегодня логические связки. На SAT это Transitions: выбрать слово, которое верно соединяет две мысли. В IELTS Writing это критерий Coherence and Cohesion, а в Reading связки помогают следить за ходом мысли. В прошлом уроке поезда дали целой стране одно время. Сегодня время помогает найти место: все тексты урока о том, как часы решили задачу, которую не решили карты.",
   words: [
     { w: "consequently", pos: "adv.", ru: "следовательно, в результате",
       sat: "The archive flooded in 1911; consequently, few of the town's early records remain.",
@@ -545,12 +545,12 @@ window.LESSONS.C04 = {
       ] },
 
     { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Follow the links",
-      ru: "В IELTS связки не спрашивают напрямую, но по ним видно, куда идёт мысль. Здесь три утверждения TRUE / FALSE / NOT GIVEN и два вопроса о том, как части текста связаны между собой.",
+      ru: "В IELTS связки не спрашивают напрямую, но по ним видно, куда идёт мысль. Здесь четыре утверждения TRUE / FALSE / NOT GIVEN и два вопроса о том, как части текста связаны между собой.",
       passageTitle: "A Carpenter and the Longitude Prize",
       passage: [
         "In 1714 the British Parliament offered a reward of up to £20,000 to anyone who could find a practical way of determining longitude at sea. The problem was serious. Until it was solved, ships regularly lost their position, and voyages ended in delay or disaster.",
         "Most scholars expected the answer to come from astronomy. John Harrison, a carpenter who had taught himself clockmaking, believed otherwise. If a clock could keep the time of the home port accurately throughout a voyage, he reasoned, a navigator could compare it with local time and work out the ship's position. The difficulty was that no existing clock could do this: changes in temperature and the motion of the ship disturbed every mechanism then known.",
-        "Harrison spent decades on the task. His first three machines were large and complex, whereas the fourth, completed in 1759, resembled an oversized pocket watch. On a voyage to Jamaica in 1761–62 it lost only a few seconds. Nevertheless, the officials in charge of the prize were reluctant to accept that a mechanical device had succeeded where astronomy had not, and they demanded further tests. It was 1773, and Harrison was eighty years old, before the matter was finally settled."
+        "Harrison spent decades on the task, designing mechanisms that could compensate for heat, cold and the rolling of a ship. His first three machines were large and complex, whereas the fourth, completed in 1759, resembled an oversized pocket watch. On a voyage to Jamaica in 1761–62 it proved remarkably precise, losing only a few seconds. Nevertheless, the officials in charge of the prize were reluctant to accept that a mechanical device had succeeded where astronomy had not, and they demanded further tests. It was 1773, and Harrison was eighty years old, before the matter was finally settled."
       ],
       items: [
         { kind: "tfng", chk: 2, stem: "The reward was offered for a method of finding longitude that would work on ships.", key: "T",
@@ -559,8 +559,8 @@ window.LESSONS.C04 = {
           ru: "FALSE. Учёные ждали ответа от астрономии, а Харрисон «believed otherwise». Otherwise показывает, что мнения расходились." },
         { kind: "tfng", chk: 2, stem: "Harrison's fourth timekeeper was bigger than his first three.", key: "F",
           ru: "FALSE. Первые три «large», whereas четвёртый похож на карманные часы. Whereas = противопоставление." },
-        { kind: "tfng", chk: 2, stem: "Harrison built his fourth timekeeper in Jamaica.", key: "NG",
-          ru: "NOT GIVEN. Ямайка упомянута как цель плавания. Где часы были сделаны, текст не сообщает." },
+        { kind: "tfng", chk: 2, stem: "Harrison himself sailed to Jamaica with his fourth timekeeper.", key: "NG",
+          ru: "NOT GIVEN. Текст говорит только, что часы были в плавании на Ямайку. Кто их вёз и был ли на борту сам Харрисон, текст не сообщает." },
         { kind: "mcq", chk: 2, stem: "In the second paragraph, “do this” refers to", key: 1,
           opts: ["comparing local time with the time at home", "keeping the home port's time accurately during a voyage", "resisting changes in temperature", "finding a ship's latitude"],
           ru: "«This» отсылает к условию из предыдущего предложения: «keep the time of the home port accurately throughout a voyage». Сравнивать время должен штурман, а не часы." },
@@ -578,7 +578,7 @@ window.LESSONS.C04 = {
       prep: 30, talk: 90,
       pron: { title: "Pronunciation: stress and the pause after a link", ru: "После связки в начале предложения делай короткую паузу. Она работает как запятая. Сначала произнеси слова, потом фразы.",
         items: ["CON-se-quent-ly", "nev-er-the-LESS", "LIKE-wise", "where-AS", "Nevertheless, | I still think it is worth learning.", "Consequently, | fewer people can do it."] },
-      model: "I partly agree. Phones can now determine our position in seconds; consequently, few people need to read a paper map in daily life. Nevertheless, I think the skill is still worth having, because a phone can lose its signal, whereas a map never does." },
+      model: "I partly agree. Phones can now determine our position in seconds; consequently, few people need to read a paper map in daily life. Nevertheless, I think the skill is still worth having, because a phone can lose its signal, whereas a map never does. Likewise, I think mental arithmetic is worth keeping, even though every phone has a calculator." },
 
     { type: "writing", id: "write", label: "Writing micro-task", title: "One paragraph, three links",
       ru: "Напиши один абзац из четырёх-пяти предложений. Используй три связки: одну на контраст, одну на причину или следствие, одну на добавление. Не начинай с них каждое предложение.",
@@ -593,10 +593,10 @@ window.LESSONS.C04 = {
       ru: "По одному вопросу на каждый экзамен. Без подсказок.",
       items: [
         { kind: "mcq", chk: 2,
-          text: "Harrison's fourth timekeeper was small enough to hold in two hands. The first three, ______ were bulky machines that had to be mounted in their own frames.",
+          text: "Harrison's fourth timekeeper was small enough to hold in two hands. The first three, ______ were large, heavy machines.",
           stem: "Which choice completes the text with the most logical transition?",
           opts: ["by contrast,", "therefore,", "for example,", "likewise,"], key: 0,
-          ru: "Маленький четвёртый и громоздкие первые три: противопоставление, by contrast. Likewise означало бы сходство. Therefore и for example не передают контраст." },
+          ru: "Маленький четвёртый и большие, тяжёлые первые три: противопоставление, by contrast. Likewise означало бы сходство. Therefore и for example не передают контраст." },
         { kind: "mcq", chk: 2,
           stem: "Which sentence links the two ideas logically?",
           opts: ["The clock worked; consequently, the officials wanted more tests.", "The clock worked; nevertheless, the officials wanted more tests.", "The clock worked; likewise, the officials wanted more tests.", "The clock worked; for instance, the officials wanted more tests."], key: 1,
@@ -803,7 +803,7 @@ window.LESSONS.C12 = {
   ],
   parts: [
     { type: "questions", id: "listen", label: "IELTS-style · Listening", title: "Directions on a map you cannot see",
-      ru: "Сначала прочитай все шесть вопросов и реши, что нужно услышать в каждом: место, направление или время. Потом включи запись и отвечай по ходу. Постарайся справиться с одного прослушивания. Текст записи открой только после ответов.",
+      ru: "Сначала прочитай все шесть вопросов и реши, что нужно услышать в каждом: место, направление или время. Потом включи запись и отвечай по ходу. Постарайся справиться с одного прослушивания. Текст записи открой только после ответов. Вопросы 4–6 в формате TRUE / FALSE / NOT GIVEN — тренировка внимания к деталям: в настоящем IELTS такие задания бывают в Reading, а не в Listening.",
       rule: [
         "До записи: по вопросу определи тип ответа. Where = место, What should you do = действие или направление, время и числа видны по словам opens, minutes, metres.",
         "Во время записи: держи в голове точку, где ты стоишь, и лицом куда. Left и right считаются от направления движения.",
@@ -839,8 +839,8 @@ window.LESSONS.C12 = {
           ru: "FALSE. Библиотека «the second building on your right». Первое здание занимает student office." },
         { kind: "tfng", chk: 2, stem: "On the way from the clock tower to the science block, you walk past the canteen.", key: "T",
           ru: "TRUE. «The path takes you past the canteen to the science block», и научный корпус «just beyond it», то есть сразу за столовой." },
-        { kind: "tfng", chk: 2, stem: "The canteen closes at half past seven in the evening.", key: "NG",
-          ru: "NOT GIVEN. В записи есть «half past seven», но это время открытия: «opens at half past seven». Когда столовая закрывается, Dana не говорит. Знакомое число ещё не делает утверждение верным или неверным." }
+        { kind: "tfng", chk: 2, stem: "The canteen closes at four o'clock in the afternoon.", key: "NG",
+          ru: "NOT GIVEN. О столовой Dana называет только время открытия: «opens at half past seven». Когда столовая закрывается, она не говорит, поэтому утверждение нельзя ни подтвердить, ни опровергнуть." }
       ],
       transcript: [
         "Welcome to Larkmoor College. I'm Dana, one of the student guides, and I'll show you how to find the main places on campus. We're standing at the main entrance, on the south side, next to the car park.",

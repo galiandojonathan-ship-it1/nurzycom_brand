@@ -154,12 +154,12 @@ td.D::after { content: " ●"; color: var(--oxide); }
 .q .txt { margin-bottom: 10px; }
 .q .stem { font-weight: 500; margin-bottom: 12px; }
 .opts { display: grid; gap: 8px; }
-.opt { display: flex; gap: 12px; align-items: flex-start; text-align: left; min-height: 46px; padding: 11px 14px; border: 1px solid var(--stone); background: var(--paper); font: inherit; color: inherit; cursor: pointer; width: 100%; }
-.opt:hover:not([disabled]) { border-color: var(--ink); }
+button.opt { display: flex; gap: 12px; align-items: flex-start; text-align: left; min-height: 46px; padding: 11px 14px; border: 1px solid var(--stone); background: var(--paper); font: inherit; color: inherit; cursor: pointer; width: 100%; }
+.opt:hover:not([aria-disabled="true"]) { border-color: var(--ink); }
 .opt .k { font: 400 13px/1.7 var(--mono); flex: none; width: 1.6em; }
 .opt.right { border-color: var(--ok); box-shadow: inset 4px 0 0 var(--ok); }
 .opt.wrong { text-decoration: line-through; text-decoration-color: var(--oxide); text-decoration-thickness: 2px; color: var(--text2); }
-.opt[disabled] { cursor: default; }
+.opt[aria-disabled="true"] { cursor: default; }
 .opts.tf { grid-template-columns: repeat(3, 1fr); }
 .opts.tf .opt { justify-content: center; font: 400 12px/1.4 var(--mono); letter-spacing: .08em; }
 @media (max-width: 480px) { .opts.tf { grid-template-columns: 1fr; } }

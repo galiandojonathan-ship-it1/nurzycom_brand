@@ -47,8 +47,8 @@
   /* header */
   root.appendChild(el("header", { class: "wrap lesson-head" }, [
     el("span", { class: "label", text: L.id + (ieltsOnly ? " · IELTS only · demo" : " · SAT Reading and Writing + IELTS · demo") }),
-    el("h1", {}, [el("span", { class: "ul", text: L.title })]),
-    el("p", { class: "st" }, [el("span", { class: "thread", text: "The thread: " + L.thread })]),
+    el("h1", { lang: "en" }, [el("span", { class: "ul", text: L.title })]),
+    el("p", { class: "st", lang: "en" }, [el("span", { class: "thread", text: "The thread: " + L.thread })]),
     el("p", { class: "ru", text: L.intro })
   ]));
 
@@ -82,10 +82,10 @@
     var tr = el("button", { type: "button", "aria-expanded": "false", text: "показать перевод" });
     tr.addEventListener("click", function () { tr.textContent = w.ru; tr.setAttribute("aria-expanded", "true"); });
     grid.appendChild(el("article", { class: "word" }, [
-      el("b", { text: w.w }), el("span", { class: "pos", text: w.pos }),
+      el("b", { lang: "en", text: w.w }), el("span", { class: "pos", lang: "en", text: w.pos }),
       el("span", { class: "tr" }, [tr]),
-      el("p", {}, [el("span", { text: wl[0] }), ex[0]]),
-      el("p", {}, [el("span", { text: wl[1] }), ex[1]])
+      el("p", { lang: "en" }, [el("span", { text: wl[0] }), ex[0]]),
+      el("p", { lang: "en" }, [el("span", { text: wl[1] }), ex[1]])
     ]));
   });
   wsec.appendChild(grid);
@@ -108,25 +108,27 @@
     }
     if (p.audio) sec.appendChild(audioCard(p));
     if (p.passage) {
-      var pas = el("div", { class: "passage" }, [el("h3", { text: p.passageTitle || "Text" })]);
+      var pas = el("div", { class: "passage", lang: "en" }, [el("h3", { text: p.passageTitle || "Text" })]);
       p.passage.forEach(function (t) { pas.appendChild(el("p", { text: t })); });
       sec.appendChild(pas);
     }
     p.items.forEach(function (q, i) {
       var qid = p.id + "." + i;
-      var box = el("div", { class: "q" }, [el("span", { class: "qn", text: "Question " + (i + 1) + " of " + p.items.length })]);
+      var box = el("div", { class: "q", lang: "en" }, [el("span", { class: "qn", text: "Question " + (i + 1) + " of " + p.items.length })]);
       if (q.text) box.appendChild(el("p", { class: "txt", text: q.text }));
       box.appendChild(el("p", { class: "stem", text: q.stem }));
-      var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Варианты ответа" });
-      var exp = el("div", { class: "exp", hidden: "", "aria-live": "polite" });
+      var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
+      var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: t[1] }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
       var btns = [];
       var reveal = function (chosen) {
         btns.forEach(function (b) {
-          b.node.disabled = true;
+          b.node.setAttribute("aria-disabled", "true");
+          var note = b.val === q.key ? "верный ответ" : b.val === chosen ? "твой ответ, неверно" : "";
           if (b.val === q.key) b.node.classList.add("right");
           else if (b.val === chosen) b.node.classList.add("wrong");
+          if (note && !b.node.querySelector(".sr-only")) b.node.appendChild(el("span", { class: "sr-only", lang: "ru", text: " (" + note + ")" }));
         });
         var ok = chosen === q.key;
         exp.hidden = false; exp.textContent = "";
@@ -150,7 +152,7 @@
     });
     if (p.transcript) {
       var tr = el("details", {}, [el("summary", { text: "Текст записи (открой после ответов)" })]);
-      p.transcript.forEach(function (t) { tr.appendChild(el("p", { text: t })); });
+      p.transcript.forEach(function (t) { tr.appendChild(el("p", { lang: "en", text: t })); });
       sec.appendChild(tr);
     }
     return sec;
@@ -190,7 +192,7 @@
       el("h2", { text: p.title }),
       el("p", { class: "ru", text: p.ru })
     ]);
-    var ul = el("ul"); p.prompts.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
+    var ul = el("ul", { lang: "en" }); p.prompts.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
     var time = el("span", { class: "timer", "aria-live": "off", text: fmt(p.talk) });
     var status = el("p", { class: "small", "aria-live": "polite", text: "Подготовка " + p.prep + " с, затем ответ " + p.talk + " с." });
     var start = el("button", { class: "btn", type: "button", text: "Начать" });
@@ -229,7 +231,7 @@
     sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Questions" }), ul, time, status, el("div", { class: "row" }, [start, recBtn]), player]));
     var pl = el("ul"); p.pron.items.forEach(function (t) { pl.appendChild(el("li", { text: t })); });
     sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: p.pron.title }), el("p", { class: "ru", text: p.pron.ru }), pl]));
-    sec.appendChild(el("details", {}, [el("summary", { text: "Образец ответа (сначала ответь сам)" }), el("p", { text: p.model })]));
+    sec.appendChild(el("details", {}, [el("summary", { text: "Образец ответа (сначала ответь сам)" }), el("p", { lang: "en", text: p.model })]));
     return sec;
   }
 
@@ -240,19 +242,26 @@
       el("h2", { text: p.title }),
       el("p", { class: "ru", text: p.ru })
     ]);
-    var ul = el("ol"); p.prompts.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
-    var ta = el("textarea", { "aria-label": "Твой ответ", placeholder: "Write here…", spellcheck: "true" });
+    var ul = el("ol", { lang: "en" }); p.prompts.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
+    var ta = el("textarea", { "aria-label": "Твой ответ", lang: "en", placeholder: "Write here…", spellcheck: "true" });
     ta.value = state.text || "";
     var count = el("span", { class: "small", "aria-live": "polite" });
     var show = el("button", { class: "btn", type: "button", text: "Показать образец" });
     var model = el("div", { class: "exp", hidden: "" }, [el("b", { text: "Model answer (один из возможных)" })]);
-    p.model.forEach(function (t) { model.appendChild(el("p", { text: t })); });
+    p.model.forEach(function (t) { model.appendChild(el("p", { lang: "en", text: t })); });
+    if (state.done[p.id]) model.hidden = false;
     var words = function () { return (ta.value.trim().match(/\S+/g) || []).length; };
     var upd = function () { var w = words(); count.textContent = w + " / " + p.minWords + " слов"; show.disabled = w < p.minWords; };
     ta.addEventListener("input", function () { state.text = ta.value; save(); upd(); });
     show.addEventListener("click", function () { model.hidden = false; markDone(p.id); });
     var chk = el("div", { class: "check" });
-    p.checklist.forEach(function (c) { chk.appendChild(el("label", {}, [el("input", { type: "checkbox" }), el("span", { text: c })])); });
+    state.checks = state.checks || {};
+    p.checklist.forEach(function (c, i) {
+      var cb = el("input", { type: "checkbox" });
+      cb.checked = !!state.checks[i];
+      cb.addEventListener("change", function () { state.checks[i] = cb.checked; save(); });
+      chk.appendChild(el("label", {}, [cb, el("span", { text: c })]));
+    });
     sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Task" }), ul, ta, el("div", { class: "row", style: "margin-top:10px" }, [show, count]),
       el("p", { class: "small", style: "margin-top:14px", text: "Проверь себя до образца:" }), chk, model]));
     upd();
@@ -281,9 +290,9 @@
     var next = (window.COURSE.lessons || []).filter(function (x) { return x.id === L.handoff.next; })[0];
     res.appendChild(el("div", { class: "handoff" }, [
       el("span", { class: "label", text: "The thread continues" }),
-      el("p", { text: L.handoff.text }),
+      el("p", { lang: "en", text: L.handoff.text }),
       el("div", { class: "row" }, [
-        el("a", { class: "btn", href: "lesson.html?id=" + L.handoff.next, text: (next ? next.id + " · " + next.title : "Next") + " →" }),
+        el("a", { class: "btn", href: "lesson.html?id=" + L.handoff.next, text: (next ? next.id + " · " + next.title + (next.status === "live" ? "" : " (в плане)") : "Next") + " →" }),
         el("a", { class: "btn ghost", style: "color:#F5F3EE;border-color:#F5F3EE", href: "index.html#map", text: "Карта курса" })
       ])
     ]));
