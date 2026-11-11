@@ -30,7 +30,7 @@ window.COURSE = {
       shared: "Selecting facts for a goal", sat: "Rhetorical Synthesis", ielts: "Writing Task 1: the overview", speak: "Describe a trend aloud", write: "One overview sentence" },
     { id: "C06", block: "B", status: "planned", title: "The Pump on Broad Street", thread: "A map of dots became an argument.",
       shared: "Data as evidence", sat: "Command of Evidence (quantitative)", ielts: "Writing Task 1: comparisons", speak: "Compare two figures aloud", write: "Two comparison sentences" },
-    { id: "C07", block: "B", status: "planned", title: "The Diagram That Changed a Hospital", thread: "One picture carried the main idea.",
+    { id: "C07", block: "B", status: "live", title: "The Diagram That Changed a Hospital", thread: "One picture carried the main idea.",
       shared: "Main idea and detail", sat: "Central Ideas and Details", ielts: "Reading: headings, True / False / Not Given", speak: "Part 2 · structure", write: "A topic sentence" },
     { id: "C08", block: "B", status: "planned", title: "How a Report Persuades", thread: "Order is part of the message.",
       shared: "Structure and purpose", sat: "Text Structure and Purpose", ielts: "Reading: matching information · Task 2 paragraph", speak: "Part 2 · two full minutes", write: "One body paragraph" },
@@ -40,8 +40,8 @@ window.COURSE = {
       shared: "Claim and support", sat: "Command of Evidence (textual)", ielts: "Writing Task 2: Task Response", speak: "Part 3 · point + example", write: "Support one claim" },
     { id: "C11", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
       shared: "Two points of view", sat: "Cross-Text Connections", ielts: "Task 2: discuss both views", speak: "Part 3 · compare views", write: "Introduction for a two-view essay" },
-    { id: "C12", block: "D", status: "planned", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
-      shared: "—", sat: "—", ielts: "Listening: maps, forms, predicting the answer", speak: "Give directions aloud", write: "Notes from audio" },
+    { id: "C12", block: "D", status: "live", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
+      shared: "—", sat: "—", ielts: "Listening: directions on a map, predicting the answer type", speak: "Give directions aloud", write: "Notes from audio" },
     { id: "C13", block: "D", status: "planned", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
       shared: "—", sat: "—", ielts: "Listening: lectures and signposting", speak: "Part 2 · retell the lecture", write: "Summary in three sentences" },
     { id: "C14", block: "D", status: "planned", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
@@ -604,4 +604,291 @@ window.LESSONS.C04 = {
       ] }
   ],
   handoff: { text: "A clock turned time into position. Next, a census turns a country into a table.", next: "C05" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C07 = {
+  id: "C07",
+  title: "The Diagram That Changed a Hospital",
+  thread: "One picture carried the main idea.",
+  intro: "Сегодня главная мысль и детали. На SAT это Central Ideas and Details: найти мысль, которая покрывает весь текст, и отличить её от отдельного факта. В IELTS Reading тот же навык нужен, чтобы выбрать заголовок для абзаца и ответить True / False / Not Given. В прошлом уроке карта из точек стала доказательством. Сегодня одна диаграмма несёт главную мысль целого отчёта: Флоренс Найтингейл показывает, от чего на самом деле умирали солдаты.",
+  words: [
+    { w: "mortality", pos: "n.", ru: "смертность",
+      sat: "Mortality among the settlers fell once a clean well was dug at the edge of the camp.",
+      ielts: "Infant mortality has declined in most countries over the past fifty years." },
+    { w: "preventable", pos: "adj.", ru: "предотвратимый",
+      sat: "The inquiry concluded that the fire had been preventable, since the faulty wiring was reported months earlier.",
+      ielts: "Many road accidents are preventable if drivers simply slow down." },
+    { w: "sanitation", pos: "n.", ru: "санитарные условия: чистая вода, канализация, уборка",
+      sat: "The engineer argued that sanitation, not medicine, would do most to protect the growing city.",
+      ielts: "Governments should invest in sanitation before they build new stadiums." },
+    { w: "attribute", pos: "v.", ru: "объяснять чем-либо, приписывать (attribute A to B)",
+      sat: "Historians attribute the town's decline to the closing of its only railway line.",
+      ielts: "Some experts attribute rising stress to the constant use of smartphones." },
+    { w: "proportion", pos: "n.", ru: "доля, часть от целого",
+      sat: "A large proportion of the letters in the archive were never sent.",
+      ielts: "The proportion of people who work from home has grown in recent years." },
+    { w: "compile", pos: "v.", ru: "собирать, составлять (данные, список, отчёт)",
+      sat: "Over thirty years, the botanist compiled a record of every plant that flowered on the island.",
+      ielts: "The school compiles a report on each student's progress twice a year." },
+    { w: "persuade", pos: "v.", ru: "убеждать",
+      sat: "Unable to persuade the council with words, the architect built a model of the bridge.",
+      ielts: "Advertisements persuade people to buy things they do not need." },
+    { w: "reform", pos: "n.", ru: "реформа, преобразование",
+      sat: "The reform of the postal system made it possible to send a letter anywhere in the country for one price.",
+      ielts: "Many teachers believe that reform of the exam system is overdue." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Central Ideas and Details",
+      ru: "Прочитай текст и, не глядя на варианты, скажи одним предложением, о чём он весь. Потом найди вариант, который говорит то же самое. В вопросах «according to the text» найди место в тексте и сравни с ним каждый вариант.",
+      rule: [
+        "Главная мысль покрывает весь текст. Если вариант пересказывает только одно предложение, это деталь, а не главная мысль.",
+        "Вопрос о детали: верный ответ пересказывает конкретное место текста другими словами.",
+        "Ловушки: слишком узко (один факт), слишком сильно (текст говорит мягче), верно в жизни, но в тексте этого нет."
+      ],
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "In the British army hospitals of the Crimean War, wounds were not the main danger. Records compiled after the war showed that far more soldiers had died of diseases such as typhus and cholera than of injuries received in battle. Such diseases thrived in overcrowded wards with bad drains and dirty water. For Florence Nightingale, who had nursed in those hospitals, the conclusion was plain: most of the deaths could have been prevented.",
+          stem: "Which choice best states the main idea of the text?",
+          opts: [
+            "Diseases such as typhus and cholera thrived in wards with dirty water.",
+            "Most deaths in the army hospitals were caused by diseases that better conditions could have prevented.",
+            "Florence Nightingale nursed British soldiers during the Crimean War.",
+            "Battle wounds in the Crimean War were more severe than those in earlier wars."
+          ], key: 1,
+          ru: "Весь текст ведёт к одной мысли: солдаты умирали в основном от болезней, а не от ран, и эти смерти можно было предотвратить. Это вариант B. Вариант A верен, но пересказывает одно предложение: слишком узко. Вариант C тоже только деталь. О сравнении с прежними войнами (D) в тексте ничего нет." },
+        { kind: "mcq", chk: 2,
+          text: "Nightingale's best-known diagram is built from circles, each divided into twelve wedges, one for each month. The area of a wedge, measured from the centre, shows how many soldiers died in that month. Each wedge carries three colours: blue for deaths from preventable disease, red for deaths from wounds, and black for deaths from all other causes. In the months of heaviest loss, the blue area is far larger than the other two.",
+          stem: "According to the text, what does the diagram show about the months in which the most soldiers died?",
+          opts: [
+            "Wounds were the most common cause of death.",
+            "The number of deaths was the same in every month.",
+            "Preventable disease caused more deaths than wounds or other causes.",
+            "More soldiers died in winter than in summer."
+          ], key: 2,
+          ru: "Последнее предложение: в самые тяжёлые месяцы синяя область «far larger than the other two», а синий цвет обозначает preventable disease. Значит, C. Вариант A называет красный цвет, а он меньше синего. Вариант B противоречит словам «months of heaviest loss». Вариант D похож на правду, но о временах года в тексте нет ни слова." },
+        { kind: "mcq", chk: 2,
+          text: "Nightingale could have presented her figures only in tables, and her reports do contain many of them. But she knew that the people she most needed to persuade, ministers and senior officers, were unlikely to study columns of numbers. A coloured diagram, she believed, could convey in a moment what a table conveyed only to a patient reader. She therefore had her diagrams printed and sent copies to people with the power to change army hospitals.",
+          stem: "Which choice best states the main idea of the text?",
+          opts: [
+            "Nightingale chose diagrams because she thought decision-makers would grasp a picture more readily than a table.",
+            "Nightingale believed that tables of figures were usually inaccurate.",
+            "Ministers and senior officers refused to read any of Nightingale's reports.",
+            "Nightingale was the first person to print a diagram in colour."
+          ], key: 0,
+          ru: "Текст объясняет, почему она выбрала диаграмму: нужных людей таблицы не убедят, а картинку они поймут сразу. Это A. Вариант B неверен: таблицы в её отчётах есть, о неточности ничего не сказано. Вариант C слишком сильный: в тексте «unlikely to study columns of numbers», а не «refused to read any reports». О том, что она была первой (D), текст не говорит." },
+        { kind: "mcq", chk: 2,
+          text: "In the spring of 1855 a Sanitary Commission sent from Britain reached the army hospitals at Scutari. Its workers cleaned out the sewers, removed rubbish and improved the flow of fresh air through the wards. In the months that followed, the proportion of patients who died fell sharply. Nightingale later pointed to this fall as evidence that dirty hospitals, not wounds, had been killing the soldiers.",
+          stem: "According to the text, what happened after the Sanitary Commission's work?",
+          opts: [
+            "Fewer wounded soldiers were sent to the hospitals.",
+            "Nightingale became a member of the Commission.",
+            "The hospitals were moved to cleaner buildings.",
+            "A smaller share of the patients died."
+          ], key: 3,
+          ru: "«The proportion of patients who died fell sharply» = «a smaller share of the patients died». Proportion и share здесь значат одно и то же: доля. Вариант A подменяет долю умерших числом поступивших, об этом текст молчит. Вариант C: здания чистили, а не меняли. О членстве Найтингейл в комиссии (B) в тексте ничего нет." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Headings and True / False / Not Given",
+      ru: "Тот же навык в формате IELTS. Заголовок абзаца называет его главную мысль, а не одну деталь из него. В утверждениях TRUE / FALSE / NOT GIVEN проверяется деталь: найди место в тексте. Если такого места нет, ответ NOT GIVEN, даже если утверждение похоже на правду.",
+      passageTitle: "A Picture of Preventable Deaths",
+      passage: [
+        "When Florence Nightingale arrived at the British army hospital at Scutari in November 1854, she found wards that were overcrowded, short of supplies and built above blocked sewers. During her first winter there, thousands of patients died. Most of them had not been killed by their wounds. They died of typhus, cholera and other diseases that spread in such conditions.",
+        "After the war ended in 1856, Nightingale was determined that the lesson should not be lost. Working with the statistician William Farr, she compiled the army's monthly records of mortality. The records attributed each death to a cause, and she sorted the causes into three groups: preventable disease, wounds, and everything else. The result was striking. In the worst months, disease accounted for a far greater proportion of deaths than battle did.",
+        "Nightingale doubted that officials would read long tables, so she turned the numbers into a diagram. Each of its circles was divided into twelve wedges, one for each month, and every wedge was coloured to show the three causes. The larger the coloured area, the more soldiers had died. The blue areas, which stood for preventable disease, dominated the page.",
+        "The diagram was published in 1858, and copies were sent to politicians and officers. It helped to persuade the government that poor sanitation had cost more lives than the enemy had. Reform followed: army barracks and hospitals were given better drains, cleaner water and more fresh air. Nightingale is remembered as a nurse, yet she owed much of her influence to her skill with statistics."
+      ],
+      items: [
+        { kind: "tfng", chk: 2, stem: "When Nightingale arrived, the hospital at Scutari held more patients than it had room for.", key: "T",
+          ru: "TRUE. В тексте палаты «overcrowded», то есть переполнены: больных больше, чем места." },
+        { kind: "tfng", chk: 2, stem: "Most of the patients who died in the first winter were killed by injuries from battle.", key: "F",
+          ru: "FALSE. Текст говорит обратное: «Most of them had not been killed by their wounds». Они умерли от болезней." },
+        { kind: "tfng", chk: 2, stem: "Nightingale had studied mathematics before she went to Scutari.", key: "NG",
+          ru: "NOT GIVEN. В конце сказано о её «skill with statistics», но где и когда она этому училась, текст не сообщает. Утверждение похоже на правду, но в тексте его нет." },
+        { kind: "tfng", chk: 2, stem: "Nightingale thought it unlikely that officials would read detailed tables.", key: "T",
+          ru: "TRUE. «Doubted that officials would read long tables» = считала маловероятным, что чиновники станут читать подробные таблицы." },
+        { kind: "mcq", chk: 2, stem: "Which heading best fits the second paragraph?", key: 2,
+          opts: ["Conditions in a wartime hospital", "A new way of showing numbers", "Sorting the deaths by cause", "The government's response"],
+          ru: "Второй абзац о работе с записями: каждая смерть отнесена к причине, причины разделены на три группы, виден результат. Это «Sorting the deaths by cause». Условия в госпитале описаны в первом абзаце. Диаграмма появляется только в третьем. Реакция правительства в четвёртом." },
+        { kind: "mcq", chk: 2, stem: "Which heading best fits the final paragraph?", key: 0,
+          opts: ["What the diagram achieved", "Why officials ignored the figures", "Nightingale's training as a nurse", "Twelve wedges and three colours"],
+          ru: "Последний абзац о последствиях: диаграмму разослали, правительство удалось убедить, началась реформа. Это «What the diagram achieved». Чиновники цифры не проигнорировали, а приняли (B неверно). Об обучении на медсестру (C) текст не говорит. Клинья и цвета (D) описаны в третьем абзаце." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 2", title: "Main idea first, then the details",
+      ru: "Минуту готовься и запиши четыре-пять ключевых слов, потом говори до двух минут. Строй ответ как хороший абзац: первым предложением назови главную мысль, потом дай детали по пунктам карточки, в конце вернись к главной мысли. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "Describe a chart, map or diagram that helped you understand something.",
+        "You should say: what it showed",
+        "where you saw it",
+        "what you understood from it",
+        "and explain why a picture worked better than words."
+      ],
+      prep: 60, talk: 120,
+      pron: { title: "Pronunciation: stress in long words", ru: "В словах на -tion ударение падает на слог перед -tion, в словах на -ity на третий слог от конца. Произнеси каждое слово три раза, ударный слог громче и длиннее.",
+        items: ["mor-TAL-i-ty", "san-i-TA-tion", "pro-POR-tion", "pre-VENT-a-ble", "at-TRIB-ute (глагол; у существительного AT-trib-ute)", "com-PILE", "per-SUADE", "re-FORM"] },
+      model: "I'd like to describe a pair of bar charts that changed how I think about health. I saw them in a biology lesson; our teacher had compiled them from public records. The first chart showed causes of death a century ago, and the second showed causes of death today. The main idea was clear at once: in the past a large proportion of deaths were attributed to infections, whereas today that share is small. From this I understood that many of those early deaths were preventable, and that sanitation and clean water did a great deal to reduce mortality. A picture worked better than words because I could compare the bars in a second, while a paragraph of figures would have lost me. It even persuaded me to read about the history of public health reform." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "A topic sentence",
+      ru: "В каждом абзаце не хватает первого предложения. Напиши для каждого topic sentence: одно предложение, которое называет главную мысль всего абзаца. Оно не должно повторять одну из деталей и не должно обещать больше, чем есть в абзаце.",
+      prompts: [
+        "[Your topic sentence.] The sewers under the hospital were cleaned out. Rubbish was carried away, and windows were opened so that fresh air could move through the wards. Within months, a far smaller proportion of the patients died.",
+        "[Your topic sentence.] A table has to be read line by line. A diagram can be understood at a glance. Officials who would never study a column of figures could not miss a large blue shape on the page."
+      ],
+      minWords: 20,
+      checklist: ["Каждое моё предложение покрывает все детали абзаца, а не одну.", "Я не повторил(а) деталь из абзаца слово в слово.", "Предложение не обещает больше, чем есть в абзаце.", "Я использовал(а) минимум два слова урока.", "Я проверил(а) подлежащее и сказуемое в каждом предложении."],
+      model: [
+        "Simple improvements in sanitation sharply reduced mortality in the hospital.",
+        "Nightingale chose a diagram because it could persuade readers who would never study a table."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "William Farr spent decades compiling the official records of births and deaths in England and Wales. He was convinced that such figures were more than a list: by comparing mortality in one district with mortality in another, officials could see where people were dying of preventable causes and act. Nightingale, who worked with Farr after the war, applied the same reasoning to the army.",
+          stem: "Which choice best states the main idea of the text?",
+          opts: [
+            "Farr compiled official records of births and deaths.",
+            "Nightingale taught Farr how to compare districts.",
+            "Farr believed that comparing death records could show where lives might be saved.",
+            "Mortality was the same in every district."
+          ], key: 2,
+          ru: "Главная мысль: по убеждению Фарра, сравнение записей о смертности показывает, где смерти можно предотвратить. Это C. Вариант A верен, но это одна деталь из первого предложения. В варианте B всё наоборот: Найтингейл применила рассуждение Фарра. Вариант D противоречит тексту: сравнивать районы имеет смысл, только если смертность в них разная." },
+        { kind: "tfng", chk: 2,
+          text: "The larger the coloured area, the more soldiers had died. The blue areas, which stood for preventable disease, dominated the page; the red areas, which stood for wounds, were far smaller.",
+          stem: "The largest areas on the diagram showed deaths from wounds.", key: "F",
+          ru: "FALSE. На странице преобладали синие области, а они обозначают preventable disease. Раны показаны красным, и красные области «far smaller»." }
+      ] }
+  ],
+  handoff: { text: "One diagram carried the main idea. Next, the report around it: how the order of its parts persuades.", next: "C08" }
+};
+
+/* ------------------------------------------------------------------ */
+/* IELTS-only lesson: no `sat` and no `ielts` part. The `listen` part is read aloud by the browser's speech synthesis.
+   Larkmoor College and everything on it are invented for this lesson. */
+window.LESSONS.C12 = {
+  id: "C12",
+  title: "Follow the Voice",
+  thread: "Back to the map: now you only hear it.",
+  intro: "Этот урок только для IELTS: Listening. В первом уроке ты читал(а) карту, которая намеренно пропускает лишнее. Сегодня карты перед глазами нет: её нужно построить в голове по голосу. Два навыка: следить за маршрутом по словам направления и заранее угадывать, какого типа будет ответ (место, число, время или направление).",
+  wordsTitle: "Eight words for finding the way",
+  wordsRu: "У каждого слова два примера: как оно звучит в записи и как его можно сказать самому. Сначала попробуй вспомнить перевод, потом нажми «показать перевод».",
+  wordLabels: ["In a recording", "In your answer"],
+  words: [
+    { w: "landmark", pos: "n.", ru: "ориентир, заметный объект",
+      ex: ["The old water tower is a useful landmark: once you see it, you are nearly there.",
+           "The most famous landmark in my city is a tall TV tower on the hill."] },
+    { w: "junction", pos: "n.", ru: "перекрёсток, место, где сходятся дороги или пути",
+      ex: ["When you get to the junction, take the path on the left.",
+           "There is always heavy traffic at the junction near my school."] },
+    { w: "opposite", pos: "prep.", ru: "напротив",
+      ex: ["The ticket office is opposite platform two, so you can't miss it.",
+           "I live opposite a small park, which is convenient for running."] },
+    { w: "adjacent", pos: "adj.", ru: "соседний, примыкающий (adjacent to)",
+      ex: ["The lecture hall is adjacent to the reception desk, through the glass doors.",
+           "My room is adjacent to the kitchen, so it is rarely quiet."] },
+    { w: "entrance", pos: "n.", ru: "вход",
+      ex: ["Please use the side entrance today, as the front doors are being repaired.",
+           "We agreed to meet at the entrance to the cinema."] },
+    { w: "route", pos: "n.", ru: "маршрут, путь",
+      ex: ["The quickest route to the gallery goes through the gardens.",
+           "I take the same route to school every morning."] },
+    { w: "approximately", pos: "adv.", ru: "приблизительно",
+      ex: ["The walk to the harbour takes approximately ten minutes.",
+           "My village is approximately forty kilometres from the nearest city."] },
+    { w: "beyond", pos: "prep.", ru: "за, дальше чем",
+      ex: ["The café is just beyond the bridge, on the same side of the road.",
+           "Beyond the last houses there is nothing but open steppe."] }
+  ],
+  parts: [
+    { type: "questions", id: "listen", label: "IELTS-style · Listening", title: "Directions on a map you cannot see",
+      ru: "Сначала прочитай все шесть вопросов и реши, что нужно услышать в каждом: место, направление или время. Потом включи запись и отвечай по ходу. Постарайся справиться с одного прослушивания. Текст записи открой только после ответов.",
+      rule: [
+        "До записи: по вопросу определи тип ответа. Where = место, What should you do = действие или направление, время и числа видны по словам opens, minutes, metres.",
+        "Во время записи: держи в голове точку, где ты стоишь, и лицом куда. Left и right считаются от направления движения.",
+        "Слова-повороты instead, but now, used to be меняют ответ. То, что прозвучало первым, часто оказывается ловушкой.",
+        "NOT GIVEN: говорящий упомянул тему, но именно этого факта не сказал."
+      ],
+      audio: [
+        "Welcome to Larkmoor College.",
+        "I'm Dana, one of the student guides, and I'll show you how to find the main places on campus.",
+        "We're standing at the main entrance, on the south side, next to the car park.",
+        "Walk straight ahead along the central path for approximately two hundred metres, until you reach a junction with a clock tower.",
+        "The clock tower is the best landmark on campus, because you can see it from almost anywhere.",
+        "At the junction, turn left, and the library is the second building on your right, opposite the lake.",
+        "The first building, adjacent to the library, is the student office, where you collect your student card.",
+        "If you turn right at the clock tower instead, the path takes you past the canteen to the science block.",
+        "The canteen opens at half past seven, and the science block is just beyond it, at the end of the path.",
+        "The sports hall isn't on this route.",
+        "To get there, go back to the main entrance and follow the fence east for about five minutes.",
+        "Finally, the bus stop has moved.",
+        "It used to be outside the main entrance, but now it's behind the library, on Mill Road."
+      ],
+      items: [
+        { kind: "mcq", chk: 2, stem: "Where is the speaker standing while she gives the directions?", key: 1,
+          opts: ["at the clock tower", "at the main entrance", "outside the library", "at the bus stop"],
+          ru: "Dana говорит: «We're standing at the main entrance». Башня с часами, библиотека и остановка названы позже как места, куда нужно идти, а не как место, где она стоит." },
+        { kind: "mcq", chk: 2, stem: "What should you do at the clock tower to reach the library?", key: 0,
+          opts: ["turn left", "turn right", "go straight ahead", "go back to the entrance"],
+          ru: "«At the junction, turn left, and the library is the second building on your right.» Ловушка в слове right: оно звучит в том же предложении, но относится к стороне, на которой стоит здание, а не к повороту. Направо у башни идут к столовой и научному корпусу. Вернуться ко входу нужно для спортзала." },
+        { kind: "mcq", chk: 2, stem: "Which building is next to the library?", key: 3,
+          opts: ["the canteen", "the science block", "the sports hall", "the student office"],
+          ru: "«The first building, adjacent to the library, is the student office.» Adjacent to = next to. Столовая и научный корпус стоят на другой дорожке, направо от башни. Спортзал вообще не на этом маршруте." },
+        { kind: "tfng", chk: 2, stem: "The library is the first building on the right after you turn left at the junction.", key: "F",
+          ru: "FALSE. Библиотека «the second building on your right». Первое здание занимает student office." },
+        { kind: "tfng", chk: 2, stem: "On the way from the clock tower to the science block, you walk past the canteen.", key: "T",
+          ru: "TRUE. «The path takes you past the canteen to the science block», и научный корпус «just beyond it», то есть сразу за столовой." },
+        { kind: "tfng", chk: 2, stem: "The canteen closes at half past seven in the evening.", key: "NG",
+          ru: "NOT GIVEN. В записи есть «half past seven», но это время открытия: «opens at half past seven». Когда столовая закрывается, Dana не говорит. Знакомое число ещё не делает утверждение верным или неверным." }
+      ],
+      transcript: [
+        "Welcome to Larkmoor College. I'm Dana, one of the student guides, and I'll show you how to find the main places on campus. We're standing at the main entrance, on the south side, next to the car park.",
+        "Walk straight ahead along the central path for approximately two hundred metres, until you reach a junction with a clock tower. The clock tower is the best landmark on campus, because you can see it from almost anywhere.",
+        "At the junction, turn left, and the library is the second building on your right, opposite the lake. The first building, adjacent to the library, is the student office, where you collect your student card.",
+        "If you turn right at the clock tower instead, the path takes you past the canteen to the science block. The canteen opens at half past seven, and the science block is just beyond it, at the end of the path.",
+        "The sports hall isn't on this route. To get there, go back to the main entrance and follow the fence east for about five minutes.",
+        "Finally, the bus stop has moved. It used to be outside the main entrance, but now it's behind the library, on Mill Road."
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking", title: "Give directions aloud",
+      ru: "Теперь голос твой. Открой текст записи, если нужно, и объясни дорогу вслух так, чтобы человек без карты не заблудился: откуда идём, сколько идти, где повернуть, какой ориентир покажет, что мы на месте. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "A new student is at the main entrance of Larkmoor College. Tell them how to get to the science block.",
+        "Now give directions from your home to the nearest shop or bus stop. Name at least two landmarks."
+      ],
+      prep: 30, talk: 90,
+      pron: { title: "Pronunciation: stress the word that carries the direction", ru: "В указаниях дороги голосом выделяют слово, которое нельзя перепутать: left, right, second, beyond. Сначала произнеси слова, потом фразы. Выделенное слово громче и длиннее.",
+        items: ["LAND-mark", "JUNC-tion", "OP-po-site", "ad-JA-cent", "EN-trance", "ap-PROX-i-mate-ly", "be-YOND", "route /ruːt/ (один слог)", "Turn LEFT at the junction.", "It's the SECOND building on your right.", "The science block is just beYOND the canteen."] },
+      model: "Start at the main entrance and walk straight ahead for approximately two hundred metres, until you reach the junction with the clock tower. That is the main landmark, so you can't miss it. Turn right there. The route takes you past the canteen, and the science block is just beyond it, at the end of the path. If you see the library opposite the lake, or the student office adjacent to it, you have turned the wrong way." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "From notes to two sentences",
+      ru: "Во время записи пишут коротко: слова, стрелки, сокращения. Ниже две строки таких заметок. Преврати каждую в одно полное предложение с подлежащим, сказуемым, артиклями и предлогами. Ничего не добавляй от себя.",
+      prompts: [
+        "Notes: library → left at clock tower, 2nd bldg on right, opp. lake",
+        "Notes: bus stop moved; was: main entrance; now: behind library, Mill Rd"
+      ],
+      minWords: 25,
+      checklist: ["В каждом предложении есть подлежащее и сказуемое.", "Я вернул(а) артикли и предлоги: at the junction, on the right, opposite the lake.", "Я раскрыл(а) все сокращения.", "В предложениях нет фактов, которых не было в заметках.", "Я использовал(а) минимум два слова урока."],
+      model: [
+        "To reach the library, turn left at the clock tower junction; it is the second building on the right, opposite the lake.",
+        "The bus stop is no longer outside the main entrance: it is now behind the library, on Mill Road."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "Два вопроса без записи: один на тип ответа, один на слово-поворот.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "Before the recording starts, you read this note: “The walk from the main entrance to the sports hall takes about ______ minutes.”",
+          stem: "What kind of answer should you listen for?", key: 2,
+          opts: ["a name", "a direction", "a number", "a building"],
+          ru: "После пропуска стоит «minutes», перед ним «about»: нужно число. Имя, направление и здание в эту фразу грамматически не встают. Тип ответа виден ещё до записи, и слушать становится легче." },
+        { kind: "mcq", chk: 2,
+          text: "“Finally, the bus stop has moved. It used to be outside the main entrance, but now it's behind the library, on Mill Road.”",
+          stem: "Where is the bus stop now?", key: 1,
+          opts: ["outside the main entrance", "behind the library", "opposite the lake", "next to the car park"],
+          ru: "«But now it's behind the library». Вариант «outside the main entrance» звучит первым, но перед ним стоит «used to be»: так было раньше. Озеро и парковка в этих двух предложениях не упоминаются." }
+      ] }
+  ],
+  handoff: { text: "You followed one voice across a map. Next, a longer voice: a lecture on time, and the signposts that tell you where the speaker is going.", next: "C13" }
 };

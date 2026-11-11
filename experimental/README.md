@@ -47,6 +47,8 @@ Inside a lesson, the words, the SAT passage, the IELTS passage, the speaking pro
 | C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
+| C07 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent: 12 of 12 keys matched; wording of 3 items tightened after its notes) |
+| C12 | 8 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent from the transcript: 8 of 8 keys matched) |
 
 ## Open `[FACT NEEDED]`
 
@@ -65,4 +67,14 @@ Parts, in order: `sat` (4 questions) → `ielts` (one passage of 200–260 words
 IELTS-only lessons replace `sat` with a `listen` part: `{ type: "questions", id: "listen", audio: [sentences read by the browser], transcript: [...], items: [...] }`.
 Question kinds: `mcq` (`opts`, `key` = index) and `tfng` (`key` = "T" | "F" | "NG"). Set a lesson's `status` to `"live"` in `COURSE.lessons` when it is complete.
 
-Build order: ~~C02, C03~~ (done 2026-11-11), C07, C12 (listening), then C05, C06, C08–C11, C13–C16.
+IELTS-only lessons may also set `wordsTitle`, `wordsRu` and `wordLabels: [a, b]`, and give each word `ex: [a, b]` instead of `sat` / `ielts` (see C12). The renderer shows "IELTS only" in the header when a lesson has no `sat` part, and reads `audio` one sentence per utterance (a single long utterance is cut off in some browsers). Keep `audio` and `transcript` word-for-word the same.
+
+Build order: ~~C02, C03~~ (done 2026-11-11), ~~C07, C12~~ (done 2026-11-11), then C05, C06, C08–C11, C13–C16.
+
+## Calls made in the overnight run of 11 Nov 2026 (to confirm with Nurassyl)
+
+- C07 and C12 are live although the lessons before them (C05, C06, C08–C11) are not built yet, so C07's intro refers back to C06 and both hand-offs point to planned lessons.
+- C07 facts kept deliberately plain: Scutari, November 1854; Sanitary Commission, spring 1855; work with William Farr after 1856; diagram published 1858. Left out because not certain enough or not needed: exact death counts, Queen Victoria receiving a copy, the Statistical Society election. The real diagram has two circles; the texts say "circles, each divided into twelve wedges".
+- C12: Larkmoor College, Dana and Mill Road are invented. The script is 200 words. Listening was checked from the transcript and with a stubbed speech engine; **nobody has yet listened to it with a real browser voice** (the build server has none). Listen once on a phone before showing it to students.
+- C12 has 8 scored questions (6 listening + 2 exit), not 12, because it has no SAT and no Reading part.
+- The map row for C12 now reads "Listening: directions on a map, predicting the answer type" (forms are not in this lesson).

@@ -41,9 +41,12 @@
   var total = 0;
   L.parts.forEach(function (p) { if (p.type === "questions") total += p.items.length; });
 
+  /* IELTS-only lessons (C12–C15) have no "sat" part */
+  var ieltsOnly = !L.parts.some(function (p) { return p.id === "sat"; });
+
   /* header */
   root.appendChild(el("header", { class: "wrap lesson-head" }, [
-    el("span", { class: "label", text: L.id + " · SAT Reading and Writing + IELTS · demo" }),
+    el("span", { class: "label", text: L.id + (ieltsOnly ? " · IELTS only · demo" : " · SAT Reading and Writing + IELTS · demo") }),
     el("h1", {}, [el("span", { class: "ul", text: L.title })]),
     el("p", { class: "st" }, [el("span", { class: "thread", text: "The thread: " + L.thread })]),
     el("p", { class: "ru", text: L.intro })
@@ -68,18 +71,21 @@
   /* 1. words */
   var wsec = el("section", { class: "part", id: "words" }, [
     el("span", { class: "label", text: "Part 01 · Today's words" }),
-    el("h2", { text: "Eight words, two exams" }),
-    el("p", { class: "ru", text: "У каждого слова два примера: как в тексте SAT и как в ответе IELTS. Сначала попробуй вспомнить перевод сам, потом нажми «показать перевод»." })
+    el("h2", { text: L.wordsTitle || "Eight words, two exams" }),
+    el("p", { class: "ru", text: L.wordsRu || "У каждого слова два примера: как в тексте SAT и как в ответе IELTS. Сначала попробуй вспомнить перевод сам, потом нажми «показать перевод»." })
   ]);
   var grid = el("div", { class: "words" });
+  /* a word carries either { sat, ielts } or, in IELTS-only lessons, ex: [a, b] with the lesson's own wordLabels */
+  var wl = L.wordLabels || ["SAT-style", "IELTS-style"];
   L.words.forEach(function (w) {
+    var ex = w.ex || [w.sat, w.ielts];
     var tr = el("button", { type: "button", "aria-expanded": "false", text: "показать перевод" });
     tr.addEventListener("click", function () { tr.textContent = w.ru; tr.setAttribute("aria-expanded", "true"); });
     grid.appendChild(el("article", { class: "word" }, [
       el("b", { text: w.w }), el("span", { class: "pos", text: w.pos }),
       el("span", { class: "tr" }, [tr]),
-      el("p", {}, [el("span", { text: "SAT-style" }), w.sat]),
-      el("p", {}, [el("span", { text: "IELTS-style" }), w.ielts])
+      el("p", {}, [el("span", { text: wl[0] }), ex[0]]),
+      el("p", {}, [el("span", { text: wl[1] }), ex[1]])
     ]));
   });
   wsec.appendChild(grid);
@@ -156,14 +162,25 @@
     var info = el("p", { class: "small", text: can ? "Запись читает синтезатор речи твоего браузера. На экзамене говорит человек, поэтому это только тренировка." : "Этот браузер не умеет читать текст вслух. Открой текст записи ниже и попроси кого-нибудь прочитать его." });
     var play = el("button", { class: "btn", type: "button", text: "▶ Слушать", disabled: can ? null : "" });
     var stop = el("button", { class: "btn ghost", type: "button", text: "Стоп" });
+    var status = el("p", { class: "small", "aria-live": "polite", text: "" });
+    var run = 0;
+    /* One utterance per sentence: some browsers cut off a single long utterance part-way through. */
     play.addEventListener("click", function () {
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(p.audio.join(" "));
-      u.lang = "en-GB"; u.rate = 0.92;
-      window.speechSynthesis.speak(u);
+      var synth = window.speechSynthesis, mine = ++run;
+      synth.cancel();
+      status.textContent = "Идёт запись: " + p.audio.length + " предложений.";
+      play.textContent = "↻ Слушать сначала";
+      p.audio.forEach(function (s, i) {
+        var u = new SpeechSynthesisUtterance(s);
+        u.lang = "en-GB"; u.rate = 0.92;
+        if (i === p.audio.length - 1) u.onend = function () { if (mine === run) status.textContent = "Запись закончилась."; };
+        u.onerror = function (e) { if (mine === run && e.error !== "canceled" && e.error !== "interrupted") status.textContent = "Браузер не смог прочитать запись. Открой текст записи ниже."; };
+        synth.speak(u);
+      });
     });
-    stop.addEventListener("click", function () { if (can) window.speechSynthesis.cancel(); });
-    return el("div", { class: "card" }, [el("span", { class: "label", text: "Audio" }), info, el("div", { class: "row" }, [play, stop])]);
+    stop.addEventListener("click", function () { if (!can) return; run += 1; window.speechSynthesis.cancel(); status.textContent = "Остановлено."; });
+    if (can) window.addEventListener("pagehide", function () { window.speechSynthesis.cancel(); });
+    return el("div", { class: "card" }, [el("span", { class: "label", text: "Audio" }), info, el("div", { class: "row" }, [play, stop]), status]);
   }
 
   /* speaking */
