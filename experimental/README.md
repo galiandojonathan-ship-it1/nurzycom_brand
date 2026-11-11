@@ -44,6 +44,8 @@ Inside a lesson, the words, the SAT passage, the IELTS passage, the speaking pro
 | Lesson | Questions | First check | Second check (independent re-solve) |
 |---|---|---|---|
 | C01 | 12 | 2026-11-11 | 2026-11-11 |
+| C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
+| C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
 
 ## Open `[FACT NEEDED]`
@@ -63,4 +65,4 @@ Parts, in order: `sat` (4 questions) → `ielts` (one passage of 200–260 words
 IELTS-only lessons replace `sat` with a `listen` part: `{ type: "questions", id: "listen", audio: [sentences read by the browser], transcript: [...], items: [...] }`.
 Question kinds: `mcq` (`opts`, `key` = index) and `tfng` (`key` = "T" | "F" | "NG"). Set a lesson's `status` to `"live"` in `COURSE.lessons` when it is complete.
 
-Build order: C02, C03, C07, C12 (listening), then C05, C06, C08–C11, C13–C16.
+Build order: ~~C02, C03~~ (done 2026-11-11), C07, C12 (listening), then C05, C06, C08–C11, C13–C16.

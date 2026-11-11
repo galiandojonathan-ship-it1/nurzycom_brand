@@ -20,9 +20,9 @@ window.COURSE = {
   lessons: [
     { id: "C01", block: "A", status: "live", title: "The Map That Leaves Things Out", thread: "A map is useful because of what it omits.",
       shared: "Word in context · paraphrase", sat: "Words in Context", ielts: "Reading: recognising paraphrase", speak: "Part 1 · short answers", write: "Paraphrase two sentences" },
-    { id: "C02", block: "A", status: "planned", title: "Where One Zone Ends", thread: "A line on the map decides what time it is.",
+    { id: "C02", block: "A", status: "live", title: "Where One Zone Ends", thread: "A line on the map decides what time it is.",
       shared: "Sentence boundaries", sat: "Boundaries", ielts: "Writing GRA: complex sentences", speak: "Part 1 · answer + reason", write: "Combine four short sentences" },
-    { id: "C03", block: "A", status: "planned", title: "Railway Time", thread: "Trains forced towns to agree on one clock.",
+    { id: "C03", block: "A", status: "live", title: "Railway Time", thread: "Trains forced towns to agree on one clock.",
       shared: "Form and agreement", sat: "Form, Structure, and Sense", ielts: "Writing GRA: accuracy", speak: "Part 2 · a past event", write: "Correct your own paragraph" },
     { id: "C04", block: "A", status: "live", title: "The Clock That Found Longitude", thread: "To know where you are, know what time it is.",
       shared: "Logical links", sat: "Transitions", ielts: "Writing CC: cohesive devices", speak: "Part 3 · opinion + concession", write: "One paragraph, three links" },
@@ -219,6 +219,266 @@ window.LESSONS.C01 = {
       ] }
   ],
   handoff: { text: "Beck left distance out. Next, a line on the map that decides what time it is.", next: "C02" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C02 = {
+  id: "C02",
+  title: "Where One Zone Ends",
+  thread: "A line on the map decides what time it is.",
+  intro: "Сегодня границы предложений. На SAT это Boundaries: где ставить точку, запятую, точку с запятой и двоеточие. В IELTS Writing это критерий Grammatical Range and Accuracy: сложные предложения без ошибок на стыках. В прошлом уроке карта пропускала лишнее. Сегодня на карте появляются линии, которые решают, который час и какое число.",
+  words: [
+    { w: "boundary", pos: "n.", ru: "граница",
+      sat: "The river long served as the boundary between the two provinces, though its course shifted with every flood.",
+      ielts: "The boundary between work and home life has become less clear." },
+    { w: "arbitrary", pos: "adj.", ru: "произвольный, условный",
+      sat: "The division of the collection into three periods is arbitrary; the artist herself recognized no such breaks.",
+      ielts: "An age limit of eighteen may seem arbitrary, but a line must be drawn somewhere." },
+    { w: "adopt", pos: "v.", ru: "принимать, перенимать",
+      sat: "The council voted to adopt the new calendar, although several members objected to the cost of the change.",
+      ielts: "Many companies have adopted flexible working hours." },
+    { w: "span", pos: "v.", ru: "охватывать, простираться",
+      sat: "Her career spanned five decades, during which she published more than thirty novels.",
+      ielts: "Russia spans eleven time zones." },
+    { w: "adjacent", pos: "adj.", ru: "соседний, смежный",
+      sat: "The two laboratories occupy adjacent rooms, which allows the teams to share equipment.",
+      ielts: "The new car park was built on land adjacent to the station." },
+    { w: "convention", pos: "n.", ru: "общепринятое правило, условность",
+      sat: "By convention, north is placed at the top of a map, but nothing in nature requires it.",
+      ielts: "Shaking hands is a common convention in business meetings." },
+    { w: "coincide", pos: "v.", ru: "совпадать",
+      sat: "The boundaries of the park do not coincide with those of the ancient forest, which once extended much farther south.",
+      ielts: "The festival coincides with the school holidays, so hotels fill quickly." },
+    { w: "deviate", pos: "v.", ru: "отклоняться",
+      sat: "The published text deviates from the manuscript in several places, most of them minor.",
+      ielts: "Pilots rarely deviate from the planned route." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Boundaries",
+      ru: "Слова во всех вариантах одинаковые, меняются только знаки. Сначала найди подлежащее и сказуемое по обе стороны пропуска и реши, что перед тобой: два полных предложения, придаточное или вставка.",
+      rule: [
+        "Два полных предложения соединяют точка, точка с запятой или запятая с союзом (and, but, so). Одна запятая их не соединяет.",
+        "Придаточное в начале (Because…, Although…) отделяется запятой. Вставку, которую можно убрать, выделяют парой одинаковых знаков: две запятые или два тире.",
+        "Двоеточие ставят после полного предложения перед пояснением. However между двумя предложениями: точка с запятой до, запятая после."
+      ],
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "The delegates at the 1884 conference could have chosen any meridian as the starting point for the whole ______ selected runs through the Royal Observatory at Greenwich, in London.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["world, the line they", "world the line they", "world. The line they", "world the line, they"], key: 2,
+          ru: "Здесь два полных предложения: «The delegates… could have chosen…» и «The line they selected runs…». Между ними нужна точка. Одна запятая даёт comma splice, отсутствие знака даёт слитное предложение. Запятая после «line» ничего не разделяет и рвёт подлежащее «the line they selected»." },
+        { kind: "mcq", chk: 2,
+          text: "In October 1884, delegates from twenty-five nations met in Washington, D.C., to settle a question of geography. They fixed the meridian from which longitude is ______ they did not create the world's time zones, which governments introduced one by one over the following decades.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["measured, however,", "measured; however,", "measured, however;", "measured however"], key: 1,
+          ru: "По обе стороны пропуска полные предложения: «They fixed…» и «they did not create…». However противопоставляет второе первому, значит оно относится ко второму: точка с запятой до, запятая после. Две запятые не могут соединить два предложения. Вариант «measured, however;» привязывает however к первому предложению, но оно ничему не противоречит: делегаты собрались решить вопрос и решили его." },
+        { kind: "mcq", chk: 2,
+          text: "One of the strongest voices for reform came from outside astronomy. Sandford ______ had argued for years that the world needed one system of standard time.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["Fleming, a Canadian railway engineer,", "Fleming, a Canadian railway engineer—", "Fleming—a Canadian railway engineer,", "Fleming a Canadian railway engineer"], key: 0,
+          ru: "«A Canadian railway engineer» — вставка: без неё предложение остаётся целым («Sandford Fleming had argued…»). Вставку выделяют парой одинаковых знаков, здесь двумя запятыми. Запятая с тире и тире с запятой не образуют пары. Без знаков вставка сливается с подлежащим." },
+        { kind: "mcq", chk: 2,
+          text: "Because the Earth turns through 360 degrees in twenty-four ______ a difference of fifteen degrees of longitude corresponds to a difference of one hour.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["hours;", "hours.", "hours", "hours,"], key: 3,
+          ru: "«Because the Earth turns… in twenty-four hours» — придаточное, оно не может стоять отдельно. После придаточного в начале предложения нужна запятая. Точка и точка с запятой превращают его в обрывок (fragment). Без знака придаточное сливается с главным предложением." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Long sentences, clear parts",
+      ru: "В тексте много сложных предложений: главная часть плюс придаточные с because, although, which, so that. Четыре утверждения TRUE / FALSE / NOT GIVEN и два вопроса с выбором. Когда предложение длинное, сначала найди главную часть: ту, что может стоять одна.",
+      passageTitle: "The Line That Bends",
+      passage: [
+        "Because the Earth turns through fifteen degrees of longitude every hour, the world can be divided into twenty-four time zones, each one hour apart from its neighbours. In theory, the boundaries between adjacent zones are straight lines running from pole to pole. In practice they rarely are, since governments prefer a boundary that coincides with a national or regional border.",
+        "The system needed a starting point, and any choice was bound to be arbitrary, because no meridian is marked by nature. In October 1884, delegates from twenty-five nations met in Washington to settle the question. They voted to adopt the meridian that passes through Greenwich, in London, which most ships' charts already used. France abstained from the vote and continued to set its clocks by Paris until 1911.",
+        "On the opposite side of the globe lies the International Date Line, where each calendar day begins. Although it roughly follows the 180th meridian, it deviates from that line in several places so that island groups are not split between two dates. Unlike the prime meridian, the date line was never fixed by an international conference; it is only a convention, and individual states have moved it. In 1995 Kiribati, whose islands span a wide stretch of the Pacific, shifted the line eastwards so that the whole country would share one day. Samoa made a similar change in 2011, when it skipped 30 December altogether in order to match the calendars of its main trading partners."
+      ],
+      items: [
+        { kind: "tfng", chk: 2, stem: "Most boundaries between time zones are straight lines from pole to pole.", key: "F",
+          ru: "FALSE. Прямые линии только «in theory». Дальше: «In practice they rarely are». Rarely противоречит слову most." },
+        { kind: "tfng", chk: 2, stem: "Britain sent more delegates to the conference than any other nation.", key: "NG",
+          ru: "NOT GIVEN. Текст называет число стран, но не говорит, сколько делегатов прислала каждая. То, что выбрали британский меридиан, ничего не сообщает о размере делегаций." },
+        { kind: "tfng", chk: 2, stem: "France started to use Greenwich as the basis of its time immediately after the 1884 vote.", key: "F",
+          ru: "FALSE. Франция «continued to set its clocks by Paris until 1911», то есть ещё много лет жила по Парижу." },
+        { kind: "tfng", chk: 2, stem: "No international conference has ever fixed the position of the International Date Line.", key: "T",
+          ru: "TRUE. «Was never fixed by an international conference; it is only a convention». Утверждение повторяет текст почти дословно, меняется только форма глагола." },
+        { kind: "mcq", chk: 2, stem: "According to the passage, Kiribati moved the date line so that", key: 0,
+          opts: ["all of its islands would have the same date", "its calendar would match that of its trading partners", "the line would follow the 180th meridian more closely", "it would no longer need more than one time zone"],
+          ru: "«So that the whole country would share one day» = у всех островов одна дата. Торговые партнёры — причина Самоа, а не Кирибати. Линия после сдвига отклоняется от 180-го меридиана сильнее, а не слабее. О числе часовых поясов Кирибати текст не говорит." },
+        { kind: "mcq", chk: 2, stem: "In the sentence beginning “Although it roughly follows”, which words form the main clause (the part that could stand alone as a sentence)?", key: 1,
+          opts: ["Although it roughly follows the 180th meridian", "it deviates from that line in several places", "so that island groups are not split between two dates", "the 180th meridian"],
+          ru: "Главная часть: «it deviates from that line in several places». В ней есть подлежащее и сказуемое, и она понятна одна. Части с although и so that — придаточные: без главной части они обрываются. «The 180th meridian» — просто словосочетание без сказуемого." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 1", title: "Answer, then a reason",
+      ru: "Ответь вслух на каждый вопрос двумя-тремя предложениями: ответ и причина в одном сложном предложении (because, although, which, so that), потом пример. Используй минимум два слова урока. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "Do you ever need to know what time it is in another country? Why?",
+        "Would you like to live in a country with several time zones? Why or why not?",
+        "Is it easy for you to get used to a new daily schedule?"
+      ],
+      prep: 20, talk: 90,
+      pron: { title: "Pronunciation: the pause between clauses", ru: "В сложном предложении голос идёт вверх в конце придаточного, потом короткая пауза, и вниз в конце главной части. Пауза работает как запятая. Сначала произнеси слова с верным ударением, потом фразы.",
+        items: ["BOUN-da-ry", "AR-bi-tra-ry", "a-DOPT", "ad-JA-cent", "con-VEN-tion", "co-in-CIDE", "DE-vi-ate", "Although my cousin lives abroad, ↗ | we talk every week. ↘", "Because the country is so wide, ↗ | the sun rises later in the west. ↘"] },
+      model: "I often need to know the time in another country because my cousin studies in Germany, which is several hours behind us. Although Kazakhstan spans a huge distance from east to west, the whole country adopted a single time zone in 2024, so I never cross a time boundary at home. The choice may look arbitrary, since the sun rises much later in the west, but I find it convenient." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "Combine four short sentences",
+      ru: "Соедини четыре коротких предложения в одно или два сложных. Используй минимум два союза из списка: although, because, which, so that. Ни одна мысль не должна пропасть. В IELTS Writing за такие предложения ставят баллы по критерию Grammatical Range and Accuracy, но только если на стыках нет ошибок.",
+      prompts: [
+        "The International Date Line roughly follows the 180th meridian.",
+        "It deviates from the meridian in several places.",
+        "Some island groups span both sides of the meridian.",
+        "Governments want every island to share the same date."
+      ],
+      minWords: 25,
+      checklist: ["В ответе одно или два предложения, и все четыре мысли на месте.", "Я использовал(а) минимум два союза: although, because, which, so that.", "После придаточного в начале предложения стоит запятая.", "Два полных предложения нигде не соединены одной запятой.", "Смысл тот же: ничего не добавлено и не потеряно."],
+      model: [
+        "Although the International Date Line roughly follows the 180th meridian, it deviates from it in several places, because some island groups span both sides of the meridian and governments want every island to share the same date.",
+        "Another way: The International Date Line, which roughly follows the 180th meridian, deviates from it in several places. It does so because governments want island groups that span both sides of the meridian to share the same date."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "A traveller who crosses the International Date Line has to correct one ______ the date, which moves forward by a day on a westward crossing and back by a day on an eastward one.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["thing;", "thing:", "thing.", "thing"], key: 1,
+          ru: "До пропуска полное предложение, после него пояснение, что это за «one thing»: нужно двоеточие. После точки с запятой или точки должно стоять полное предложение, а «the date, which moves…» — только существительное с придаточным. Без знака «one thing the date» сливается." },
+        { kind: "mcq", chk: 2,
+          stem: "Which sentence is written correctly?",
+          opts: ["Kiribati moved the date line, its islands had been split between two dates.", "Kiribati moved the date line. Because its islands had been split between two dates.", "Kiribati moved the date line because its islands had been split between two dates.", "Kiribati moved the date line because, its islands had been split between two dates."], key: 2,
+          ru: "Главная часть плюс придаточное с because в конце: запятая не нужна. В первом варианте два полных предложения соединены одной запятой (comma splice). Во втором придаточное с because стоит отдельно и обрывается (fragment). В четвёртом запятая отрывает союз от его придаточного." }
+      ] }
+  ],
+  handoff: { text: "A line on the map told every country what day it was. Next, the trains that forced whole towns to agree on the hour.", next: "C03" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C03 = {
+  id: "C03",
+  title: "Railway Time",
+  thread: "Trains forced towns to agree on one clock.",
+  intro: "Сегодня форма слова: согласование подлежащего и сказуемого, время глагола, its и it's. На SAT это Form, Structure, and Sense. В IELTS Writing это вторая половина критерия Grammatical Range and Accuracy: точность. В прошлом уроке линии на карте поделили мир на часовые пояса. Сегодня история о том, откуда взялось единое время: его потребовали поезда.",
+  words: [
+    { w: "uniform", pos: "adj.", ru: "единый, единообразный",
+      sat: "The bricks are nearly uniform in size, which suggests that they were shaped in the same mould.",
+      ielts: "Some people believe that all schools should follow a uniform curriculum." },
+    { w: "discrepancy", pos: "n.", ru: "расхождение, несоответствие",
+      sat: "A discrepancy between the two accounts led the historian to consult a third source.",
+      ielts: "There is a clear discrepancy between what the advertisement promises and what customers receive." },
+    { w: "impose", pos: "v.", ru: "вводить (правило), навязывать",
+      sat: "The editor imposed a strict limit of two thousand words on every contribution.",
+      ielts: "Some governments have imposed a tax on sugary drinks." },
+    { w: "resist", pos: "v.", ru: "сопротивляться",
+      sat: "The villagers resisted the plan for years, fearing that the new road would divide their fields.",
+      ielts: "Many people resist change at work, even when it would help them." },
+    { w: "prevail", pos: "v.", ru: "возобладать, взять верх",
+      sat: "After a long debate, the more cautious view prevailed, and the expedition was postponed.",
+      ielts: "In the end common sense prevailed, and the two sides reached an agreement." },
+    { w: "synchronize", pos: "v.", ru: "синхронизировать, согласовывать по времени",
+      sat: "The dancers synchronized their movements so closely that they seemed to share a single shadow.",
+      ielts: "The traffic lights on the main road are synchronized to keep cars moving." },
+    { w: "gradual", pos: "adj.", ru: "постепенный",
+      sat: "The shift in the author's style was gradual, visible only when early and late works are set side by side.",
+      ielts: "There has been a gradual increase in the number of people working from home." },
+    { w: "abandon", pos: "v.", ru: "отказаться, оставить",
+      sat: "The team abandoned its first hypothesis when the new measurements contradicted it.",
+      ielts: "Many farmers have abandoned traditional methods in favour of machines." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Form, Structure, and Sense",
+      ru: "Слова во всех вариантах одни и те же, меняется только форма. Для глагола найди подлежащее и слова, которые задают время. Для its и their найди слово, которое они заменяют.",
+      rule: [
+        "Найди подлежащее и убери всё, что стоит между ним и глаголом: the clocks in a typical town → were.",
+        "Время глагола задают маркеры и соседние глаголы: in 1840, before, until. Законченное прошлое — Past Simple.",
+        "Its = принадлежность, it's = it is. Company, railway, each town — единственное число: its."
+      ],
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "In the 1830s, the clocks in a typical British town ______ set by the sun, so that noon arrived a few minutes later in each town farther west.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["was", "were", "is", "has been"], key: 1,
+          ru: "Подлежащее — «the clocks» (множественное число), а «in a typical British town» стоит между ним и глаголом как ловушка. «In the 1830s» и «arrived» требуют прошедшего времени: were. Was, is и has been согласованы с единственным числом, а is и has been ещё и не подходят по времени." },
+        { kind: "mcq", chk: 2,
+          text: "Before the railways arrived, a difference of ten minutes between London time and Bristol time ______ little: no one could travel fast enough to notice it.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["matters", "has mattered", "mattered", "will matter"], key: 2,
+          ru: "«Before the railways arrived» и «could travel» описывают законченное прошлое, нужен Past Simple: mattered. Matters — настоящее время. Has mattered связывает прошлое с настоящим, а речь о периоде, который закончился. Will matter — будущее." },
+        { kind: "mcq", chk: 2,
+          text: "In November 1840, the Great Western Railway began to keep London time at every station on ______ line.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["their", "it's", "they're", "its"], key: 3,
+          ru: "Линия принадлежит одной компании: «the Great Western Railway» — единственное число, значит its. It's = it is, they're = they are: это не принадлежность. Their требует множественного числа, а здесь одна компания: the Great Western Railway." },
+        { kind: "mcq", chk: 2,
+          text: "From 1852 the Royal Observatory at Greenwich could send the time itself along a wire. The electric telegraph, ______ a signal from Greenwich to stations across the country, made a single railway time practical.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["carrying", "carried", "carries", "it carried"], key: 0,
+          ru: "У предложения уже есть сказуемое: «The electric telegraph… made». Между запятыми нужна не вторая личная форма глагола, а причастный оборот: carrying. Carried и carries дают второе сказуемое без союза. «It carried» вставляет целое предложение внутрь другого." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Accurate forms in a real text",
+      ru: "Читай и следи за формами: кто выполняет действие и когда. Четыре утверждения TRUE / FALSE / NOT GIVEN и два вопроса с выбором. Отвечай только по тексту.",
+      passageTitle: "When Noon Moved",
+      passage: [
+        "Until the 1840s, every town in Britain kept its own time. Clocks were set by the sun, so noon in Bristol arrived about ten minutes later than noon in London. The discrepancy troubled nobody, because even the fastest coach needed many hours to travel between the two cities.",
+        "The railways changed this. A train could now cross much of the country in a single day, and a timetable based on dozens of local times was confusing for passengers and could even be dangerous. In November 1840 the Great Western Railway began to keep London time at all its stations. Other companies followed, and in 1847 the Railway Clearing House, a body set up by the companies themselves, recommended that every railway adopt Greenwich time.",
+        "Uniform time could not simply be imposed on the towns, however. Some of them resisted and went on keeping local time, and for a period some public clocks displayed both times at once. A clock in Bristol still carries two minute hands as a reminder. The change was gradual, but railway time prevailed. From 1852 the electric telegraph allowed clocks far from London to be synchronized with a signal sent from Greenwich, and by the middle of the 1850s most towns had abandoned local time. The law changed last: only in 1880 did Parliament make Greenwich time the legal time for the whole of Great Britain."
+      ],
+      items: [
+        { kind: "tfng", chk: 2, stem: "Before the railways, the difference between London time and Bristol time caused no practical problems.", key: "T",
+          ru: "TRUE. «The discrepancy troubled nobody»: расхождение никому не мешало. «Troubled nobody» = «caused no practical problems»." },
+        { kind: "tfng", chk: 2, stem: "The Great Western Railway was the last railway company to change to London time.", key: "F",
+          ru: "FALSE. После неё «other companies followed», значит она была среди первых, а не последней." },
+        { kind: "tfng", chk: 2, stem: "The Railway Clearing House fined companies that went on using local time.", key: "NG",
+          ru: "NOT GIVEN. В тексте только «recommended». О штрафах или других наказаниях ничего не сказано." },
+        { kind: "tfng", chk: 2, stem: "Parliament made Greenwich time the legal time before most towns had started to use it.", key: "F",
+          ru: "FALSE. Порядок обратный: большинство городов отказались от местного времени к середине 1850-х, а закон появился последним, в 1880 году. «The law changed last»." },
+        { kind: "mcq", chk: 2, stem: "The clock in Bristol is mentioned as an example of", key: 2,
+          opts: ["a clock that was synchronized by telegraph", "the danger of confusing timetables", "a public clock that showed local time and railway time together", "a clock whose time was fixed by Parliament"],
+          ru: "Предложение о Бристоле идёт сразу после слов «some public clocks displayed both times at once» и поясняет их: две минутные стрелки показывали два времени. Телеграф и закон упомянуты позже и с этими часами не связаны. Опасность расписаний — тема второго абзаца." },
+        { kind: "mcq", chk: 2, stem: "In the first sentence, the word “its” refers to", key: 0,
+          opts: ["every town", "Britain", "the sun", "London"],
+          ru: "«Every town in Britain kept its own time»: своё время было у каждого города. Every town — единственное число, поэтому its, а не their. Britain стоит ближе к its, но у всей страны как раз не было одного времени." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 2", title: "A past event, accurate tenses",
+      ru: "Расскажи историю из прошлого. Минуту готовься и запиши четыре-пять ключевых слов, потом говори до двух минут. Следи за временами: основные события в Past Simple, фон в Past Continuous, то, что случилось раньше, в Past Perfect. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "Describe a time when you were late, or nearly late, for something important.",
+        "You should say: what the event was",
+        "why you were late or nearly late",
+        "what happened in the end",
+        "and explain what you learned from it."
+      ],
+      prep: 60, talk: 120,
+      pron: { title: "Pronunciation: the three sounds of -ed", ru: "Окончание -ed читается тремя способами: /t/ после глухого звука, /d/ после звонкого, /ɪd/ после t и d. Лишний слог появляется только в третьем случае. Произнеси каждое слово три раза.",
+        items: ["missed /t/ (один слог)", "checked /t/ (один слог)", "arrived /d/", "im-POSED /d/", "pre-VAILED /d/", "a-BAN-doned /d/", "SYN-chro-nized /d/", "re-SIST-ed /ɪd/", "WAIT-ed /ɪd/", "dis-CREP-an-cy", "U-ni-form", "GRAD-u-al"] },
+      model: "Last spring I nearly missed a train to Almaty, where my class was going on a school trip. I had set an alarm, but my watch was slow, so there was a discrepancy of about five minutes between it and the station clock. When I arrived, the other students were already boarding, and I ran along the platform with my bag. I got on just before the doors closed. Since then I have abandoned the habit of leaving at the last moment. I have also synchronized my watch with my phone, and the change in my habits was not gradual at all: it happened that morning." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "Correct your own paragraph",
+      ru: "Напиши один абзац из четырёх-пяти предложений в прошедшем времени. Потом перечитай его три раза, каждый раз с одной целью: сначала глаголы и их подлежащие, потом времена, потом its, their и окончания. Исправь всё, что найдёшь, и только после этого открой образец.",
+      prompts: ["How did the railways change the way British towns kept time?"],
+      minWords: 50,
+      checklist: ["У каждого глагола я нашёл(ла) подлежащее и проверил(а) число: a town keeps, towns keep.", "События 1840-х стоят в прошедшем времени, без случайного перехода в настоящее.", "То, что случилось раньше другого прошедшего события, стоит в Past Perfect (had + третья форма).", "Its без апострофа для принадлежности; it's только там, где можно сказать it is.", "Я использовал(а) минимум три слова урока."],
+      model: [
+        "Before the railways, each British town kept its own time, and nobody had worried about the discrepancy between one town clock and the next. Fast trains made these differences a problem, so the railway companies imposed a uniform time on their stations. Some towns resisted at first. The change was gradual, but railway time prevailed, and by the middle of the 1850s most towns had abandoned local time."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "Among the reminders of that period ______ a clock in Bristol with two minute hands, one for local time and one for railway time.",
+          stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+          opts: ["are", "is", "were", "have been"], key: 1,
+          ru: "Порядок слов обратный: подлежащее стоит после глагола. Это «a clock» (единственное число), а не «reminders», которое входит в оборот с among. Значит is. Are, were и have been согласованы со множественным числом." },
+        { kind: "mcq", chk: 2,
+          stem: "Which sentence is grammatically accurate?",
+          opts: ["Before the railways came, every town kept its own time.", "Before the railways came, every town have kept its own time.", "Before the railways came, every town keeps its own time.", "Before the railways came, every town kept it's own time."], key: 0,
+          ru: "Законченное прошлое: kept, как и came. Принадлежность: its без апострофа. «Have kept» не согласовано с every town и не подходит по времени. «Keeps» переходит в настоящее время. «It's» = it is." }
+      ] }
+  ],
+  handoff: { text: "The railways gave a whole country one clock. Next, a clock accurate enough to tell a ship where it is.", next: "C04" }
 };
 
 /* ------------------------------------------------------------------ */
