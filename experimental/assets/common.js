@@ -89,5 +89,25 @@
     return { words: words.length, links: links, own: own };
   }
 
-  window.NZ = { el: el, store: store, meta: meta, param: param, items: items, lessonState: lessonState, cadence: cadence, strip: strip, writing: writing };
+  /* fold a section: its h2 becomes a toggle; everything after the h2 hides until opened */
+  function fold(sec, open, hint) {
+    var h2 = sec.querySelector("h2"); if (!h2) return sec;
+    var body = el("div", { class: "fold-body" });
+    var moved = [], node = h2;
+    while (node && node !== sec) {               /* everything after the h2, at every level up to the section */
+      var sib = node.nextSibling;
+      while (sib) { moved.push(sib); sib = sib.nextSibling; }
+      node = node.parentNode;
+    }
+    var parent = h2.parentNode;
+    var btn = el("button", { type: "button", class: "fold-btn", "aria-expanded": open ? "true" : "false" }, [el("span", { text: h2.textContent }), hint ? el("small", { text: hint }) : null]);
+    h2.textContent = ""; h2.appendChild(btn); h2.classList.add("fold-h");
+    moved.forEach(function (n) { body.appendChild(n); });
+    parent.insertBefore(body, h2.nextSibling);
+    body.hidden = !open; sec.classList.add("fold");
+    btn.addEventListener("click", function () { var o = btn.getAttribute("aria-expanded") !== "true"; btn.setAttribute("aria-expanded", o ? "true" : "false"); body.hidden = !o; });
+    return sec;
+  }
+
+  window.NZ = { fold: fold, el: el, store: store, meta: meta, param: param, items: items, lessonState: lessonState, cadence: cadence, strip: strip, writing: writing };
 })();

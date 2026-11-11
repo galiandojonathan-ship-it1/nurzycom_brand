@@ -135,5 +135,21 @@
     el("p", { class: "ru", text: "Письмо и речь не проверяются автоматически, поэтому здесь считается то, что можно посчитать честно: длина, связки, слова урока в твоём тексте, точность взаимной проверки и сделанная практика. Оценку по критериям IELTS даёт преподаватель на office hours." }),
     el("div", { class: "tw" }, [el("table", {}, [el("thead", {}, [el("tr", {}, ["Урок", "Слов", "Связки", "Слова урока", "Peer review", "Speaking дома", "Office hours"].map(function (t) { return el("th", { scope: "col", text: t }); }))]), wt])])]));
 
+  /* at a glance: three numbers first, details folded below */
+  var allDone = live.filter(function (l) { var c = NZ.cadence(l.id); return c.slides && c.homework && c.office && c.progress; }).length;
+  var totN = 0, totR = 0, totMiss = 0, totFix = 0;
+  Object.keys(agg).forEach(function (k) { totN += agg[k].n; totR += agg[k].r; totMiss += agg[k].miss; totFix += agg[k].fixed; });
+  var glance = el("section", { class: "part glance" }, [el("div", { class: "grid g3" }, [
+    el("div", {}, [el("span", { class: "num", text: allDone + " / " + live.length }), el("p", { class: "small", text: "уроков прошли все четыре шага" })]),
+    el("div", {}, [el("span", { class: "num", text: totN ? pct(totR, totN) + "%" : "—" }), el("p", { class: "small", text: "верно с первой попытки в домашних заданиях" })]),
+    el("div", {}, [el("span", { class: "num", text: totMiss ? totFix + " / " + totMiss : "—" }), el("p", { class: "small", text: "ошибок исправлено после office hours" })])
+  ])]);
+  main.insertBefore(glance, main.firstChild);
+  var open = (location.hash || "").slice(1);
+  [["grid", "по урокам"], ["checkins", d0.done ? "диагностика " + d0.r + "/" + d0.t : "начни с диагностики"], ["skills", Object.keys(agg).length + " навыков"], ["retry", totMiss - totFix > 0 ? (totMiss - totFix) + " осталось" : "нечего исправлять"], ["output", "письмо и речь"]].forEach(function (x, i) {
+    var sec = document.getElementById(x[0]);
+    var want = open && (open === x[0] || (x[0] === "retry" && /^retry-/.test(open)) || (x[0] === "grid" && /^C\d\d$/.test(open)));
+    if (sec) NZ.fold(sec, want || (!open && i === 0), x[1]);
+  });
   if (location.hash) { var t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
 })();

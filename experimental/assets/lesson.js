@@ -324,5 +324,25 @@
     ]));
   }
   Object.keys(state.done).forEach(function (s) { var a = $('[data-step="' + s + '"]'); if (a) a.classList.add("done"); });
+
+  /* one part at a time: the step bar switches parts, each part ends with a "next" button */
+  var partIds = steps.map(function (s) { return s[0]; });
+  var show = function (sid, scroll) {
+    if (partIds.indexOf(sid) < 0) sid = partIds[0];
+    partIds.forEach(function (pid) { var sec = document.getElementById(pid); if (sec) sec.hidden = pid !== sid; });
+    [].forEach.call(bar.querySelectorAll("a"), function (a) { if (a.getAttribute("data-step") === sid) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current"); });
+    state.cur = sid; save();
+    if (scroll) { var top = root.querySelector(".steps"); if (top) top.scrollIntoView(); }
+  };
+  [].forEach.call(bar.querySelectorAll("a"), function (a) {
+    a.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); show(a.getAttribute("data-step"), true); });
+  });
+  partIds.forEach(function (pid, i) {
+    var sec = document.getElementById(pid), nxt = partIds[i + 1];
+    if (!sec || !nxt) return;
+    var label = (steps[i + 1] || [])[1];
+    sec.appendChild(el("p", { class: "next-part" }, [el("button", { class: "btn", type: "button", text: "Дальше: " + label + " →", onclick: function () { show(nxt, true); } })]));
+  });
+  show(state.cur || partIds[0], false);
   renderResult();
 })();

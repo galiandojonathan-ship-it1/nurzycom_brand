@@ -36,11 +36,7 @@
       var ieltsOnly = l.sat === "—";
       var live = l.status === "live";
       var title = live ? el("a", { href: "lesson.html?id=" + l.id, text: l.title }) : document.createTextNode(l.title);
-      var dl = el("dl");
-      [["Shared", l.shared], ["SAT", l.sat], ["IELTS", l.ielts], ["Speak", l.speak], ["Write", l.write]].forEach(function (r) {
-        if (r[1] === "—") return;
-        dl.appendChild(el("dt", { text: r[0] })); dl.appendChild(el("dd", { text: r[1] }));
-      });
+      var dl = el("p", { class: "st-skills", lang: "en", text: ieltsOnly ? "IELTS · " + l.ielts : "SAT · " + l.sat + "   ·   IELTS · " + l.ielts });
       map.appendChild(el("li", { class: ieltsOnly ? "ielts" : "both" }, [
         el("div", { class: "rail", "aria-hidden": "true" }, [el("span", { class: "dot s" }), el("span", { class: "link" }), el("span", { class: "dot i" })]),
         el("div", { class: "st" }, [
@@ -78,6 +74,7 @@
   fill("bridge", C.bridge);
   fill("fragments", C.fragments);
 
+  ["transfer-sec", "tracks"].forEach(function (sid) { var sec = document.getElementById(sid); if (sec && window.NZ) window.NZ.fold(sec, false, sid === "transfer-sec" ? "таблица 4 × 10" : "8 уроков и 10 фрагментов"); });
   var live = C.lessons.filter(function (l) { return l.status === "live"; }).length;
   var c = document.getElementById("count-live"); if (c) c.textContent = live + " из " + C.lessons.length;
   var th = document.getElementById("theme-ru"); if (th) th.textContent = C.themeRu;

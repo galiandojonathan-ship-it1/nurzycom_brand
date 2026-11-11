@@ -166,4 +166,6 @@
     el("p", {}, [el("a", { class: "btn ghost", href: "progress.html#" + id, text: "Шаг 4 · Прогресс →" })])
   ]));
   renderSummary();
+  var hints = { mistakes: mis.length ? mis.length + " " + (mis.length === 1 ? "ошибка" : mis.length < 5 ? "ошибки" : "ошибок") : "ошибок нет", peer: S.peerScore ? "найдено " + S.peerScore[0] + " из " + S.peerScore[1] : "4 критерия", live: O.live.length + " вопроса", summary: S.attended ? "встреча была" : "скопировать и отправить" };
+  ["mistakes", "peer", "live", "summary"].forEach(function (sid, i) { var sec = document.getElementById(sid); if (sec) NZ.fold(sec, i === 0, hints[sid]); });
 })();
