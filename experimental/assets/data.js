@@ -18,37 +18,37 @@ window.COURSE = {
 
   /* status: "live" = fully built in this demo, "planned" = outline only */
   lessons: [
-    { id: "C01", block: "A", status: "live", title: "The Map That Leaves Things Out", thread: "A map is useful because of what it omits.",
+    { id: "C01", code: "WIC", block: "A", status: "live", title: "The Map That Leaves Things Out", thread: "A map is useful because of what it omits.",
       shared: "Word in context · paraphrase", sat: "Words in Context", ielts: "Reading: recognising paraphrase", speak: "Part 1 · short answers", write: "Paraphrase two sentences" },
-    { id: "C02", block: "A", status: "live", title: "Where One Zone Ends", thread: "A line on the map decides what time it is.",
+    { id: "C02", code: "BND", block: "A", status: "live", title: "Where One Zone Ends", thread: "A line on the map decides what time it is.",
       shared: "Sentence boundaries", sat: "Boundaries", ielts: "Writing GRA: complex sentences", speak: "Part 1 · answer + reason", write: "Combine four short sentences" },
-    { id: "C03", block: "A", status: "live", title: "Railway Time", thread: "Trains forced towns to agree on one clock.",
+    { id: "C03", code: "FSS", block: "A", status: "live", title: "Railway Time", thread: "Trains forced towns to agree on one clock.",
       shared: "Form and agreement", sat: "Form, Structure, and Sense", ielts: "Writing GRA: accuracy", speak: "Part 2 · a past event", write: "Correct your own paragraph" },
-    { id: "C04", block: "A", status: "live", title: "The Clock That Found Longitude", thread: "To know where you are, know what time it is.",
+    { id: "C04", code: "TRN", block: "A", status: "live", title: "The Clock That Found Longitude", thread: "To know where you are, know what time it is.",
       shared: "Logical links", sat: "Transitions", ielts: "Writing CC: cohesive devices", speak: "Part 3 · opinion + concession", write: "One paragraph, three links" },
-    { id: "C05", block: "B", status: "planned", title: "Counting Everyone", thread: "A census turns a country into a table.",
+    { id: "C05", code: "RS", block: "B", status: "live", title: "Counting Everyone", thread: "A census turns a country into a table.",
       shared: "Selecting facts for a goal", sat: "Rhetorical Synthesis", ielts: "Writing Task 1: the overview", speak: "Describe a trend aloud", write: "One overview sentence" },
-    { id: "C06", block: "B", status: "planned", title: "The Pump on Broad Street", thread: "A map of dots became an argument.",
+    { id: "C06", code: "COEQ", block: "B", status: "live", title: "The Pump on Broad Street", thread: "A map of marks became an argument.",
       shared: "Data as evidence", sat: "Command of Evidence (quantitative)", ielts: "Writing Task 1: comparisons", speak: "Compare two figures aloud", write: "Two comparison sentences" },
-    { id: "C07", block: "B", status: "live", title: "The Diagram That Changed a Hospital", thread: "One picture carried the main idea.",
+    { id: "C07", code: "CID", block: "B", status: "live", title: "The Diagram That Changed a Hospital", thread: "One picture carried the main idea.",
       shared: "Main idea and detail", sat: "Central Ideas and Details", ielts: "Reading: headings, True / False / Not Given", speak: "Part 2 · structure", write: "A topic sentence" },
-    { id: "C08", block: "B", status: "planned", title: "How a Report Persuades", thread: "Order is part of the message.",
+    { id: "C08", code: "TSP", block: "B", status: "planned", title: "How a Report Persuades", thread: "Order is part of the message.",
       shared: "Structure and purpose", sat: "Text Structure and Purpose", ielts: "Reading: matching information · Task 2 paragraph", speak: "Part 2 · two full minutes", write: "One body paragraph" },
-    { id: "C09", block: "C", status: "planned", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
+    { id: "C09", code: "INF", block: "C", status: "planned", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
       shared: "Inference", sat: "Inferences", ielts: "Reading: Yes / No / Not Given, summary", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
-    { id: "C10", block: "C", status: "planned", title: "The Doctor Nobody Believed", thread: "A claim needs support that others accept.",
+    { id: "C10", code: "COET", block: "C", status: "planned", title: "The Doctor Nobody Believed", thread: "A claim needs support that others accept.",
       shared: "Claim and support", sat: "Command of Evidence (textual)", ielts: "Writing Task 2: Task Response", speak: "Part 3 · point + example", write: "Support one claim" },
-    { id: "C11", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
+    { id: "C11", code: "CTC", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
       shared: "Two points of view", sat: "Cross-Text Connections", ielts: "Task 2: discuss both views", speak: "Part 3 · compare views", write: "Introduction for a two-view essay" },
-    { id: "C12", block: "D", status: "live", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
+    { id: "C12", code: "LIS", block: "D", status: "live", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
       shared: "—", sat: "—", ielts: "Listening: directions on a map, predicting the answer type", speak: "Give directions aloud", write: "Notes from audio" },
-    { id: "C13", block: "D", status: "planned", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
+    { id: "C13", code: "LIS", block: "D", status: "planned", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
       shared: "—", sat: "—", ielts: "Listening: lectures and signposting", speak: "Part 2 · retell the lecture", write: "Summary in three sentences" },
-    { id: "C14", block: "D", status: "planned", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
+    { id: "C14", code: "SPK", block: "D", status: "planned", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
       shared: "—", sat: "—", ielts: "Speaking: all three parts + pronunciation", speak: "Full recorded answer", write: "Self-review of the recording" },
-    { id: "C15", block: "D", status: "planned", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
+    { id: "C15", code: "WRT", block: "D", status: "planned", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
       shared: "—", sat: "—", ielts: "Writing Task 2 from the bricks (inside the course only)", speak: "Part 3", write: "Timed essay" },
-    { id: "C16", block: "E", status: "planned", title: "Your Own Map", thread: "Draw the map of your errors. Decide what to leave out.",
+    { id: "C16", code: "MIX", block: "E", status: "planned", title: "Your Own Map", thread: "Draw the map of your errors. Decide what to leave out.",
       shared: "Mixed review", sat: "Mixed review + range", ielts: "Reading and Listening timing + range", speak: "Final recorded answer", write: "Personal error list" }
   ],
 
@@ -607,11 +607,269 @@ window.LESSONS.C04 = {
 };
 
 /* ------------------------------------------------------------------ */
+window.LESSONS.C05 = {
+  id: "C05",
+  title: "Counting Everyone",
+  thread: "A census turns a country into a table.",
+  intro: "В прошлом уроке часы превратили время в место на карте. Сегодня перепись превращает целую страну в таблицу. Навык один: выбрать из фактов те, что нужны для цели. На SAT это Rhetorical Synthesis: из заметок выбрать предложение, которое выполняет задачу. В IELTS Writing Task 1 это overview: из всей таблицы выбрать главное и не тонуть в цифрах.",
+  words: [
+    { w: "relevant", pos: "adj.", ru: "относящийся к делу, нужный",
+      sat: "Only two of the archive's many letters are relevant to the question of when the bridge was built.",
+      ielts: "Your overview should include only the information that is relevant to the main trend." },
+    { w: "overall", pos: "adv.", ru: "в целом",
+      sat: "Some districts lost residents, but overall the region grew during the decade.",
+      ielts: "Overall, the number of students rose, while the number of teachers stayed the same." },
+    { w: "estimate", pos: "n. / v.", ru: "оценка; оценивать приблизительно",
+      sat: "Earlier estimates of the city's population had relied on counts of houses rather than of people.",
+      ielts: "It is difficult to estimate how many tourists visit the city each year." },
+    { w: "comprise", pos: "v.", ru: "состоять из, включать",
+      sat: "The collection comprises more than four hundred maps, most of them drawn by hand.",
+      ielts: "Young people comprise almost half of the population in some countries." },
+    { w: "fluctuate", pos: "v.", ru: "колебаться, меняться то вверх, то вниз",
+      sat: "Grain prices fluctuated sharply from one season to the next, depending on the harvest.",
+      ielts: "The number of visitors fluctuated between 2010 and 2015 before rising steadily." },
+    { w: "significant", pos: "adj.", ru: "значительный, важный",
+      sat: "The difference between the two samples was small but significant, since it appeared in every trial.",
+      ielts: "There was a significant increase in the number of people working from home." },
+    { w: "decline", pos: "n. / v.", ru: "снижение; снижаться",
+      sat: "The decline of the river trade began well before the railway reached the town.",
+      ielts: "The use of paper maps has declined since smartphones became common." },
+    { w: "enumerate", pos: "v.", ru: "пересчитывать, перечислять по одному",
+      sat: "The clerk's task was to enumerate every household on the street, door by door.",
+      ielts: "The report enumerates the main reasons why young people leave rural areas." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Rhetorical Synthesis",
+      ru: "Сначала прочитай цель в вопросе, а не заметки. Подчеркни глагол цели: explain, emphasize, contrast, describe. Потом найди вариант, который выполняет именно эту цель. Верный факт без нужной цели — неверный ответ.",
+      rule: [
+        "Цель важнее заметок: каждый вариант правдив, но только один делает то, что просит вопрос.",
+        "Слово в цели подсказывает форму ответа: contrast требует двух сторон, explain why требует причины, emphasize the size требует числа или масштаба.",
+        "Ловушка: вариант с самым интересным фактом, который к цели не относится (не relevant)."
+      ],
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "While researching a topic, a student has taken the following notes:\n• Great Britain held its first national census in 1801.\n• Before then, estimates of the population varied widely.\n• Officials wanted reliable figures to plan food supplies and defence.\n• Since 1801, a census has been taken in Britain every ten years, except in 1941.",
+          stem: "The student wants to explain why Great Britain carried out its first census. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Since 1801, Britain has taken a census every ten years, with the exception of 1941.", "Great Britain held its first national census in 1801.", "Great Britain's first census, held in 1801, was carried out because officials wanted reliable figures to plan food supplies and defence.", "Britain did not take a census in 1941."], key: 2,
+          ru: "Цель: explain why, то есть нужна причина. Причина есть только в варианте C: «because officials wanted reliable figures». A и D говорят о том, что было после 1801 года. B называет дату, но не объясняет, зачем." },
+        { kind: "mcq", chk: 2,
+          text: "While researching a topic, a student has taken the following notes:\n• Counting the 1880 US census by hand took years.\n• For the 1890 census, Herman Hollerith designed a machine that read holes punched in cards.\n• Each hole recorded one fact about a person, such as age or sex.\n• With the machine, the 1890 results were counted far more quickly.\n• Hollerith's company later became part of IBM.",
+          stem: "The student wants to describe how Hollerith's machine worked. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Hollerith's machine read holes punched in cards, each hole recording one fact about a person, such as age or sex.", "Thanks to Hollerith's machine, the 1890 census was counted far more quickly than the 1880 census.", "Herman Hollerith, whose company later became part of IBM, designed a machine for the 1890 census.", "The 1880 US census took years to count by hand."], key: 0,
+          ru: "Цель: describe how it worked, то есть устройство. Только A говорит, что делала машина: читала отверстия в карточках. B называет результат, а не устройство. C рассказывает о компании. D говорит о 1880 годе, когда машины ещё не было." },
+        { kind: "mcq", chk: 2,
+          text: "While researching a topic, a student has taken the following notes:\n• The First General Census of the Russian Empire took place in 1897.\n• It was the only census ever carried out across the whole empire.\n• Census takers recorded each person's native language, among other details.\n• Historians still use its records to study the population of the period.",
+          stem: "The student wants to emphasize what made the 1897 census unique. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Historians still study the records of the 1897 census.", "The census of 1897 was the only one ever carried out across the whole Russian Empire.", "In 1897, census takers in the Russian Empire recorded each person's native language.", "The First General Census of the Russian Empire took place in 1897."], key: 1,
+          ru: "Unique = единственный в своём роде. Это прямо сказано только в B: «the only one ever». Родной язык (C) записывали, но заметки не говорят, что это было уникально. A и D верны, но ничего не говорят об уникальности." },
+        { kind: "mcq", chk: 2,
+          text: "While researching a topic, a student has taken the following notes about Marsh End, a fictional town:\n• In 2000, Marsh End had 12,000 residents.\n• In 2020, it had 15,600 residents.\n• The number of residents aged 65 and over more than doubled in that period.\n• A new railway station opened in the town in 2008.",
+          stem: "The student wants to present the overall change in the town's population. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["The number of Marsh End residents aged 65 and over more than doubled between 2000 and 2020.", "Marsh End, which opened a railway station in 2008, had 12,000 residents in 2000.", "A new railway station opened in Marsh End in 2008.", "Between 2000 and 2020, the population of Marsh End grew from 12,000 to 15,600."], key: 3,
+          ru: "Overall change = как изменилось всё население. Нужны обе цифры, начало и конец: это D. A описывает одну возрастную группу, а не всё население. B даёт только одну цифру. C к населению не относится." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Task 1 data", title: "From a table to the main trend",
+      ru: "В IELTS Writing Task 1 сначала нужно увидеть главное в таблице, а потом уже детали. Здесь таблица и короткий текст о ней. Данные выдуманные, город тоже. Ответь на шесть вопросов: True / False / Not Given проверяй по таблице и тексту вместе.",
+      table: { caption: "Population of Marsh End by age group, 2000 and 2020 (fictional data)", head: ["Age group", "2000", "2020"],
+        rows: [["0–17", "3,000", "3,300"], ["18–64", "7,800", "9,300"], ["65 and over", "1,200", "3,000"], ["Total", "12,000", "15,600"]] },
+      passageTitle: "Marsh End in Two Counts",
+      passage: [
+        "Every twenty years, the council of Marsh End publishes a short summary of the town's census results. The summary is meant for residents who have no time to read the full tables, so it opens with a single overall statement before it turns to any particular figure.",
+        "The table compares two counts. In 2000 the town comprised 12,000 residents; by 2020 the figure had risen to 15,600. Every age group grew, but not at the same pace. The working-age group, from 18 to 64, remained by far the largest in both years. The youngest group changed only slightly.",
+        "The most significant change was at the top of the table. The number of residents aged 65 and over rose from 1,200 to 3,000, so older people now make up a much larger share of the town than before. The council's summary does not explain this change, and a careful reader should not try to explain it either: the table shows what happened, not why.",
+        "For a student preparing for IELTS, the lesson is simple. An overview names the main trend and the most striking change. The individual numbers come later, and only the relevant ones."
+      ],
+      items: [
+        { kind: "mcq", chk: 2, stem: "Which sentence is the best overview of the table?", key: 0,
+          opts: ["Overall, the population of Marsh End grew, and the group aged 65 and over grew fastest.", "In 2000, there were 3,000 residents aged 0–17.", "Overall, the town became more popular because it is a pleasant place to live.", "Overall, every age group doubled in size."],
+          ru: "Overview называет главное: население выросло, быстрее всех росла группа 65+. B — одна деталь. C объясняет причину, которой в таблице нет. D неверно: удвоилась (и даже больше) только группа 65+." },
+        { kind: "tfng", chk: 2, stem: "The 18–64 group was the largest group in both 2000 and 2020.", key: "T",
+          ru: "TRUE. 7,800 и 9,300 — самые большие числа в обоих годах. В тексте то же: «remained by far the largest in both years»." },
+        { kind: "tfng", chk: 2, stem: "The number of residents aged 0–17 fell between 2000 and 2020.", key: "F",
+          ru: "FALSE. 3,000 → 3,300: число выросло, хоть и немного. Текст: «changed only slightly» и «every age group grew»." },
+        { kind: "tfng", chk: 2, stem: "Most of the new residents moved to Marsh End from the capital.", key: "NG",
+          ru: "NOT GIVEN. Ни таблица, ни текст не говорят, откуда приехали люди. Текст даже предупреждает: таблица показывает «what happened, not why»." },
+        { kind: "mcq", chk: 2, stem: "Which group grew by exactly 1,500 residents?", key: 1,
+          opts: ["0–17", "18–64", "65 and over", "the total population"],
+          ru: "9,300 − 7,800 = 1,500. Для сравнения: 0–17 выросла на 300, 65+ на 1,800, всё население на 3,600." },
+        { kind: "mcq", chk: 2, stem: "According to the text, which of these does NOT belong in an overview?", key: 2,
+          opts: ["the main trend", "the most striking change", "an explanation of why the change happened", "a general statement about the whole table"],
+          ru: "Текст: overview называет «the main trend and the most striking change», а таблица не говорит «why». Значит, объяснение причин в overview не входит. A, B и D как раз и есть overview." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 3", title: "Describe a trend aloud",
+      ru: "Ответь вслух за полторы минуты. План: главная тенденция → одна важная деталь с числом → твоё мнение о причине (в Speaking причину называть можно, в Task 1 нельзя). Используй overall и минимум два слова урока. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "How has the population of your town or city changed in recent years?",
+        "Why do you think governments count their people every few years?"
+      ],
+      prep: 30, talk: 90,
+      pron: { title: "Pronunciation: numbers you can't afford to mix up", ru: "В числах на -teen ударение на конце, в числах на -ty на начале. На экзамене путаница 15 и 50 стоит балла. Произнеси пары, преувеличивая ударение.",
+        items: ["thir-TEEN — THIR-ty", "four-TEEN — FOR-ty", "fif-TEEN — FIF-ty", "six-TEEN — SIX-ty", "The figure rose to fif-TEEN thousand.", "It fell by FIF-ty percent."] },
+      model: "Overall, my city has grown quite fast. When I was a child, the estimate was about one million people, and now it is significantly more, because many families have moved here for work. I think governments count their people regularly because they need relevant figures to plan schools, hospitals and roads; without a census, those plans would just be guesses." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "One overview sentence",
+      ru: "Напиши overview к таблице Marsh End: одно или два предложения. Только главная тенденция и самое заметное изменение. Без причин, без всех чисел подряд.",
+      prompts: ["Write an overview of the table “Population of Marsh End by age group, 2000 and 2020”."],
+      minWords: 20,
+      checklist: ["Я начал(а) с Overall или похожего слова.", "Я назвал(а) главную тенденцию для всего населения.", "Я назвал(а) самое заметное изменение.", "Я не объяснял(а) причины.", "Я не перечислял(а) все числа."],
+      model: [
+        "Overall, the population of Marsh End grew between 2000 and 2020, and the most significant change was in the group aged 65 and over, which more than doubled while the youngest group changed only slightly."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "While researching a topic, a student has taken the following notes:\n• A census counts every person in a country.\n• A sample survey asks questions of only some people.\n• Governments use both to plan schools, hospitals and roads.",
+          stem: "The student wants to contrast a census with a sample survey. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Governments use both a census and a sample survey to plan schools, hospitals and roads.", "A census counts every person in a country.", "Unlike a sample survey, which asks questions of only some people, a census counts every person in a country.", "A sample survey asks questions of only some people."], key: 2,
+          ru: "Contrast требует двух сторон и различия по одному признаку: кого считают. Это C: «only some people» против «every person», различие названо через unlike. A говорит о сходстве, а не о различии. B и D описывают только одну сторону." },
+        { kind: "tfng", chk: 2,
+          text: "Overall, the population of Marsh End rose by 3,600 between 2000 and 2020, with the sharpest growth among residents aged 65 and over.",
+          stem: "The group aged 18–64 grew faster than any other group.", key: "F",
+          ru: "FALSE. Текст прямо говорит, что быстрее всех росла группа 65+: «the sharpest growth among residents aged 65 and over»." }
+      ] }
+  ],
+  handoff: { text: "A census turned a country into a table. Next, one doctor turns a list of deaths into marks on a map, and the map into an argument.", next: "C06" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C06 = {
+  id: "C06",
+  title: "The Pump on Broad Street",
+  thread: "A map of marks became an argument.",
+  intro: "В прошлом уроке перепись превратила страну в таблицу. Сегодня врач Джон Сноу превращает таблицу смертей в карту, а карту в доказательство. Навык: использовать числа как доказательство. На SAT это Command of Evidence (quantitative): выбрать данные из таблицы, которые поддерживают утверждение. В IELTS Writing Task 1 это сравнения: точно сказать, что больше, что меньше и во сколько раз.",
+  words: [
+    { w: "outbreak", pos: "n.", ru: "вспышка (болезни)",
+      sat: "Records from the outbreak were incomplete, since many families left the district within days.",
+      ielts: "Clean water is the best protection against an outbreak of disease." },
+    { w: "contaminated", pos: "adj.", ru: "загрязнённый, заражённый",
+      sat: "The samples drawn nearest the factory were the most heavily contaminated.",
+      ielts: "In some regions, people still have to drink contaminated water." },
+    { w: "source", pos: "n.", ru: "источник",
+      sat: "The historian traced the rumour to a single source: a letter that no one else had seen.",
+      ielts: "Tourism is the main source of income for many coastal towns." },
+    { w: "dismiss", pos: "v.", ru: "отвергать, отмахиваться",
+      sat: "Reviewers at first dismissed the novel as a minor work, a judgement later critics reversed.",
+      ielts: "We should not dismiss young people's ideas simply because they lack experience." },
+    { w: "correlation", pos: "n.", ru: "связь, корреляция",
+      sat: "A correlation between two trends does not by itself show that one caused the other.",
+      ielts: "There is a strong correlation between income and the amount people spend on travel." },
+    { w: "comparable", pos: "adj.", ru: "сопоставимый",
+      sat: "The two villages were comparable in size and wealth, which made the difference in their health records striking.",
+      ielts: "Salaries in the two cities are comparable, but rents are much higher in the capital." },
+    { w: "substantially", pos: "adv.", ru: "существенно, значительно",
+      sat: "The revised edition differs substantially from the first, especially in its final chapters.",
+      ielts: "Prices rose substantially between 2015 and 2020." },
+    { w: "conclude", pos: "v.", ru: "делать вывод",
+      sat: "From the pattern of the marks, the surveyor concluded that the river had once followed a different course.",
+      ielts: "The graph shows that sales rose, but we cannot conclude why." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Command of Evidence: numbers",
+      ru: "Сначала найди утверждение, которое нужно поддержать. Потом найди в таблице ровно те строки и столбцы, о которых оно говорит. Верный вариант совпадает с таблицей и поддерживает именно это утверждение.",
+      rule: [
+        "Два фильтра: вариант должен быть верен по таблице и поддерживать утверждение. Многие неверные варианты проходят только первый.",
+        "Если утверждение сравнивает, нужен вариант с обеими сторонами сравнения.",
+        "Ловушка: перепутанная строка, столбец «до» вместо «после», или верное число, которое к утверждению не относится."
+      ],
+      table: { caption: "Deaths from cholera per 10,000 houses in London, first seven weeks of the 1854 epidemic (John Snow's figures, rounded)", head: ["Houses supplied by", "Deaths per 10,000 houses"],
+        rows: [["Southwark and Vauxhall Company", "315"], ["Lambeth Company", "37"], ["Rest of London", "59"]] },
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "In the 1850s, many doctors believed that cholera spread through bad air. John Snow suspected contaminated water instead, and he compared households that received their water from two different companies. The data support his suspicion: households supplied by the Southwark and Vauxhall Company recorded ______",
+          stem: "Which choice most effectively uses data from the table to complete the statement?",
+          opts: ["about 59 deaths per 10,000 houses, the figure for the rest of London.", "about 315 deaths per 10,000 houses, compared with about 37 for houses supplied by the Lambeth Company.", "fewer deaths per 10,000 houses than houses in the rest of London.", "about 37 deaths per 10,000 houses, more than any other group."], key: 1,
+          ru: "Утверждение сравнивает две компании, значит нужны обе цифры: 315 и 37. Это B. A даёт цифру для остального Лондона, а не для Southwark and Vauxhall. C неверно: 315 больше, а не меньше, чем 59. D неверно: 37 — цифра Lambeth, и она самая маленькая." },
+        { kind: "mcq", chk: 2,
+          text: "Snow's figures also allow a three-way comparison. The death rate for the rest of London ______",
+          stem: "Which choice most effectively uses data from the table to complete the statement?",
+          opts: ["was higher than the rates for both water companies.", "was lower than the rates for both water companies.", "fell between the Lambeth rate of about 37 and the Southwark and Vauxhall rate of about 315.", "was about 315 deaths per 10,000 houses."], key: 2,
+          ru: "59 больше 37 и меньше 315, то есть между ними: C. A неверно (59 < 315). B неверно (59 > 37). D приписывает остальному Лондону цифру Southwark and Vauxhall." },
+        { kind: "mcq", chk: 2,
+          text: "A public-health team installed water filters in two of four districts and recorded cases of a waterborne illness before and after (fictional data). District A: 120 cases before, 30 after (filters). District B: 80 before, 70 after (no filters). District C: 60 before, 15 after (filters). District D: 90 before, 85 after (no filters). The team claims that districts with filters saw much larger falls in cases than districts without them.",
+          stem: "Which choice most effectively uses the data to support the team's claim?",
+          opts: ["Cases fell in all four districts.", "District A had the most cases before the programme.", "Cases fell from 120 to 30 in District A and from 60 to 15 in District C, but only from 80 to 70 in District B and from 90 to 85 in District D.", "District D had 85 cases after the programme, more than any other district."], key: 2,
+          ru: "Утверждение сравнивает районы с фильтрами и без. Нужны обе группы: это C. A верно, но не показывает разницы между группами. B и D верны по данным, но говорят об одном районе и сравнения не дают." },
+        { kind: "mcq", chk: 2,
+          text: "Using the same fictional data, a student writes: “In the two districts without filters, cases fell by only ______”",
+          stem: "Which choice most accurately completes the statement?",
+          opts: ["70 and 85 cases.", "10 and 5 cases.", "75 percent.", "90 and 80 cases."], key: 1,
+          ru: "Падение = до − после. B: 80 − 70 = 10, D: 90 − 85 = 5. Вариант 70 и 85 — это числа «после», а не падение. 75 % — падение в районах с фильтрами (120 → 30 и 60 → 15). 90 и 80 — числа «до»." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Comparisons that hold up",
+      ru: "Текст о Джоне Сноу, затем шесть вопросов: четыре True / False / Not Given и два на язык сравнения, который нужен в Writing Task 1.",
+      passageTitle: "A Map That Made an Argument",
+      passage: [
+        "In late August 1854, cholera broke out in Soho, in central London. Within days, hundreds of people living near Broad Street had died. Most doctors of the time believed that the disease was carried by foul air, but John Snow, a London physician, suspected a different source: water.",
+        "Snow marked each death on a street map with a short black bar. The bars clustered around a single public water pump on Broad Street. He also noticed exceptions that fitted his idea. A nearby brewery, whose workers drank little or no water from the pump, recorded very few cases.",
+        "Snow presented his evidence to the local authorities, who agreed to remove the handle of the pump. Snow himself later admitted that the outbreak was already declining by then, so the removal cannot alone explain its end.",
+        "His strongest evidence came from a comparison. Two companies supplied water to comparable homes across south London, often to houses on the same street. One company drew its water from a part of the Thames contaminated by sewage; the other did not. Houses supplied by the first company suffered roughly eight times as many deaths per 10,000 houses as those supplied by the second. Many experts dismissed his conclusion for years, but the comparison is now seen as a landmark in the study of disease."
+      ],
+      items: [
+        { kind: "tfng", chk: 2, stem: "Snow believed, like most doctors of his time, that cholera was carried by foul air.", key: "F",
+          ru: "FALSE. Большинство врачей думали так, а Сноу «suspected a different source: water»." },
+        { kind: "tfng", chk: 2, stem: "Snow recorded each death on a map.", key: "T",
+          ru: "TRUE. «Snow marked each death on a street map with a short black bar». Marked on a map = recorded on a map." },
+        { kind: "tfng", chk: 2, stem: "Removing the pump handle ended the outbreak immediately.", key: "F",
+          ru: "FALSE. Сноу сам признал, что вспышка «was already declining», и снятие ручки не объясняет её конец одно." },
+        { kind: "tfng", chk: 2, stem: "The local authorities paid Snow for his investigation.", key: "NG",
+          ru: "NOT GIVEN. Власти согласились снять ручку, но о деньгах в тексте нет ни слова." },
+        { kind: "mcq", chk: 2, stem: "Which sentence correctly describes the comparison in the final paragraph?", key: 2,
+          opts: ["Houses supplied by the first company had about twice as many deaths.", "Houses supplied by the two companies had a similar number of deaths.", "Houses supplied by the first company had about eight times as many deaths per 10,000 houses.", "Houses supplied by the second company had more deaths."],
+          ru: "Текст: «roughly eight times as many deaths per 10,000 houses». About = roughly. Twice, similar и «у второй больше» противоречат тексту." },
+        { kind: "mcq", chk: 2, stem: "Which comparison is grammatically correct?", key: 1,
+          opts: ["The death rate was more higher than in other districts.", "The death rate was much higher than in other districts.", "The death rate was the most high than in other districts.", "The death rate was higher as in other districts."],
+          ru: "Much усиливает сравнительную степень: much higher than. «More higher» — двойная сравнительная степень. «The most high than» смешивает превосходную степень и than. «Higher as» — после сравнительной степени нужно than, а не as." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 3", title: "Compare two figures aloud",
+      ru: "Ответь вслух за полторы минуты. Используй хотя бы одно точное сравнение с числом (twice as…, about three times more…, much higher than…) и одно слово урока. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "Are maps or tables better for showing information to the public? Why?",
+        "Follow-up: Do people in your country trust official statistics? Why or why not?"
+      ],
+      prep: 30, talk: 90,
+      pron: { title: "Pronunciation: the weak forms of than and as", ru: "В сравнениях than и as звучат слабо: /ðən/ и /əz/. Ударение падает на прилагательное и число, а не на than.",
+        items: ["HIGH-er /ðən/ last year", "TWICE /əz/ MANy", "much MORE /ðən/ we expected", "about EIGHT times /əz/ many deaths"] },
+      model: "I think maps are often better for the public, because a map shows the source of a problem at a glance. A table can be more precise, but most people won't read it. In my country, trust in statistics is lower than it should be; people tend to dismiss official figures, although the numbers are often comparable with independent estimates." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "Two comparison sentences",
+      ru: "Напиши два предложения по таблице Сноу: одно сравнивает две компании, второе сравнивает их с остальным Лондоном. Используй точные числа и слова сравнения. Без причин, только данные.",
+      prompts: ["Compare the figures in the table “Deaths from cholera per 10,000 houses, 1854”."],
+      minWords: 30,
+      checklist: ["В первом предложении есть обе компании и обе цифры.", "Во втором предложении есть остальной Лондон.", "Я использовал(а) than после сравнительной степени.", "Я не объяснял(а) причины.", "Число и слово рядом совпадают: 315 — about eight times 37."],
+      model: [
+        "Houses supplied by the Southwark and Vauxhall Company recorded about 315 deaths per 10,000 houses, roughly eight times as many as houses supplied by the Lambeth Company, at about 37.",
+        "The figure for the rest of London, about 59, was substantially lower than the Southwark and Vauxhall rate but higher than the Lambeth rate."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "Inspectors tested 50 water samples from each of three wells (fictional data). 40 samples from Well X, 6 from Well Y and 3 from Well Z were contaminated. A student claims that Well X was by far the most contaminated of the three.",
+          stem: "Which choice most effectively uses the data to support the student's claim?",
+          opts: ["Samples were taken from three different wells.", "Well Z had fewer contaminated samples than Well Y.", "80 percent of samples from Well X were contaminated, compared with 12 percent from Well Y and 6 percent from Well Z.", "Wells Y and Z together had 9 contaminated samples."], key: 2,
+          ru: "40 из 50 = 80 %, 6 из 50 = 12 %, 3 из 50 = 6 %. Только C сравнивает X с обоими другими колодцами. B и D верны, но не говорят о колодце X. A не содержит данных." },
+        { kind: "tfng", chk: 2,
+          text: "Houses supplied by the Lambeth Company had about 37 deaths per 10,000 houses, compared with about 59 in the rest of London.",
+          stem: "The Lambeth figure was higher than the figure for the rest of London.", key: "F",
+          ru: "FALSE. 37 меньше 59." }
+      ] }
+  ],
+  handoff: { text: "Snow's marks on a map became an argument. Next, Florence Nightingale turns a war's records into a single diagram.", next: "C07" }
+};
+
+/* ------------------------------------------------------------------ */
 window.LESSONS.C07 = {
   id: "C07",
   title: "The Diagram That Changed a Hospital",
   thread: "One picture carried the main idea.",
-  intro: "Сегодня главная мысль и детали. На SAT это Central Ideas and Details: найти мысль, которая покрывает весь текст, и отличить её от отдельного факта. В IELTS Reading тот же навык нужен, чтобы выбрать заголовок для абзаца и ответить True / False / Not Given. В прошлом уроке карта из точек стала доказательством. Сегодня одна диаграмма несёт главную мысль целого отчёта: Флоренс Найтингейл показывает, от чего на самом деле умирали солдаты.",
+  intro: "Сегодня главная мысль и детали. На SAT это Central Ideas and Details: найти мысль, которая покрывает весь текст, и отличить её от отдельного факта. В IELTS Reading тот же навык нужен, чтобы выбрать заголовок для абзаца и ответить True / False / Not Given. В прошлом уроке карта Джона Сноу с чёрточками смертей стала доказательством. Сегодня одна диаграмма несёт главную мысль целого отчёта: Флоренс Найтингейл показывает, от чего на самом деле умирали солдаты.",
   words: [
     { w: "mortality", pos: "n.", ru: "смертность",
       sat: "Mortality among the settlers fell once a clean well was dug at the edge of the camp.",

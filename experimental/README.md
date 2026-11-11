@@ -10,9 +10,15 @@ Every page carries `noindex` and an "Experimental draft" label.
 |---|---|
 | `index.html`, `ru/index.html` | Brand landing concept (EN / RU): results, lessons, method, story, FAQ, contact |
 | `course/index.html` | Course demo: the two-line map of 16 lessons, the honest skill-transfer table, the bridge track, IELTS fragments for the SAT course |
-| `course/lesson.html?id=C01` | Interactive lesson: words → SAT → IELTS → speaking → writing → exit check → hand-off |
-| `assets/data.js` | All course data and lesson content |
-| `assets/lesson.js`, `assets/course.js`, `assets/styles.css` | Renderers and styles, no build step, no dependencies |
+| `course/slides.html?id=C01` | **Step 1 · Presentation:** the lesson's 16:9 slide deck (English), keyboard / swipe / full screen / print to PDF |
+| `course/lesson.html?id=C01` | **Step 2 · Website homework:** words → SAT → IELTS → speaking → writing → exit check → next steps and hand-off |
+| `course/office.html?id=C01` | **Step 3 · Office hours:** the student's own mistakes tagged by type, peer feedback on writing, live speaking prompts, a summary for the teacher |
+| `course/progress.html` | **Step 4 · Progress:** four-step grid, diagnostic and check-ins by skill, first-attempt accuracy by skill, retry of missed questions, writing and speaking in numbers |
+| `course/lesson.html?id=D0`, `?id=K1` | The diagnostic and the Block A check-in (parallel forms, same blueprint) |
+| `assets/data.js` | Course data and lesson (homework) content |
+| `assets/cadence-data.js` | Cadence content: `CADENCE` (steps, trap types, IELTS criteria, check-in plan, skill names), `DECKS` (slides), `OFFICE` (office hours), check-ins `D0`, `K1` |
+| `assets/common.js` | Shared state, the four-step strip, skill tagging, writing metrics |
+| `assets/lesson.js`, `slides.js`, `office.js`, `progress.js`, `course.js`, `styles.css` | Renderers and styles, no build step, no dependencies |
 
 Open locally: `python3 -m http.server` inside `experimental/`, then `http://localhost:8000/`.
 
@@ -20,6 +26,27 @@ Open locally: `python3 -m http.server` inside `experimental/`, then `http://loca
 
 One theme runs through all 16 lessons: **Making the world readable** (maps → time → data → arguments).
 Inside a lesson, the words, the SAT passage, the IELTS passage, the speaking prompt and the writing task are all about the same subject, and each lesson hands its subject to the next one. The course map is drawn as a two-line transit diagram because lesson C01 is about exactly such a diagram.
+
+## The 4-step cadence (added 11 Nov 2026, Nurassyl's request)
+
+Every lesson runs the same four steps, and each step feeds the next:
+
+| Step | Where | What happens | What it hands on |
+|---|---|---|---|
+| 1 · Presentation | `slides.html` | In class: recall of last lesson's words, today's words, the story, numbered rules (how and why) with the common mistake, a worked SAT example and solution, the same skill in IELTS with its own worked example, the speaking and writing tasks, the next three steps, the hand-off | The skill and the words, ready for homework |
+| 2 · Website homework | `lesson.html` | Words, SAT questions, IELTS passage, speaking drill, writing micro-task, exit check; first attempt only | Every answer and the written text, stored for steps 3 and 4 |
+| 3 · Office hours | `office.html` | Live, group or one-to-one, three things only: analysis of the student's own SAT (or Listening) mistakes, each tagged by trap type; peer feedback on IELTS writing by the four criteria, practised first on a sample with planted problems, then on each other's homework texts; live speaking on prompts from the same subject | A summary the student sends before the session; tags and peer accuracy for step 4 |
+| 4 · Progress | `progress.html` | Retry of every missed question after office hours (counted separately; closes step 4); skills by first attempt; diagnostic vs check-in by skill; writing and speaking counted | Measurable growth per skill and per block |
+
+Block level of step 4: the diagnostic `D0` before C01 and check-in `K1` after C04 share one blueprint (2 × Words in Context, 2 × Boundaries, 2 × Form, Structure, and Sense, 2 × Transitions, 3 × IELTS True / False / Not Given) with new texts, so the change per skill is the growth of Block A. K2 (after C08), K3 (after C11) and the final check (C16) are planned.
+
+**Presentation template** (`DECKS.Cnn`): `rules: [[rule, how and why] × 3]`, `mistake`, `story: [[heading, text] × 3]`, `bridge: [heading, text]`, `ex: [SAT example, IELTS example]`. Each example: `exam, label, text or passage, stem, opts + key` (or `tf: true` and `key: "T" | "F" | "NG"`), `steps` (3), `check`, `why` (one line per option, in option order), `chk`. Worked examples are always new items, never homework questions. Slide order follows the SAT course decks: recall → Part 01 today's words → Part 02 story → Part 03 rules, example, solution → Part 04 bridge, example, solution → Part 05 speaking → Part 06 writing → the next steps → hand-off.
+
+**Office hours template** (`OFFICE.Cnn`): `focus` (Russian: what the mistake analysis looks at), `peer: { task, sample, issues: [[criterion, Russian note]] }` (a sample by an invented student with 2–3 planted problems), `live` (3 English prompts on the lesson's subject).
+
+**Skill codes** (`code` in `COURSE.lessons`, `skill` on check-in items): WIC, BND, FSS, TRN, RS, COEQ, CID, …, R-TFNG, R-MC, LIS. Homework items get their skill from the part: `sat` → the lesson's code, IELTS True / False / Not Given → R-TFNG, other IELTS → R-MC, `listen` → LIS.
+
+What stays out of this public folder: lesson timings, tutor run-sheets for office hours, and any marking scheme beyond the public IELTS criteria names.
 
 ## Decisions taken (Nurassyl's answers, 11 Nov 2026)
 
@@ -49,6 +76,11 @@ Inside a lesson, the words, the SAT passage, the IELTS passage, the speaking pro
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
 | C07 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent: 12 of 12 keys matched; wording of 3 items tightened after its notes) |
 | C12 | 8 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent from the transcript: 8 of 8 keys matched) |
+| C05 | 12 | 2026-11-11 | 2026-11-11 |
+| C06 | 12 | 2026-11-11 | 2026-11-11 |
+| D0 (diagnostic) | 11 | 2026-11-11 | 2026-11-11 |
+| K1 (check-in A) | 11 | 2026-11-11 | 2026-11-11 (one boundary item rewritten: option C allowed a second correct sentence) |
+| Slide worked examples, 8 lessons | 16 | 2026-11-11 | 2026-11-11 |
 
 Third pass, 2026-11-11 (quality-check run): all 68 questions solved again with the keys hidden; 68 of 68 matched. Three items were reworded so that only one answer can be defended (C01 exit 2, C04 IELTS 4, C12 listening 6); their keys did not change.
 
@@ -71,7 +103,9 @@ Question kinds: `mcq` (`opts`, `key` = index) and `tfng` (`key` = "T" | "F" | "N
 
 IELTS-only lessons may also set `wordsTitle`, `wordsRu` and `wordLabels: [a, b]`, and give each word `ex: [a, b]` instead of `sat` / `ielts` (see C12). The renderer shows "IELTS only" in the header when a lesson has no `sat` part, and reads `audio` one sentence per utterance (a single long utterance is cut off in some browsers). Keep `audio` and `transcript` word-for-word the same.
 
-Build order: ~~C02, C03~~ (done 2026-11-11), ~~C07, C12~~ (done 2026-11-11), then C05, C06, C08–C11, C13–C16.
+Build order: ~~C02, C03~~, ~~C07, C12~~, ~~C05, C06~~ (all done 2026-11-11), then C08–C11, C13–C16. Each new lesson needs its homework (`LESSONS`), its deck (`DECKS`) and its office hours (`OFFICE`); K2 goes with C08.
+
+IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown above its questions. Notes in Rhetorical Synthesis items use `\n•` line breaks.
 
 ## Calls made in the overnight run of 11 Nov 2026 (to confirm with Nurassyl)
 
@@ -80,6 +114,19 @@ Build order: ~~C02, C03~~ (done 2026-11-11), ~~C07, C12~~ (done 2026-11-11), the
 - C12: Larkmoor College, Dana and Mill Road are invented. The script is 200 words. Listening was checked from the transcript and with a stubbed speech engine; **nobody has yet listened to it with a real browser voice** (the build server has none). Listen once on a phone before showing it to students.
 - C12 has 8 scored questions (6 listening + 2 exit), not 12, because it has no SAT and no Reading part.
 - The map row for C12 now reads "Listening: directions on a map, predicting the answer type" (forms are not in this lesson).
+
+## Calls made in the cadence run of 11 Nov 2026 (to confirm with Nurassyl)
+
+- The prompt named no lessons, so this run built the next two in order, C05 and C06, and put the cadence on all eight live lessons.
+- C05 uses a fictional town (Marsh End) for its table, labelled fictional. C06 uses John Snow's own figures for the 1854 epidemic (315, 37 and 59 deaths per 10,000 houses, rounded): check them against a source before anything is published.
+- C06's thread now reads "A map of marks became an argument" (Snow drew short bars, not dots), and C07's intro was changed to match.
+- One office-hours session per lesson. With two lessons a week, merge two lessons into one session; the page works per lesson either way.
+- Office hours analyse mistake **types**, not every mistake: the student tags each one before the session and sends the summary, so the teacher can group the class's mistakes in advance.
+- Step 4 for a lesson closes when every missed homework question has been retried. The first attempt never changes; retries are counted separately as "fixed after office hours".
+- Speaking and writing are not scored automatically. Progress counts only what can be counted honestly (length, linking words, lesson words used, peer-review accuracy, practice done); band judgements stay with the teacher.
+- No score prediction anywhere; check-ins report skills, not a scaled score.
+- Teacher load at this design: one office-hours session per lesson per group, plus reading one summary per student before each session.
+- **Privacy:** this repository is public. The cadence is student-facing, so it is visible to anyone who opens this branch. Making the repository private (an open item in CLAUDE.md) would also protect it.
 
 ## Morning report, 11 Nov 2026
 

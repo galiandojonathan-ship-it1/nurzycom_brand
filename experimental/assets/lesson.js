@@ -46,14 +46,16 @@
 
   /* header */
   root.appendChild(el("header", { class: "wrap lesson-head" }, [
-    el("span", { class: "label", text: L.id + (ieltsOnly ? " · IELTS only · demo" : " · SAT Reading and Writing + IELTS · demo") }),
+    el("span", { class: "label", text: L.checkin ? L.id + " · Шаг 4 · Check-in" : L.id + " · Шаг 2 · Домашнее задание" + (ieltsOnly ? " · IELTS only" : " · SAT Reading and Writing + IELTS") }),
     el("h1", { lang: "en" }, [el("span", { class: "ul", text: L.title })]),
     el("p", { class: "st", lang: "en" }, [el("span", { class: "thread", text: "The thread: " + L.thread })]),
     el("p", { class: "ru", text: L.intro })
   ]));
 
+  if (!L.checkin && window.NZ && window.CADENCE) root.appendChild(window.NZ.strip(L.id, "homework"));
+
   /* step bar */
-  var steps = [["words", "Words"]].concat(L.parts.map(function (p) {
+  var steps = (L.words ? [["words", "Words"]] : []).concat(L.parts.map(function (p) {
     return [p.id, { sat: "SAT", ielts: "IELTS", listen: "Listening", speak: "Speaking", write: "Writing", exit: "Exit check" }[p.id] || p.label];
   })).concat([["result", "Result"]]);
   var bar = el("ol");
@@ -68,7 +70,8 @@
   var main = el("div", { class: "wrap" });
   root.appendChild(main);
 
-  /* 1. words */
+  /* 1. words (check-ins have none) */
+  if (L.words) {
   var wsec = el("section", { class: "part", id: "words" }, [
     el("span", { class: "label", text: "Part 01 · Today's words" }),
     el("h2", { text: L.wordsTitle || "Eight words, two exams" }),
@@ -93,6 +96,7 @@
     el("button", { class: "btn ghost", type: "button", text: "Слова разобраны", onclick: function () { markDone("words"); } })
   ]));
   main.appendChild(wsec);
+  }
 
   /* question block */
   var TF = [["T", "TRUE"], ["F", "FALSE"], ["NG", "NOT GIVEN"]];
@@ -107,6 +111,14 @@
       sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Правило" }), ul]));
     }
     if (p.audio) sec.appendChild(audioCard(p));
+    if (p.table) {
+      var tw = el("div", { class: "tw dtab", lang: "en" }), tb = el("table");
+      tb.appendChild(el("caption", { text: p.table.caption }));
+      tb.appendChild(el("thead", {}, [el("tr", {}, p.table.head.map(function (h) { return el("th", { scope: "col", text: h }); }))]));
+      var tbd = el("tbody");
+      p.table.rows.forEach(function (r) { tbd.appendChild(el("tr", {}, r.map(function (c, i) { return el(i ? "td" : "th", i ? { text: c } : { scope: "row", text: c }); }))); });
+      tb.appendChild(tbd); tw.appendChild(tb); sec.appendChild(tw);
+    }
     if (p.passage) {
       var pas = el("div", { class: "passage", lang: "en" }, [el("h3", { text: p.passageTitle || "Text" })]);
       p.passage.forEach(function (t) { pas.appendChild(el("p", { text: t })); });
@@ -268,7 +280,7 @@
     return sec;
   }
 
-  var n = 2;
+  var n = L.words ? 2 : 1;
   L.parts.forEach(function (p) {
     main.appendChild(p.type === "questions" ? qBlock(p, n) : p.type === "speaking" ? speakBlock(p, n) : writeBlock(p, n));
     n += 1;
@@ -286,9 +298,20 @@
     res.textContent = "";
     res.appendChild(el("span", { class: "label", text: "Result" }));
     res.appendChild(el("p", { class: "score", text: right + " / " + total }));
+    if (L.checkin) {
+      res.appendChild(el("p", { class: "ru", text: answered < total ? "Отвечено " + answered + " из " + total + ". Счёт идёт по первой попытке." : "Готово. Результат по навыкам сохранён на странице «Прогресс». Это не прогноз балла." }));
+      res.appendChild(el("p", {}, [el("a", { class: "btn", href: "progress.html#checkins", text: "Шаг 4 · Прогресс →" })]));
+      return;
+    }
     res.appendChild(el("p", { class: "ru", text: answered < total ? "Отвечено " + answered + " из " + total + ". Счёт идёт по первой попытке." : "Это счёт одного урока, а не прогноз балла на экзамене. Реалистичный диапазон даёт только диагностика." }));
     var next = (window.COURSE.lessons || []).filter(function (x) { return x.id === L.handoff.next; })[0];
     res.appendChild(el("div", { class: "handoff" }, [
+      el("span", { class: "label", text: "Next steps" }),
+      el("p", { class: "ru", style: "font:400 16px/1.5 var(--sans);margin:6px 0 4px", text: "Шаг 3: подготовь office hours по этому уроку. Шаг 4: после встречи исправь ошибки на странице «Прогресс»." }),
+      el("div", { class: "row", style: "margin-bottom:22px" }, [
+        el("a", { class: "btn", href: "office.html?id=" + L.id, text: "Шаг 3 · Office hours →" }),
+        el("a", { class: "btn ghost", style: "color:#F5F3EE;border-color:#F5F3EE", href: "progress.html#" + L.id, text: "Шаг 4 · Прогресс" })
+      ]),
       el("span", { class: "label", text: "The thread continues" }),
       el("p", { lang: "en", text: L.handoff.text }),
       el("div", { class: "row" }, [

@@ -10,6 +10,20 @@
   };
   var done = function (id) { try { var s = JSON.parse(localStorage.getItem("nz_exp_" + id)); return s && s.done && s.done.exit; } catch (e) { return false; } };
 
+  var cadLinks = function (id) {
+    if (!window.NZ || !window.CADENCE) return null;
+    var cd = window.NZ.cadence(id), box = el("p", { class: "cadlinks" });
+    var hrefs = { slides: "slides.html?id=" + id, homework: "lesson.html?id=" + id, office: "office.html?id=" + id, progress: "progress.html#" + id };
+    window.CADENCE.steps.forEach(function (s) {
+      var a = el("a", { href: hrefs[s.id], class: cd[s.id] ? "done" : "", text: s.n + " · " + s.ru });
+      box.appendChild(a);
+    });
+    return box;
+  };
+  var cs = document.getElementById("cad-steps");
+  if (cs && window.CADENCE) window.CADENCE.steps.forEach(function (s) {
+    cs.appendChild(el("li", {}, [el("span", { class: "hex", text: "0" + s.n }), el("h3", {}, [document.createTextNode(s.ru)]), el("p", { class: "small", lang: "en", text: s.name }), el("p", { class: "small", text: s.what })]));
+  });
   var map = document.getElementById("map-list");
   if (map) {
     var last = null;
@@ -34,7 +48,8 @@
             el("span", { text: ieltsOnly ? "IELTS only" : "SAT + IELTS" })]),
           el("h3", {}, [title]),
           el("span", { class: "thread", text: l.thread }),
-          dl
+          dl,
+          live ? cadLinks(l.id) : null
         ])
       ]));
     });
