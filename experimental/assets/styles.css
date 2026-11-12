@@ -403,3 +403,26 @@ section.fold, .part.fold { padding-top: 28px; padding-bottom: 28px; }
   .stage { border-radius: 12px; }
 }
 @media print { .q, .card, .passage { box-shadow: none; border: 1px solid var(--stone); } }
+
+/* IELTS exam-format parts: question groups, heading lists, lettered paragraphs, gap-fill */
+.qgroup { margin: 40px 0 8px; max-width: 760px; }
+.qgroup h3 { font: 500 18px/1.3 var(--sans); margin: 0 0 6px; }
+.qgroup .task { font-size: 15.5px; margin: 0 0 6px; }
+.qgroup .task::first-line { font-weight: 500; }
+.headbox { background: #fff; border-radius: 12px; padding: 16px 20px; margin: 12px 0 4px; box-shadow: 0 1px 2px rgba(15,15,15,.05); }
+.heads { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 15.5px; }
+.heads b { display: inline-block; width: 2.6em; font: 400 13px/1.6 var(--mono); color: var(--text2); }
+.opts.rom { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); }
+.opts.rom .opt { justify-content: center; font: 400 14px/1.4 var(--mono); padding: 10px 6px; min-height: 44px; }
+.lettered { display: grid; grid-template-columns: 2em 1fr; gap: 0 6px; }
+.plet { font: 400 13px/1.9 var(--mono); color: var(--text2); }
+.gloss { margin-top: 14px; border-top: 1px solid var(--mist); padding-top: 10px; }
+.gapline { line-height: 2.2; }
+.gap-in { width: 11em; max-width: 100%; min-height: 40px; margin: 0 6px; padding: 6px 10px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 6px 6px 0 0; background: var(--paper); font: 500 16px/1.3 var(--sans); color: var(--ink); }
+.gap-in:focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
+.gap-in.right { border-bottom-color: var(--ok); background: #eef4ef; }
+.gap-in.wrong { border-bottom-color: var(--oxide); text-decoration: line-through; text-decoration-color: var(--oxide); }
+.exp .key { font-weight: 500; }
+.part .gapline input.gap-in, .part .opts input.gap-in { display: inline-block; width: 11em; max-width: 70%; margin: 0 6px; min-height: 38px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 6px 6px 0 0; background: var(--paper); vertical-align: baseline; }
+.part .gapline input.gap-in.right { border-bottom-color: var(--ok); background: #eef4ef; }
+.part .gapline input.gap-in.wrong { border-bottom-color: var(--oxide); }

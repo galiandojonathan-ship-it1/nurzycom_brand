@@ -34,7 +34,7 @@ window.CADENCE = {
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
     RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details",
-    "R-TFNG": "IELTS Reading: True / False / Not Given", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
+    "R-TFNG": "IELTS Reading: True / False / Not Given", "R-HEAD": "IELTS Reading: matching headings", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
   }
 };
 

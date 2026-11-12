@@ -53,7 +53,7 @@
   var tagCounts = function () { var c = {}; mis.forEach(function (x) { var t = S.tags[x.qid]; if (t) c[t] = (c[t] || 0) + 1; }); return c; };
   mis.forEach(function (x, i) {
     var q = x.q, ans = ls.ans[x.qid];
-    var lbl = function (v) { return q.kind === "tfng" ? { T: "TRUE", F: "FALSE", NG: "NOT GIVEN" }[v] : "ABCD"[v] + ") " + q.opts[v]; };
+    var lbl = function (v) { return NZ.label(q, v, x.heads); };
     var sel = el("select", { "aria-label": "Тип ошибки, вопрос " + (i + 1) });
     sel.appendChild(el("option", { value: "", text: "Тип ошибки…" }));
     CAD.traps.forEach(function (t) { var o = el("option", { value: t, text: t }); if (S.tags[x.qid] === t) o.selected = true; sel.appendChild(o); });
@@ -62,7 +62,7 @@
     sec1.appendChild(el("div", { class: "q mis" }, [
       el("span", { class: "qn", text: { sat: "SAT", ielts: "IELTS Reading", listen: "Listening", exit: "Exit check" }[x.part] + " · " + (NZ.meta(id) ? (window.CADENCE.skills[x.skill] || x.skill) : "") }),
       el("p", { class: "txt", lang: "en", text: src.length > 260 ? src.slice(0, 257) + "…" : src }),
-      el("p", { class: "small" }, [el("span", { class: "strike", lang: "en", text: lbl(ans) }), "  →  ", el("b", { lang: "en", text: lbl(q.key) })]),
+      el("p", { class: "small" }, [el("span", { class: "strike", lang: "en", text: lbl(ans) }), "  →  ", el("b", { lang: "en", text: NZ.keyLabel(q, x.heads) })]),
       sel
     ]));
   });

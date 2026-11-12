@@ -32,9 +32,9 @@
   /* 2. check-ins */
   function ck(cid) {
     var st = NZ.lessonState(cid), its = NZ.items(cid), by = {};
-    its.forEach(function (x) { var a = st.ans[x.qid]; by[x.skill] = by[x.skill] || { r: 0, n: 0, t: 0 }; by[x.skill].t += 1; if (a !== undefined) { by[x.skill].n += 1; if (a === x.q.key) by[x.skill].r += 1; } });
+    its.forEach(function (x) { var a = st.ans[x.qid]; by[x.skill] = by[x.skill] || { r: 0, n: 0, t: 0 }; by[x.skill].t += 1; if (a !== undefined) { by[x.skill].n += 1; if (NZ.ok(x.q, a)) by[x.skill].r += 1; } });
     var n = its.filter(function (x) { return st.ans[x.qid] !== undefined; }).length;
-    var r = its.filter(function (x) { return st.ans[x.qid] === x.q.key; }).length;
+    var r = its.filter(function (x) { return NZ.ok(x.q, st.ans[x.qid]); }).length;
     return { by: by, n: n, r: r, t: its.length, done: its.length && n === its.length };
   }
   var cl = el("div", { class: "grid g4" });
@@ -66,7 +66,7 @@
     NZ.items(l.id).forEach(function (x) {
       var a = st.ans[x.qid]; if (a === undefined) return;
       var g = agg[x.skill] = agg[x.skill] || { n: 0, r: 0, miss: 0, fixed: 0 };
-      g.n += 1; if (a === x.q.key) g.r += 1; else { g.miss += 1; if (rt[x.qid] === x.q.key) g.fixed += 1; }
+      g.n += 1; if (NZ.ok(x.q, a)) g.r += 1; else { g.miss += 1; if (NZ.ok(x.q, rt[x.qid])) g.fixed += 1; }
     });
   });
   var sk = el("tbody");
@@ -98,11 +98,14 @@
       qb.appendChild(el("p", { class: "stem", text: q.stem }));
       if (x.part === "ielts" || x.part === "listen") qb.appendChild(el("p", { class: "small", lang: "ru" }, ["Текст к вопросу: ", el("a", { href: "lesson.html?id=" + l.id + "#" + x.part, text: "открыть в уроке" })]));
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : "") }), exp = el("p", { class: "exp", lang: "ru", hidden: "" });
-      var list = q.kind === "tfng" ? TF.map(function (t) { return { v: t[0], t: t[1] }; }) : q.opts.map(function (o, k) { return { v: k, t: "ABCD"[k] + ") " + o }; });
+      var list = q.kind === "tfng" ? TF.map(function (t) { return { v: t[0], t: t[1] }; })
+        : q.kind === "match" ? (x.heads || []).map(function (h, k) { return { v: k, t: NZ.ROMAN[k] + " · " + h }; })
+        : q.kind === "gap" ? [] : q.opts.map(function (o, k) { return { v: k, t: "ABCD"[k] + ") " + o }; });
       var btns = [];
       var show = function (v) {
-        btns.forEach(function (b) { b.n.setAttribute("aria-disabled", "true"); if (b.v === v) b.n.classList.add(v === q.key ? "right" : "wrong"); });
-        exp.hidden = false; exp.textContent = v === q.key ? "Исправлено. " + q.ru : "Пока неверно. Вернись к разбору на office hours.";
+        btns.forEach(function (b) { b.n.setAttribute("aria-disabled", "true"); if (b.v === v) b.n.classList.add(NZ.ok(q, v) ? "right" : "wrong"); });
+        if (gin) { gin.value = v; gin.disabled = true; gin.classList.add(NZ.ok(q, v) ? "right" : "wrong"); }
+        exp.hidden = false; exp.textContent = NZ.ok(q, v) ? "Исправлено. " + q.ru : "Пока неверно. Вернись к разбору на office hours.";
       };
       list.forEach(function (o) {
         var b = el("button", { class: "opt", type: "button", text: o.t });
@@ -113,6 +116,13 @@
         });
         btns.push({ n: b, v: o.v }); opts.appendChild(b);
       });
+      var gin = null;
+      if (q.kind === "gap") {
+        gin = el("input", { type: "text", class: "gap-in", "aria-label": "Ответ", autocomplete: "off" });
+        var save1 = function () { var r = NZ.store.get("nz_exp_retry_" + l.id) || {}; if (r[x.qid] !== undefined || !gin.value.trim()) return; r[x.qid] = gin.value.trim(); NZ.store.set("nz_exp_retry_" + l.id, r); show(r[x.qid]); };
+        gin.addEventListener("keydown", function (e) { if (e.key === "Enter") save1(); });
+        opts.appendChild(gin); opts.appendChild(el("button", { class: "btn ghost", type: "button", text: "Ответить", onclick: save1 }));
+      }
       qb.appendChild(opts); qb.appendChild(exp);
       if (rt[x.qid] !== undefined) show(rt[x.qid]);
       box.appendChild(qb);

@@ -121,18 +121,38 @@
     }
     if (p.passage) {
       var pas = el("div", { class: "passage", lang: "en" }, [el("h3", { text: p.passageTitle || "Text" })]);
-      p.passage.forEach(function (t) { pas.appendChild(el("p", { text: t })); });
+      if (p.glossary) { var gl = el("p", { class: "gloss small" }); p.glossary.forEach(function (g, k) { gl.appendChild(el("span", {}, [el("b", { text: "*" + g[0] }), " " + g[1] + (k < p.glossary.length - 1 ? "   " : "")])); }); }
+      p.passage.forEach(function (t, k) {
+        pas.appendChild(p.lettered ? el("p", { class: "lettered" }, [el("b", { class: "plet", text: "ABCDEFGHIJ"[k] }), el("span", { text: t })]) : el("p", { text: t }));
+      });
+      if (p.glossary) pas.appendChild(gl);
       sec.appendChild(pas);
     }
+    var heads = null, ROM = (window.NZ && window.NZ.ROMAN) || ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii"];
+    var isOk = function (q, a) { return window.NZ ? window.NZ.ok(q, a) : a === q.key; };
     p.items.forEach(function (q, i) {
       var qid = p.id + "." + i;
+      if (q.group) {
+        var g = el("div", { class: "qgroup", lang: "en" }, [el("h3", { text: q.group.title }), q.group.task ? el("p", { class: "task", text: q.group.task }) : null,
+          q.group.ru ? el("p", { class: "ru small", lang: "ru", text: q.group.ru }) : null]);
+        if (q.group.headings) {
+          heads = q.group.headings;
+          var hl = el("ol", { class: "heads" });
+          heads.forEach(function (h, k) { hl.appendChild(el("li", {}, [el("b", { text: ROM[k] }), " " + h])); });
+          g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: "List of headings" }), hl]));
+        }
+        sec.appendChild(g);
+      }
+      if (q.kind === "gap") { sec.appendChild(gapBox(p, q, qid, i)); return; }
       var box = el("div", { class: "q", lang: "en" }, [el("span", { class: "qn", text: "Question " + (i + 1) + " of " + p.items.length })]);
       if (q.text) box.appendChild(el("p", { class: "txt", text: q.text }));
       box.appendChild(el("p", { class: "stem", text: q.stem }));
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: t[1] }; })
+        : q.kind === "match" ? heads.map(function (h, k) { return { val: k, label: ROM[k], aria: ROM[k] + ": " + h }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
+      if (q.kind === "match") opts.className = "opts rom";
       var btns = [];
       var reveal = function (chosen) {
         btns.forEach(function (b) {
@@ -142,14 +162,14 @@
           else if (b.val === chosen) b.node.classList.add("wrong");
           if (note && !b.node.querySelector(".sr-only")) b.node.appendChild(el("span", { class: "sr-only", lang: "ru", text: " (" + note + ")" }));
         });
-        var ok = chosen === q.key;
+        var ok = isOk(q, chosen);
         exp.hidden = false; exp.textContent = "";
         exp.appendChild(el("b", { text: ok ? "Верно" : "Неверно" }));
         exp.appendChild(document.createTextNode(q.ru));
         if (q.chk) exp.appendChild(el("span", { class: "chk", text: "Ключ проверен ×" + q.chk }));
       };
       list.forEach(function (o) {
-        var b = el("button", { class: "opt", type: "button" }, [o.letter ? el("span", { class: "k", text: o.letter }) : null, el("span", { text: o.label })]);
+        var b = el("button", { class: "opt", type: "button", "aria-label": o.aria || null }, [o.letter ? el("span", { class: "k", text: o.letter }) : null, el("span", { text: o.label })]);
         b.addEventListener("click", function () {
           if (state.ans[qid] !== undefined) return;
           state.ans[qid] = o.val; save(); reveal(o.val);
@@ -162,6 +182,36 @@
       if (state.ans[qid] !== undefined) reveal(state.ans[qid]);
       sec.appendChild(box);
     });
+    function gapBox(p, q, qid, i) {
+      var box = el("div", { class: "q gapq", lang: "en" }, [el("span", { class: "qn", text: "Question " + (i + 1) + " of " + p.items.length })]);
+      var parts = q.stem.split("______");
+      var inp = el("input", { type: "text", class: "gap-in", "aria-label": "Answer to question " + (i + 1), autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
+      box.appendChild(el("p", { class: "stem gapline" }, [parts[0], inp, parts[1] || ""]));
+      var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
+      var go = el("button", { class: "btn ghost small-btn", type: "button", text: "Ответить" });
+      var reveal = function (val) {
+        var right = isOk(q, val);
+        inp.value = val; inp.disabled = true; go.hidden = true;
+        inp.classList.add(right ? "right" : "wrong");
+        exp.hidden = false; exp.textContent = "";
+        exp.appendChild(el("b", { text: right ? "Верно" : "Неверно" }));
+        if (!right) exp.appendChild(el("span", { class: "key", lang: "en", text: "Answer: " + q.accept[0] + (q.accept.length > 1 ? " (also: " + q.accept.slice(1).join(", ") + ")" : "") + ". " }));
+        exp.appendChild(document.createTextNode(q.ru));
+        if (q.chk) exp.appendChild(el("span", { class: "chk", text: "Ключ проверен ×" + q.chk }));
+      };
+      var submit = function () {
+        var v = inp.value.trim(); if (!v || state.ans[qid] !== undefined) return;
+        state.ans[qid] = v; save(); reveal(v);
+        if (p.items.every(function (_, j) { return state.ans[p.id + "." + j] !== undefined; })) markDone(p.id);
+        renderResult();
+      };
+      go.addEventListener("click", submit);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+      box.appendChild(el("p", { class: "row" }, [go, q.limit ? el("span", { class: "small", lang: "ru", text: "не больше " + q.limit + " " + (q.limit === 1 ? "слова" : "слов") }) : null]));
+      box.appendChild(exp);
+      if (state.ans[qid] !== undefined) reveal(state.ans[qid]);
+      return box;
+    }
     if (p.transcript) {
       var tr = el("details", {}, [el("summary", { text: "Текст записи (открой после ответов)" })]);
       p.transcript.forEach(function (t) { tr.appendChild(el("p", { lang: "en", text: t })); });
@@ -293,7 +343,7 @@
     var right = 0, answered = 0;
     L.parts.forEach(function (p) {
       if (p.type !== "questions") return;
-      p.items.forEach(function (q, i) { var a = state.ans[p.id + "." + i]; if (a !== undefined) { answered += 1; if (a === q.key) right += 1; } });
+      p.items.forEach(function (q, i) { var a = state.ans[p.id + "." + i]; if (a !== undefined) { answered += 1; if (window.NZ ? window.NZ.ok(q, a) : a === q.key) right += 1; } });
     });
     res.textContent = "";
     res.appendChild(el("span", { class: "label", text: "Result" }));

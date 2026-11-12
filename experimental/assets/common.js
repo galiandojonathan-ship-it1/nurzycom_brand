@@ -32,22 +32,47 @@
         if (!skill) {
           if (p.id === "listen") skill = "LIS";
           else if (q.kind === "tfng") skill = "R-TFNG";
+          else if (q.kind === "match") skill = "R-HEAD";
+          else if (q.kind === "gap" && p.id === "ielts") skill = "R-GAP";
           else if (p.id === "ielts") skill = "R-MC";
           else if (p.id === "exit" && m && m.code === "LIS") skill = "LIS";
           else skill = m ? m.code : "?";
         }
-        out.push({ qid: p.id + "." + i, part: p.id, q: q, skill: skill });
+        out.push({ qid: p.id + "." + i, part: p.id, q: q, skill: skill, heads: headsFor(p)[i] || null });
       });
     });
     return out;
   }
+  /* is answer a right for question q? (choice kinds compare keys; gap-fill compares typed words, word limit enforced) */
+  var ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"];
+  function norm(t) { return String(t || "").trim().toLowerCase().replace(/[’']/g, "'").replace(/^[\s"“]+|[\s.,;:!?"”]+$/g, "").replace(/\s+/g, " "); }
+  function ok(q, a) {
+    if (a === undefined || a === null) return false;
+    if (q.kind === "gap") {
+      var t = norm(a); if (!t) return false;
+      if (q.limit && t.split(" ").length > q.limit) return false;
+      return q.accept.some(function (x) { return norm(x) === t; });
+    }
+    return a === q.key;
+  }
+  /* human label of an answer value, for review lists */
+  function label(q, v, heads) {
+    if (v === undefined || v === null) return "—";
+    if (q.kind === "tfng") return { T: "TRUE", F: "FALSE", NG: "NOT GIVEN" }[v];
+    if (q.kind === "gap") return String(v);
+    if (q.kind === "match") return ROMAN[v] + (heads && heads[v] ? " · " + heads[v] : "");
+    return "ABCD"[v] + ") " + q.opts[v];
+  }
+  var keyLabel = function (q, heads) { return q.kind === "gap" ? q.accept[0] : label(q, q.key, heads); };
+  /* the heading list that applies to each match item of a part */
+  function headsFor(part) { var map = {}, cur = null; part.items.forEach(function (q, i) { if (q.group && q.group.headings) cur = q.group.headings; if (q.kind === "match") map[i] = cur; }); return map; }
   var lessonState = function (id) { return store.get("nz_exp_" + id) || { ans: {}, done: {} }; };
 
   /* the four steps for one lesson */
   function cadence(id) {
     var st = lessonState(id), its = items(id);
     var answered = its.filter(function (x) { return st.ans[x.qid] !== undefined; });
-    var missed = answered.filter(function (x) { return st.ans[x.qid] !== x.q.key; });
+    var missed = answered.filter(function (x) { return !ok(x.q, st.ans[x.qid]); });
     var retry = store.get("nz_exp_retry_" + id) || {};
     var oh = store.get("nz_exp_oh_" + id) || {};
     return {
@@ -109,5 +134,5 @@
     return sec;
   }
 
-  window.NZ = { fold: fold, el: el, store: store, meta: meta, param: param, items: items, lessonState: lessonState, cadence: cadence, strip: strip, writing: writing };
+  window.NZ = { ok: ok, label: label, keyLabel: keyLabel, ROMAN: ROMAN, fold: fold, el: el, store: store, meta: meta, param: param, items: items, lessonState: lessonState, cadence: cadence, strip: strip, writing: writing };
 })();

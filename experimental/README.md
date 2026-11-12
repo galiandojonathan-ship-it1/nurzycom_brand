@@ -70,7 +70,7 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 | Lesson | Questions | First check | Second check (independent re-solve) |
 |---|---|---|---|
-| C01 | 12 | 2026-11-11 | 2026-11-11 |
+| C01 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-12 | 2026-11-12 |
 | C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
@@ -104,6 +104,10 @@ Question kinds: `mcq` (`opts`, `key` = index) and `tfng` (`key` = "T" | "F" | "N
 IELTS-only lessons may also set `wordsTitle`, `wordsRu` and `wordLabels: [a, b]`, and give each word `ex: [a, b]` instead of `sat` / `ielts` (see C12). The renderer shows "IELTS only" in the header when a lesson has no `sat` part, and reads `audio` one sentence per utterance (a single long utterance is cut off in some browsers). Keep `audio` and `transcript` word-for-word the same.
 
 Build order: ~~C02, C03~~, ~~C07, C12~~, ~~C05, C06~~ (all done 2026-11-11), then C08–C11, C13–C16. Each new lesson needs its homework (`LESSONS`), its deck (`DECKS`) and its office hours (`OFFICE`); K2 goes with C08.
+
+**IELTS exam format (12 Nov 2026, pilot in C01):** spec in `IELTS_SPEC.md`; measure any passage with `python3 tools/ielts_measure.py --lesson C01` (words, sentence length, Flesch–Kincaid; AWL share with `--awl list.txt`). A part may set `lettered: true` (paragraphs A, B, C…) and `glossary: [[term, gloss]]`. An item may open a question group with `group: { title, task (English exam instruction), ru, headings? }`. New kinds: `match` (heading matching: `key` = index into the group's `headings`, shown as i, ii, iii…) and `gap` (typed answer: `accept: [...]`, `limit` = word limit; over the limit counts as wrong). All pages check answers through `NZ.ok(q, a)`. Measured before the rebuild: C01, C04, C06 and C07 passages were 212–254 words at grade 8–10; the rebuilt C01 passage is 754 words, 22.2 words per sentence, grade 11.6. The other lessons' IELTS parts are still short and are next.
+
+`tools/bundle_single_html.py` builds the whole site into one HTML file for sharing (`python3 tools/bundle_single_html.py out.html`).
 
 IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown above its questions. Notes in Rhetorical Synthesis items use `\n•` line breaks.
 
