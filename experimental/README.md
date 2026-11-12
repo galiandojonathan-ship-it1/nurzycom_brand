@@ -107,6 +107,15 @@ Build order: ~~C02, C03~~, ~~C07, C12~~, ~~C05, C06~~ (all done 2026-11-11), the
 
 **IELTS exam format (12 Nov 2026, pilot in C01):** spec in `IELTS_SPEC.md`; measure any passage with `python3 tools/ielts_measure.py --lesson C01` (words, sentence length, Flesch–Kincaid; AWL share with `--awl list.txt`). A part may set `lettered: true` (paragraphs A, B, C…) and `glossary: [[term, gloss]]`. An item may open a question group with `group: { title, task (English exam instruction), ru, headings? }`. New kinds: `match` (heading matching: `key` = index into the group's `headings`, shown as i, ii, iii…) and `gap` (typed answer: `accept: [...]`, `limit` = word limit; over the limit counts as wrong). All pages check answers through `NZ.ok(q, a)`. Measured before the rebuild: C01, C04, C06 and C07 passages were 212–254 words at grade 8–10; the rebuilt C01 passage is 754 words, 22.2 words per sentence, grade 11.6. The other lessons' IELTS parts are still short and are next.
 
+**Notes and tests (12 Nov 2026):**
+
+| Path | What |
+|---|---|
+| `notes/course_design_v0.1.md` | First course design (Russian), with a status box of what changed since; the minute-by-minute lesson timing is left out (public repo) |
+| `notes/brief_for_other_ai.md` | The course idea as a brief, with a prompt skeleton for new sessions |
+| `notes/student_weak_spots.md` | Nine categories of likely student weak spots with signs and where each shows; a copy of the private doc where the homework column is filled |
+| `tools/tests/` | Playwright tests: whole site, IELTS formats, single-file build; how to run in `tools/tests/README.md` |
+
 `tools/bundle_single_html.py` builds the whole site into one HTML file for sharing (`python3 tools/bundle_single_html.py out.html`).
 
 IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown above its questions. Notes in Rhetorical Synthesis items use `\n•` line breaks.
