@@ -176,16 +176,18 @@
     if (kind === "ct") return [`ct_last_${name}_${rest}`, `ct_att_${name}_${rest}`, `ct_ans_${name}_${rest}`];
     return [`mk_last_${name}_${rest}`, `mk_done_${name}_${rest}`, `mk_att_${name}_${rest}_rw`, `mk_att_${name}_${rest}_math`];
   }
-  // tasks the teacher assigned: [{ id, t, href, due, note, at, rk: [prefix, rest] }]; done when the result came after the task
-  // was given (rk), or the student ticked it (tasks_done)
+  // tasks the teacher assigned: [{ id, t, href, due, note, at, rk: [prefix, rest] }]; done when the work has a result (rk), also one
+  // submitted before the task was given (2026-11-12, Nurassyl: a student who already did the homework before it was given to the
+  // group must not count as not done; that result is marked `early`; for a redo the teacher resets the result first), or when the
+  // student ticked it (tasks_done)
   function taskState(name, get, meta) {
     let T = [], D = []; try { T = JSON.parse(get("tasks") || "[]"); } catch (e) { T = []; } try { D = JSON.parse(get("tasks_done") || "[]"); } catch (e) { D = []; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     return (Array.isArray(T) ? T : []).filter((x) => x && x.id && x.t).map((x) => {
       const k = x.rk ? `${x.rk[0]}${name}_${x.rk[1]}` : null, r = k && get(k);
-      const done = (r && (meta[k] || 0) >= (x.at || 0) - 6e4) || D.includes(x.id);
+      const early = !!(r && (meta[k] || 0) < (x.at || 0) - 6e4), done = !!r || D.includes(x.id);
       const late = !done && x.due && new Date(x.due + "T23:59:59") < Date.now();
-      return Object.assign({}, x, { done: !!done, late: !!late, result: r || null, auto: !!x.rk, soon: !done && !late && x.due && (new Date(x.due + "T00:00:00") - today) / 864e5 <= 1 });
+      return Object.assign({}, x, { done: !!done, early: early && !D.includes(x.id), late: !!late, result: r || null, auto: !!x.rk, soon: !done && !late && x.due && (new Date(x.due + "T00:00:00") - today) / 864e5 <= 1 });
     }).sort((a, b) => a.done - b.done || String(a.due || "9999").localeCompare(String(b.due || "9999")) || b.at - a.at);
   }
   function tick(id, on) { loadManual(); on ? manual.add(id) : manual.delete(id); store(doneKey(), JSON.stringify([...manual])); }

@@ -30,7 +30,7 @@
     if (!open.length && !recent.length) return "";
     const row = (x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
         <span class="tk-t">${esc(x.t)}${x.note ? `<small>${esc(x.note)}</small>` : ""}</span>
-        <span class="tk-due">${x.done ? (x.result ? `сдано · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : "сделано") : esc(PLAN.dueTxt(x.due))}</span>
+        <span class="tk-due">${x.done ? (x.result ? `сдано${x.early ? " раньше" : ""} · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : "сделано") : esc(PLAN.dueTxt(x.due))}</span>
         <span class="tk-go">${x.done ? "" : `${safe(x.href) ? `<a class="btn" href="${esc(x.href)}">Открыть</a>` : ""}${x.auto ? "" : `<button type="button" class="tlink" data-task="${esc(x.id)}">Сделано</button>`}`}</span></li>`;
     return `<section class="td-tasks" aria-label="Задания от преподавателя">
       <h3>Задания от преподавателя${open.length ? ` <b>${open.length}</b>` : ""}</h3>

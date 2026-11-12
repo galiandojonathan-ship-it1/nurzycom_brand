@@ -240,9 +240,9 @@
   }
   function tasks(u, I) {
     return `<div class="cb-bar"><button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>
-        <p class="hint">Ученик видит задания вверху страницы «Домашние задания». Работа с результатом отмечается сама, когда ученик её сдаст.</p></div>
+        <p class="hint">Ученик видит задания вверху страницы «Домашние задания». Работа с результатом отмечается сама, когда ученик её сдаст; если он уже сделал её раньше, задание сразу считается выполненным («сделано раньше»). Чтобы ученик сделал работу заново, сбросьте результат во вкладке «Результаты».</p></div>
       ${I.T.length ? `<ul class="cb-rows cb-tasks">${I.T.map((x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
-          <span>${esc(x.t)}<small>${x.done ? `сделано${x.result ? ` · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : ""}` : esc(PLAN.dueTxt(x.due))}${x.note ? ` · ${esc(x.note)}` : ""} · задано ${esc(ago(x.at))}</small></span>
+          <span>${esc(x.t)}<small>${x.done ? `сделано${x.early ? " раньше" : ""}${x.result ? ` · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : ""}` : esc(PLAN.dueTxt(x.due))}${x.note ? ` · ${esc(x.note)}` : ""} · задано ${esc(ago(x.at))}</small></span>
           <button class="chip" type="button" data-deltask="${esc(x.id)}">Убрать</button></li>`).join("")}</ul>` : '<p class="td-sub">Заданий пока нет.</p>'}`;
   }
 
