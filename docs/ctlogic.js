@@ -78,14 +78,27 @@
     return p;
   }
 
-  // ---- import from text (one question per block, blocks split by a line "---"):
+  // ---- import from text (one question per block; blocks split by a line "---" or "===", or by a numbered heading: a line "1." / "2)" /
+  // "Question 3", or "4. P: …" with the number on the first line; 2026-11-12, Nurassyl pasted numbered questions):
   //   P: passage (may continue on the next lines)   Q: question   A) … B) … C) … D) …   Answer: B (or the typed answer)
-  //   Explanation: …   Skill: Transitions   Level: H
+  //   Explanation: …   Skill: Transitions   Level: H (also Easy / Medium / Hard, Лёгкий / Средний / Сложный; anything else, such as
+  //   «Not provided», leaves the default «средний»)
   // A block with no A)–D) lines is a typed-answer (SPR) question.
   function parseText(src) {
     const out = [], errs = [];
-    String(src || "").replace(/\r/g, "").split(/\n\s*-{3,}\s*\n|\n\s*={3,}\s*\n/).forEach((block, bi) => {
-      if (!block.trim()) return;
+    const HEAD = /^\s*(?:(?:Question|Вопрос|№)\s*)?(\d{1,3})\s*[.):]?\s*$/i, HEADP = /^\s*(\d{1,3})[.)]\s+(?=(?:P|Passage|Текст|Q|Question|Вопрос)\s*:)/i;
+    const blocks = [{ no: null, lines: [] }];
+    for (const line of String(src || "").replace(/\r/g, "").split("\n")) {
+      let m;
+      if (/^\s*(?:-{3,}|={3,})\s*$/.test(line)) { blocks.push({ no: null, lines: [] }); continue; }
+      if ((m = HEAD.exec(line))) { blocks.push({ no: +m[1], lines: [] }); continue; }
+      if ((m = HEADP.exec(line))) { blocks.push({ no: +m[1], lines: [line.slice(m[0].length)] }); continue; }
+      blocks[blocks.length - 1].lines.push(line);
+    }
+    let count = 0;
+    blocks.forEach(({ no, lines }) => {
+      const block = lines.join("\n"); if (!block.trim()) return;
+      const bi = no ? no - 1 : count; count++;
       const q = newQ("mc"); let cur = null, opts = {};
       for (const raw of block.split("\n")) {
         const line = raw.replace(/\s+$/, "");
@@ -96,7 +109,7 @@
         if ((m = /^\s*(?:Answer|Ответ|Key)\s*:\s*(.*)$/i.exec(line))) { cur = null; q.a = m[1].trim(); continue; }
         if ((m = /^\s*(?:Explanation|Разбор|Объяснение)\s*:\s*(.*)$/i.exec(line))) { cur = "x"; q.x = m[1]; continue; }
         if ((m = /^\s*(?:Skill|Навык)\s*:\s*(.*)$/i.exec(line))) { cur = null; q.skill = m[1].trim(); continue; }
-        if ((m = /^\s*(?:Level|Difficulty|Уровень)\s*:\s*(.*)$/i.exec(line))) { cur = null; const v = m[1].trim().toUpperCase()[0]; q.level = v === "E" || v === "H" ? v : "M"; continue; }
+        if ((m = /^\s*(?:Level|Difficulty|Уровень)\s*:\s*(.*)$/i.exec(line))) { cur = null; const v = m[1].trim().toLowerCase(); q.level = /^(e|easy|л[её]гк|просто)/.test(v) ? "E" : /^(h|hard|difficult|слож|трудн)/.test(v) ? "H" : "M"; continue; }
         if (!cur) continue;
         if (cur === "passage") q.passage += "\n" + line; else if (cur === "stem") q.stem += "\n" + line; else if (cur === "x") q.x += "\n" + line;
         else if (cur[0] === "o") opts[cur[1]] += " " + line.trim();
