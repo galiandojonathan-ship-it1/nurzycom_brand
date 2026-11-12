@@ -87,12 +87,14 @@
     u.B = B; u.none = false;
   }
   let toastT = 0;
-  function toast(t, bad) {
-    const el = $("cb-toast"); el.textContent = t; el.classList.toggle("bad", !!bad); el.classList.add("on");
-    clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), bad ? 6000 : 3200);
+  function toast(t, bad, undo) {   // undo: optional function behind a «Вернуть» button (the toast then stays 8 s)
+    const el = $("cb-toast"); el.textContent = t; el.classList.toggle("bad", !!bad); el.classList.toggle("undo", !!undo); el.classList.add("on");
+    if (undo) { const b = document.createElement("button"); b.type = "button"; b.className = "cb-undo"; b.textContent = "Вернуть";
+      b.onclick = () => { clearTimeout(toastT); el.classList.remove("on", "undo"); undo(); }; el.append(" ", b); }
+    clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on", "undo"), undo ? 8000 : bad ? 6000 : 3200);
   }
-  async function act(u, fn, ok) {
-    try { await change(u, fn); toast(ok); } catch (e) { toast(`Не сохранилось: ${e.message || "нет связи"}`, true); }
+  async function act(u, fn, ok, undo) {
+    try { await change(u, fn); toast(ok, false, undo); } catch (e) { toast(`Не сохранилось: ${e.message || "нет связи"}`, true); }
     render();
   }
 
@@ -491,8 +493,11 @@
       on("[data-reset]", (b) => { const r = I.R.find((x) => x.key === b.dataset.reset); if (!r || !confirm(`Сбросить «${r.label}» (${r.score}) у ${u.name}? Ученик решит эту работу заново.`)) return;
         act(u, (B, set) => PLAN.resetKeys(nm, r.kind, r.rest).forEach((k) => set(k, null)), `Сброшено: ${r.label}`); });
       on("[data-new]", () => openAssign([u.id]));
-      on("[data-deltask]", (b) => { const x = I.T.find((t) => t.id === b.dataset.deltask); if (!x || !confirm(`Убрать задание «${x.t}» у ${u.name}?`)) return;
-        act(u, (B, set, get) => { let L = []; try { L = JSON.parse(get("tasks") || "[]"); } catch (e) { L = []; } set("tasks", JSON.stringify(L.filter((t) => t.id !== x.id))); }, "Задание убрано"); });
+      on("[data-deltask]", (b) => {   // no confirm dialog (Nurassyl, 2026-11-12): the task goes at once, «Вернуть» in the message puts it back
+        const L0 = (() => { try { return JSON.parse(I.get("tasks") || "[]"); } catch (e) { return []; } })(), orig = L0.find((t) => t.id === b.dataset.deltask); if (!orig) return;
+        const rd = (get) => { try { return JSON.parse(get("tasks") || "[]"); } catch (e) { return []; } };
+        act(u, (B, set, get) => set("tasks", JSON.stringify(rd(get).filter((t) => t.id !== orig.id))), `Задание «${orig.t}» убрано`,
+          () => act(u, (B, set, get) => { const L = rd(get); if (!L.some((t) => t.id === orig.id)) L.push(orig); set("tasks", JSON.stringify(L)); }, "Задание возвращено")); });
     }
     if (S.imp) bindImport();
     const gf = $("cb-gform");
