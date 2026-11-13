@@ -99,7 +99,7 @@
       if (x.part === "ielts" || x.part === "listen") qb.appendChild(el("p", { class: "small", lang: "ru" }, ["Текст к вопросу: ", el("a", { href: "lesson.html?id=" + l.id + "#" + x.part, text: "открыть в уроке" })]));
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : "") }), exp = el("p", { class: "exp", lang: "ru", hidden: "" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { v: t[0], t: t[1] }; })
-        : q.kind === "match" ? (x.heads || []).map(function (h, k) { return { v: k, t: NZ.ROMAN[k] + " · " + h }; })
+        : q.kind === "match" ? (x.heads || []).map(function (h, k) { return { v: k, t: NZ.isLetters(x.heads) ? h : NZ.ROMAN[k] + " · " + h }; })
         : q.kind === "gap" ? [] : q.opts.map(function (o, k) { return { v: k, t: "ABCD"[k] + ") " + o }; });
       var btns = [];
       var show = function (v) {

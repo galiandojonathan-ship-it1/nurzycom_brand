@@ -4,9 +4,9 @@ module.exports.answerAll = async (p, wrongIdx = []) => {
   const plan = await p.evaluate(() => {
     const L = window.LESSONS[(new URLSearchParams(location.search).get('id') || (window.__ROUTE || '').split(':')[1] || '').toUpperCase()];
     const out = []; L.parts.forEach(pt => { if (pt.type !== 'questions') return; let heads = null;
-      pt.items.forEach(q => { if (q.group && q.group.headings) heads = q.group.headings;
+      pt.items.forEach(q => { if (q.group && q.group.headings) heads = q.group.headings; if (q.group && q.group.paras) heads = 'ABCDEFGHIJ'.slice(0, q.group.paras).split('');
         if (q.kind === 'gap') out.push({ gap: q.accept[0], bad: 'zzz' });
-        else if (q.kind === 'match') out.push({ label: window.NZ.ROMAN[q.key], badLabel: window.NZ.ROMAN[(q.key + 1) % heads.length] });
+        else if (q.kind === 'match') { const lab = k => window.NZ.isLetters(heads) ? heads[k] : window.NZ.ROMAN[k]; out.push({ label: lab(q.key), badLabel: lab((q.key + 1) % heads.length) }); }
         else if (q.kind === 'tfng') out.push({ label: ({ T: 'TRUE', F: 'FALSE', NG: 'NOT GIVEN' })[q.key], badLabel: q.key === 'T' ? 'FALSE' : 'TRUE' });
         else out.push({ label: q.opts[q.key], badLabel: q.opts[(q.key + 1) % q.opts.length] }); }); });
     return out; });

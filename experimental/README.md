@@ -71,6 +71,7 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 | Lesson | Questions | First check | Second check (independent re-solve) |
 |---|---|---|---|
 | C01 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-12 | 2026-11-12 |
+| C02 | 19 (IELTS part rebuilt at exam size: 13 items; one gap item fixed on the second solve) | 2026-11-13 | 2026-11-13 |
 | C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
@@ -127,6 +128,23 @@ IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown abov
 - C12: Larkmoor College, Dana and Mill Road are invented. The script is 200 words. Listening was checked from the transcript and with a stubbed speech engine; **nobody has yet listened to it with a real browser voice** (the build server has none). Listen once on a phone before showing it to students.
 - C12 has 8 scored questions (6 listening + 2 exit), not 12, because it has no SAT and no Reading part.
 - The map row for C12 now reads "Listening: directions on a map, predicting the answer type" (forms are not in this lesson).
+
+## Build queue (scheduled runs work from the top)
+
+Each scheduled run takes the first unchecked items it can finish **to the full quality bar** (usually one or two), ticks them here with the date, and pushes. The final run of a batch is always the QA item.
+
+- [x] C01 IELTS part at exam size (12 Nov): 754 words, grade 11.6. Types: matching headings, True / False / Not Given, summary completion.
+- [x] C02 IELTS part at exam size (13 Nov): 752 words. Types: matching information (paragraph letters), sentence completion (one word), multiple choice.
+- [ ] C03 IELTS part at exam size. Use types not yet used: matching sentence endings, note or flow-chart completion, Yes / No / Not Given if the passage argues.
+- [ ] C04 IELTS part at exam size. Suggested types: matching features (people → claims), table completion, multiple choice.
+- [ ] C05 IELTS part at exam size. Keep the Marsh End table as the Task 1 writing task; the reading becomes a full article on the history of the census. Suggested: short-answer questions, True / False / Not Given, summary completion with a word box (match kind).
+- [ ] C06 IELTS part at exam size. Suggested: matching headings, multiple choice, diagram or table completion.
+- [ ] C07 IELTS part at exam size. Suggested: Yes / No / Not Given (writer's views), matching sentence endings, summary completion.
+- [ ] C12 Listening rebuilt to real IELTS task types: Part 1-style form completion (gap kind, word limits), Part 2-style plan or map labelling (match kind with letters) and multiple choice. Script with spoken features and at least two corrections; no True / False / Not Given.
+- [ ] Lesson C08 "How a Report Persuades" (Text Structure and Purpose × matching information + a Task 2 body paragraph): homework at exam size, slide deck, office hours data, and check-in K2 (after C08; same blueprint idea as D0/K1 for Block B skills).
+- [ ] QA pass: blind re-solve every key added since the last QA, fact check, the three test suites, update this queue and write a short report.
+
+**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01), summary completion (C01), matching information (C02), sentence completion (C02), multiple choice (C02).
 
 ## Calls made in the cadence run of 11 Nov 2026 (to confirm with Nurassyl)
 

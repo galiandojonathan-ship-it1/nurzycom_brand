@@ -135,6 +135,7 @@
       if (q.group) {
         var g = el("div", { class: "qgroup", lang: "en" }, [el("h3", { text: q.group.title }), q.group.task ? el("p", { class: "task", text: q.group.task }) : null,
           q.group.ru ? el("p", { class: "ru small", lang: "ru", text: q.group.ru }) : null]);
+        if (q.group.paras) heads = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.paras);
         if (q.group.headings) {
           heads = q.group.headings;
           var hl = el("ol", { class: "heads" });
@@ -150,7 +151,7 @@
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: t[1] }; })
-        : q.kind === "match" ? heads.map(function (h, k) { return { val: k, label: ROM[k], aria: ROM[k] + ": " + h }; })
+        : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h); return { val: k, label: letters ? h : ROM[k], aria: letters ? "Paragraph " + h : ROM[k] + ": " + h }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
       if (q.kind === "match") opts.className = "opts rom";
       var btns = [];
