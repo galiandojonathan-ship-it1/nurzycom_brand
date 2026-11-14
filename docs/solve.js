@@ -1,0 +1,203 @@
+// On-screen workbook in the style of Bluebook: one question per screen, two attempts and the official explanation
+// right after each answer ("learn"), or exam style with explanations after submitting ("test").
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  let S = null;  // session: ctx, items, state per question, current index, marks, eliminated options
+  const isMath = (tag) => /^(M|[DU]\d)/.test(tag);   // Math lessons, the Desmos lesson (MD) and the Desmos page sets (D01…): one column + Desmos
+
+  const key = () => `hw_prog_${S.ctx.student}_${S.ctx.lesson.tag}_${S.ctx.part.id}`;
+  function save() { try { localStorage.setItem(key(), JSON.stringify({ st: S.st, mk: [...S.mk], el: Date.now() - S.t0 })); } catch (e) { /* private mode */ } }
+  function clear() { try { localStorage.removeItem(key()); } catch (e) { /* private mode */ } }
+
+  function open(ctx) {
+    S = { ctx, items: ctx.items, cur: 0, st: {}, mk: new Set(), out: {}, t0: Date.now(), review: !!ctx.review, timer: null };
+    S.hash = {}; ctx.part.q.forEach((q) => (S.hash[q.i] = q.h));
+    S.items.forEach((q) => (S.st[q.i] = { tries: [], done: false, ok: false }));
+    if (ctx.review) { Object.assign(S.st, ctx.review); }
+    else {
+      let saved = null; try { saved = JSON.parse(localStorage.getItem(key())); } catch (e) { saved = null; }
+      if (saved && saved.st && Object.values(saved.st).some((s) => s.tries.length) && confirm("Продолжить с того места, где вы остановились?")) {
+        Object.assign(S.st, saved.st); S.mk = new Set(saved.mk || []); S.t0 = Date.now() - (saved.el || 0);
+        const k = S.items.findIndex((q) => !S.st[q.i].done && !(ctx.part.mode === "test" && S.st[q.i].tries.length)); S.cur = k < 0 ? 0 : k;
+      } else clear();
+    }
+    $("sv-title").textContent = `${ctx.lesson.tag} · ${ctx.part.title}${S.review ? " · разбор" : ""}`;
+    $("sv-wrap").classList.toggle("one", isMath(ctx.lesson.tag));
+    if (window.BBTools) { if (!$("sv-tools").childElementCount) BBTools.mount($("sv-tools")); BBTools.show(isMath(ctx.lesson.tag)); }
+    clearInterval(S.timer);
+    if (!S.review) { S.timer = setInterval(tick, 1000); tick(); } else $("sv-clock").textContent = "разбор";
+    $("sv-finish").textContent = S.review ? "Закрыть разбор" : "Сдать";
+    if ($("sv-exit")) $("sv-exit").classList.toggle("hidden", !S.review);   // review: a visible way back to the result on every question
+    ctx.show("s-solve"); render();
+  }
+  function tick() { const s = Math.floor((Date.now() - S.t0) / 1000); $("sv-clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+  const learn = () => S.ctx.part.mode !== "test";
+  const revealed = (s) => S.review || (learn() && s.done);
+
+  function render() {
+    const q = S.items[S.cur], s = S.st[q.i], n = S.items.length, math = isMath(S.ctx.lesson.tag);
+    const answered = S.items.filter((x) => S.st[x.i].done || (!learn() && S.st[x.i].tries.length)).length;
+    $("sv-pos").textContent = `${answered} / ${n}`; $("sv-prog").style.width = `${(100 * answered) / n}%`;
+    $("sv-qn").textContent = `Вопрос ${q.n} · ${S.cur + 1} из ${n}`;
+    $("sv-flag").setAttribute("aria-pressed", String(S.mk.has(q.i)));
+    // Verbal: passage on the left, question on the right. Math: one column, as in Bluebook.
+    $("sv-passage").innerHTML = math ? "" : q.stim; $("sv-passage").classList.toggle("hidden", math || !q.stim);
+    $("sv-stem").innerHTML = (math ? q.stim : "") + q.stem;
+    const out = S.out[q.i] || new Set(), last = s.tries[s.tries.length - 1];  // last: what the box shows after the question is closed
+    if (q.t === "mc") {
+      $("sv-opts").innerHTML = q.opts.map((o, k) => { const c = "ABCD"[k];
+        const bad = (learn() || S.review) && s.tries.includes(c) && c !== q.ans;   // a wrong attempt
+        const good = revealed(s) && c === q.ans;
+        const on = !S.review && !s.done && (learn() ? S.sel === c : s.tries[0] === c);
+        const cls = `${on ? " on" : ""}${out.has(c) && !s.done ? " out" : ""}${bad ? " bad" : ""}${good ? " good" : ""}`;
+        return `<div class="opt${cls}" data-c="${c}"><button class="ch" data-c="${c}"${s.done || bad ? " disabled" : ""}><span class="lt">${c}</span><span class="tx qhtml">${o}</span></button><button class="x" data-c="${c}" aria-label="Вычеркнуть ${c}"${s.done ? " disabled" : ""}>${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
+      $("sv-opts").querySelectorAll(".ch").forEach((b) => (b.onclick = () => choose(b.dataset.c)));
+      $("sv-opts").querySelectorAll(".x").forEach((b) => (b.onclick = () => strike(b.dataset.c)));
+    } else {
+      const val = S.spr ?? (s.done || !learn() ? last || "" : "");
+      $("sv-opts").innerHTML = `<div class="spr"><label class="label" for="sv-in">Ваш ответ</label><input id="sv-in" type="text" autocomplete="off" inputmode="text" value="${(val || "").replace(/"/g, "&quot;")}"${s.done ? " disabled" : ""}>
+        <p class="hint" id="sv-in-h">Целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются.</p></div>`;
+      $("sv-in").oninput = () => { S.spr = $("sv-in").value; const v = S.spr.trim(); $("sv-in-h").textContent = !v || S.ctx.parseSpr(v) !== null ? "Ответ: " + (v || "—") : "Формат: 12, -3, 7/2 или .75";
+        if (!learn()) { const st = S.st[q.i]; st.tries = v ? [v] : []; save(); renderGrid(); } };
+      $("sv-in").onkeydown = (e) => { if (e.key === "Enter" && learn()) check(); };
+    }
+    // feedback and explanation
+    let fb = "";
+    if (learn() || S.review) {
+      if (s.done && s.ok) fb = s.tries.length === 1 ? "<b>Верно.</b>" : "<b>Верно со второй попытки.</b>";
+      else if (s.done) fb = `<b>Неверно.</b> Правильный ответ: <b>${q.ans}</b>.`;
+      else if (s.tries.length === 1 && learn()) fb = "<b>Неверно.</b> Осталась одна попытка.";
+      if (S.review && !s.tries.length) fb = `Без ответа. Правильный ответ: <b>${q.ans}</b>.`;
+    }
+    $("sv-fb").innerHTML = fb; $("sv-fb").className = `fb${fb ? "" : " hidden"}${s.done && s.ok ? " ok" : fb ? " no" : ""}`;
+    $("sv-expl").innerHTML = revealed(s) ? `<span class="label">${q.own ? "Объяснение nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}` : "";
+    // Desmos hint on request (learn mode, before the answer is revealed); its use is reported with the result
+    let hb = $("sv-hintbox");
+    if (!hb) { hb = document.createElement("div"); hb.id = "sv-hintbox"; $("sv-opts").before(hb); }
+    const canHint = q.hint && learn() && !S.review && !s.done;
+    const archHint = /^(VA|A\d)/.test(S.ctx.lesson.tag);   // lesson A and the archaic words sets: a glossary of the old words
+    const desmosHint = !/^U\d/.test(S.ctx.lesson.tag) && !archHint;   // the unit circle sets give a plain hint
+    const hLabel = archHint ? "Подсказка · старые слова" : desmosHint ? "Подсказка · как решить в Desmos" : "Подсказка";
+    const hBtn = archHint ? "Подсказка: старые слова этого текста" : desmosHint ? "Подсказка: как решить в Desmos" : "Подсказка";
+    hb.innerHTML = !canHint ? "" : s.hint ? `<div class="dz pre"><span class="label">${hLabel}</span>${q.hint}</div>`
+      : `<button class="hint-btn" id="sv-hint">${hBtn}</button>`;
+    if (canHint && !s.hint) $("sv-hint").onclick = () => { s.hint = true; save(); render(); if (desmosHint && window.BBTools && BBTools.calc && !matchMedia("(max-width:760px)").matches) BBTools.calc(true); };   // on phones the calculator sheet would cover the hint and «Проверить»: the student opens it with «Калькулятор»
+    $("sv-expl").classList.toggle("hidden", !revealed(s));
+    glossNow(q, s);
+    $("sv-check").classList.toggle("hidden", !learn() || s.done || S.review);
+    $("sv-check").textContent = s.tries.length ? "Проверить ещё раз" : "Проверить";
+    $("sv-prev").disabled = S.cur === 0;
+    $("sv-next").textContent = S.cur === n - 1 ? (S.review ? "Закрыть" : "Сдать →") : "Далее →";
+    $("navbtn").textContent = `${S.cur + 1} / ${n} ▴`;
+    renderGrid();
+  }
+  // Difficult words (gloss.js, 2026-11-08): Verbal homework underlines course words and the hard words of the tests;
+  // a tap shows the meaning and the translation. The passage and the options are underlined, not the question line. Words in Context questions are never underlined (the passage words are
+  // what the question tests). In Transitions and grammar questions the options are the answer, so they are underlined only
+  // after the question is closed. Lesson A keeps its own glossary of old words; Math has no word cards.
+  const WIC = /most logical and precise word or phrase|what does the word .{1,40} most nearly mean/i;
+  const GIVEAWAY = /most logical transition|conventions of standard english/i;
+  const glossable = () => !!window.GLOSS && !isMath(S.ctx.lesson.tag) && !/^(VA|A\d)/.test(S.ctx.lesson.tag);
+  function glossNow(q, s) {
+    const sw = $("sv-gloss"); if (sw) sw.classList.toggle("hidden", !glossable());
+    if (!glossable() || !sw) return;
+    GLOSS.hide();
+    sw.setAttribute("aria-pressed", String(GLOSS.on)); sw.textContent = GLOSS.on ? "Слова: вкл" : "Слова: выкл";
+    const text = (q.stem || "").replace(/<[^>]+>/g, " ");
+    if (!GLOSS.on || WIC.test(text)) return;
+    const els = [$("sv-passage")];   // the question line is a standard prompt («conforms to», «support»): never underlined
+    if (!GIVEAWAY.test(text) || revealed(s)) els.push(...$("sv-opts").querySelectorAll(".tx"));
+    const at = S.cur;
+    GLOSS.ready.then(() => {
+      if (S.cur !== at || !els.every((e) => e.isConnected)) return;
+      const found = GLOSS.apply(els, { wide: true });
+      // after the answer: the question's words in one list under the explanation (as in the hard sets), to review at once
+      const ex = $("sv-expl"); if (!revealed(s) || !found.length || !ex || ex.classList.contains("hidden")) return;
+      const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const li = found.map((k) => GLOSS.entry(k)).filter(Boolean).map((e) => `<li><b lang="en">${esc(e.w)}</b>${e.en ? ` <span lang="en">— ${esc(e.en)}</span>` : ""}${e.ru.length ? `<small>${esc(e.ru.join(", "))}</small>` : ""}</li>`).join("");
+      ex.insertAdjacentHTML("beforeend", `<div class="sv-words"><span class="label">Слова этого вопроса</span><ul>${li}</ul></div>`);
+    });
+  }
+  function renderGrid() {
+    $("sv-grid").innerHTML = S.items.map((q, k) => { const s = S.st[q.i];
+      const c = learn() || S.review ? (s.done ? (s.ok ? (s.tries.length === 1 ? "f1" : "f2") : "fx") : s.tries.length ? "half" : "") : s.tries.length ? "f1" : "";
+      return `<button data-k="${k}" class="${c}${k === S.cur ? " cur" : ""}${S.mk.has(q.i) ? " mk" : ""}">${q.n}</button>`; }).join("");
+    $("sv-grid").querySelectorAll("button").forEach((b) => (b.onclick = () => go(Number(b.dataset.k))));
+    $("sv-legend").innerHTML = learn() || S.review ? "<span>■ верно с 1-й</span><span>▣ верно со 2-й</span><span>☒ неверно</span><span>◥ отмечен</span>" : "<span>■ есть ответ</span><span>□ без ответа</span><span>◥ отмечен</span>";
+  }
+  function choose(c) {
+    const q = S.items[S.cur], s = S.st[q.i]; if (s.done || S.review) return;
+    if (learn()) S.sel = c; else { s.tries = [c]; save(); }
+    if (S.out[q.i]) S.out[q.i].delete(c);
+    render();
+  }
+  function strike(c) {
+    const q = S.items[S.cur]; if (S.st[q.i].done) return;
+    const o = S.out[q.i] || (S.out[q.i] = new Set()); o.has(c) ? o.delete(c) : o.add(c);
+    if (S.sel === c) S.sel = null;
+    render();
+  }
+  async function graded(q, raw) {
+    const v = q.t === "mc" ? raw : S.ctx.parseSpr(raw);
+    return v !== null && S.hash[q.i].includes(await S.ctx.sha(`${S.ctx.lesson.salt}:${q.i}:${v}`));
+  }
+  async function check() {
+    const q = S.items[S.cur], s = S.st[q.i]; if (s.done || !learn()) return;
+    const raw = q.t === "mc" ? S.sel : (S.spr || "").trim();
+    if (!raw) { $("sv-fb").innerHTML = q.t === "mc" ? "Выберите вариант." : "Введите ответ."; $("sv-fb").className = "fb no"; return; }
+    if (q.t !== "mc" && S.ctx.parseSpr(raw) === null) { $("sv-in-h").textContent = "Формат: 12, -3, 7/2 или .75"; return; }
+    if (q.t === "mc" && s.tries.includes(raw)) return;
+    const ok = await graded(q, raw);
+    s.tries.push(raw); S.sel = null; S.spr = null;
+    if (ok || s.tries.length >= 2) { s.done = true; s.ok = ok; }
+    save(); render();
+    if (s.done) $("sv-fb").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+  }
+  function go(k) { S.cur = Math.max(0, Math.min(S.items.length - 1, k)); S.sel = null; S.spr = null; $("sv-nav").classList.add("hidden"); render(); window.scrollTo(0, 0); }
+
+  async function finish() {
+    if (window.BBTools) BBTools.close();
+    if (S.review) { S.ctx.onClose(); return; }
+    const n = S.items.length;
+    const open_ = S.items.filter((q) => learn() ? !S.st[q.i].done : !S.st[q.i].tries.length).map((q) => q.n);
+    if (open_.length && !confirm(`Без ответа: ${open_.join(", ")}. Сдать всё равно?`)) return;
+    clearInterval(S.timer);
+    if (!learn()) for (const q of S.items) { const s = S.st[q.i]; s.ok = !!s.tries.length && (await graded(q, s.tries[0])); s.done = true; }
+    const seconds = Math.round((Date.now() - S.t0) / 1000);
+    const first = S.items.filter((q) => S.st[q.i].ok && S.st[q.i].tries.length === 1);
+    const any = S.items.filter((q) => S.st[q.i].ok);
+    const hints = S.items.filter((q) => S.st[q.i].hint).length;
+    const res = { lesson: S.ctx.lesson.tag, part: `${S.ctx.part.id} · ${S.ctx.part.title} · экран${learn() ? ` · 2-я: ${any.length}/${n}` : ""}${hints ? ` · подсказок: ${hints}` : ""}`,
+      answers: S.items.map((q) => `${q.n}:${S.st[q.i].tries.join(">") || "-"}`).join(" "),
+      score: `${first.length}/${n}`, wrong: S.items.filter((q) => !first.includes(q)).map((q) => q.n).join(","), seconds: String(seconds) };
+    const st = JSON.parse(JSON.stringify(S.st)); clear();
+    S.ctx.onFinish(res, { second: `${any.length}/${n}`, learn: learn(), state: st, hints });
+  }
+
+  $("sv-check").onclick = check;
+  $("sv-prev").onclick = () => go(S.cur - 1);
+  $("sv-next").onclick = () => (S.cur === S.items.length - 1 ? finish() : go(S.cur + 1));
+  $("navbtn").onclick = () => $("sv-nav").classList.toggle("hidden");
+  $("sv-close").onclick = () => $("sv-nav").classList.add("hidden");
+  $("sv-finish").onclick = finish;
+  if ($("sv-exit")) $("sv-exit").onclick = finish;
+  if ($("sv-gloss")) $("sv-gloss").onclick = () => { if (window.GLOSS) { GLOSS.on = !GLOSS.on; render(); } };
+  $("sv-flag").onclick = () => { const q = S.items[S.cur]; S.mk.has(q.i) ? S.mk.delete(q.i) : S.mk.add(q.i); save(); render(); };
+  $("sv-clock-t").onclick = () => $("sv-clock").classList.toggle("blur");
+  document.addEventListener("keydown", (e) => {
+    if (!S || $("s-solve").classList.contains("hidden") || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    const k = e.key.toUpperCase(), q = S.items[S.cur];
+    if (q.t === "mc" && "ABCD".includes(k) && k.length === 1) choose(k);
+    else if (e.key === "Enter" && learn()) check();
+    else if (e.key === "ArrowRight") go(S.cur + 1);
+    else if (e.key === "ArrowLeft") go(S.cur - 1);
+  });
+  window.HWSolve = { open };
+
+  // one «Вычеркнуть» switch instead of a × next to every option (2026-11-14, Nurassyl: «too many buttons in tests»); remembered on this device
+  const elimOn = () => { try { return localStorage.getItem("elim_on") === "1"; } catch (e) { return false; } };
+  function elimSync() { document.documentElement.classList.toggle("elim-on", elimOn()); document.querySelectorAll(".elim-tg").forEach((b) => b.setAttribute("aria-pressed", String(elimOn()))); }
+  document.querySelectorAll(".elim-tg").forEach((b) => (b.onclick = () => { try { elimOn() ? localStorage.removeItem("elim_on") : localStorage.setItem("elim_on", "1"); } catch (e) { /* private mode */ } elimSync(); }));
+  elimSync();
+})();

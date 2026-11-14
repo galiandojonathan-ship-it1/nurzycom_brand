@@ -1,0 +1,13 @@
+import { webcrypto as C } from "node:crypto"; import fs from "node:fs";
+const raw = Buffer.from(fs.readFileSync(process.argv[2], "utf8").trim(), "base64");
+const key = await C.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+const open = async (f) => { const u = new Uint8Array(fs.readFileSync(f)); return JSON.parse(new TextDecoder().decode(await C.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12)))); };
+const idx = await open("/home/user/nurzycom_brand/docs/data/mocks.bin");
+console.log(Object.keys(idx)); const m = idx.mocks.find((x) => x.id === "PT5"); console.log(JSON.stringify(m).slice(0, 700));
+console.log("groups:", [...new Set(idx.mocks.map((x) => x.group || "-"))], idx.mocks.map((x) => x.id).join(","));
+const b = await open("/home/user/nurzycom_brand/docs/" + m.sections[0].b); console.log(Object.keys(b), Object.keys(b.mods), b.mods.m1.length);
+const q = b.mods.m1.find((x) => x.own) || b.mods.m1[0]; console.log(JSON.stringify(q).slice(0, 1200));
+const g = await open("/home/user/nurzycom_brand/docs/data/mockgloss.bin"); console.log("mockgloss add keys sample:", Object.keys(g.add).slice(0, 3), JSON.stringify(g.words[Object.keys(g.words)[0]]));
+console.log("skills sample:", JSON.stringify(Object.entries(idx.skills).slice(0, 3)), Object.keys(idx.skills).length);
+const sk = new Set(); const doms = new Set(); for (const mm of [b.mods.m1, b.mods.m2h]) mm.forEach((x) => { sk.add(x.sk); doms.add(x.dom); }); console.log([...sk].join(" | "), [...doms]);
+const tq = b.mods.m1.find((x) => /<table/.test(x.stim)); console.log(tq ? tq.stim.slice(0, 400) : "no table");

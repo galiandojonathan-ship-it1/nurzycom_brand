@@ -1,0 +1,23 @@
+# Cloudflare Pages response headers (GitHub Pages ignores this file). The course site is never indexed.
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+  Cache-Control: no-cache
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-jsGnOVHNi6VMUta48tzofxS+J7xs2O9kYuzvTdazY5A=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://cloudflareinsights.com https://docs.google.com https://*.googleusercontent.com https://api.github.com; frame-src https://www.desmos.com; form-action 'self' https://docs.google.com; base-uri 'self'; object-src 'none'; frame-ancestors 'self'
+  Cross-Origin-Opener-Policy: same-origin
+
+# CSP: scripts only from this site (the one inline script is 404.html, allowed by its hash: update the hash if it changes),
+# so injected HTML cannot run code; Desmos runs in its own frame; Cloudflare Web Analytics beacon allowed; results go to Google Forms; teacher page reads Google Sheets CSV and GitHub.
+# pages, scripts and data are checked for a newer version on every visit (no-cache = revalidate, still fast)
+# question bundles get a new random name on every build, so they can be cached for long
+/q/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
