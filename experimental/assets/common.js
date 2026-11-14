@@ -60,12 +60,12 @@
     if (v === undefined || v === null) return "—";
     if (q.kind === "tfng") return { T: "TRUE", F: "FALSE", NG: "NOT GIVEN" }[v];
     if (q.kind === "gap") return String(v);
-    if (q.kind === "match") return isLetters(heads) ? "Paragraph " + heads[v] : ROMAN[v] + (heads && heads[v] ? " · " + heads[v] : "");
+    if (q.kind === "match") return isLetters(heads) ? "Paragraph " + heads[v] : (heads && heads.letters ? "ABCDEFGHIJ"[v] : ROMAN[v]) + (heads && heads[v] ? " · " + heads[v] : "");
     return "ABCD"[v] + ") " + q.opts[v];
   }
   var keyLabel = function (q, heads) { return q.kind === "gap" ? q.accept[0] : label(q, q.key, heads); };
   /* the heading list that applies to each match item of a part */
-  function headsFor(part) { var map = {}, cur = null; part.items.forEach(function (q, i) { if (q.group && q.group.headings) cur = q.group.headings; if (q.group && q.group.paras) cur = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.paras); if (q.kind === "match") map[i] = cur; }); return map; }
+  function headsFor(part) { var map = {}, cur = null; part.items.forEach(function (q, i) { if (q.group && q.group.headings) { cur = q.group.headings.slice(); if (q.group.labels === "letters") cur.letters = true; } if (q.group && q.group.paras) cur = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.paras); if (q.kind === "match") map[i] = cur; }); return map; }
   var isLetters = function (h) { return !!h && h.every(function (x) { return /^[A-J]$/.test(x); }); };
   var lessonState = function (id) { return store.get("nz_exp_" + id) || { ans: {}, done: {} }; };
 

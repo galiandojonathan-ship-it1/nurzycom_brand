@@ -137,10 +137,10 @@
           q.group.ru ? el("p", { class: "ru small", lang: "ru", text: q.group.ru }) : null]);
         if (q.group.paras) heads = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.paras);
         if (q.group.headings) {
-          heads = q.group.headings;
+          heads = q.group.headings.slice(); if (q.group.labels === "letters") heads.letters = true;
           var hl = el("ol", { class: "heads" });
-          heads.forEach(function (h, k) { hl.appendChild(el("li", {}, [el("b", { text: ROM[k] }), " " + h])); });
-          g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: "List of headings" }), hl]));
+          heads.forEach(function (h, k) { hl.appendChild(el("li", {}, [el("b", { text: heads.letters ? "ABCDEFGHIJ"[k] : ROM[k] }), " " + h])); });
+          g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: q.group.listTitle || "List of headings" }), hl]));
         }
         sec.appendChild(g);
       }
@@ -151,7 +151,7 @@
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: t[1] }; })
-        : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h); return { val: k, label: letters ? h : ROM[k], aria: letters ? "Paragraph " + h : ROM[k] + ": " + h }; })
+        : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h), lab = letters ? h : heads.letters ? "ABCDEFGHIJ"[k] : ROM[k]; return { val: k, label: lab, aria: letters ? "Paragraph " + h : lab + ": " + h }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
       if (q.kind === "match") opts.className = "opts rom";
       var btns = [];

@@ -72,6 +72,7 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 |---|---|---|---|
 | C01 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-12 | 2026-11-12 |
 | C02 | 19 (IELTS part rebuilt at exam size: 13 items; one gap item fixed on the second solve) | 2026-11-13 | 2026-11-13 |
+| C03 | 19 (IELTS part rebuilt at exam size: 13 items; one short answer widened to accept "telegraph" on the second solve) | 2026-11-14 | 2026-11-14 |
 | C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C04 | 12 | 2026-11-11 | 2026-11-11 |
@@ -135,7 +136,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 
 - [x] C01 IELTS part at exam size (12 Nov): 754 words, grade 11.6. Types: matching headings, True / False / Not Given, summary completion.
 - [x] C02 IELTS part at exam size (13 Nov): 752 words. Types: matching information (paragraph letters), sentence completion (one word), multiple choice.
-- [ ] C03 IELTS part at exam size. Use types not yet used: matching sentence endings, note or flow-chart completion, Yes / No / Not Given if the passage argues.
+- [x] C03 IELTS part at exam size (14 Nov): 675 words, grade 11.3. Types: matching sentence endings (A–H, `group.labels: "letters"`), note completion, short-answer questions.
 - [ ] C04 IELTS part at exam size. Suggested types: matching features (people → claims), table completion, multiple choice.
 - [ ] C05 IELTS part at exam size. Keep the Marsh End table as the Task 1 writing task; the reading becomes a full article on the history of the census. Suggested: short-answer questions, True / False / Not Given, summary completion with a word box (match kind).
 - [ ] C06 IELTS part at exam size. Suggested: matching headings, multiple choice, diagram or table completion.
@@ -144,7 +145,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [ ] Lesson C08 "How a Report Persuades" (Text Structure and Purpose × matching information + a Task 2 body paragraph): homework at exam size, slide deck, office hours data, and check-in K2 (after C08; same blueprint idea as D0/K1 for Block B skills).
 - [ ] QA pass: blind re-solve every key added since the last QA, fact check, the three test suites, update this queue and write a short report.
 
-**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01), summary completion (C01), matching information (C02), sentence completion (C02), multiple choice (C02).
+**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01), summary completion (C01), matching information (C02), sentence completion (C02), multiple choice (C02), matching sentence endings (C03), note completion (C03), short-answer questions (C03). Still to use: matching features, table or flow-chart completion, diagram labelling, Yes / No / Not Given.
 
 ## Calls made in the cadence run of 11 Nov 2026 (to confirm with Nurassyl)
 
