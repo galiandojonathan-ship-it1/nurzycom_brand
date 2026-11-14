@@ -1,0 +1,32 @@
+// «Анализ группы» with a cabinet group: local stand-in (8768) seeded by cbseed.js; group of 4 accounts; form CSV with 6 names
+// (2 outside the group, one member written in Cyrillic). The analysis must count only the group's 4 students.
+const { chromium } = require("playwright"); const { seed, page } = require("./cbseed");
+let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
+(async () => { const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
+  await pg.route(/docs\.google\.com/, (r) => r.abort());
+  console.log(await seed(pg));
+  console.log(await pg.evaluate(async () => { const ids = []; for (const l of ["ayana", "dias", "aruzhan", "sher"]) ids.push(await SITE.lid(l));
+    const groups = [{ id: "g1", name: "SAT Verbal · вечер", kind: "group", color: "teal", members: ids }, { id: "g2", name: "Индивидуальные", kind: "solo", color: "green", members: [await SITE.lid("mukha")] }];
+    const r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups, at: Date.now() }) }) }); return "groups saved: " + r.status; }));
+  await pg.goto("http://127.0.0.1:8768/teacher.html", { waitUntil: "load" }); await pg.waitForTimeout(2000);
+  await pg.setInputFiles("#file", __dirname + "/group2.csv"); await pg.waitForTimeout(1500);
+  await pg.click('#tabs .chip[data-v="group"]'); await pg.waitForSelector("#ga-hard", { timeout: 30000 });
+  const chips = await pg.$$eval("#ga-grp .chip", (a) => a.map((x) => x.innerText.replace(/\s+/g, " ").trim() + (x.getAttribute("aria-pressed") === "true" ? " [on]" : ""))); console.log(chips.join(" | "));
+  ok(chips.some((c) => /SAT Verbal · вечер · 4 \[on\]/.test(c)), "the class group is selected by default");
+  const note = await pg.$eval("#v-group", (b) => b.innerText.replace(/\s+/g, " ")); const m = note.match(/В группе .*?\)\./) || note.match(/В группе [^.]*\./); console.log(m && m[0]);
+  ok(/найдены: .*Ayana Seitkali.*Dias Omarov/.test(note) && /Aruzhan Bek/.test(note), "members matched to form names (Cyrillic spelling too)");
+  let k = await pg.$$eval("#v-group .kpi", (a) => a.map((x) => x.innerText.replace(/\s+/g, " "))); ok(/Учеников 4/i.test(k[0]), "group only: " + k[0]);
+  const v = (await pg.$$eval(".ga-q summary", (a) => a.map((x) => x.innerText.replace(/\s+/g, " ")))).find((x) => /V01 · Практика · №3/.test(x)); ok(!!v && /из 4/.test(v), "V01 №3 counted over the 4 members: " + v);
+  await pg.click('#ga-grp .chip[data-x=""]'); await pg.waitForTimeout(1200);
+  k = await pg.$$eval("#v-group .kpi", (a) => a.map((x) => x.innerText.replace(/\s+/g, " "))); ok(/Учеников 6/i.test(k[0]), "«Все ученики»: " + k[0]);
+  await pg.click('#ga-grp .chip[data-x="g2"]'); await pg.waitForTimeout(1200);
+  k = await pg.$$eval("#v-group .kpi", (a) => a.map((x) => x.innerText.replace(/\s+/g, " "))); ok(/Учеников 1/i.test(k[0]), "solo group: " + k[0]);
+  const c2 = await br.newContext({ viewport: { width: 1366, height: 900 } }); await c2.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); });
+  const p2 = await c2.newPage(); p2.on("pageerror", (e) => errs.push(e.message)); await p2.route(/docs\.google\.com/, (r) => r.abort());
+  await p2.goto("http://127.0.0.1:8768/teacher.html", { waitUntil: "load" }); await p2.waitForTimeout(2000); await p2.setInputFiles("#file", __dirname + "/group2.csv"); await p2.waitForTimeout(1200);
+  await p2.click('#tabs .chip[data-v="group"]'); await p2.waitForSelector("#ga-hard", { timeout: 30000 });
+  const k2 = await p2.$$eval("#v-group .kpi", (a) => a.map((x) => x.innerText.replace(/\s+/g, " ")));
+  ok(/ключ администратора/.test(await p2.textContent("#v-group")) && /Учеников 6/i.test(k2[0]), "without the admin key: a clear note, all students shown");
+  await pg.screenshot({ path: __dirname + "/../group_cb.png" });
+  ok(errs.length === 0, "no page errors " + errs.join("|"));
+  await br.close(); console.log(fails ? fails + " FAILED" : "ALL PASS"); process.exit(fails ? 1 : 0); })();

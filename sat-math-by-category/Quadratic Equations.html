@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quadratic Equations</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Quadratic Equations</h1>
+<p class="intro">Quadratic equations and functions: number of real solutions, sums and products of roots, vertex form, minimum values and sign of factored products.</p>
+<div class="progress">Solved: <span id="count">0</span> of 18</div>
+<article class="card" id="QUA-01">
+<header><span class="num">QUA-01</span><span class="src">PDF 1 &middot; p. 4</span><label class="done"><input type="checkbox" data-id="QUA-01"> Solved</label></header>
+<div class="stem">The figure shows a rectangular pool surrounded by a concrete path that is $x$ feet (ft) wide on all sides. The pool is 21 ft long and 13 ft wide. The area of the concrete path is $240\ \text{ft}^2$. What is the value of $x$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$3$</span></li><li><span class="letter">B</span><span class="ctext">$6$</span></li><li><span class="letter">C</span><span class="ctext">$20$</span></li><li><span class="letter">D</span><span class="ctext">$40$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 1, page 4). It is not reproduced here.</p></article>
+<article class="card" id="QUA-02">
+<header><span class="num">QUA-02</span><span class="src">PDF 1 &middot; p. 6</span><label class="done"><input type="checkbox" data-id="QUA-02"> Solved</label></header>
+<div class="stem">$r^2+qr=8r-97$. In the given equation, $q$ is an integer constant. The given equation has no real solutions. What is the largest possible value of $q$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-03">
+<header><span class="num">QUA-03</span><span class="src">PDF 1 &middot; p. 7</span><label class="done"><input type="checkbox" data-id="QUA-03"> Solved</label></header>
+<div class="stem">$f(x)=3x^2+48x+193$. The function $g$ is defined by $g(x)=f(x+7)$. What is the minimum value of $g(x)$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-15$</span></li><li><span class="letter">B</span><span class="ctext">$-8$</span></li><li><span class="letter">C</span><span class="ctext">$1$</span></li><li><span class="letter">D</span><span class="ctext">$8$</span></li></ol></article>
+<article class="card" id="QUA-04">
+<header><span class="num">QUA-04</span><span class="src">PDF 1 &middot; p. 10</span><label class="done"><input type="checkbox" data-id="QUA-04"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=(x-a)(x-b)$, where $a$ and $b$ are integer constants. If $f(17)&gt;0$, $f(20)&lt;0$, and $f(23)&gt;0$, what is one possible value of $a+b$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-05">
+<header><span class="num">QUA-05</span><span class="src">PDF 1 &middot; p. 21</span><label class="done"><input type="checkbox" data-id="QUA-05"> Solved</label></header>
+<div class="stem">$24x^2-(12a+2b)x+ab=0$. In the given equation, $a$ and $b$ are positive constants. The sum of the solutions to the given equation is $k(6a+b)$, where $k$ is a constant. What is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-06">
+<header><span class="num">QUA-06</span><span class="src">PDF 2 &middot; p. 4</span><label class="done"><input type="checkbox" data-id="QUA-06"> Solved</label></header>
+<div class="stem">$kx^2-16x=24x^2-8$. In the given equation, $k$ is an integer constant. If the equation has two distinct real solutions, what is the greatest possible value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-07">
+<header><span class="num">QUA-07</span><span class="src">PDF 2 &middot; p. 24</span><label class="done"><input type="checkbox" data-id="QUA-07"> Solved</label></header>
+<div class="stem">The quadratic equation $(2x-64)^2=a$, where $a$ is a constant, has exactly one real solution. What is the value of $a$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-08">
+<header><span class="num">QUA-08</span><span class="src">PDF 3 &middot; p. 3</span><label class="done"><input type="checkbox" data-id="QUA-08"> Solved</label></header>
+<div class="stem">$x-a=(x-a)(x-24)$. Which of the following are solutions to the given equation, where $a$ is a constant and $a&gt;25$? I. $a$ II. $24$ III. $25$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I and II only</span></li><li><span class="letter">B</span><span class="ctext">I and III only</span></li><li><span class="letter">C</span><span class="ctext">II and III only</span></li><li><span class="letter">D</span><span class="ctext">I, II, and III</span></li></ol></article>
+<article class="card" id="QUA-09">
+<header><span class="num">QUA-09</span><span class="src">PDF 3 &middot; p. 11</span><label class="done"><input type="checkbox" data-id="QUA-09"> Solved</label></header>
+<div class="stem">$r^2+qr=8r-87$. In the given equation, $q$ is an integer constant. The given equation has no real solutions. What is the largest possible value of $q$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-10">
+<header><span class="num">QUA-10</span><span class="src">PDF 3 &middot; p. 14</span><label class="done"><input type="checkbox" data-id="QUA-10"> Solved</label></header>
+<div class="stem">The quadratic function $g$ models the depth, in meters, below the surface of the water of a Weddell seal $t$ minutes after the seal entered the water during a dive. The function estimates that the seal reached its maximum depth of 382.2 meters 7 minutes after it entered the water and then reached the surface of the water 14 minutes after it entered the water. Based on the function, what was the estimated depth, to the nearest meter, of the seal 10 minutes after it entered the water?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-11">
+<header><span class="num">QUA-11</span><span class="src">PDF 4 &middot; p. 4</span><label class="done"><input type="checkbox" data-id="QUA-11"> Solved</label></header>
+<div class="stem">The model shown gives the predicted average Arctic sea ice area $f(x)$, in millions of square kilometers, for September of each year $x$, where $x$ represents a year and $1979\le x\le 2012$. The model is $f(x)=-0.0038400x^2+15.236x-15{,}103$. Based on the model, what is the positive difference, in millions of square kilometers, between the predicted average Arctic sea ice area for September of the year 1991 and the predicted average Arctic sea ice area for September of the year 1992? (Round your answer to the nearest thousandth.)</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-12">
+<header><span class="num">QUA-12</span><span class="src">PDF 4 &middot; p. 10</span><label class="done"><input type="checkbox" data-id="QUA-12"> Solved</label></header>
+<div class="stem">The solutions to $x^2+10x+19=0$ are $r$ and $s$, where $r&lt;s$. The solutions to $x^2+10x+1=0$ are $t$ and $u$, where $t&lt;u$. The solutions to $x^2+20x+c=0$, where $c$ is a constant, are $r+u$ and $s+t$. What is the value of $c$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-13">
+<header><span class="num">QUA-13</span><span class="src">PDF 4 &middot; p. 12</span><label class="done"><input type="checkbox" data-id="QUA-13"> Solved</label></header>
+<div class="stem">The function $f$ is defined by $f(x)=(x-a)(x-b)$, where $a$ and $b$ are integer constants. If $f(32)&gt;0$, $f(35)&lt;0$, and $f(38)&gt;0$, which of the following could be the value of $a+b$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$35$</span></li><li><span class="letter">B</span><span class="ctext">$37$</span></li><li><span class="letter">C</span><span class="ctext">$67$</span></li><li><span class="letter">D</span><span class="ctext">$69$</span></li></ol></article>
+<article class="card" id="QUA-14">
+<header><span class="num">QUA-14</span><span class="src">PDF 4 &middot; p. 19</span><label class="done"><input type="checkbox" data-id="QUA-14"> Solved</label></header>
+<div class="stem">In the given equation $(x-k)^2=(k-4a)(x-k)$, $a$ and $k$ are constants, where $k&gt;4a$. The sum of the solutions to the equation is $3k+37$. What is the value of $a$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-15">
+<header><span class="num">QUA-15</span><span class="src">PDF 5 &middot; p. 1</span><label class="done"><input type="checkbox" data-id="QUA-15"> Solved</label></header>
+<div class="stem">$y=4x^2-bx-5$. Which of the following equations is equivalent to the given equation, where $b$ is a positive constant?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$y=4\left(x-\frac{b}{8}\right)^2-5-\frac{b^2}{16}$</span></li><li><span class="letter">B</span><span class="ctext">$y=4\left(x+\frac{b}{8}\right)^2-5$</span></li><li><span class="letter">C</span><span class="ctext">$y=4\left(x-\frac{b}{8}\right)^2-5$</span></li><li><span class="letter">D</span><span class="ctext">$y=4\left(x+\frac{b}{8}\right)^2-5-\frac{b^2}{16}$</span></li></ol></article>
+<article class="card" id="QUA-16">
+<header><span class="num">QUA-16</span><span class="src">PDF 5 &middot; p. 10</span><label class="done"><input type="checkbox" data-id="QUA-16"> Solved</label></header>
+<div class="stem">$\frac{1}{24}x^2+\left(s-\frac{1}{24}t\right)x-st=0$. In the given equation, $s$ and $t$ are positive constants. The product of the solutions to the given equation is $-2kst$, where $k$ is a constant. What is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-17">
+<header><span class="num">QUA-17</span><span class="src">PDF 5 &middot; p. 14</span><label class="done"><input type="checkbox" data-id="QUA-17"> Solved</label></header>
+<div class="stem">$nx^2-16x=26x^2-8$. In the given equation, $n$ is an integer constant. If the equation has two distinct real solutions, what is the greatest possible value of $n$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="QUA-18">
+<header><span class="num">QUA-18</span><span class="src">PDF 5 &middot; p. 15</span><label class="done"><input type="checkbox" data-id="QUA-18"> Solved</label></header>
+<div class="stem">A quadratic function gives the estimated length of daylight $d(t)$, in hours, in a certain city $t$ months after March 1, where $0\le t\le 7$. According to the function, the estimated length of daylight is 12.66 hours 6 months after March 1, and the maximum estimated length of daylight is 13.91 hours 3.5 months after March 1. Based on this function, what is the estimated length of daylight, in hours, on March 1?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+</main>
+
+<script>
+(function(){
+  var slug = "QUA";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

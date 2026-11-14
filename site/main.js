@@ -32,3 +32,13 @@ const io = new IntersectionObserver((entries) => {
   }
 }, { threshold: 0.4 });
 document.querySelectorAll('.stat').forEach((s) => io.observe(s));
+
+// EN/RU switch keeps the reader's place: both pages share the section ids, so the link carries the section in view
+// (2026-11-09; before, switching language from «Lessons» or the FAQ jumped back to the top)
+document.querySelectorAll('.lang a:not([aria-current])').forEach((a) => {
+  a.addEventListener('click', () => {
+    const secs = [...document.querySelectorAll('main [id], body > section[id], section[id]')];
+    const here = secs.filter((s) => s.getBoundingClientRect().top <= innerHeight * 0.4).pop();
+    if (here && here.id !== 'top') a.href = a.getAttribute('href').split('#')[0] + '#' + here.id;
+  });
+});

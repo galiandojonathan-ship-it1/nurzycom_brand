@@ -1,0 +1,10 @@
+const { chromium } = require("playwright");
+(async () => { const br = await chromium.launch(); const ctx = await br.newContext({ storageState: __dirname + "/st.json" }); const st = await ctx.newPage(); const errs = []; st.on("pageerror", (e) => errs.push(e.message)); st.on("dialog", (d) => d.accept());
+  await st.goto("http://127.0.0.1:8768/mytest.html", { waitUntil: "load" }); await st.waitForSelector("#sets .set", { timeout: 20000 });
+  await st.click("#sets .set"); await st.waitForSelector("#go"); await st.click("#go"); await st.waitForSelector("#opts .ch"); await st.click(".opt[data-c=B] .ch");
+  const id = new URL(st.url()).searchParams.get("t");
+  await st.evaluate((id) => { const k = "ct_run_" + id, r = JSON.parse(localStorage.getItem(k)); r.deadline = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(r)); }, id);
+  await st.reload({ waitUntil: "load" }); await st.waitForSelector("#p-result:not(.hidden)", { timeout: 15000 });
+  const t = await st.textContent("#res-title"), sc = await st.textContent("#res-score");
+  console.log((/время вышло/.test(t) && sc.trim() === "1/4" ? "PASS" : "FAIL") + " expired time auto-submits on reload: " + t + " " + sc, errs.length ? errs : "no errors");
+  await br.close(); })();
