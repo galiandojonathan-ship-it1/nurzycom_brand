@@ -146,6 +146,13 @@
     if (s === 0) submitModule(true);
   }
   $("hide-t").onclick = () => { T.hidden = !T.hidden; $("hide-t").textContent = T.hidden ? "Показать" : "Скрыть"; tick(); };
+  $("clock").onclick = () => $("hide-t").click(); $("clock").title = "Нажмите, чтобы скрыть или показать время";   // the timer itself hides the time
+  // one «Вычеркнуть» switch instead of a × next to every option (2026-11-14, Nurassyl: «too many buttons in tests»); remembered on this device
+  const elimOn = () => { try { return localStorage.getItem("elim_on") === "1"; } catch (e) { return false; } };
+  function elimSync() { document.documentElement.classList.toggle("elim-on", elimOn()); document.querySelectorAll(".elim-tg").forEach((b) => b.setAttribute("aria-pressed", String(elimOn()))); }
+  document.querySelectorAll(".elim-tg").forEach((b) => (b.onclick = () => { try { elimOn() ? localStorage.removeItem("elim_on") : localStorage.setItem("elim_on", "1"); } catch (e) { /* private mode */ } elimSync(); }));
+  elimSync();
+
 
   // ---- one question
   function openTest() {

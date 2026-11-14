@@ -103,7 +103,7 @@
     const sw = $("sv-gloss"); if (sw) sw.classList.toggle("hidden", !glossable());
     if (!glossable() || !sw) return;
     GLOSS.hide();
-    sw.setAttribute("aria-pressed", String(GLOSS.on)); sw.textContent = GLOSS.on ? "Трудные слова: вкл" : "Трудные слова: выкл";
+    sw.setAttribute("aria-pressed", String(GLOSS.on)); sw.textContent = GLOSS.on ? "Слова: вкл" : "Слова: выкл";
     const text = (q.stem || "").replace(/<[^>]+>/g, " ");
     if (!GLOSS.on || WIC.test(text)) return;
     const els = [$("sv-passage")];   // the question line is a standard prompt («conforms to», «support»): never underlined
@@ -194,4 +194,10 @@
     else if (e.key === "ArrowLeft") go(S.cur - 1);
   });
   window.HWSolve = { open };
+
+  // one «Вычеркнуть» switch instead of a × next to every option (2026-11-14, Nurassyl: «too many buttons in tests»); remembered on this device
+  const elimOn = () => { try { return localStorage.getItem("elim_on") === "1"; } catch (e) { return false; } };
+  function elimSync() { document.documentElement.classList.toggle("elim-on", elimOn()); document.querySelectorAll(".elim-tg").forEach((b) => b.setAttribute("aria-pressed", String(elimOn()))); }
+  document.querySelectorAll(".elim-tg").forEach((b) => (b.onclick = () => { try { elimOn() ? localStorage.removeItem("elim_on") : localStorage.setItem("elim_on", "1"); } catch (e) { /* private mode */ } elimSync(); }));
+  elimSync();
 })();

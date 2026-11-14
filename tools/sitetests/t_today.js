@@ -32,6 +32,7 @@ let fails = 0; const notes = []; const ok = (c, m) => { console.log((c ? "PASS "
   await pg.screenshot({ path: __dirname + "/hw320.png", fullPage: false });
   // forced colours (Windows high contrast): selected and crossed-out options must stay distinguishable
   await pg.emulateMedia({ forcedColors: "active" });
+  if (!(await pg.isVisible('#sv-opts .x[data-c="B"]'))) await pg.click('#sv-elim');   // × buttons show after «Вычеркнуть» (2026-11-14)
   await pg.click('#sv-opts .x[data-c="B"]'); await pg.click('#sv-opts .ch[data-c="A"]'); await pg.waitForTimeout(150);
   const fc = await pg.evaluate(() => { const st = (e) => { const s = getComputedStyle(e), t = getComputedStyle(e.querySelector(".tx") || e); return [s.borderTopStyle + " " + s.borderTopWidth, s.outlineStyle + " " + s.outlineWidth, t.textDecorationLine].join(" | "); };
     const on = document.querySelector("#sv-opts .opt.on .ch"), plain = document.querySelector('#sv-opts .opt:not(.on):not(.out) .ch'), out = document.querySelector("#sv-opts .opt.out .ch");

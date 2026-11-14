@@ -158,11 +158,25 @@
     if (e.n) { try { const me = await unseal(raw, e.n); localStorage.setItem("hw_student", me.name); } catch (x) { /* name is optional */ } }
     await useKey(raw);
   }
+  // types the three lines letter by letter with a block caret; with «reduce motion» the text is shown at once
+  function typeOut(box) {
+    if (!box) return;
+    const lines = [...box.querySelectorAll("[data-t]")], caret = document.createElement("i"); caret.className = "caret";
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { lines.forEach((l) => (l.textContent = l.dataset.t)); lines[lines.length - 1].append(caret); return; }
+    let li = 0, ci = 0;
+    const step = () => {
+      const l = lines[li]; if (!l) return;
+      if (ci < l.dataset.t.length) { l.textContent = l.dataset.t.slice(0, ++ci); l.append(caret); setTimeout(step, 90 + Math.random() * 110); }
+      else if (li < lines.length - 1) { li++; ci = 0; lines[li].append(caret); setTimeout(step, 380); }
+    };
+    setTimeout(step, 450);
+  }
   function gate() {
     if (!document.documentElement.classList.contains("locked")) return;
     const d = document.createElement("div"); d.id = "auth";
-    d.innerHTML = `<div class="auth-art" aria-hidden="true"><img src="assets/portrait.webp" srcset="assets/portrait-512.webp 512w, assets/portrait.webp 1024w" sizes="(max-width: 899px) 230px, 600px" width="1024" height="1536" alt="">
-        <div class="auth-name"><span class="label">Ваш преподаватель</span><span class="auth-word">Нурасыл</span><span class="label auth-cred">SAT 1560 · IELTS 8.0 · Nazarbayev University</span></div></div>
+    // 2026-11-14 (Nurassyl): no photo on the login screen; «nur / zy / com» is typed out like a terminal instead
+    d.innerHTML = `<div class="auth-art"><p class="auth-type" aria-label="nurzycom"><span data-t="nur"></span><span data-t="zy"></span><span data-t="com"></span></p>
+        <span class="label auth-cred">SAT 1560 · IELTS 8.0 · Nazarbayev University</span></div>
       <form class="auth-box" id="auth-in" autocomplete="on">
       <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
       <span class="label">nurzycom · SAT</span><h1>Вход</h1>
@@ -190,6 +204,7 @@
       <p class="hint" id="up-msg" role="status" aria-live="polite"></p>
       <button class="btn ghost" id="auth-to-in" type="button">У меня уже есть аккаунт</button></form>`;
     document.body.prepend(d);
+    typeOut(d.querySelector(".auth-type"));
     // «Показать пароль»: phones make typos in hidden passwords; the fields go back to hidden on submit
     d.querySelectorAll("[data-show]").forEach((c) => (c.onchange = () => c.dataset.show.split(" ").forEach((id) => (document.getElementById(id).type = c.checked ? "text" : "password"))));
     d.querySelectorAll("form").forEach((f) => f.addEventListener("submit", () => f.querySelectorAll("[data-show]").forEach((c) => { if (c.checked) { c.checked = false; c.onchange(); } }), true));

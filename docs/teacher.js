@@ -168,7 +168,7 @@
     const per = hw.filter((r) => r.sec > 0 && r.b).map((r) => r.sec / r.b);
     const used = D.lessons.filter((l) => s.rows.some((r) => r.lesson === l.tag));
     const rowsOf = (tag, pid) => s.rows.filter((r) => r.lesson === tag && r.pid === pid);
-    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button></div><h2 style="font:italic 300 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
+    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button></div><h2 style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
     const grp = (D.groups || []).find((g) => g.key === s.key), sps = grp ? Object.entries(grp.spellings) : [];
     const others = D.students.filter((x) => x.key !== s.key);
     html += `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
