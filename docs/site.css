@@ -618,13 +618,13 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 #timer.hide #clock{visibility:visible;font-size:0}   /* hidden time: a «показать время» pill in its place, tap to bring it back */
 #timer.hide #clock::after{content:"показать время";font:500 14px var(--sans);border:1.5px solid var(--studio);border-radius:999px;padding:7px 16px;display:inline-block;background:#fff}
 
-/* homework start page only (2026-11-14, Nurassyl: «too plain there; a more aesthetic font, not the original serif»): Unbounded for the
+/* homework start page only (2026-11-14, Nurassyl: «too plain there; a more aesthetic font», then «too wide, more condensed»): Sofia Sans Condensed for the
    page title, greeting, block headings, big numbers and lesson numbers; body text stays Geist */
-.hw-page{--disp:"Unbounded",Geist,system-ui,sans-serif}
-.hw-page .hero h1{font:500 clamp(44px,6vw,76px)/1.05 var(--disp);letter-spacing:-.02em}
-.hw-page .td-head h2{font:500 24px/1.25 var(--disp);letter-spacing:-.01em}
-.hw-page .td-grid h3,.hw-page .td-tasks h3,.hw-page .step-h .label,.hw-page .course-h b{font-family:var(--disp);font-weight:500;letter-spacing:0}
-.hw-page .td-title,.hw-page .td-next h2,.hw-page .td-next .td-big{font-family:var(--disp)}
-.hw-page .td-stats b,.hw-page .td-stats .td-big b,.hw-page .td-num b,.hw-page .td-run b{font-family:var(--disp);font-weight:500;letter-spacing:-.02em}
-.hw-page .tile .no{font:500 34px/1 var(--disp);letter-spacing:-.02em}
-.hw-page .promo .pt{font-family:var(--disp);font-weight:500;font-size:19px}
+.hw-page{--disp:"Sofia Sans Condensed",Geist,system-ui,sans-serif}
+.hw-page .hero h1{font:600 clamp(52px,7vw,92px)/1 var(--disp);letter-spacing:-.01em}
+.hw-page .td-head h2{font:600 30px/1.15 var(--disp);letter-spacing:0}
+.hw-page .td-grid h3,.hw-page .td-tasks h3,.hw-page .step-h .label,.hw-page .course-h b{font-family:var(--disp);font-weight:600;font-size:1.18em;letter-spacing:.005em}
+.hw-page .td-title,.hw-page .td-next h2,.hw-page .td-next .td-big{font-family:var(--disp);font-weight:600}
+.hw-page .td-stats b,.hw-page .td-stats .td-big b,.hw-page .td-num b,.hw-page .td-run b{font-family:var(--disp);font-weight:600;letter-spacing:-.01em}
+.hw-page .tile .no{font:600 42px/1 var(--disp);letter-spacing:-.01em}
+.hw-page .promo .pt{font-family:var(--disp);font-weight:600;font-size:22px}
