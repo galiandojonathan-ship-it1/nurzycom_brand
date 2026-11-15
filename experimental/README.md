@@ -74,6 +74,7 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 | C02 | 19 (IELTS part rebuilt at exam size: 13 items; one gap item fixed on the second solve) | 2026-11-13 | 2026-11-13 |
 | C03 | 19 (IELTS part rebuilt at exam size: 13 items; one short answer widened to accept "telegraph" on the second solve) | 2026-11-14 | 2026-11-14 |
 | C04 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-15 | 2026-11-15 (blind re-solve by a separate agent: 13 of 13; five stems de-echoed) |
+| C06 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-15 | 2026-11-15 (blind re-solve by a separate agent: 13 of 13) |
 | C05 | 19 (IELTS part rebuilt at exam size: 13 items; question 10 now has "years" after the gap, so only the number is accepted) | 2026-11-15 | 2026-11-15 (blind re-solve by a separate agent: 13 of 13) |
 | C02 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
 | C03 | 12 | 2026-11-11 | 2026-11-11 (blind re-solve by a separate agent) |
@@ -122,7 +123,7 @@ Build order: ~~C02, C03~~, ~~C07, C12~~, ~~C05, C06~~ (all done 2026-11-11), the
 
 `tools/bundle_single_html.py` builds the whole site into one HTML file for sharing (`python3 tools/bundle_single_html.py out.html`).
 
-IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown above its questions. Since 15 Nov a writing part may carry the same `table` (shown above the task), and a question group may carry `group.table` for table completion (cells hold numbered gaps like `(6) ______`; each gap item's stem repeats its row so office hours and retries make sense without the table). Notes in Rhetorical Synthesis items use `\n•` line breaks.
+IELTS-part tables: a part may carry `table: { caption, head, rows }`, shown above its questions. A question group may also carry `flow: [steps]` and `flowTitle` for flow-chart completion (boxes joined by arrows; gap stems repeat their step). Since 15 Nov a writing part may carry the same `table` (shown above the task), and a question group may carry `group.table` for table completion (cells hold numbered gaps like `(6) ______`; each gap item's stem repeats its row so office hours and retries make sense without the table). Notes in Rhetorical Synthesis items use `\n•` line breaks.
 
 ## Calls made in the overnight run of 11 Nov 2026 (to confirm with Nurassyl)
 
@@ -141,17 +142,17 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C03 IELTS part at exam size (14 Nov): 675 words, grade 11.3. Types: matching sentence endings (A–H, `group.labels: "letters"`), note completion, short-answer questions.
 - [x] C04 IELTS part at exam size (15 Nov, run 1): 984 words, 7 paragraphs, 25.2 words per sentence, grade 12.1. Types: matching features (7 people → 5 statements, `group.labels: "letters"`), table completion (`group.table`, two words), multiple choice. Blind re-solve by a separate agent: 13 of 13 keys matched; five stems reworded afterwards so they no longer echo the passage.
 - [x] C05 IELTS part at exam size (15 Nov, run 1): about 760 words, 7 paragraphs, 25 words per sentence, grade 13.6. Article "Counting Heads: A Short History of the Census". Types: True / False / Not Given (two NOT GIVEN with real-world traps: John Rickman, census fines), short-answer questions, summary completion with a word box (match kind, A–H). The Marsh End table moved to the writing part (`table` on a writing part). Blind re-solve: 13 of 13 matched; paragraph E reordered so the 1801–1811 counts, not 1841, settle the growth debate.
-- [ ] C06 IELTS part at exam size. Suggested: matching headings, multiple choice, diagram or table completion.
+- [x] C06 IELTS part at exam size (15 Nov, run 1): 814 words, 7 paragraphs, 23.2 words per sentence, grade 11.6. "The Doctor Who Followed the Water". Types: matching headings (9 headings, paragraphs B–G), flow-chart completion (new `group.flow`), multiple choice. Flow chart chosen instead of table completion because C04 already covers tables. Blind re-solve: 13 of 13; flow-chart stems paraphrased and paragraph G now names the General Board of Health's committee (the parish inquiry largely accepted Snow) after its notes.
 - [ ] C07 IELTS part at exam size. Suggested: Yes / No / Not Given (writer's views), matching sentence endings, summary completion.
 - [ ] C12 Listening rebuilt to real IELTS task types: Part 1-style form completion (gap kind, word limits), Part 2-style plan or map labelling (match kind with letters) and multiple choice. Script with spoken features and at least two corrections; no True / False / Not Given.
 - [ ] Lesson C08 "How a Report Persuades" (Text Structure and Purpose × matching information + a Task 2 body paragraph): homework at exam size, slide deck, office hours data, and check-in K2 (after C08; same blueprint idea as D0/K1 for Block B skills).
 - [ ] QA pass: blind re-solve every key added since the last QA, fact check, the three test suites, update this queue and write a short report.
 
-**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04). Still to use: flow-chart or diagram label completion (C06 is the natural place), Yes / No / Not Given (C07).
+**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06). Still to use: diagram label completion, Yes / No / Not Given (C07).
 
 ## Loop log
 
-- 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage.
+- 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table.
 
 ## Calls made in the cadence run of 11 Nov 2026 (to confirm with Nurassyl)
 

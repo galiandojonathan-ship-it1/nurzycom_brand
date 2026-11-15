@@ -426,3 +426,8 @@ section.fold, .part.fold { padding-top: 28px; padding-bottom: 28px; }
 .part .gapline input.gap-in, .part .opts input.gap-in { display: inline-block; width: 11em; max-width: 70%; margin: 0 6px; min-height: 38px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 6px 6px 0 0; background: var(--paper); vertical-align: baseline; }
 .part .gapline input.gap-in.right { border-bottom-color: var(--ok); background: #eef4ef; }
 .part .gapline input.gap-in.wrong { border-bottom-color: var(--oxide); }
+
+/* flow-chart completion: boxes joined by arrows */
+.flow { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 22px; font-size: 15.5px; }
+.flow li { position: relative; border: 1px solid var(--stone); border-radius: 10px; padding: 10px 14px; background: var(--paper, #fff); }
+.flow li + li::before { content: "↓"; position: absolute; top: -21px; left: 50%; transform: translateX(-50%); font: 400 15px/1 var(--mono); color: var(--text2); }

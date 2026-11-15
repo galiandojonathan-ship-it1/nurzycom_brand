@@ -41,5 +41,17 @@ const base = 'http://127.0.0.1:8791/course/';
     const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }
+  { // table completion (C04), flow chart (C06), table on a writing part (C05)
+    const p = await b.newPage({ viewport: { width: 360, height: 760 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+    await p.goto(base + 'lesson.html?id=C04'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
+    if (await p.locator('#ielts .qgroup .dtab tbody tr').count() !== 4) bad('C04 group table');
+    await p.goto(base + 'lesson.html?id=C06'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
+    if (await p.locator('#ielts .flow li').count() !== 4) bad('C06 flow chart');
+    await p.locator('#ielts .qgroup').nth(1).screenshot({ path: require('path').join(SHOTS, 'c06_flow_phone.png') });
+    await p.goto(base + 'lesson.html?id=C05'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
+    if (await p.locator('#write .dtab tbody tr').count() !== 4) bad('C05 writing table');
+    const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C05');
+    if (errs.length) bad(errs.join(' | ')); await p.close();
+  }
   await b.close(); console.log(fails ? fails + ' FAILS' : 'ALL OK');
 })();

@@ -146,6 +146,11 @@
           g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: q.group.listTitle || "List of headings" }), hl]));
         }
         if (q.group.table) g.appendChild(tableBox(q.group.table));
+        if (q.group.flow) {
+          var fl = el("ol", { class: "flow" });
+          q.group.flow.forEach(function (t) { fl.appendChild(el("li", { text: t })); });
+          g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: q.group.flowTitle || "Flow chart" }), fl]));
+        }
         sec.appendChild(g);
       }
       if (q.kind === "gap") { sec.appendChild(gapBox(p, q, qid, i)); return; }
