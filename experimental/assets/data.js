@@ -32,7 +32,7 @@ window.COURSE = {
       shared: "Data as evidence", sat: "Command of Evidence (quantitative)", ielts: "Writing Task 1: comparisons", speak: "Compare two figures aloud", write: "Two comparison sentences" },
     { id: "C07", code: "CID", block: "B", status: "live", title: "The Diagram That Changed a Hospital", thread: "One picture carried the main idea.",
       shared: "Main idea and detail", sat: "Central Ideas and Details", ielts: "Reading: headings, True / False / Not Given", speak: "Part 2 · structure", write: "A topic sentence" },
-    { id: "C08", code: "TSP", block: "B", status: "planned", title: "How a Report Persuades", thread: "Order is part of the message.",
+    { id: "C08", code: "TSP", block: "B", status: "live", title: "How a Report Persuades", thread: "Order is part of the message.",
       shared: "Structure and purpose", sat: "Text Structure and Purpose", ielts: "Reading: matching information · Task 2 paragraph", speak: "Part 2 · two full minutes", write: "One body paragraph" },
     { id: "C09", code: "INF", block: "C", status: "planned", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
       shared: "Inference", sat: "Inferences", ielts: "Reading: Yes / No / Not Given, summary", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
@@ -1251,6 +1251,167 @@ window.LESSONS.C07 = {
       ] }
   ],
   handoff: { text: "One diagram carried the main idea. Next, the report around it: how the order of its parts persuades.", next: "C08" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C08 = {
+  id: "C08",
+  title: "How a Report Persuades",
+  thread: "Order is part of the message.",
+  intro: "В прошлом уроке одна диаграмма несла главную мысль целого отчёта. Сегодня важен порядок: как отчёт выстраивает материал, чтобы убедить читателя. На SAT это Text Structure and Purpose: понять, зачем написан текст и какую работу делает каждое предложение. В IELTS Reading это matching information: найти абзац, где есть нужная информация, а в Writing Task 2 — абзац, который ведёт от мысли к примеру и отвечает на возражение. Все тексты урока о докладе Эдвина Чедвика 1842 года об условиях жизни бедных в Британии.",
+  words: [
+    { w: "anticipate", pos: "v.", ru: "предвидеть, заранее ожидать",
+      sat: "The architect anticipated the residents' concerns and added a garden to the plans before anyone asked.",
+      ielts: "Good planners anticipate problems before they become expensive." },
+    { w: "objection", pos: "n.", ru: "возражение",
+      sat: "The committee's main objection to the proposal was not its cost but its timing.",
+      ielts: "The most common objection to working from home is that it isolates people." },
+    { w: "illustrate", pos: "v.", ru: "иллюстрировать, показывать на примере",
+      sat: "The author illustrates her argument with the history of a single village.",
+      ielts: "This example illustrates how quickly technology can change our habits." },
+    { w: "underscore", pos: "v.", ru: "подчёркивать, усиливать (мысль, вывод)",
+      sat: "The second study underscored the findings of the first, reaching the same result with a larger sample.",
+      ielts: "Recent floods underscore the need for better planning in coastal towns." },
+    { w: "recommend", pos: "v.", ru: "рекомендовать, советовать",
+      sat: "The engineers recommended that the bridge be closed until the repairs were complete.",
+      ielts: "Many teachers recommend reading for pleasure as a way to build vocabulary." },
+    { w: "concede", pos: "v.", ru: "признавать (нехотя, уступая в споре)",
+      sat: "The critic conceded that the novel's opening was brilliant, though she found its ending weak.",
+      ielts: "I concede that public transport is slower, but it is far cheaper." },
+    { w: "subsequently", pos: "adv.", ru: "впоследствии, затем",
+      sat: "The manuscript was lost in 1820 and subsequently found in a private library.",
+      ielts: "She studied engineering and subsequently worked as a teacher." },
+    { w: "compelling", pos: "adj.", ru: "убедительный, неотразимый",
+      sat: "The most compelling evidence for the theory came from a single, carefully dated fossil.",
+      ielts: "There are compelling reasons to invest in public libraries." }
+  ],
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Text Structure and Purpose",
+      ru: "Не пересказывай, о чём текст. Назови одним глаголом, что делает каждое предложение: вводит, иллюстрирует, оспаривает, уступает, объясняет. Потом найди вариант, где все глаголы совпадают с твоей картой и стоят в том же порядке.",
+      rule: [
+        "Вопрос о цели или структуре спрашивает, что текст делает, а не о чём он. Ответ описывает действия: presents, illustrates, challenges, concedes.",
+        "Составь карту: два-три слова на предложение (claim, example, objection, answer). Верный вариант совпадает со всей картой и с её порядком.",
+        "Ловушка: вариант верен наполовину. Проверь обе части, особенно второй глагол."
+      ],
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "Edwin Chadwick's 1842 report on the living conditions of the poor did not begin with its proposals. First it described crowded houses and streets without drains, quoting doctors from many parts of the country. Next it presented tables showing how much earlier labourers died than wealthier people in the same towns. Only at the end did Chadwick recommend drains, clean water and the regular removal of refuse.",
+          stem: "Which choice best describes the overall structure of the text?",
+          opts: ["It explains why a report was ignored and then describes its author's later career.", "It identifies a choice an author made and then traces the order in which his report presented its material.", "It compares two reports and argues that one of them was more persuasive.", "It describes a problem and then explains why that problem could not be solved."], key: 1,
+          ru: "Карта: 1 — отчёт не начинался с предложений (выбор автора); 2–4 — first, next, only at the end: порядок материала. Это B. A: о том, что отчёт проигнорировали, и о карьере нет ни слова. C: отчёт один. D: решение как раз предложено в конце." },
+        { kind: "mcq", chk: 2,
+          text: "Many readers of government reports skip straight to the recommendations. For this reason, some authors place their strongest evidence at the very start, before a reader has a chance to turn the page. Others take the opposite approach, saving the recommendations for last so that readers must pass through the evidence to reach them. Chadwick's 1842 report is a well-known example of the second approach.",
+          stem: "Which choice best describes the function of the third sentence in the overall structure of the text?",
+          opts: ["It presents an alternative to the approach described in the previous sentence.", "It explains why many readers skip to the recommendations.", "It gives an example of the approach described in the second sentence.", "It states the main conclusion of Chadwick's report."], key: 0,
+          ru: "«Others take the opposite approach» — другой подход в сравнении со вторым предложением: A. B: причину пропуска текст не объясняет. C: пример (Чедвик) дан в четвёртом предложении, и это пример второго подхода, а не первого. D: вывод отчёта не назван." },
+        { kind: "mcq", chk: 2,
+          text: "The Public Health Act of 1848 created a General Board of Health for England and Wales. The Act allowed towns to set up local boards responsible for drainage, water supply and street cleaning, but it required them to do so only where the death rate was especially high. Elsewhere, the decision was left to local people. As a result, the Act's effects varied greatly from one town to the next.",
+          stem: "Which choice best states the main purpose of the text?",
+          opts: ["To argue that the Act should have forced every town to set up a local board", "To describe the daily work of the local boards of health", "To explain why a law had uneven effects across different towns", "To compare public health in England with public health in other countries"], key: 2,
+          ru: "Текст ведёт к последнему предложению: эффект закона был разным, потому что во многих городах решение оставили местным жителям. Это C. A: автор не спорит и ничего не требует. B: работа местных советов только названа. D: других стран нет." },
+        { kind: "mcq", chk: 2,
+          text: "Some early readers suspected that the doctors quoted in Chadwick's report had exaggerated the conditions they described. Chadwick's tables gave such readers little room for doubt: in town after town, the figures showed the same gap between the ages at which rich and poor people died.",
+          stem: "Which choice best describes the overall structure of the text?",
+          opts: ["It describes a report's findings and then questions their accuracy.", "It summarises a disagreement between two groups of doctors.", "It explains in detail how a set of tables was compiled.", "It presents a doubt about a report and then describes evidence that answered that doubt."], key: 3,
+          ru: "1 — сомнение (врачи преувеличили); 2 — таблицы, которые сомнение сняли: D. A переворачивает порядок: сначала сомнение, потом доказательство, а не наоборот. B: спорят читатели, а не две группы врачей. C: как составлены таблицы, не сказано." }
+      ] },
+
+    { type: "questions", id: "ielts", label: "IELTS-style · Academic Reading", title: "A full passage, exam format",
+      ru: "Формат настоящего IELTS Academic: текст около 850 слов и 13 вопросов трёх типов. На экзамене на него уходит около 20 минут. Засеки время. Отвечай только по тексту. Сначала прочитай текст и подпиши для себя каждый абзац одним-двумя словами (background, scenes, numbers…): это сразу поможет в первой группе вопросов.",
+      lettered: true,
+      passageTitle: "A Report Built to Persuade",
+      passage: [
+        "When a government report changes the law, readers tend to remember its conclusions and forget its architecture. Yet the order in which evidence is presented can matter as much as the evidence itself. A reader who meets a recommendation on the first page may reject it before seeing why it was made, whereas a reader who reaches it only after pages of carefully arranged facts may find it difficult to resist. Few documents illustrate this better than a report on the living conditions of the British poor, published in 1842 under the name of Edwin Chadwick.",
+        "Chadwick was a lawyer by training and an administrator by temperament. As secretary to the commission that ran the system of poor relief in England and Wales, he had seen that illness was one of the commonest reasons why families came to depend on public support. In 1839 he was asked to investigate the sanitary condition of working people, and he spent nearly three years collecting material. When the report was ready, the commissioners for whom he worked were unwilling to put their names to some of its sharper criticisms, and it therefore appeared under his name alone.",
+        "The report opens not with a proposal but with scenes. Chadwick had gathered accounts from doctors and local officials in many parts of the country, and he quoted them at length: streets without drains, courtyards where refuse lay uncollected for weeks, houses crowded around a single shared toilet, wells that drew water from ground soaked with waste. These descriptions were not presented as statistics. They were intended to make a comfortable reader see conditions that few such readers had ever witnessed, and to establish, before any argument began, that the problem was both widespread and severe.",
+        "Only then did the numbers arrive. Chadwick compiled tables comparing the average age at death of different classes of people living in the same towns, and the contrasts were stark: labourers in industrial towns died, on average, far younger than professional men and gentry living nearby. Placed after the descriptions, the figures did not have to persuade on their own. They underscored what the reader had already been shown, and they made it much harder to dismiss the earlier accounts as exaggeration.",
+        "The report also anticipated the objections that its readers were most likely to raise. The most serious was cost, since drainage, paving and piped water would require large public spending at a time when many taxpayers believed that the poor were responsible for their own condition. Chadwick did not concede that sanitation was simply a matter of charity. Instead, he argued that disease was expensive. When a working man died young, his widow and children frequently had to be supported from local taxes, so money spent on prevention would, in his view, reduce the far greater sums spent on relief. Whatever one thinks of this reasoning, it moved the debate onto financial ground, where his opponents could not easily dismiss it.",
+        "The recommendations come last. Chadwick recommended that towns should remove refuse regularly, supply clean water to houses and carry waste away through drains, and he argued that responsibility for these services should be given to single public bodies advised by trained engineers, rather than divided among many competing local interests. By the time readers reached these proposals, they had already accepted the description of the problem, the evidence of its scale and the claim that solving it would save money. The recommendations therefore appeared less like demands than like conclusions.",
+        "The structure worked, though not immediately. The report was widely read and discussed, and in 1848 Parliament passed a Public Health Act that created a General Board of Health, with Chadwick among its members. His forceful methods subsequently made him many enemies, and in 1854 he was removed from the board. Some of his scientific assumptions were also mistaken: like most of his contemporaries, he believed that disease was spread by foul air rather than by contaminated water. Even so, his compelling arrangement of evidence remains a model of persuasive writing, and its pattern of problem, evidence, objection and solution is still followed, consciously or not, by the writers of many reports and essays today."
+      ],
+      items: [
+        { group: { title: "Questions 1–5", task: "The passage has seven paragraphs, A–G. Which paragraph contains the following information? You may use any letter more than once.", paras: 7,
+            ru: "Это matching information: ищи не главную мысль абзаца, а место, где есть эта деталь. Порядок вопросов не совпадает с порядком текста, и некоторые абзацы не понадобятся." },
+          kind: "match", chk: 2, stem: "a reference to a mistaken belief held by the author of the report", key: 6,
+          ru: "G: «Some of his scientific assumptions were also mistaken: … he believed that disease was spread by foul air». Mistaken belief = mistaken assumptions." },
+        { kind: "match", chk: 2, stem: "an argument intended to make reform seem financially sensible", key: 4,
+          ru: "E: Чедвик доказывал, что болезнь дорога и что профилактика сократит расходы на помощь. Ловушка F: там рекомендации, а не довод о деньгах." },
+        { kind: "match", chk: 2, stem: "an explanation of why the report carried only one person's name", key: 1,
+          ru: "B: комиссары не захотели подписываться под резкой критикой, поэтому доклад вышел только под именем Чедвика." },
+        { kind: "match", chk: 2, stem: "an example of numerical evidence being used to support descriptive material that came before it", key: 3,
+          ru: "D: таблицы шли после описаний и «underscored what the reader had already been shown». Ловушка A: там общая мысль о порядке, без цифр." },
+        { kind: "match", chk: 2, stem: "an account of the kind of material with which the report begins", key: 2,
+          ru: "C: «The report opens not with a proposal but with scenes» и дальше перечислено, что это за сцены." },
+
+        { group: { title: "Questions 6–9", task: "Complete the sentences below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
+            ru: "Ответы идут по порядку текста. Предложение после вставки должно быть грамматически верным." },
+          kind: "gap", chk: 2, limit: 2, accept: ["illness"],
+          stem: "Before his inquiry began, Chadwick had observed that ______ was a frequent cause of families needing public help.",
+          ru: "B: «illness was one of the commonest reasons why families came to depend on public support». Frequent cause = one of the commonest reasons." },
+        { kind: "gap", chk: 2, limit: 2, accept: ["local officials", "officials"],
+          stem: "The accounts quoted at the start of the report came from doctors and ______.",
+          ru: "C: «accounts from doctors and local officials». Засчитывается и одно officials." },
+        { kind: "gap", chk: 2, limit: 2, accept: ["gentry", "the gentry"],
+          stem: "The tables revealed that labourers in factory towns had much shorter lives than professional men and ______ living close by.",
+          ru: "D: «far younger than professional men and gentry living nearby». Shorter lives = died younger." },
+        { kind: "gap", chk: 2, limit: 2, accept: ["engineers", "trained engineers"],
+          stem: "Chadwick wanted the bodies in charge of town services to take advice from qualified ______.",
+          ru: "F: «single public bodies advised by trained engineers». Qualified = trained, поэтому ответ engineers; trained engineers тоже в лимите." },
+
+        { group: { title: "Questions 10–13", task: "Choose the correct letter, A, B, C or D.",
+            ru: "Вопросы идут по порядку текста. Ищи то, что говорит автор, а не то, что звучит разумно." },
+          kind: "mcq", chk: 2, stem: "What is the writer's main point in paragraph A?", key: 2,
+          opts: ["Government reports are usually remembered for the way they are organised.", "Recommendations should always appear on the first page of a report.", "The sequence in which evidence appears can affect how readers respond to a proposal.", "Most readers reject reports that contain a large number of facts."],
+          ru: "C: «the order in which evidence is presented can matter as much as the evidence itself». A противоречит тексту: помнят выводы и забывают «architecture». B: автор показывает риск такого порядка. D в тексте нет." },
+        { kind: "mcq", chk: 2, stem: "How did Chadwick deal with the objection about cost?", key: 0,
+          opts: ["He claimed that preventing disease would cost less than supporting its victims.", "He accepted that sanitation was mainly a charitable duty.", "He suggested that the poor should pay for their own drains.", "He proved that taxpayers were wrong to blame the poor."],
+          ru: "A: профилактика сократит «the far greater sums spent on relief». B противоречит тексту: «did not concede that sanitation was simply a matter of charity». C в тексте нет. D: мнение налогоплательщиков упомянуто, но Чедвик его не опровергал, а перевёл спор на деньги." },
+        { kind: "mcq", chk: 2, stem: "According to the writer, why did the recommendations seem like conclusions?", key: 3,
+          opts: ["They had been written by trained engineers.", "They were much shorter than the rest of the report.", "They repeated the descriptions from the opening pages.", "Readers had already accepted the points on which they depended."],
+          ru: "D: к рекомендациям читатель уже принял описание проблемы, доказательства масштаба и довод об экономии. A: инженеры должны были советовать будущим органам, а не писать доклад. B и C в тексте нет." },
+        { kind: "mcq", chk: 2, stem: "What does the writer say about Chadwick's ideas on how disease spread?", key: 1,
+          opts: ["They led directly to his removal from the board.", "They reflected an error that he shared with many people of his time.", "They were confirmed by the Public Health Act of 1848.", "They were the main reason why his report was widely read."],
+          ru: "B: «like most of his contemporaries, he believed that disease was spread by foul air». A: с поста его убрали из-за «forceful methods», текст не связывает это с его теорией. C и D в тексте нет." }
+      ] },
+
+    { type: "speaking", id: "speak", label: "IELTS-style · Speaking Part 2", title: "Two full minutes, in order",
+      ru: "Минуту готовься: запиши по одному-два слова на каждый пункт карточки. Потом говори все две минуты, без остановки. Держи порядок, как в докладе Чедвика: что было → как тебя убеждали → почему сработало. Связки-указатели (first of all, the main reason, in the end) помогают и тебе, и экзаменатору. Можно записать себя: запись остаётся только на этом устройстве.",
+      prompts: [
+        "Describe a time when someone persuaded you to change your mind about something.",
+        "You should say: what you thought at first",
+        "who persuaded you",
+        "how they persuaded you",
+        "and explain why their argument worked."
+      ],
+      prep: 60, talk: 120,
+      pron: { title: "Pronunciation: stress in the lesson words and in signposts", ru: "Выдели ударный слог: он громче и длиннее. В указателях ударение падает на смысловое слово, а не на the или of. Сначала слова, потом фразы.",
+        items: ["an-TIC-i-pate", "ob-JEC-tion", "IL-lus-trate", "un-der-SCORE (глагол)", "rec-om-MEND", "con-CEDE", "SUB-se-quent-ly", "com-PEL-ling", "FIRST of all", "the MAIN reason", "in the END"] },
+      model: "I'd like to talk about the time my older cousin persuaded me to start reading English novels. At first, I thought it was a waste of time, because I could learn words faster from lists. First of all, she didn't argue with me. She anticipated my objection and conceded that lists are quick. Then she showed me a page from a novel she was reading and asked me to guess three words from the context. I guessed two of them, and she pointed out that I would remember them much longer, because they were part of a story. The main reason her argument worked was its order: she started with my view, then gave me evidence I had produced myself, and only at the end recommended a book. Subsequently, I read my first novel in English, and I still think it was the most compelling argument anyone has made to me." },
+
+    { type: "writing", id: "write", label: "Writing micro-task", title: "One Task 2 body paragraph",
+      ru: "Напиши один абзац основной части эссе IELTS Task 2 (не всё эссе). Порядок: главная мысль → объяснение → пример → возражение и ответ на него → связь с мыслью абзаца. Пример можно взять из урока, но он должен доказывать мысль, а не просто быть историей.",
+      prompts: ["Some people believe that governments should spend more money on preventing problems, such as illness, than on dealing with them after they happen. Write one body paragraph that supports this view."],
+      minWords: 90,
+      checklist: ["Первое предложение называет главную мысль абзаца.", "Сразу после мысли идёт объяснение, почему это так.", "Пример доказывает мысль, а не просто рассказывает историю.", "Я назвал(а) возможное возражение и ответил(а) на него, а не просто отверг(ла) его.", "Последнее предложение возвращает к главной мысли.", "Я использовал(а) минимум три слова урока."],
+      model: [
+        "Spending on prevention is usually the cheaper choice for a government in the long run. Problems such as illness grow more expensive the longer they are left, because treatment, lost working days and support for families all add to the final cost. Edwin Chadwick's report of 1842 illustrates this point: he argued that clean water and drains would cost less than supporting the families of workers who died young. Critics may object that prevention requires large sums before any benefit is visible. I would concede that the first costs are high, but this objection underscores the need for long-term planning rather than defeating the argument. For this reason, a compelling case can be made for prevention."
+      ] },
+
+    { type: "questions", id: "exit", label: "Exit check", title: "Two questions before you go",
+      ru: "По одному вопросу на каждый экзамен. Без подсказок.",
+      items: [
+        { kind: "mcq", chk: 2,
+          text: "A report on a town's water supply begins by describing complaints from residents about the taste of their water. It then presents the results of tests on samples taken from three wells. It ends by recommending that one of the wells be closed.",
+          stem: "Which choice best describes the overall structure of the text?",
+          opts: ["It moves from a problem, to evidence about it, to a proposed action.", "It describes a recommendation and then lists objections to it.", "It compares three towns and their water supplies.", "It explains how water samples are tested in a laboratory."], key: 0,
+          ru: "Жалобы (проблема) → результаты проверки (доказательства) → рекомендация (действие): A. B переворачивает порядок и добавляет возражения, которых нет. C: город один, колодцев три. D: как проверяют пробы, не сказано." },
+        { kind: "tfng", chk: 2,
+          text: "Chadwick's report placed its recommendations at the end, after the descriptions of living conditions and the tables of ages at death.",
+          stem: "The report opened with its recommendations.", key: "F",
+          ru: "FALSE. Рекомендации стояли в конце, «at the end», а не в начале." }
+      ] }
+  ],
+  handoff: { text: "Chadwick's order made his evidence hard to resist. Next, the cases a report leaves out: what the data does not say.", next: "C09" }
 };
 
 /* ------------------------------------------------------------------ */

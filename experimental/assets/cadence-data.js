@@ -27,13 +27,13 @@ window.CADENCE = {
   checkins: [
     { id: "D0", title: "Diagnostic", after: null, ru: "До первого урока", status: "live" },
     { id: "K1", title: "Check-in A · The sentence", after: "C04", ru: "После C04", status: "live" },
-    { id: "K2", title: "Check-in B · The paragraph", after: "C08", ru: "После C08", status: "planned" },
+    { id: "K2", title: "Check-in B · The paragraph", after: "C08", ru: "После C08", status: "live" },
     { id: "K3", title: "Check-in C · The argument", after: "C11", ru: "После C11", status: "planned" },
     { id: "KF", title: "Final check", after: "C16", ru: "В конце курса", status: "planned" }
   ],
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
-    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details",
+    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose",
     "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
   }
 };
@@ -258,6 +258,37 @@ window.DECKS = {
     ]
   },
 
+  C08: {
+    rules: [
+      ["Say what each part does, not what it says.", "Purpose questions are about actions: introduces, illustrates, challenges, concedes, explains. Name the job of the sentence with one verb before you read the choices."],
+      ["Map the whole text, in order.", "Write two or three words for each sentence: claim, example, objection, answer. The structure answer must match the whole map, step by step."],
+      ["Every part of the choice must be true.", "A choice that is half right is wrong. Check both halves, especially the second verb."]
+    ],
+    mistake: "Choosing a choice that names the topic of the text instead of what the text does.",
+    story: [
+      ["1839: an inquiry", "Edwin Chadwick, a lawyer who helped run the system of poor relief, was asked to investigate the living conditions of working people in Britain."],
+      ["Scenes, then numbers", "His 1842 report opened with doctors' descriptions of streets without drains. Then came tables of how young labourers died. Then an answer to the objection about cost."],
+      ["Last of all, the proposals", "By the time readers met his recommendations, they had already accepted every step that led to them. Order is part of the message."]
+    ],
+    bridge: ["Same skill, other exam", "IELTS Reading asks which paragraph contains a piece of information, so you need to know the job of each paragraph. In Writing Task 2, a body paragraph has its own order: point, explanation, example, and often an answer to an objection."],
+    ex: [
+      { exam: "SAT", label: "Text Structure and Purpose", chk: 2,
+        text: "Some historians argue that Chadwick's report succeeded because of its facts alone. Others point out that similar descriptions of poor housing had been published before without much effect. What was new, they suggest, was the order in which Chadwick presented his material.",
+        stem: "Which choice best describes the function of the second sentence in the overall structure of the text?",
+        opts: ["It gives an example that supports the view in the first sentence.", "It raises a point that challenges the view in the first sentence.", "It states the main conclusion of Chadwick's report.", "It explains why the report was published."], key: 1,
+        steps: ["Map the text: 1 = a view (facts alone), 2 = similar facts had little effect before, 3 = another explanation (order).", "Sentence 2 makes the first view less likely: if facts alone were enough, the earlier facts would have worked too.", "Choose the option whose verb is “challenges”."],
+        check: "Put “However,” in front of sentence 2: the text still reads well, so the sentence pushes against sentence 1.",
+        why: ["It weakens the first view instead of supporting it.", "Correct: earlier facts had little effect, so facts alone may not explain the report's success.", "The text does not state the report's conclusion.", "Publication is not discussed."] },
+      { exam: "IELTS", label: "Reading: matching information", chk: 2,
+        text: "A  Chadwick collected letters from doctors in many towns.\nB  His tables compared the ages at which rich and poor people died.\nC  The report ended with proposals for drains and clean water.",
+        stem: "Which paragraph contains a comparison between two groups of people?",
+        opts: ["the paragraph about doctors' letters", "the paragraph about the tables", "the paragraph about the proposals", "none of the paragraphs"], key: 1,
+        steps: ["Turn the question into what you are looking for: two groups set side by side.", "Scan each paragraph for two groups: A has one group (doctors), C has none.", "B sets rich and poor side by side: that is the comparison."],
+        check: "Point to the exact words that do the job: “rich and poor”.",
+        why: ["Paragraph A: doctors are one group; nothing is compared.", "Correct: paragraph B compares rich and poor people.", "Paragraph C: proposals, not a comparison of people.", "Paragraph B does compare two groups."] }
+    ]
+  },
+
   C12: {
     rules: [
       ["Before the audio, decide the answer type.", "A place, a direction, a number or a time. The words around the gap tell you which."],
@@ -330,6 +361,11 @@ window.OFFICE = {
       sample: "The sewers were cleaned out.",
       issues: [["TR", "Это деталь из абзаца, а не главная мысль: topic sentence должен покрывать весь абзац."], ["LR", "Нет слов, которые обобщают: conditions, sanitation, mortality."], ["CC", "Предложение не готовит читателя к выводу абзаца о смертности."]] },
     live: ["Part 2 · Describe a chart, picture or diagram that helped you understand something.", "Part 3 · Are pictures better than words for explaining ideas?", "Part 3 · Why do some people ignore facts that are clearly presented?"] },
+  C08: { focus: "Для каждой ошибки: какое действие ты приписал(а) предложению или тексту (introduces, illustrates, challenges, concedes) и какое было на самом деле.",
+    peer: { task: "One Task 2 body paragraph: governments should spend more on prevention.",
+      sample: "Governments should spend more on prevention. For example, Chadwick wrote a report in 1842. Prevention is good because it is good for people. Some people say that it is expensive, I disagree with them.",
+      issues: [["TR", "Пример ничего не доказывает: сказано только, что Чедвик написал доклад, а не что он показал о профилактике."], ["CC", "Порядок сломан: пример стоит раньше объяснения, а объяснение ходит по кругу («good because it is good»)."], ["GRA", "Comma splice: «…it is expensive, I disagree with them». К тому же возражение просто отвергнуто, ответа на него нет."]] },
+    live: ["Part 2 · Describe a time when someone persuaded you to change your mind.", "Part 3 · Do facts or stories persuade people more effectively? Why?", "Part 3 · Should governments spend money on problems that have not happened yet?"] },
   C12: { focus: "Для каждой ошибки в Listening: прозвучал ли поворот (used to be, instead, but now) и где ты его пропустил(а).",
     peer: { task: "From notes to two sentences: the way to the library and the bus stop.",
       sample: "Library: turn left clock tower, second building right opposite lake. Bus stop moved behind library on Mill Road.",
@@ -471,6 +507,79 @@ window.LESSONS.K1 = {
           ru: "FALSE. Историки нашли «little evidence», то есть подтверждения нет. Текст противоречит утверждению." },
         { kind: "tfng", chk: 2, skill: "R-TFNG", stem: "Hogarth was paid by the government for his painting.", key: "NG",
           ru: "NOT GIVEN. О картине сказано, что на ней есть лозунг. Кто за неё платил, текст не сообщает." }
+      ] }
+  ]
+};
+
+/* K2: Block B check-in (after C08). Blueprint: 2 × Rhetorical Synthesis, 2 × Command of Evidence (quantitative),
+   2 × Central Ideas and Details, 2 × Text Structure and Purpose, 3 × IELTS matching information.
+   D0 and K1 do not measure Block B skills, so the progress page compares K2 with first-attempt homework in C05–C08. */
+window.LESSONS.K2 = {
+  id: "K2", checkin: true, title: "Check-in B · The paragraph", thread: "Where Block B has taken you.",
+  intro: "Check-in после блока B (уроки C05–C08). Навыки абзаца: синтез из заметок, данные как доказательство, главная мысль, структура и цель текста, и в IELTS — поиск абзаца с нужной информацией. 11 вопросов, отвечай с первой попытки. Результат на странице «Прогресс» встанет рядом с твоей первой попыткой в уроках C05–C08 по тем же навыкам. Это не прогноз балла.",
+  parts: [
+    { type: "questions", id: "sat", label: "SAT · Reading and Writing", title: "Eight short texts",
+      ru: "Один вопрос на каждый текст. Выбери лучший вариант. Данные в вопросах 3–4 выдуманные.",
+      items: [
+        { kind: "mcq", chk: 2, skill: "RS",
+          text: "While researching a topic, a student has taken the following notes:\n• Gas street lamps were demonstrated on Pall Mall, London, in 1807.\n• Gas lighting soon spread to many other British towns.\n• Each gas lamp had to be lit by hand every evening.\n• Electric street lighting later replaced gas in most cities.",
+          stem: "The student wants to emphasize a drawback of gas street lamps. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Gas street lamps were demonstrated on Pall Mall, London, in 1807.", "After its demonstration in London, gas lighting soon spread to many other British towns.", "Unlike the electric lights that came later, each gas street lamp had to be lit by hand every evening.", "In most cities, electric street lighting later replaced gas."], key: 2,
+          ru: "Цель: drawback, то есть недостаток. Его показывает только C: каждый газовый фонарь приходилось каждый вечер зажигать вручную, в отличие от электрических. A и B — история распространения. D говорит о замене, но не называет недостаток газа." },
+        { kind: "mcq", chk: 2, skill: "RS",
+          text: "While researching a topic, a student has taken the following notes about Harbour Point, a fictional town:\n• In 2010, the town had 40 public benches.\n• In 2020, it had 65 public benches.\n• Most of the new benches were placed near the river.\n• A new park opened in 2015.",
+          stem: "The student wants to present the overall change in the number of public benches. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+          opts: ["Most of Harbour Point's new benches were placed near the river.", "A new park opened in Harbour Point in 2015.", "In 2010, Harbour Point had 40 public benches.", "The number of public benches in Harbour Point rose from 40 in 2010 to 65 in 2020."], key: 3,
+          ru: "Overall change требует начала и конца: 40 → 65, это D. A говорит, где стоят новые скамейки, а не сколько их стало. B не о скамейках. C даёт только одну цифру." },
+        { kind: "mcq", chk: 2, skill: "COEQ",
+          text: "A city counted the average number of people walking along three streets each evening before and after new street lights were installed (fictional data). Street A: 120 before, 240 after. Street B: 150 before, 160 after. Street C: 90 before, 170 after. A planner claims that the increase on Street A was larger than the increase on either of the other streets.",
+          stem: "Which choice most effectively uses the data to support the planner's claim?",
+          opts: ["Street B had the most walkers before the new lights were installed.", "The number of walkers on Street A rose by 120, compared with 10 on Street B and 80 on Street C.", "All three streets had more walkers after the new lights were installed.", "Street C had 170 walkers after the new lights were installed."], key: 1,
+          ru: "Утверждение сравнивает рост на A с ростом на двух других улицах. Нужны все три прироста: 240 − 120 = 120, 160 − 150 = 10, 170 − 90 = 80. Это B. C верно, но не сравнивает. A и D говорят об одной улице." },
+        { kind: "mcq", chk: 2, skill: "COEQ",
+          text: "Using the same fictional data (Street A: 120 before, 240 after; Street B: 150 before, 160 after; Street C: 90 before, 170 after), a student writes: “On Street C, the number of walkers ______”",
+          stem: "Which choice most accurately completes the statement?",
+          opts: ["nearly doubled.", "fell slightly.", "became the highest of the three streets.", "rose by 170."], key: 0,
+          ru: "90 → 170: почти вдвое (вдвое было бы 180), A. B: число выросло. C: после установки больше всех на A (240). D: 170 — это итог, а прирост 80." },
+        { kind: "mcq", chk: 2, skill: "CID",
+          text: "Before electric lighting, many cities employed lamplighters, who walked set routes at dusk to light each gas lamp and returned at dawn to put them out. The work was steady but repetitive. It largely disappeared during the twentieth century, as electric lamps that could be switched on from one central point spread through cities.",
+          stem: "Which choice best states the main idea of the text?",
+          opts: ["Lamplighters walked set routes at dusk.", "Lamplighters once did a daily job that largely vanished with electric lighting.", "Electric technology changed every kind of work in the twentieth century.", "Gas lamps were brighter than electric lamps."], key: 1,
+          ru: "Весь текст: что делали фонарщики и почему профессия почти исчезла. Это B. A — деталь первого предложения. C слишком широко: текст об одной профессии. D в тексте нет." },
+        { kind: "mcq", chk: 2, skill: "CID",
+          text: "Street lighting is usually discussed as a way of making streets safer at night. Yet it also changed how people spent their evenings. Shops could stay open after dark, and an evening walk through a lit street became an ordinary pastime in many cities.",
+          stem: "Which choice best states the main idea of the text?",
+          opts: ["Street lighting affected everyday evening life as well as safety.", "Street lighting made cities completely safe at night.", "Shops in many cities stayed open after dark.", "People in cities walked more than people in villages."], key: 0,
+          ru: "«Yet it also changed how people spent their evenings» — главная мысль, остальное её примеры. Это A. B преувеличивает: completely safe в тексте нет. C — пример, а не главная мысль. D в тексте нет." },
+        { kind: "mcq", chk: 2, skill: "TSP",
+          text: "Many writing guides tell authors to state their main point in the first sentence. This advice works well for news reports, whose readers may stop after a single paragraph. In a long argument, however, a writer may prefer to build towards the main point, so that readers have seen the evidence before they meet the claim.",
+          stem: "Which choice best describes the overall structure of the text?",
+          opts: ["It criticises news reports and then explains how they should be written.", "It describes a long argument and then summarises its evidence.", "It presents a common piece of advice, notes where it works, and then describes a case where another approach may be better.", "It lists several writing guides and compares their advice."], key: 2,
+          ru: "Карта: совет → где он работает → где лучше иначе (however). Это C. A: новости не критикуются, совет для них как раз подходит. B: конкретного аргумента нет. D: руководства не перечисляются и не сравниваются." },
+        { kind: "mcq", chk: 2, skill: "TSP",
+          text: "A council's report on street lighting begins with residents' complaints about dark roads. It then sets out the cost of three possible lighting schemes. Finally, it recommends the cheapest scheme that would still light every main road.",
+          stem: "Which choice best describes the function of the second sentence in the overall structure of the text?",
+          opts: ["It states the report's final recommendation.", "It describes the problem that the report sets out to solve.", "It explains why the residents complained.", "It provides information needed to compare the options before one is recommended."], key: 3,
+          ru: "Стоимость трёх схем — материал для сравнения, после него идёт выбор: D. A — третье предложение. B — первое предложение (жалобы). C: причина жалоб не объясняется." }
+      ] },
+    { type: "questions", id: "ielts", label: "IELTS-style · Reading", title: "Matching information",
+      ru: "Прочитай текст из трёх абзацев. Для каждой детали найди абзац, где она есть. Отвечай только по тексту.",
+      lettered: true,
+      passageTitle: "Lighting the Streets",
+      passage: [
+        "In 1807, gas lamps were demonstrated to the public on Pall Mall in London. Within a few decades, gas lighting had spread to many British towns, where it gradually replaced dimmer oil lamps.",
+        "Each gas lamp had to be lit and put out by hand. Towns therefore employed lamplighters, who walked the same routes at dusk and again at dawn, carrying long poles.",
+        "Electric lighting, which could be switched on from one central point, later replaced most gas lamps. Some cities, however, still keep a small number of gas lamps for their historical character."
+      ],
+      items: [
+        { group: { title: "Questions 1–3", task: "Which paragraph, A, B or C, contains the following information?", paras: 3,
+            ru: "Ищи не главную мысль абзаца, а место, где есть деталь, пересказанная другими словами." },
+          kind: "match", chk: 2, skill: "R-HEAD", stem: "lights being kept for reasons other than practical need", key: 2,
+          ru: "C: несколько газовых фонарей сохраняют «for their historical character» — не для освещения, а ради истории." },
+        { kind: "match", chk: 2, skill: "R-HEAD", stem: "a description of a routine repeated twice a day", key: 1,
+          ru: "B: фонарщики проходили одни и те же маршруты «at dusk and again at dawn» — в сумерках и на рассвете, то есть дважды в день." },
+        { kind: "match", chk: 2, skill: "R-HEAD", stem: "the location where people were introduced to a new way of lighting streets", key: 0,
+          ru: "A: «demonstrated to the public on Pall Mall in London». Ловушка C: электрическое освещение — тоже новый способ, но место, где его показали людям, не названо." }
       ] }
   ]
 };
