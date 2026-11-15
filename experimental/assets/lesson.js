@@ -100,6 +100,16 @@
 
   /* question block */
   var TF = [["T", "TRUE"], ["F", "FALSE"], ["NG", "NOT GIVEN"]];
+  /* a data table (part table, writing table, or a table-completion group) */
+  function tableBox(t) {
+    var tw = el("div", { class: "tw dtab", lang: "en" }), tb = el("table");
+    tb.appendChild(el("caption", { text: t.caption }));
+    tb.appendChild(el("thead", {}, [el("tr", {}, t.head.map(function (h) { return el("th", { scope: "col", text: h }); }))]));
+    var tbd = el("tbody");
+    t.rows.forEach(function (r) { tbd.appendChild(el("tr", {}, r.map(function (c, i) { return el(i ? "td" : "th", i ? { text: c } : { scope: "row", text: c }); }))); });
+    tb.appendChild(tbd); tw.appendChild(tb); return tw;
+  }
+
   function qBlock(p, n) {
     var sec = el("section", { class: "part", id: p.id }, [
       el("span", { class: "label", text: "Part 0" + n + " · " + p.label }),
@@ -111,14 +121,7 @@
       sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Правило" }), ul]));
     }
     if (p.audio) sec.appendChild(audioCard(p));
-    if (p.table) {
-      var tw = el("div", { class: "tw dtab", lang: "en" }), tb = el("table");
-      tb.appendChild(el("caption", { text: p.table.caption }));
-      tb.appendChild(el("thead", {}, [el("tr", {}, p.table.head.map(function (h) { return el("th", { scope: "col", text: h }); }))]));
-      var tbd = el("tbody");
-      p.table.rows.forEach(function (r) { tbd.appendChild(el("tr", {}, r.map(function (c, i) { return el(i ? "td" : "th", i ? { text: c } : { scope: "row", text: c }); }))); });
-      tb.appendChild(tbd); tw.appendChild(tb); sec.appendChild(tw);
-    }
+    if (p.table) sec.appendChild(tableBox(p.table));
     if (p.passage) {
       var pas = el("div", { class: "passage", lang: "en" }, [el("h3", { text: p.passageTitle || "Text" })]);
       if (p.glossary) { var gl = el("p", { class: "gloss small" }); p.glossary.forEach(function (g, k) { gl.appendChild(el("span", {}, [el("b", { text: "*" + g[0] }), " " + g[1] + (k < p.glossary.length - 1 ? "   " : "")])); }); }
@@ -142,6 +145,7 @@
           heads.forEach(function (h, k) { hl.appendChild(el("li", {}, [el("b", { text: heads.letters ? "ABCDEFGHIJ"[k] : ROM[k] }), " " + h])); });
           g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: q.group.listTitle || "List of headings" }), hl]));
         }
+        if (q.group.table) g.appendChild(tableBox(q.group.table));
         sec.appendChild(g);
       }
       if (q.kind === "gap") { sec.appendChild(gapBox(p, q, qid, i)); return; }
@@ -325,6 +329,7 @@
       cb.addEventListener("change", function () { state.checks[i] = cb.checked; save(); });
       chk.appendChild(el("label", {}, [cb, el("span", { text: c })]));
     });
+    if (p.table) sec.appendChild(tableBox(p.table));
     sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Task" }), ul, ta, el("div", { class: "row", style: "margin-top:10px" }, [show, count]),
       el("p", { class: "small", style: "margin-top:14px", text: "Проверь себя до образца:" }), chk, model]));
     upd();
