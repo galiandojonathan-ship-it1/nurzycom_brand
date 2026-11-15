@@ -140,6 +140,7 @@
         var g = el("div", { class: "qgroup", lang: "en" }, [el("h3", { text: q.group.title }), q.group.task ? el("p", { class: "task", text: q.group.task }) : null,
           q.group.ru ? el("p", { class: "ru small", lang: "ru", text: q.group.ru }) : null]);
         if (q.group.paras) heads = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.paras);
+        if (q.group.places) { heads = ["A","B","C","D","E","F","G","H","I","J"].slice(0, q.group.places); heads.plan = true; }
         if (q.group.headings) {
           heads = q.group.headings.slice(); if (q.group.labels === "letters") heads.letters = true;
           var hl = el("ol", { class: "heads" });
@@ -147,6 +148,8 @@
           g.appendChild(el("div", { class: "headbox" }, [el("span", { class: "label", text: q.group.listTitle || "List of headings" }), hl]));
         }
         if (q.group.table) g.appendChild(tableBox(q.group.table));
+        if (q.group.plan) { var fig = el("figure", { class: "plan" }); fig.innerHTML = q.group.plan; /* trusted static SVG from data.js */
+          if (q.group.planCaption) fig.appendChild(el("figcaption", { class: "small", text: q.group.planCaption })); g.appendChild(fig); }
         if (q.group.flow) {
           var fl = el("ol", { class: "flow" });
           q.group.flow.forEach(function (t) { fl.appendChild(el("li", { text: t })); });
@@ -161,7 +164,7 @@
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: q.yn ? YN[t[0]] : t[1] }; })
-        : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h), lab = letters ? h : heads.letters ? "ABCDEFGHIJ"[k] : ROM[k]; return { val: k, label: lab, aria: letters ? "Paragraph " + h : lab + ": " + h }; })
+        : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h), lab = letters ? h : heads.letters ? "ABCDEFGHIJ"[k] : ROM[k]; return { val: k, label: lab, aria: letters ? (heads.plan ? "Place " : "Paragraph ") + h : lab + ": " + h }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
       if (q.kind === "match") opts.className = "opts rom";
       var btns = [];
@@ -245,9 +248,17 @@
       synth.cancel();
       status.textContent = "Идёт запись: " + p.audio.length + " предложений.";
       play.textContent = "↻ Слушать сначала";
+      var names = p.voices ? Object.keys(p.voices) : [], pool = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
       p.audio.forEach(function (s, i) {
-        var u = new SpeechSynthesisUtterance(s);
+        /* "Name: text" lines get that speaker's settings (p.voices); the label itself is not read */
+        var m = p.voices && /^([A-Z][A-Za-z]+): ([\s\S]*)$/.exec(s), vo = m && p.voices[m[1]];
+        var u = new SpeechSynthesisUtterance(vo ? m[2] : s);
         u.lang = "en-GB"; u.rate = 0.92;
+        if (vo) {
+          if (vo.lang) u.lang = vo.lang; if (vo.pitch) u.pitch = vo.pitch; if (vo.rate) u.rate = vo.rate;
+          var same = pool.filter(function (v) { return v.lang.replace("_", "-") === u.lang; }), list = same.length > 1 ? same : pool;
+          if (list.length) u.voice = list[names.indexOf(m[1]) % list.length];
+        }
         if (i === p.audio.length - 1) u.onend = function () { if (mine === run) status.textContent = "Запись закончилась."; };
         u.onerror = function (e) { if (mine === run && e.error !== "canceled" && e.error !== "interrupted") status.textContent = "Браузер не смог прочитать запись. Открой текст записи ниже."; };
         synth.speak(u);

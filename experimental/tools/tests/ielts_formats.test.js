@@ -57,6 +57,18 @@ const base = 'http://127.0.0.1:8791/course/';
     if (!(await yq.locator('.opt.wrong').count())) bad('C07 YNNG strike');
     const lab = await p.evaluate(() => { const q = window.LESSONS.C07.parts.find(x => x.id === 'ielts').items[0]; return window.NZ.label(q, 'T') + '/' + window.NZ.keyLabel(q); });
     if (lab !== 'YES/NO') bad('C07 label() ' + lab);
+    // C12 listening: form (group table), plan labelling (places + SVG), speaker labels not read aloud
+    await p.addInitScript(() => { window.__said = []; window.speechSynthesis.speak = u => window.__said.push(u.text + '|' + u.pitch); window.speechSynthesis.getVoices = () => []; });
+    await p.goto(base + 'lesson.html?id=C12'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
+    if (await p.locator('#listen .plan svg').count() !== 1) bad('C12 plan svg');
+    if (await p.locator('#listen .qgroup .dtab tbody tr').count() !== 5) bad('C12 form table');
+    const pq = p.locator('#listen .q').nth(4); if (await pq.locator('.opt').count() !== 8) bad('C12 plan options');
+    const lab12 = await p.evaluate(() => { const it = window.LESSONS.C12.parts[0].items; return window.NZ.keyLabel(it[4], window.NZ.items('C12')[4].heads); });
+    if (lab12 !== 'Place A') bad('C12 label ' + lab12);
+    await p.locator('#listen button', { hasText: 'Слушать' }).first().click();
+    const said = await p.evaluate(() => window.__said);
+    if (!said.length || said.some(x => /^(Narrator|Assistant|Tom|Dana): /.test(x))) bad('C12 speaker labels read aloud ' + said.slice(0, 2));
+    if (new Set(said.map(x => x.split('|')[1])).size < 3) bad('C12 voices not varied');
     const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C05');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }

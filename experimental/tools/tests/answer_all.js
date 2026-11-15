@@ -4,7 +4,7 @@ module.exports.answerAll = async (p, wrongIdx = []) => {
   const plan = await p.evaluate(() => {
     const L = window.LESSONS[(new URLSearchParams(location.search).get('id') || (window.__ROUTE || '').split(':')[1] || '').toUpperCase()];
     const out = []; L.parts.forEach(pt => { if (pt.type !== 'questions') return; let heads = null;
-      pt.items.forEach(q => { if (q.group && q.group.headings) { heads = q.group.headings.slice(); heads.letters = q.group.labels === 'letters'; } if (q.group && q.group.paras) heads = 'ABCDEFGHIJ'.slice(0, q.group.paras).split('');
+      pt.items.forEach(q => { if (q.group && q.group.headings) { heads = q.group.headings.slice(); heads.letters = q.group.labels === 'letters'; } if (q.group && q.group.paras) heads = 'ABCDEFGHIJ'.slice(0, q.group.paras).split(''); if (q.group && q.group.places) heads = 'ABCDEFGHIJ'.slice(0, q.group.places).split('');
         if (q.kind === 'gap') out.push({ gap: q.accept[0], bad: 'zzz' });
         else if (q.kind === 'match') { const lab = k => window.NZ.isLetters(heads) ? heads[k] : heads.letters ? 'ABCDEFGHIJ'[k] : window.NZ.ROMAN[k]; out.push({ label: lab(q.key), badLabel: lab((q.key + 1) % heads.length) }); }
         else if (q.kind === 'tfng') { const L = q.yn ? { T: 'YES', F: 'NO', NG: 'NOT GIVEN' } : { T: 'TRUE', F: 'FALSE', NG: 'NOT GIVEN' }; out.push({ label: L[q.key], badLabel: L[q.key === 'T' ? 'F' : 'T'] }); }

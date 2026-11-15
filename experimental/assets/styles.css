@@ -431,3 +431,8 @@ section.fold, .part.fold { padding-top: 28px; padding-bottom: 28px; }
 .flow { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 22px; font-size: 15.5px; }
 .flow li { position: relative; border: 1px solid var(--stone); border-radius: 10px; padding: 10px 14px; background: var(--paper, #fff); }
 .flow li + li::before { content: "↓"; position: absolute; top: -21px; left: 50%; transform: translateX(-50%); font: 400 15px/1 var(--mono); color: var(--text2); }
+
+/* plan / map labelling */
+.plan { margin: 12px 0 4px; background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 1px 2px rgba(15,15,15,.05); }
+.plan svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; color: var(--ink, #0A0A0A); }
+.plan figcaption { margin-top: 6px; }
