@@ -50,6 +50,13 @@ const base = 'http://127.0.0.1:8791/course/';
     await p.locator('#ielts .qgroup').nth(1).screenshot({ path: require('path').join(SHOTS, 'c06_flow_phone.png') });
     await p.goto(base + 'lesson.html?id=C05'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
     if (await p.locator('#write .dtab tbody tr').count() !== 4) bad('C05 writing table');
+    await p.goto(base + 'lesson.html?id=C07'); await p.evaluate(() => { localStorage.removeItem('nz_exp_C07'); }); await p.reload(); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
+    const yq = p.locator('#ielts .q').first(); const yl = (await yq.locator('.opt').allTextContents()).map(t => t.trim()).join('|');
+    if (yl !== 'YES|NO|NOT GIVEN') bad('C07 Yes/No/Not Given labels ' + yl);
+    await yq.locator('.opt', { hasText: /^\s*YES\s*$/ }).click();                                  // wrong (key NO)
+    if (!(await yq.locator('.opt.wrong').count())) bad('C07 YNNG strike');
+    const lab = await p.evaluate(() => { const q = window.LESSONS.C07.parts.find(x => x.id === 'ielts').items[0]; return window.NZ.label(q, 'T') + '/' + window.NZ.keyLabel(q); });
+    if (lab !== 'YES/NO') bad('C07 label() ' + lab);
     const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C05');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }

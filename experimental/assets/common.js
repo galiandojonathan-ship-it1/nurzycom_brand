@@ -58,7 +58,7 @@
   /* human label of an answer value, for review lists */
   function label(q, v, heads) {
     if (v === undefined || v === null) return "—";
-    if (q.kind === "tfng") return { T: "TRUE", F: "FALSE", NG: "NOT GIVEN" }[v];
+    if (q.kind === "tfng") return (q.yn ? { T: "YES", F: "NO", NG: "NOT GIVEN" } : { T: "TRUE", F: "FALSE", NG: "NOT GIVEN" })[v];
     if (q.kind === "gap") return String(v);
     if (q.kind === "match") return isLetters(heads) ? "Paragraph " + heads[v] : (heads && heads.letters ? "ABCDEFGHIJ"[v] : ROMAN[v]) + (heads && heads[v] ? " · " + heads[v] : "");
     return "ABCD"[v] + ") " + q.opts[v];

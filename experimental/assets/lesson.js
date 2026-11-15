@@ -100,6 +100,7 @@
 
   /* question block */
   var TF = [["T", "TRUE"], ["F", "FALSE"], ["NG", "NOT GIVEN"]];
+  var YN = { T: "YES", F: "NO", NG: "NOT GIVEN" }; /* writer's views: q.yn = true, keys stay T / F / NG */
   /* a data table (part table, writing table, or a table-completion group) */
   function tableBox(t) {
     var tw = el("div", { class: "tw dtab", lang: "en" }), tb = el("table");
@@ -159,7 +160,7 @@
       box.appendChild(el("p", { class: "stem", text: q.stem }));
       var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : ""), role: "group", "aria-label": "Answer choices" });
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
-      var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: t[1] }; })
+      var list = q.kind === "tfng" ? TF.map(function (t) { return { val: t[0], label: q.yn ? YN[t[0]] : t[1] }; })
         : q.kind === "match" ? heads.map(function (h, k) { var letters = /^[A-J]$/.test(h), lab = letters ? h : heads.letters ? "ABCDEFGHIJ"[k] : ROM[k]; return { val: k, label: lab, aria: letters ? "Paragraph " + h : lab + ": " + h }; })
         : q.opts.map(function (o, k) { return { val: k, label: o, letter: "ABCD"[k] }; });
       if (q.kind === "match") opts.className = "opts rom";
