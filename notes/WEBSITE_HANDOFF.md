@@ -134,7 +134,7 @@ Tests to run by area:
 
 1. Run `bump_version.py`, run the tests, then commit.
 2. `git push -u origin main`, then fast-forward `claude/ecstatic-mayer-3asg7r`.
-3. Cloudflare deploys in about 1–2 minutes. Check that https://study.bynurzy.com/index.html contains the new `?v=` tag
+3. Cloudflare deploys in about 1–2 minutes. Check that https://study.bynurzy.com/ contains the new `?v=` tag (`/index.html` answers with a 308 redirect, so use `curl -sL`)
    (`curl -s … | grep -o 'app.js?v=[0-9]*'`), then open the changed page in Playwright on the live site.
 
 ## 8. Pitfalls already met
