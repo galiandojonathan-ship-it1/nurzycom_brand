@@ -1,0 +1,166 @@
+# Website handoff: how to change the course site in a new chat (2026-11-16)
+
+For a new Claude session that has to change the course site. Read `CLAUDE.md` first: it is the single source of truth for the
+business, the hard rules, the brand and the full feature history of every page. This file adds the practical how-to.
+
+This file is public, like the whole repository. Never write passwords, the master key, the class code or question text into it.
+
+## 1. First five minutes
+
+1. `git status --short --branch`. Work on `main`. It is the only working branch, and every push to `main` goes live.
+2. Ask Nurassyl for the password of Claude's own course login `claude` only if the task touches encrypted data (questions,
+   vocabulary, tests) or needs a local copy with real data. Never write the password anywhere in the repository.
+3. If OMC is missing and you want it: `npm i -g oh-my-claude-sisyphus@latest && omc setup --no-plugin` (optional).
+4. Students use the site daily. Small, tested changes; never push untested JavaScript.
+
+## 2. What lives where
+
+| Thing | Where |
+|---|---|
+| Live course site | `docs/` → https://study.bynurzy.com (Cloudflare Pages project `bynurzy-study`, branch `main`, output `docs`, no build step) |
+| Server API | `functions/api/[[route]].js` (Cloudflare Pages Function), KV namespace bound as `USERS`; `functions/_middleware.js` redirects `*.pages.dev` |
+| Marketing site (not live yet) | `site/` (EN `site/index.html`, RU `site/ru/index.html`), meant for https://bynurzy.com |
+| Hosting notes | `deploy/README.md`, `deploy/bump_version.py`, `deploy/set_domain.py` |
+| Test kit | `tools/sitetests/` (Playwright scripts, local stand-ins) |
+| Key and data tools | `tools/private/` (`getkey.js`, `datafile.mjs`, `pack.mjs`, `unpack.mjs`) |
+| Private sources | `notes/private/*.bin`: encrypted bundles of deck sources and the SAT pattern study (open with `unpack.mjs`) |
+
+### Pages and their scripts (all in `docs/`)
+
+| Page | Scripts | What it is |
+|---|---|---|
+| `index.html` (body `hw-page`) | `app.js`, `today.js`, `planlogic.js`, `solve.js`, `gloss.js`, `tools.js` | Homework start page: «Сегодня» panel, lesson tiles, workbook parts solved on screen |
+| `plan.html` | `plan.js`, `planlogic.js` | Course plan (Verbal, Math, both) |
+| `vocab.html` | `vocab.js` | Flashcards, typed test, list |
+| `reading.html` | `reading.js` | 12 short stories with word glosses |
+| `practice.html` | `practice.js` | Hard sets X01–X07 |
+| `mock.html` | `mock.js`, `scale.js`, `gloss.js`, `tools.js` | Practice tests PT1–PT19 and Прогнозы PR1–PR3 |
+| `useful.html` + `archaic.html`, `desmos.html`, `circle.html`, `mytest.html` | `archaic.js`, `desmos.js`, `circle.js`, `mytest.js`, `ctlogic.js` | «Полезное» (07.n pages) |
+| `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
+| `cabinet.html` | `cabinet.js`, `cted.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты» |
+| every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
+
+## 3. Data and encryption
+
+- All private content is encrypted with one AES-GCM **master key** that is never in the repository. `docs/access.json` holds the key wrapped with
+  passwords (old shared password, per-student logins); KV `u:<id>` holds self-registered accounts.
+- File format, used by `docs/data/*.bin` and `docs/q/**/*.bin`: 12-byte IV followed by the ciphertext of UTF-8 JSON.
+- Getting the key (needs the `claude` password from Nurassyl):
+  `L=claude P=<password> OUT=<scratchpad>/master_key.b64 node tools/private/getkey.js`. Keep it in the scratchpad only.
+- Opening and sealing one file:
+  `node tools/private/datafile.mjs open <key.b64> docs/data/vocab.bin <scratchpad>/vocab.json`
+  `node tools/private/datafile.mjs seal <key.b64> <scratchpad>/vocab.json docs/data/vocab.bin`
+  Opened JSON stays in the scratchpad. Sealing writes a new IV, so the `.bin` always changes.
+- Data files:
+  - `lessons.bin`: 39 lessons; each has `tag`, `title`, `tip`, `salt`, `parts[]` (`id`, `title`, `mode`, `b` = bundle path in `q/`,
+    `q[]` with `h` = salted answer hashes, so keys are not readable even after decryption);
+  - `vocab.bin`: word decks;
+  - `reading.bin`, `practice.bin`;
+  - `mocks.bin`: tests, `sections`, `rev`, `group`, the `skills` map;
+  - `mockgloss.bin`: test glossary (see `tools/mockgloss/README.md`);
+  - `desmos.bin`, `circle.bin`, `archaic.bin`.
+- `docs/q/<TAG>/<hash>.bin`: per-part question bundles (question HTML, options, official explanations).
+- **The build folder is gone.** It held the question sources, selections and the College Board cache, and it lived in an earlier
+  session's workspace. Small edits are fine with `datafile.mjs`. To rebuild from the bank, re-fetch it, read-only, no login:
+  - list: `POST https://qbank-api.collegeboard.org/msreportingquestionbank-prod/questionbank/digital/get-questions` with
+    `{"asmtEventId":99,"test":1,"domain":"INI,CAS,EOI,SEC"}` (RW; Math domains `H,P,Q,S`, test 2);
+  - one question: `.../get-question` with `{"external_id":"…"}`.
+
+  College Board text goes only inside encrypted bundles, never as plain files in the repository.
+- Never commit the master key, the class code, opened JSON or a local copy of `docs/` made with real data.
+
+## 4. Server API (functions/api/[[route]].js)
+
+Routes:
+- `GET user`, `POST invite`, `POST register`;
+- `GET/PUT progress` (a student's synced results, owner only);
+- `GET custom`;
+- `POST admin/claim`;
+- `admin/*` routes need the `X-Admin-Key` header, which lives only in the teacher's browser (`admin_key`): `users`, `user` (PUT, DELETE), `progress`, `form`, `groups`, `custom`, `invite`.
+
+The server never sees passwords or the master key: everything is encrypted in the browser.
+
+KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
+
+## 5. Rules for every change
+
+- **After any change to `docs/*.js` or `docs/site.css`, run `python3 deploy/bump_version.py`.** It writes new `?v=` tags. Cloudflare keeps scripts for 4 hours, and
+  a new page with an old script has broken the teacher page before.
+- **CSP** (`docs/_headers`): no inline scripts, and no scripts from other hosts. The `404.html` inline script is allowed by its hash; update the
+  hash if it changes. Allowed: Google Fonts styles and fonts, the Desmos frame, Google Forms and Sheets, the GitHub API, the Cloudflare beacon.
+- **New extra pages go under «Полезное»:** a card on `useful.html`, the next «07.n —» number, a «← Полезное» link. Never add a new top-nav item.
+- **Language:** student-facing text is Russian. SAT questions, terms and slides are in English. Give Nurassyl click-steps with the English button names.
+- **Brand:**
+  - colours: Ink #0F0F0F, Paper #F5F3EE, Mist #ECE9E2, Stone #D9D5CD, one accent Oxide #A63328 (sparingly);
+  - font: Geist everywhere; the homework start page also uses Sofia Sans Condensed 600 (`body.hw-page`, `--disp`); IBM Plex Mono only for the login animation;
+  - layout: no photos; blocks are white rounded cards;
+  - teacher pages may use the six group colours.
+- **Hard rules** (CLAUDE.md): no invented results, scores or reviews; practice-test scores are always «примерный балл»; consent before any name; no guarantees.
+- **Commits:** a short summary line, then what changed and why. No model names. End with the attribution lines the session gives.
+- **After pushing to `main`**, also update the old GitHub Pages branch: `git push origin origin/main:refs/heads/claude/ecstatic-mayer-3asg7r`.
+- **Codex** works on `codex/<task>` branches and opens pull requests (see `AGENTS.md`); Claude reviews and merges them.
+
+## 6. Testing locally (do this before every push)
+
+Playwright and Chromium are preinstalled; never run `playwright install`. The tests write screenshots next to themselves, so run
+them from the scratchpad:
+
+```bash
+S=<scratchpad>; mkdir -p $S/loop && cp tools/sitetests/* $S/loop/ && cd $S/loop
+node mkreal.mjs /home/user/nurzycom_brand/docs $S/loop/real $S/master_key.b64   # real data, local password fixture-pw, login loop-test
+(nohup python3 -m http.server 8767 -d $S/loop/real >/dev/null 2>&1 &)           # static copy for most tests
+(nohup node pages_dev.mjs $S/loop/real 8768 > $S/loop/pd.log 2>&1 &)            # stand-in with the real API and an in-memory KV
+```
+
+Without the key, `mkfx.mjs` builds a fixture copy with fake data. Rebuild the copy after every change, because it is a copy, not a link.
+
+Tests to run by area:
+
+| Area | Tests |
+|---|---|
+| Start page | `t_today.js`, `t_ux14.js`, `t_flows.js` |
+| Mock tests | `t_mock.js`, `t_timer.js`, `t_pred2.js` |
+| Cabinet | `t_cabinet.js`, `t_deltask.js`, `t_taskearly.js` (seed with `cbseed.js` on 8768) |
+| Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
+| «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
+| Login | `t_auth.js` |
+| General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
+
+- If a test needs the local login, set `localStorage` `site_pw=fixture-pw`, `site_login=loop-test`.
+- Use `waitUntil: "load"` plus a short wait: `networkidle` hangs on the stand-in.
+- Check phone width too (`devices["iPhone 13"]`, 320 px for tight layouts).
+
+## 7. Shipping and checking live
+
+1. Run `bump_version.py`, run the tests, then commit.
+2. `git push -u origin main`, then fast-forward `claude/ecstatic-mayer-3asg7r`.
+3. Cloudflare deploys in about 1–2 minutes. Check that https://study.bynurzy.com/index.html contains the new `?v=` tag
+   (`curl -s … | grep -o 'app.js?v=[0-9]*'`), then open the changed page in Playwright on the live site.
+
+## 8. Pitfalls already met
+
+- **Script cache:** a new page with an old cached script broke the teacher page → always bump versions.
+- **CSS names:** a `@keyframes blink` name clashed with one in `mock.html`; use unique names (for example `caret-blink`).
+- **Google Fonts:** fonts must have Cyrillic. Check with a modern Chrome user agent:
+  `curl -s "https://fonts.googleapis.com/css2?family=X" -A "Mozilla/5.0 … Chrome/124" | grep -c cyrillic`.
+- **Dates:** Google Form CSV dates can be dd/mm or mm/dd; `formkit.js` detects them per file.
+- **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
+- **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
+- **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+
+## 9. Still open (waiting on Nurassyl)
+
+- Switch off the old shared password, then make the repository private: old `access.json` copies in git history hold the master key
+  wrapped with the old class code.
+- The marketing site `site/` is not connected to bynurzy.com yet (`deploy/README.md`).
+
+## 10. Not the website, but in progress (2026-11-15/16)
+
+Lesson presentations are being rebuilt. Samples were sent to Nurassyl, who is still giving feedback; the rest waits for his approval:
+- **Boundaries** (V02 v4): one question per slide; 10 recall words; 20 lesson words by category; 4 cold start questions; for each of 8 rules
+  «угадайте» → the rule shown with arrows on the same example → a College Board question → its solution; then 3:1 (three options cannot join
+  two sentences, one can: the answer; 47 of 54 bank questions) and 2:2 (twins «.» and «;» are both wrong, 25 of 28); then back to the cold start.
+- **Advanced Math IV** (M06): 3 types instead of 4, one dense slide per type, one question per slide, one exact Desmos line where Desmos solves it.
+
+Sources: `notes/private/verbal-decks-2026-11.bin`, folders `wip-2026-11-16/` (`v02e.py`, `m06d.py`, the updated `deckgen.py` and `render.cjs`),
+plus the earlier `answers/` and deck sources. The teacher answer sheets cite slide numbers, so rebuild them after any deck change.

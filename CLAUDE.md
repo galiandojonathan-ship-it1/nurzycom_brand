@@ -97,6 +97,7 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Files in this project
 
+- **`notes/WEBSITE_HANDOFF.md` (read before changing the website in a new chat, 2026-11-16):** where every page, script, data file and API route lives; how to get the master key and open or seal one encrypted data file (`tools/private/datafile.mjs`); the rules for every change (bump_version, CSP, «Полезное», brand, commits, the old Pages branch); local testing with real data; shipping and checking live; pitfalls; the presentations work in progress.
 - **`notes/HANDOFF.md` (start here in a new chat):** the state of the course work as of 2026-11-09: the SAT pattern study and how to open it, what was built, what waits on Nurassyl, the hourly loop text (it does not carry over to a new chat by itself), and the test kit `tools/sitetests/`. Private working files (the pattern study `SAT_patterns.md` / `GEM_patterns.md`, the Прогноз 1 sources) are in `notes/private/sat-patterns-and-predictions.bin`, encrypted with the course master key; open it with `tools/private/getkey.js` (Claude's course login) and `tools/private/unpack.mjs`. The raw real-test question files are kept out of the repo entirely.
 
 - `design/`: source of the design canvas made in Claude (format: Claude Design `.dc.html` components; mostly plain HTML with inline styles inside `<x-dc>` tags).
