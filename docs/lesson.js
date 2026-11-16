@@ -59,7 +59,8 @@
 .ls-bar .ls-dot{width:9px;height:9px;border-radius:50%;background:#A63328;flex:none}
 .ls-bar .ls-vote{display:flex;align-items:center;gap:4px;padding-left:4px;color:rgba(245,243,238,.7)}
 .ls-bar .ls-vote button{width:32px;padding:8px 0}
-.ls-bar .ls-vote button[aria-pressed="true"]{background:#A63328;border-color:#A63328;color:#fff}
+.ls-bar .ls-vote button[aria-pressed="true"],.ls-bar button[data-a="word"][aria-pressed="true"]{background:#A63328;border-color:#A63328;color:#fff}
+html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .ls-bar,html.ls-pick .ls-bar *{cursor:pointer !important}
 .ls-bar.ls-min > :not(.ls-st):not(.ls-tg){display:none}
 .ls-bar.ls-min{flex-wrap:nowrap}
 .ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:16px;padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
@@ -96,12 +97,13 @@
   }
 
   function draw() {
-    if (bar) bar.remove(); closePop();
+    if (bar) bar.remove(); closePop(); picking = false; document.documentElement.classList.remove("ls-pick");
     if (!S) {
       bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
     } else {
       bar = el(`<div class="ls-bar${(LS.getItem("ls_min") || (window.innerWidth < 700 ? "1" : "0")) === "1" ? " ls-min" : ""}" role="region" aria-label="Режим урока">
         <span class="ls-st"><i class="ls-dot"></i><span class="ls-n"></span></span>
+        <button type="button" data-a="word" aria-pressed="false">Слово</button>
         <button type="button" data-a="flag">Трудный вопрос</button>
         <button type="button" data-a="note">Сработало</button>
         <span class="ls-vote" role="group" aria-label="Класс выбрал">Класс выбрал ${["A", "B", "C", "D"].map((c) => `<button type="button" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</span>
@@ -111,7 +113,7 @@
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.c) return vote(b.dataset.c);
-      ({ start: askStart, flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+      ({ start: askStart, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
     document.body.appendChild(bar); if (S) { count(); voteSync(); } place();
   }
@@ -126,7 +128,7 @@
       <label for="ls-g">Группа или ученик</label><input type="text" id="ls-g" list="ls-gl" maxlength="40" autocomplete="off" value="${esc(groups[0] || "")}"><datalist id="ls-gl">${groups.map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
       <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="ls-c" checked> Очистить прошлые ответы этого аккаунта</label>
       <div class="ls-row"><button type="button" class="ls-go">Начать</button><button type="button" data-x>Отмена</button></div>
-      <small>Раздел урока определится сам, когда вы откроете часть урока, тест или текст. Выделите слово в тексте, чтобы сохранить его. Кнопки внизу отмечают трудный вопрос, удачное объяснение и вариант, который выбрал класс.</small>`);
+      <small>Раздел урока определится сам, когда вы откроете часть урока, тест или текст. Чтобы сохранить слово, выделите его в тексте или нажмите «Слово» и затем само слово (так работает и в вариантах ответа). Кнопки внизу отмечают трудный вопрос, удачное объяснение и вариант, который выбрал класс.</small>`);
     p.querySelector("[data-x]").onclick = closePop;
     const go = () => {
       const g = p.querySelector("#ls-g").value.trim(), l = "";
@@ -180,6 +182,47 @@
     while (z < text.length && !/[.!?]/.test(text[z]) && z - i < 160) z++;
     return text.slice(a, Math.min(text.length, z + 1)).trim();
   }
+  function saveWord(w, node, host) {
+    const part = host.closest(".opt,.ch,#sv-opts,#opts") ? "option" : host.closest("#passage,#sv-passage,.passage") ? "passage" : "question";
+    log({ k: "word", w, ctx: sentence(node, w), part }); toast(`Слово сохранено: ${w}`, S.ev[S.ev.length - 1]);
+  }
+  // «Слово» on the bar: the next click on any word saves it. Answer options are buttons, and a browser does not let
+  // text inside a button be selected, so selecting cannot work there; this click never chooses the option.
+  let picking = false;
+  function pick(on) {
+    picking = !!on && !!S; document.documentElement.classList.toggle("ls-pick", picking);
+    const b = bar && bar.querySelector('[data-a="word"]'); if (b) b.setAttribute("aria-pressed", String(picking));
+    if (picking) toast("Нажмите на слово в тексте или в варианте ответа.");
+  }
+  const LETTER = /[\p{L}\p{N}'’-]/u;
+  function wordAt(x, y, root) {
+    let node = null, off = 0;
+    if (document.caretPositionFromPoint) { const c = document.caretPositionFromPoint(x, y); if (c) { node = c.offsetNode; off = c.offset; } }
+    else if (document.caretRangeFromPoint) { const c = document.caretRangeFromPoint(x, y); if (c) { node = c.startContainer; off = c.startOffset; } }
+    if (node && node.nodeType === 3) {
+      const s = node.data; let a = off, z = off;
+      while (a > 0 && LETTER.test(s[a - 1])) a--; while (z < s.length && LETTER.test(s[z])) z++;
+      const w = s.slice(a, z).replace(/^['’-]+|['’-]+$/g, ""); if (w.length >= 2) return { w, node };
+    }
+    // inside a button the caret lookup can miss: find the word whose box is under the pointer
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), rg = document.createRange(); let n;
+    while ((n = tw.nextNode())) {
+      const re = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu; let m;
+      while ((m = re.exec(n.data))) {
+        rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+        for (const b of rg.getClientRects()) if (x >= b.left - 1 && x <= b.right + 1 && y >= b.top - 1 && y <= b.bottom + 1) { const w = m[0].replace(/['’-]+$/, ""); return w.length >= 2 ? { w, node: n } : null; }
+      }
+    }
+    return null;
+  }
+  document.addEventListener("click", (e) => {
+    if (!picking || !S || e.target.closest(".ls-bar,.ls-pop,.ls-toast")) return;
+    e.preventDefault(); e.stopPropagation();   // the option is not chosen and a glossary card does not open
+    const box = e.target.closest(".opt,.ch,p,li,td,.qhtml,.stem,.passage") || e.target, hit = wordAt(e.clientX, e.clientY, box);
+    if (!hit) { toast("Здесь нет слова. Нажмите прямо на слово."); return; }
+    saveWord(hit.w, hit.node, e.target); pick(false);
+  }, true);
+  document.addEventListener("keydown", (e) => { if (picking && e.key === "Escape") { pick(false); e.preventDefault(); } });
   function hideWord() { if (wordBtn) { wordBtn.remove(); wordBtn = null; } }
   function onSelect() {
     hideWord(); if (!S) return;
@@ -192,10 +235,7 @@
     wordBtn.style.left = Math.max(8, Math.min(window.innerWidth - 110, box.left + box.width / 2 - 45)) + "px";
     wordBtn.style.top = (box.top > 56 ? box.top - 44 : box.bottom + 8) + "px";
     wordBtn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the selection
-    wordBtn.onclick = () => {
-      const part = host.closest(".opt,.ch,#sv-opts,#opts") ? "option" : host.closest("#passage,#sv-stim,.passage") ? "passage" : "question";
-      log({ k: "word", w, ctx: sentence(r.startContainer, w), part }); hideWord(); sel.removeAllRanges(); toast(`Слово сохранено: ${w}`, S.ev[S.ev.length - 1]);
-    };
+    wordBtn.onclick = () => { saveWord(w, r.startContainer, host); hideWord(); sel.removeAllRanges(); };
     document.body.appendChild(wordBtn);
   }
   let selT = 0;

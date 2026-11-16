@@ -41,6 +41,12 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   ok((await pg.getAttribute('.ls-vote [data-c="C"]', "aria-pressed")) === "true", "vote shows the last choice");
   await pg.click('.ls-vote [data-c="A"]'); await pg.click(".ls-toast button");   // undo the last vote
   ok((await pg.getAttribute('.ls-vote [data-c="C"]', "aria-pressed")) === "true", "undo removes only the last mark");
+  // a word inside an answer option: «Слово» on the bar, then a click on the word; the option is not chosen
+  await pg.click('.ls-bar [data-a="word"]'); ok((await pg.getAttribute('.ls-bar [data-a="word"]', "aria-pressed")) === "true", "«Слово» switches the pick mode on");
+  const optWord = await pg.evaluate(() => { const tx = document.querySelector("#opts .opt:nth-child(3) .tx"); tx.scrollIntoView({ block: "center" }); const w = document.createTreeWalker(tx, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { const m = /[A-Za-z]{3,}/.exec(n.data); if (m) { const r = document.createRange(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length); const b = r.getBoundingClientRect(); return { w: m[0], x: b.left + b.width / 2, y: b.top + b.height / 2 }; } } });
+  await pg.mouse.click(optWord.x, optWord.y); await pg.waitForTimeout(200);
+  ok(new RegExp("Слово сохранено: " + optWord.w).test(await pg.textContent(".ls-toast")), "word in an option saved: " + optWord.w);
+  ok((await pg.getAttribute('.ls-bar [data-a="word"]', "aria-pressed")) === "false", "pick mode ends after one word");
   // the capture never answers the question
   ok(!(await pg.$("#opts .opt.on")), "marking does not choose an option");
   // next question → timeline
@@ -51,6 +57,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   const tis = [...new Set(S.ev.filter((e) => e.q).map((e) => e.ti))]; ok(tis.length === 1 && /Пробный тест 5 · Reading and Writing · Модуль 1/.test(tis[0]), "the part is recognised by itself: " + tis.join(" | "));
   ok(S.ev.some((e) => !e.q && e.ti === "Пробные тесты"), "pages without a question carry the page name");
   const w = S.ev.find((e) => e.k === "word"); ok(w && w.w === word && w.q === "PT5.rw.m1.1" && w.ctx.includes(word) && w.part === "passage", "word event has the sentence and the question: " + JSON.stringify(w).slice(0, 160));
+  const ow = S.ev.find((e) => e.k === "word" && e.part === "option"); ok(ow && ow.w === optWord.w && ow.q === "PT5.rw.m1.1", "option word event: " + String(JSON.stringify(ow)).slice(0, 140));
   ok(S.ev.some((e) => e.k === "flag" && e.why === "trap" && e.q === "PT5.rw.m1.1"), "flag event");
   ok(S.ev.some((e) => e.k === "note" && /своё слово/.test(e.text)), "note event");
   ok(S.ev.filter((e) => e.k === "vote").map((e) => e.c).join("") === "BC", "vote events (A undone)");
