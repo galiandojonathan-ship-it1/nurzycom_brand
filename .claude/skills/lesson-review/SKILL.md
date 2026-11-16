@@ -12,6 +12,32 @@ skill is the analysis. It runs only when asked, because it needs passwords that 
 
 Read `CLAUDE.md` (hard rules) and `notes/WEBSITE_HANDOFF.md` (data, tests, shipping) first.
 
+## Quick mode: words only (`/lesson-review words`, every two days)
+
+Nurassyl's rule (2026-11-16): «When I mark a word, automatically gather them and then make them underlined vocabulary words
+like others». Words therefore ship without waiting for the digest; everything else in this skill still waits for his approval.
+
+1. Key and sessions: Step 0, then `L=lesson P=<password> OUT=<scratchpad>/lessons.json node tools/private/lessonlog.js`.
+2. `node tools/private/lessonwords.mjs pending <key.b64> <scratchpad>/lessons.json > <scratchpad>/pending.json`.
+   No pending words → say so in one line and stop (nothing to commit).
+3. For each pending word decide, reading its sentence (`ctx`) and the question (open it with `datafile.mjs` if needed):
+   - **add**: `en` (the dictionary form: «interspersing» → «intersperse», keep fixed phrases such as «devoid of»), `pos`,
+     `def` (a learner-dictionary definition in simple English for the sense in that sentence), `ru` (2–3 Russian equivalents
+     for that sense, comma-separated), `ex` (the lesson sentence if it is under ~200 characters, otherwise a short original
+     sentence), `from` (the question ids);
+   - **skip** with a reason: names, numbers, words the passage itself explains, plain words a B2 student knows (the teacher may
+     have marked it by accident), test words of Claude's own checks (group «Пример (тест Claude)» or «Проверка Claude»).
+   Check: every pending word is in exactly one of the two lists; every Russian equivalent fits the sentence's sense.
+4. `node tools/private/lessonwords.mjs apply <key.b64> <scratchpad>/defs.json` (writes `docs/data/vocab.bin`, deck «VL ·
+   Слова с уроков»; gloss.js then underlines the words in tests and homework, and the vocabulary page lists the deck).
+5. Test with real data (`notes/WEBSITE_HANDOFF.md` §6): `t_vocab2.js` and `t_mock.js` pass; open one question that contains a
+   new word on the local copy and see it underlined.
+6. Commit `docs/data/vocab.bin` («Words from lessons: …»), push `main`, fast-forward the old Pages branch, check live.
+7. Write the review back so the cabinet shows each word's definition: `PUT=<reviews.json> … lessonlog.js` with
+   `{ "<session id>": { "v": 1, "words": [{ "w", "en", "ru", "verdict": "deck"|"skip" }] } }` (merge with an existing review of
+   that session, do not overwrite its summary).
+8. One short Russian line to Nurassyl: which words were added, which were set aside and why.
+
 ## Step 0. What you need
 
 - The course master key in the scratchpad (`tools/private/getkey.js`, login `claude`) and the `lesson` password. Ask
@@ -45,11 +71,11 @@ Open the question behind each mark with `tools/private/datafile.mjs` (ids: tests
 
 1. **Words** (`k: "word"`, with the sentence `ctx`). Per word: lemma, part of speech, a learner-dictionary definition in
    simple English for the sense in that sentence, at least 2 Russian equivalents, and a verdict:
-   - `gloss`: underline it in that question for everyone (tests: `mockgloss.bin` → `add`, see `tools/mockgloss/README.md`);
-   - `deck`: add to the group's deck «Слова с урока» (`vocab.bin`);
+   - `deck`: add to the deck «VL · Слова с уроков» with `tools/private/lessonwords.mjs` (quick mode above): it is underlined
+     in tests and homework like every course word;
+   - `gloss`: only for a sense that belongs to one question (`mockgloss.bin` → `add`, see `tools/mockgloss/README.md`);
    - `skip`: a name, a term the passage explains, or a word too rare to be worth learning (say why).
-   Why: one group not knowing a word is a signal; a second group confirms it. **A word marked in 2 or more sessions is
-   always `gloss`.** Check: every word has a verdict and none is left without a Russian equivalent.
+   Words ship automatically (Nurassyl's rule, quick mode above). Check: every word has a verdict and none is left without a Russian equivalent.
 2. **Flagged questions** (`k: "flag"`, `why`: text / rule / trap / slow / bug). Solve the question yourself first, then:
    - `text` → which sentence blocks understanding; a plain-English paraphrase and the words to gloss;
    - `rule` → the rule in one line and the lesson that teaches it;

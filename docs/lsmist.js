@@ -57,14 +57,6 @@
 .lm-side-h .sp{flex:1}
 .lm-pane{flex:1;min-height:0;display:none;flex-direction:column}.lm-pane.on{display:flex}
 .lm-pane iframe{flex:1;width:100%;border:0}
-.lb-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--studio,#D9D5CD)}
-.lb-tools button{font:500 14px var(--sans);border:1.5px solid var(--studio,#D9D5CD);background:#fff;border-radius:999px;padding:7px 12px;cursor:pointer;color:inherit}
-.lb-tools button[aria-pressed="true"]{border-color:var(--ink,#0F0F0F);box-shadow:inset 0 0 0 1px var(--ink,#0F0F0F)}
-.lb-tools .lb-col{width:30px;height:30px;padding:0;border-radius:50%;background:var(--c)}.lb-tools .lb-col[aria-pressed="true"]{box-shadow:0 0 0 2px #fff inset,0 0 0 2px var(--ink,#0F0F0F)}
-.lb-tools .lb-sz{width:36px;height:30px;padding:0;display:inline-grid;place-items:center}.lb-tools .lb-sz i{display:block;width:18px;background:#0F0F0F;border-radius:4px}
-.lb-sep{width:1px;height:22px;background:var(--studio,#D9D5CD);margin:0 2px}
-.lb-c{flex:1;min-height:0;position:relative;background:#fff radial-gradient(circle,#D9D5CD 1px,transparent 1.3px) 0 0/24px 24px;touch-action:none;user-select:none;-webkit-user-select:none}
-.lb-c canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 @media(max-width:900px){.lm.has-tool .lm-in{width:auto}.lm-side{left:8px;right:8px;top:max(170px,38vh);width:auto;bottom:calc(var(--ls-h,56px) + 16px)}.lm.has-tool{padding-bottom:calc(62vh + var(--ls-h,56px) + 40px)}.lm.full .lm-side{top:8px;left:8px;height:auto}
   .lm-side-h,.lb-tools{padding:6px 8px;gap:4px}.lm-side-h .lm-x{padding:6px 10px;font-size:14px}.lb-tools button{padding:5px 9px;font-size:13px}.lb-tools .lb-col{width:26px;height:26px}}
 @media(max-width:700px){.lm.has-tool .lm-side{top:8px;left:8px;right:8px;bottom:calc(var(--ls-h,56px) + 16px)}}   /* a phone: the tool covers the review, ✕ or Escape brings the question back */
@@ -89,7 +81,7 @@
   const solo = () => M.snap && M.snap.mode === "solo";
   const tries = (q) => (Array.isArray(q.mine) ? q.mine.filter(Boolean) : []);
 
-  async function open() {
+  async function open(rid) {   // rid: open this review at once (the lesson home page)
     if (!M.box) {
       M.opener = document.activeElement;
       M.prev = { lq: document.body.dataset.lq, lt: document.body.dataset.lt };   // the page's own question comes back on close
@@ -97,11 +89,12 @@
       M.box.innerHTML = '<div class="lm-in"><p class="lm-empty">Загружаю…</p></div>' + sideHTML();
       document.body.appendChild(M.box); document.documentElement.style.overflow = "hidden";
       M.box.addEventListener("click", onClick); document.addEventListener("keydown", onKey);
-      boardInit(M.box.querySelector('.lm-pane[data-p="board"]'));
+      M.board = window.LSBOARD ? LSBOARD.create(M.box.querySelector('.lm-pane[data-p="board"]')) : null;   // lsboard.js, loaded with this file by lesson.js
     }
     try { await Promise.race([window.SITE && SITE.sync ? SITE.sync() : null, new Promise((r) => setTimeout(r, 4000))]); } catch (e) { /* offline: show what this device has */ }
     M.list = readList();
-    if (M.list.length === 1) { M.snap = M.list[0]; list(); } else reviews();
+    const pick = rid && M.list.find((r) => r.id === rid);
+    if (pick || M.list.length === 1) { M.snap = pick || M.list[0]; list(); } else reviews();
   }
   function close() {
     if (!M.box) return;
@@ -112,7 +105,7 @@
   function onKey(e) {
     if (!M.box || e.defaultPrevented || document.documentElement.classList.contains("ls-pick") || document.querySelector(".ls-pop")) return;
     if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-    if (M.tool === "board" && (e.ctrlKey || e.metaKey) && /^[zyя]$/i.test(e.key)) { e.preventDefault(); (e.key.toLowerCase() === "y" || e.shiftKey) ? redo() : undo(); return; }
+    if (M.tool === "board" && (e.ctrlKey || e.metaKey) && /^[zyя]$/i.test(e.key)) { e.preventDefault(); if (M.board) (e.key.toLowerCase() === "y" || e.shiftKey) ? M.board.redo() : M.board.undo(); return; }
     if (e.key === "Escape") { e.preventDefault(); if (M.full) setFull(false); else if (M.tool) setTool(null); else if (M.cur >= 0) list(); else if (M.snap && M.list.length > 1) reviews(); else close(); }
     else if (M.cur >= 0 && e.key === "ArrowRight" && !e.target.closest(".lm-side")) { e.preventDefault(); go(M.cur + 1); }
     else if (M.cur >= 0 && e.key === "ArrowLeft" && !e.target.closest(".lm-side")) { e.preventDefault(); go(M.cur - 1); }
@@ -166,7 +159,8 @@
     const q = M.snap.qs[M.cur], i = M.cur, n = M.snap.qs.length;
     M.math = q.sec === "math"; if (M.tool === "desmos" && !M.math) setTool(null);
     document.body.dataset.lq = q.id; document.body.dataset.lt = "Разбор ошибок · " + secTitle(q);   // the lesson bar's marks apply to this question
-    boardShow(q.id);
+    setTimeout(() => window.LESSON && LESSON.tick && LESSON.tick(), 0);   // recorded on the timeline at once (after the nav with its marker is drawn)
+    if (M.board) M.board.show(q.id);
     const tools = `${M.math ? `<button type="button" class="lm-x" data-lm="desmos" aria-pressed="${M.tool === "desmos"}">Desmos</button>` : ""}<button type="button" class="lm-x" data-lm="board" aria-pressed="${M.tool === "board"}">Доска</button>`;
     const nav = `<div class="lm-nav"><button type="button" class="lm-x" data-lm="list">← Все вопросы</button><span class="lm-pos" id="ls-mq">Вопрос ${i + 1} из ${n}</span>
       <span>${tools}<button type="button" class="lm-x" data-lm="prev"${i ? "" : " disabled"}>← Назад</button><button type="button" class="lm-x" data-lm="next"${i < n - 1 ? "" : " disabled"}>Далее →</button></span></div>`;
@@ -229,63 +223,11 @@
     const cl = side.querySelector("[data-close]"); cl.dataset.lm = t || "board";   // ✕ toggles the open tool off
     side.querySelector('[data-lm="full"]').setAttribute("aria-pressed", String(M.full));
     if (t === "desmos") { const f = side.querySelector("iframe"); if (f.src === "about:blank") f.src = DESMOS; }   // load once, the work stays between questions
-    if (t === "board") requestAnimationFrame(boardFit);
+    if (t === "board" && M.board) requestAnimationFrame(M.board.fit);
     M.box.querySelectorAll('.lm-nav [data-lm="desmos"], .lm-nav [data-lm="board"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.lm === t)));
   }
-  function setFull(on) { M.full = !!on && !!M.tool; M.box.classList.toggle("full", M.full); M.box.querySelector('.lm-side [data-lm="full"]').setAttribute("aria-pressed", String(M.full)); if (M.tool === "board") requestAnimationFrame(boardFit); }
+  function setFull(on) { M.full = !!on && !!M.tool; M.box.classList.toggle("full", M.full); M.box.querySelector('.lm-side [data-lm="full"]').setAttribute("aria-pressed", String(M.full)); if (M.tool === "board" && M.board) requestAnimationFrame(M.board.fit); }
 
-  // ---------- the board: pointer events, so a pen tablet draws with pressure; strokes are kept per question
-  const COLORS = [["#0F0F0F", "чёрный"], ["#A63328", "красный"], ["#1F4FA3", "синий"], ["#2B6E2F", "зелёный"]], SIZES = [[1.5, "тонкая"], [3, "средняя"], [6, "толстая"]];
-  const B = { cv: null, cx: null, key: "", color: COLORS[0][0], size: 3, er: false, live: null, pen: false, W: 1, H: 1 };
-  const data = () => M.boards[B.key] || (M.boards[B.key] = { s: [], r: [] });
-  function boardInit(host) {
-    host.innerHTML = `<div class="lb-tools" role="toolbar" aria-label="Доска">${COLORS.map(([c, n], i) => `<button type="button" class="lb-col" data-lb="c" data-v="${c}" aria-label="Цвет: ${n}" aria-pressed="${i === 0}" style="--c:${c}"></button>`).join("")}<span class="lb-sep"></span>
-      ${SIZES.map(([w, n]) => `<button type="button" class="lb-sz" data-lb="w" data-v="${w}" aria-label="Толщина: ${n}" aria-pressed="${w === B.size}"><i style="height:${Math.round(w * 1.4)}px"></i></button>`).join("")}<span class="lb-sep"></span>
-      <button type="button" data-lb="er" aria-pressed="false">Ластик</button><button type="button" data-lb="undo">Отменить</button><button type="button" data-lb="redo">Вернуть</button><button type="button" data-lb="clear">Очистить</button></div>
-      <div class="lb-c"><canvas aria-label="Доска для рисования пером, мышью или пальцем"></canvas></div>`;
-    B.cv = host.querySelector("canvas"); B.cx = B.cv.getContext("2d");
-    host.querySelector(".lb-tools").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-lb]"); if (!b) return; const a = b.dataset.lb;
-      if (a === "c") { B.color = b.dataset.v; B.er = false; } else if (a === "w") B.size = +b.dataset.v; else if (a === "er") B.er = !B.er;
-      else if (a === "undo") undo(); else if (a === "redo") redo(); else if (a === "clear") { const d = data(); if (d.s.length) { d.r = d.s.slice().reverse(); d.s = []; draw(); } }
-      host.querySelectorAll('[data-lb="c"]').forEach((x) => x.setAttribute("aria-pressed", String(!B.er && x.dataset.v === B.color)));
-      host.querySelectorAll('[data-lb="w"]').forEach((x) => x.setAttribute("aria-pressed", String(+x.dataset.v === B.size)));
-      host.querySelector('[data-lb="er"]').setAttribute("aria-pressed", String(B.er));
-    });
-    const cv = B.cv, pt = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / B.W, (e.clientY - r.top) / B.W, e.pointerType === "pen" ? e.pressure || 0.5 : 0.5]; };
-    cv.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "touch" && B.pen) return;   // a palm on the tablet screen while drawing with the pen
-      if (e.pointerType === "pen") B.pen = true;
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      e.preventDefault(); cv.setPointerCapture(e.pointerId);
-      B.live = { id: e.pointerId, c: B.color, w: B.size, er: B.er || e.button === 5 || (e.buttons & 32) === 32, p: [pt(e)] };
-      seg(B.live, 0, true);
-    });
-    cv.addEventListener("pointermove", (e) => {
-      const L = B.live; if (!L || e.pointerId !== L.id) return;
-      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; for (const ev of evs.length ? evs : [e]) { L.p.push(pt(ev)); seg(L, L.p.length - 1); }
-    });
-    const end = (e) => { const L = B.live; if (!L || e.pointerId !== L.id) return; B.live = null; const d = data(); d.s.push(L); d.r = []; };
-    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
-    new ResizeObserver(boardFit).observe(host.querySelector(".lb-c"));
-  }
-  function boardFit() {
-    if (!B.cv) return; const r = B.cv.parentElement.getBoundingClientRect(); if (!r.width || !r.height) return;
-    const k = window.devicePixelRatio || 1; B.W = r.width; B.H = r.height;
-    B.cv.width = Math.round(r.width * k); B.cv.height = Math.round(r.height * k); B.cx.setTransform(k, 0, 0, k, 0, 0); draw();
-  }
-  // points are stored as a share of the board's width, so a drawing keeps its shape when the board grows («Во весь экран»)
-  function seg(L, i, dot) {
-    const c = B.cx, s = B.W / 700, a = L.p[Math.max(0, i - 1)], b = L.p[i], w = L.w * s * (0.35 + 1.3 * b[2]) * (L.er ? 6 : 1);
-    c.save(); c.globalCompositeOperation = L.er ? "destination-out" : "source-over"; c.strokeStyle = c.fillStyle = L.c; c.lineCap = c.lineJoin = "round"; c.lineWidth = w;
-    if (dot || i === 0) { c.beginPath(); c.arc(b[0] * B.W, b[1] * B.W, w / 2, 0, 2 * Math.PI); c.fill(); }
-    else { c.beginPath(); c.moveTo(a[0] * B.W, a[1] * B.W); c.lineTo(b[0] * B.W, b[1] * B.W); c.stroke(); }
-    c.restore();
-  }
-  function draw() { if (!B.cx) return; B.cx.clearRect(0, 0, B.W, B.H); for (const L of data().s) L.p.forEach((_, i) => seg(L, i, i === 0)); }
-  function undo() { const d = data(); if (d.s.length) { d.r.push(d.s.pop()); draw(); } }
-  function redo() { const d = data(); if (d.r.length) { d.s.push(d.r.pop()); draw(); } }
-  function boardShow(key) { B.key = key; B.live = null; draw(); }
 
-  window.LSMIST = { open, close, isOpen: () => !!M.box };
+  window.LSMIST = { open, close, isOpen: () => !!M.box, reviews: readList };
 })();

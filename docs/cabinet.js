@@ -262,7 +262,7 @@
     if (kind === "ds") return Object.entries(PLAN.DESMOS).map(([x, t]) => ({ v: x, t: `Desmos · набор ${Number(x.slice(1))} · ${t}`, href: `desmos.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
     if (kind === "uc") return ["U01", "U02", "U03", "U04"].map((x, i) => ({ v: x, t: `Единичная окружность · набор ${i + 1}`, href: `circle.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
     if (kind === "ar") return ["A01", "A02", "A03"].map((x, i) => ({ v: x, t: `Архаичные слова · набор ${i + 1}`, href: `archaic.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
-    if (kind === "vc") return L.map((l) => ({ v: l.tag, t: `Карточки · ${short(l)}`, href: `vocab.html?l=${l.tag}`, rk: null }));
+    if (kind === "vc") return L.map((l) => ({ v: l.tag, t: `Карточки · ${short(l)}`, href: `vocab.html?l=${l.tag}`, rk: null })).concat([{ v: "VL", t: "Карточки · Слова с уроков", href: "vocab.html?l=VL", rk: null }]);   // words marked in lessons (lessonwords.mjs)
     if (kind === "hw") return L.map((l) => ({ v: l.tag, t: short(l) }));
     if (kind === "ct") return window.CTED ? CTED.items() : [];
     return [];

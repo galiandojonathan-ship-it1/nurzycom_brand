@@ -183,7 +183,7 @@
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
-    gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all }); }).catch(() => { /* the card works without it */ });
+    gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
@@ -443,7 +443,7 @@
     hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
-    rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, hard,
+    rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, hard, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
       note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") });
     gaBind(box);
   }
@@ -474,23 +474,67 @@
       На уроке нажмите «Ошибки класса» на панели внизу сайта.</p>
       <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора">${parts.map((pp) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(pp.k)}"${sel.has(pp.k) ? " checked" : ""}><span>${esc(pp.label)}</span><small>${pp.nq} ${pl(pp.nq, "вопрос", "вопроса", "вопросов")} с ошибками${pp.ts ? " · " + day(pp.ts) : ""}</small></label>`).join("") || '<p class="hint">Ошибок пока нет.</p>'}</div>
       <p class="rv-all">${parts.length > 1 ? '<button type="button" class="tlink" data-rvall="1">Отметить все</button> · <button type="button" class="tlink" data-rvall="0">Снять все</button>' : ""}</p>
-      <button class="btn" type="button" id="${id}-send"></button> <span class="hint" id="${id}-send-st" role="status"></span></div>`;
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
+      <p class="hint" style="margin:8px 0 0">«Подготовить урок» сам отмечает части, сданные после прошлого урока или прошлого разбора с ${c.mode === "group" ? "этой группой" : "этим учеником"} (если их не было: за 7 дней), и отправляет их ошибки.</p>
+      <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div></div>`;
     const btn = $(`${id}-send`), label = () => { const n = rvPick(c).length, k = sel.size;
       btn.innerHTML = n ? `Показать на уроке: ${n} ${pl(n, "вопрос", "вопроса", "вопросов")}${k ? ` из ${k} ${pl(k, "части", "частей", "частей")}` : c.mode === "group" ? ", самые трудные" : ", все ошибки"} <span class="arr">→</span>` : "Нет вопросов с ошибками";
       btn.disabled = !n; };
     box.querySelectorAll("[data-rvp]").forEach((x) => (x.onchange = () => { if (x.checked) sel.add(x.dataset.rvp); else sel.delete(x.dataset.rvp); label(); }));
     box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { const on = x.dataset.rvall === "1"; sel.clear(); if (on) parts.forEach((pp) => sel.add(pp.k)); box.querySelectorAll("[data-rvp]").forEach((y) => (y.checked = on)); label(); }));
     btn.onclick = () => rvSend(c, btn, $(`${id}-send-st`));
+    $(`${id}-prep`).onclick = () => rvPrepare(c, box);
     label();
+  }
+  async function lessonIds() {
+    const r = await SITE.api("admin/users"); if (!r.ok) throw new Error(`Сервер ответил ${r.status}.`);
+    const ids = []; for (const x of r.data.users) { try { const me = await SITE.nameOf(x.n); if (/^lesson(-[a-z0-9]+)?$/.test(me.login || "")) ids.push(x.id); } catch (e) { /* unreadable */ } }
+    if (!ids.length) throw new Error("Аккаунта урока нет. Создайте его в разделе «Логины, созданные вручную»: имя «Урок», логин lesson.");
+    return ids;
+  }
+  // «Подготовить урок» (2026-11-16, Nurassyl: «make "prepare a lesson" button for repeating mistakes»): the parts submitted since
+  // the last lesson with this group or student (a lesson-mode session with the same name, read from the lesson account) or since
+  // the last review sent to them; with neither, the last 7 days. Ticks those parts, sends their mistakes and writes a private note
+  // here: who has not submitted since then and the common traps. The note stays on this page; the lesson screen never shows it.
+  async function rvPrepare(c, box) {
+    const st = $(`${c.slot}-send-st`), note = $(`${c.slot}-note`), btn = $(`${c.slot}-prep`);
+    if (!SITE.adminKey()) { st.textContent = "Нужен ключ администратора в этом браузере: раздел «Аккаунты учеников · регистрация»."; return; }
+    btn.disabled = true; st.textContent = "Ищу прошлый урок…"; note.innerHTML = "";
+    let since = 0, why = "";
+    try {
+      const same = (a) => String(a || "").trim().toLowerCase() === String(c.title).trim().toLowerCase();
+      for (const id of await lessonIds()) {
+        const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
+        const B = await SITE.unsealBlob(g.data.data);
+        for (const [k, r] of Object.entries(B)) {
+          if (!r || r.v == null) continue;
+          if (k.indexOf("ls_s_") === 0) { try { const s = JSON.parse(r.v); if (s.t1 && same(s.group) && s.t0 > since) { since = s.t0; why = "прошлого урока"; } } catch (e) { /* not a session */ } }
+          if (k === "ls_m") { try { const d = JSON.parse(r.v); (d.list || (d.qs ? [d] : [])).forEach((x) => { if (x.mode === c.mode && same(x.group) && x.at > since) { since = x.at; why = "прошлого разбора"; } }); } catch (e) { /* old format */ } }
+        }
+      }
+    } catch (e) { st.textContent = e.message || "Не удалось прочитать аккаунт урока."; btn.disabled = false; return; }
+    if (!since) { since = Date.now() - 7 * DAY; why = "последних 7 дней"; }
+    const day = new Date(since).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    const fresh = rvParts(c.all).filter((pp) => pp.ts > since);
+    btn.disabled = false;
+    if (!fresh.length) { st.textContent = `С ${why} (${day}) новых ошибок нет: отметьте части вручную или нажмите «Показать на уроке».`; return; }
+    const sel = (D.rvSel[`${c.mode}:${c.title}`] = new Set(fresh.map((pp) => pp.k)));
+    // who has not submitted anything since then (group only; the student's own card shows his history)
+    const keyOf = (n) => (window.FORMKIT ? FORMKIT.key(n) : n.toLowerCase());
+    const quiet = c.mode === "group" ? (c.names || []).filter((n) => !D.rows.some((r) => r.key === keyOf(n) && r.ts && r.ts > since)) : [];
+    const qs = rvPick(c), traps = qs.filter((q) => trapOf(q)).slice(0, 3);
+    rvMount(box, c);   // shows the ticked parts
+    await rvSend(c, $(`${c.slot}-send`), $(`${c.slot}-send-st`));
+    $(`${c.slot}-note`).innerHTML = `<div class="card" style="margin-top:10px;background:var(--mist)"><b>Только для вас.</b> С ${esc(why)} (${esc(day)}): ${sel.size} ${pl(sel.size, "часть", "части", "частей")} с ошибками.
+      ${c.mode === "group" ? (quiet.length ? ` Ничего не сдавали с тех пор: ${esc(quiet.join(", "))}.` : " Сдавали все.") : ""}
+      ${traps.length ? `<br>Общие ловушки: ${traps.map((q) => `${esc(q.title)} → ${esc(trapOf(q)[0])}`).join("; ")}.` : ""}</div>`;
   }
   async function rvSend(c, btn, st) {
     if (!SITE.adminKey()) { st.textContent = "Нужен ключ администратора в этом браузере: раздел «Аккаунты учеников · регистрация»."; return; }
     const qs = rvPick(c); if (!qs.length) return;
     btn.disabled = true; st.textContent = "Отправляю…";
     try {
-      const r = await SITE.api("admin/users"); if (!r.ok) throw new Error(`Сервер ответил ${r.status}.`);
-      const ids = []; for (const x of r.data.users) { try { const me = await SITE.nameOf(x.n); if (/^lesson(-[a-z0-9]+)?$/.test(me.login || "")) ids.push(x.id); } catch (e) { /* unreadable */ } }
-      if (!ids.length) throw new Error("Аккаунта урока нет. Создайте его в разделе «Логины, созданные вручную»: имя «Урок», логин lesson.");
+      const ids = await lessonIds();
       const sel = D.rvSel[c.key], solo = c.mode === "solo";
       const snap = { id: Date.now().toString(36), v: 2, at: Date.now(), mode: c.mode, group: c.title, note: c.note || "",
         parts: [...new Set(qs.map((q) => q.plabel))], qs: qs.map((q) => Object.assign({ id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n, wrong: q.wrong, picks: solo ? {} : q.picks, src: q.src }, solo ? { mine: q.mine || [] } : {})) };

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F5F3EE">
+<title>Пульт урока · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="site.css?v=202611161941">
+<style>
+/* «Пульт урока» (classroom.js): the lesson account's home page, only for login «lesson» */
+.cr-hero .sub{max-width:720px}
+.cr-now{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px}
+.cr-now .live{display:inline-flex;align-items:center;gap:9px;font:500 17px var(--sans);color:var(--paper)}
+.cr-now .live i{width:10px;height:10px;border-radius:50%;background:#A63328;box-shadow:0 0 0 4px rgba(166,51,40,.25)}
+.cr-chip{font:500 15px var(--sans);border:1.5px solid rgba(245,243,238,.45);background:transparent;color:var(--paper);border-radius:999px;padding:10px 16px;cursor:pointer}
+.cr-chip:hover,.cr-chip:focus-visible{background:var(--paper);color:var(--ink)}
+.cr-chip.main{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.cr-grid{display:grid;gap:18px;margin-top:28px}
+@media(min-width:1000px){.cr-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}.cr-wide{grid-column:1/-1}}
+.cr-card{background:#fff;border:1.5px solid var(--studio);border-radius:20px;padding:20px 22px;min-width:0}
+.cr-card h2{font:600 22px/1.25 var(--sans);margin:0 0 4px}.cr-card .cr-sub{color:#5E5A54;font-size:15px;margin:0 0 14px}
+.cr-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.cr-item{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--paper);border:1.5px solid transparent;border-radius:14px;padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
+.cr-item:hover,.cr-item:focus-visible{border-color:var(--ink)}
+.cr-item b{display:block;font:600 16px/1.3 var(--sans)}.cr-item small{color:#5E5A54;font-size:13px}.cr-item .r{text-align:right;font:600 18px var(--sans)}
+.cr-kind{display:block;font:500 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:#5E5A54;margin-bottom:2px}
+.cr-tabs{display:flex;gap:6px;margin:0 0 14px}
+.cr-tabs button{font:500 15px var(--sans);border:1.5px solid var(--studio);background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer;color:inherit}
+.cr-tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.cr-tile{display:flex;flex-direction:column;gap:6px;min-height:118px;text-align:left;background:var(--paper);border:1.5px solid transparent;border-radius:14px;padding:12px;cursor:pointer;font:inherit;color:inherit}
+.cr-tile:hover,.cr-tile:focus-visible,.cr-tile[aria-expanded="true"]{border-color:var(--ink)}
+.cr-tile .no{font:600 30px/1 var(--sans)}.cr-tile .nm{font-size:13px;line-height:1.3;color:#3d3a36}
+.cr-tile .st{margin-top:auto;font:500 12px var(--sans);color:#5E5A54}.cr-tile .st.ok{color:#1F5A33}
+.cr-panel{margin-top:14px;border-top:1.5px solid var(--ink);padding-top:14px}
+.cr-panel h3{font:600 19px/1.3 var(--sans);margin:0 0 10px}
+.cr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.cr-acts a,.cr-acts button{font:500 15px var(--sans);border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:9px 15px;cursor:pointer;color:var(--ink);text-decoration:none}
+.cr-acts .main{background:var(--ink);color:var(--paper)}.cr-acts button:disabled{opacity:.45;cursor:default}
+.cr-note{color:#5E5A54;font-size:14px;margin:10px 0 0}
+.cr-words{display:grid;gap:8px}
+.cr-w{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:baseline;border-bottom:1px solid var(--studio);padding:8px 0}
+.cr-w b{font:600 16px var(--sans)}.cr-w span{color:#5E5A54;font-size:14px}.cr-w small{font:500 12px var(--sans);white-space:nowrap}
+.cr-w small.ok{color:#1F5A33}.cr-w small.wait{color:#8A5300}
+.cr-empty{color:#5E5A54;font-size:15px;margin:0}
+/* presentation viewer */
+.dk{position:fixed;inset:0;z-index:55;background:#0F0F0F;color:#F5F3EE;display:flex;flex-direction:column}
+.dk-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.dk-bar b{font:600 16px var(--sans);margin-right:auto}
+.dk-bar button{font:500 14px var(--sans);border:1.5px solid rgba(245,243,238,.35);background:transparent;color:#F5F3EE;border-radius:999px;padding:8px 13px;cursor:pointer}
+.dk-bar button:hover,.dk-bar button:focus-visible,.dk-bar button[aria-pressed="true"]{background:#F5F3EE;color:#0F0F0F}
+.dk-bar .dk-pos{font:500 14px var(--sans);color:rgba(245,243,238,.75);min-width:84px;text-align:center}
+.dk-stage{flex:1;min-height:0;position:relative;display:grid;place-items:center;padding:0 12px calc(var(--ls-h,56px) + 24px)}
+.dk:fullscreen .dk-stage{padding-bottom:12px}
+.dk-frame{position:relative;max-width:100%;max-height:100%;aspect-ratio:var(--ar,16/9);height:100%}
+.dk-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;border-radius:6px;user-select:none}
+.dk-draw{position:absolute;inset:0;display:none}.dk.drawing .dk-draw{display:block}
+.dk.drawing .dk-stage{padding-top:64px}.dk-draw .lb-tools{position:absolute;left:0;right:0;top:-58px;border-radius:12px}.dk-draw .lb-c{position:absolute;inset:0}
+.dk-nav{position:absolute;top:0;bottom:0;width:18%;border:0;background:transparent;cursor:pointer;color:transparent}
+.dk-nav.prev{left:0}.dk-nav.next{right:0}.dk.drawing .dk-nav{display:none}
+.dk-nav:focus-visible{outline:2px solid #F5F3EE;outline-offset:-4px}
+</style>
+<script src="auth.js?v=202611161941"></script>
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержанию</a>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="NK nurzycom · SAT, главная">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="plan.html">План<span class="lg"> курса</span></a><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a><a href="mock.html"><span class="lg">Пробные </span>тесты</a><a href="useful.html">Полезное</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
+</div></header>
+
+<main id="main" tabindex="-1">
+  <section>
+    <div class="hero cr-hero">
+      <span class="label">Режим урока · только для аккаунта урока</span>
+      <h1>Пульт урока</h1>
+      <p class="sub" id="cr-sub">Начните урок, откройте разбор ошибок или презентацию. Отметки на панели внизу сохраняются в этот урок.</p>
+      <div class="cr-now" id="cr-now"></div>
+    </div>
+    <div id="cr-body"><p class="cr-empty">Загружаю…</p></div>
+  </section>
+</main>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
+<script src="lsboard.js?v=202611161941"></script>
+<script src="classroom.js?v=202611161941"></script>
+</body>
+</html>

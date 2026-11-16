@@ -17,15 +17,19 @@
   const WHY = [["text", "Не поняли текст"], ["rule", "Не знали правило"], ["trap", "Попались в ловушку"], ["slow", "Слишком долго"], ["bug", "Ошибка в вопросе"]];
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
-  const PAGES = { index: "Домашние задания", plan: "План курса", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты", useful: "Полезное", archaic: "Архаичные слова", desmos: "Desmos", circle: "Единичная окружность", mytest: "Тесты преподавателя" };
+  const PAGES = { classroom: "Пульт урока", index: "Домашние задания", plan: "План курса", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты", useful: "Полезное", archaic: "Архаичные слова", desmos: "Desmos", circle: "Единичная окружность", mytest: "Тесты преподавателя" };
   // «Ошибки класса»: the group's hardest questions sent from the teacher page (lsmist.js, loaded on first use)
   const VER = ((document.currentScript && document.currentScript.src) || "").split("?")[1] || "";
-  function openMist() {
-    if (window.LSMIST) return LSMIST.open();
-    const s = document.createElement("script"); s.src = "lsmist.js" + (VER ? "?" + VER : "");
-    s.onload = () => window.LSMIST && LSMIST.open(); s.onerror = () => toast("Не удалось загрузить разбор ошибок. Обновите страницу.");
-    document.head.appendChild(s);
+  // scripts loaded on first use: the board (lsboard.js) and the review (lsmist.js)
+  function need(name, test) {
+    if (test()) return Promise.resolve();
+    return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = name + (VER ? "?" + VER : ""); s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
   }
+  function openMist(rid) {
+    need("lsboard.js", () => window.LSBOARD).then(() => need("lsmist.js", () => window.LSMIST)).then(() => LSMIST.open(typeof rid === "string" ? rid : undefined))
+      .catch(() => toast("Не удалось загрузить разбор ошибок. Обновите страницу."));
+  }
+  const HOME = /classroom\.html$/.test(location.pathname) ? "" : '<button type="button" data-a="home">Пульт урока</button>';   // the lesson home page (classroom.html)
   let S = null, lastAt = null, lastTi = null, undoTimer = 0;
 
   // results of this account stay off the teacher's Google Form (it would look like one more student)
@@ -41,7 +45,7 @@
   // which question is on screen: solve.js and mock.js write it to <body data-lq>; it counts only while the question view is visible
   function where() {
     const page = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index";
-    const on = ["ls-mq", "sv-qn", "qnum", "qn", "r-read"].some((id) => { const e = document.getElementById(id); return e && e.offsetParent; });
+    const on = ["dk-pos", "ls-mq", "sv-qn", "qnum", "qn", "r-read"].some((id) => { const e = document.getElementById(id); return e && e.offsetParent; });
     return { p: page, q: on ? document.body.dataset.lq || "" : "", ti: on && document.body.dataset.lq ? document.body.dataset.lt || "" : PAGES[page] || page };
   }
   function log(ev, quiet) {
@@ -107,7 +111,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
   function draw() {
     if (bar) bar.remove(); closePop(); picking = false; document.documentElement.classList.remove("ls-pick");
     if (!S) {
-      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span><button type="button" data-a="mist">Ошибки класса</button><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
+      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span>${HOME}<button type="button" data-a="mist">Ошибки класса</button><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
     } else {
       bar = el(`<div class="ls-bar${(LS.getItem("ls_min") || (window.innerWidth < 700 ? "1" : "0")) === "1" ? " ls-min" : ""}" role="region" aria-label="Режим урока">
         <span class="ls-st"><i class="ls-dot"></i><span class="ls-n"></span></span>
@@ -115,14 +119,14 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
         <button type="button" data-a="flag">Трудный вопрос</button>
         <button type="button" data-a="note">Сработало</button>
         <span class="ls-vote" role="group" aria-label="Класс выбрал">Класс выбрал ${["A", "B", "C", "D"].map((c) => `<button type="button" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</span>
-        <button type="button" data-a="mist">Ошибки класса</button>
+        <button type="button" data-a="mist">Ошибки класса</button>${HOME}
         <button type="button" data-a="end">Завершить</button>
         <button type="button" class="ls-tg" data-a="min" aria-label="Свернуть или развернуть панель урока">⇕</button></div>`);
     }
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.c) return vote(b.dataset.c);
-      ({ start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+      ({ home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
     document.body.appendChild(bar); if (S) { count(); voteSync(); } place();
   }
@@ -142,13 +146,19 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
     const go = () => {
       const g = p.querySelector("#ls-g").value.trim(), l = "";
       if (g.length < 2) { p.querySelector("#ls-g").focus(); return; }
-      if (p.querySelector("#ls-c").checked) wipe();
-      LS.setItem("ls_groups", JSON.stringify([g, ...groups.filter((x) => x !== g)].slice(0, 12)));
-      S = { v: 1, id: Date.now().toString(36), group: g, lesson: l, t0: Date.now(), t1: 0, ev: [] };
-      LS.setItem(CUR, S.id); lastAt = null; lastTi = null; save(); draw(); toast("Урок начат."); watch();
+      begin(g, p.querySelector("#ls-c").checked);
     };
     p.querySelector(".ls-go").onclick = go; p.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") go(); });
   }
+  function begin(g, clean) {
+    let groups = []; try { groups = JSON.parse(LS.getItem("ls_groups") || "[]"); } catch (e) { groups = []; }
+    if (clean) wipe();
+    LS.setItem("ls_groups", JSON.stringify([g, ...groups.filter((x) => x !== g)].slice(0, 12)));
+    S = { v: 1, id: Date.now().toString(36), group: g, lesson: "", t0: Date.now(), t1: 0, ev: [] };
+    LS.setItem(CUR, S.id); lastAt = null; lastTi = null; save(); draw(); toast("Урок начат."); watch(); changed();
+  }
+  function finish() { if (!S) return; S.t1 = Date.now(); save(); LS.removeItem(CUR); S = null; draw(); toast("Урок сохранён."); if (window.SITE && SITE.sync) SITE.sync(); changed(); }
+  const changed = () => document.dispatchEvent(new CustomEvent("ls-change"));   // the lesson home page redraws its status
   // a new lesson starts on clean pages: only this account's own answers are removed (keys carry the account's name),
   // so another login used in the same browser keeps its results
   function wipe() {
@@ -177,7 +187,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
     const p = open(`<h4>Завершить урок?</h4><p style="margin:0">Сохранено слов: ${words}, трудных вопросов: ${flags}, всего отметок: ${marks()}.</p>
       <div class="ls-row"><button type="button" class="ls-go">Завершить</button><button type="button" data-x>Продолжить урок</button></div>`);
     p.querySelector("[data-x]").onclick = closePop;
-    p.querySelector(".ls-go").onclick = () => { S.t1 = Date.now(); save(); LS.removeItem(CUR); S = null; draw(); toast("Урок сохранён."); if (window.SITE && SITE.sync) SITE.sync(); };
+    p.querySelector(".ls-go").onclick = finish;
   }
 
   // ---- a word: select it in the text, then «+ Слово»
@@ -253,5 +263,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
 
   S = load(); draw();
   setInterval(() => { watch(); if (S) { count(); voteSync(); } }, 2000); watch();
-  window.LESSON = { session: () => S, where };
+  // the lesson home page (classroom.js) drives the same bar
+  window.LESSON = { session: () => S, where, tick: watch, begin, end: () => (S ? askEnd() : null), ask: () => askStart(), openMist, need, toast, groups: () => { try { return JSON.parse(LS.getItem("ls_groups") || "[]"); } catch (e) { return []; } } };
+  document.dispatchEvent(new CustomEvent("ls-ready"));
 })();

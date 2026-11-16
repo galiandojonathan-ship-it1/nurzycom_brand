@@ -22,7 +22,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | Marketing site (not live yet) | `site/` (EN `site/index.html`, RU `site/ru/index.html`), meant for https://bynurzy.com |
 | Hosting notes | `deploy/README.md`, `deploy/bump_version.py`, `deploy/set_domain.py` |
 | Test kit | `tools/sitetests/` (Playwright scripts, local stand-ins) |
-| Key and data tools | `tools/private/` (`getkey.js`, `datafile.mjs`, `pack.mjs`, `unpack.mjs`, `lessonlog.js` = read lesson-mode sessions) |
+| Key and data tools | `tools/private/` (`getkey.js`, `datafile.mjs`, `pack.mjs`, `unpack.mjs`, `lessonlog.js` = read lesson-mode sessions, `lessonwords.mjs` = marked words → deck VL, `deckpack.mjs` = a presentation for «Пульт урока») |
 | Private sources | `notes/private/*.bin`: encrypted bundles of deck sources and the SAT pattern study (open with `unpack.mjs`) |
 
 ### Pages and their scripts (all in `docs/`)
@@ -39,7 +39,8 @@ This file is public, like the whole repository. Never write passwords, the maste
 | `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
 | `cabinet.html` | `cabinet.js`, `cted.js`, `cblesson.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты», «Уроки» (lesson-mode sessions) |
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
-| every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`), `lsmist.js` («Ошибки класса», loaded by `lesson.js`) | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
+| every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`), `lsmist.js` («Ошибки класса», loaded by `lesson.js`) |
+| `classroom.html` (lesson login only, «Пульт урока») | `classroom.js`, `lsboard.js` | Lesson home: start, reviews, presentations (`data/decks.bin`, `q/decks/`), words from lessons, past lessons | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
 
 ## 3. Data and encryption
 
@@ -126,6 +127,7 @@ Tests to run by area:
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
 | Login | `t_auth.js` |
 | Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
+| «Пульт урока», «Подготовить урок» | `t_classroom.js <real copy> <key> desktop\|phone` |
 | General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
 
 - Group tests need fake class files: `node mkgroupcsv.mjs <key.b64> <docs> group.csv` for `t_group.js`, and the same with `NAMES="Ayana Seitkali,Dias Omarov,Аружан Бек,Sher Zh,Mukhamediya K,Erlan T"` → `group2.csv` for `t_group_cb.js` and `t_lsmist.js` (names of the seeded accounts).
