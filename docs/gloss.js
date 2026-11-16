@@ -199,6 +199,8 @@
     get on() { try { return localStorage.getItem(PREF) !== "0"; } catch (e) { return true; } },
     set on(v) { try { localStorage.setItem(PREF, v ? "1" : "0"); } catch (e) { /* private mode */ } },
     apply, hide, entry: (k) => W[k],
+    // the course or test entry for a word the student selected (dict.js asks this first, so course words keep their card)
+    find(word) { const w = String(word || "").toLowerCase().replace(/[^a-z' -]/g, "").trim(); if (!w) return null; const k = ONE.get(w) || WIDE.one.get(w) || (W[w] && w) || null; return k && W[k] && !W[k].local ? Object.assign({ key: k }, W[k]) : null; },
     // the word data (~380 KB) loads on first use only: Math students and pages that never show a card don't download it
     get ready() {
       return loading || (loading = (window.SITE ? Promise.all([SITE.json("vocab").catch(() => null), SITE.json("mockgloss").catch(() => null)]) : Promise.resolve([null, null]))

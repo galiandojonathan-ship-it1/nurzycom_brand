@@ -39,6 +39,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
 | `cabinet.html` | `cabinet.js`, `cted.js`, `cblesson.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты», «Уроки» (lesson-mode sessions) |
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
+| question and text pages | `dict.js` | Dictionary on selection (Wiktionary, `data/dict.json` + `q/dict/`; rebuild: `tools/dict/`) |
 | every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`), `lsmist.js` («Ошибки класса», loaded by `lesson.js`) |
 | `classroom.html` (lesson login only, «Пульт урока») | `classroom.js`, `lsboard.js` | Lesson home: start, reviews, presentations (`data/decks.bin`, `q/decks/`), words from lessons, past lessons | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
 
@@ -128,6 +129,7 @@ Tests to run by area:
 | Login | `t_auth.js` |
 | Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
 | «Пульт урока», «Подготовить урок» | `t_classroom.js <real copy> <key> desktop\|phone` |
+| Dictionary on selection | `t_dict.js desktop\|phone` |
 | General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
 
 - Group tests need fake class files: `node mkgroupcsv.mjs <key.b64> <docs> group.csv` for `t_group.js`, and the same with `NAMES="Ayana Seitkali,Dias Omarov,Аружан Бек,Sher Zh,Mukhamediya K,Erlan T"` → `group2.csv` for `t_group_cb.js` and `t_lsmist.js` (names of the seeded accounts).

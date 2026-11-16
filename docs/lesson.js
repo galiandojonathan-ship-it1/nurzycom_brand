@@ -240,6 +240,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
     const box = e.target.closest(".opt,.ch,p,li,td,.qhtml,.stem,.passage") || e.target, hit = wordAt(e.clientX, e.clientY, box);
     if (!hit) { toast("Здесь нет слова. Нажмите прямо на слово."); return; }
     saveWord(hit.w, hit.node, e.target); pick(false);
+    if (window.DICT) DICT.show(hit.w, { left: e.clientX - 1, width: 2, top: e.clientY - 12, bottom: e.clientY + 12 });   // the meaning at once (dict.js)
   }, true);
   document.addEventListener("keydown", (e) => { if (picking && e.key === "Escape") { pick(false); e.preventDefault(); } });
   function hideWord() { if (wordBtn) { wordBtn.remove(); wordBtn = null; } }

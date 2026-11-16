@@ -21,7 +21,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   console.log(await seed(pg));
   const t7 = new Date(2026, 10, 6, 18).getTime();   // the last lesson with the group: 6 November (the fake class submits 5–7 November)
   await pg.evaluate(async (t7) => { const id = await SITE.lid("lesson"); await SITE.api("admin/user?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ entry: await SITE.account("lesson", "Урок", "fixture-pw") }) });
-    const s = { v: 1, id: "old7", group: "SAT Verbal · вечер", lesson: "", t0: t7, t1: t7 + 3600e3, ev: [{ t: t7, p: "index", q: "V07.p3.14", ti: "SAT Verbal · Урок 7 · Практика", k: "at" }, { t: t7 + 6e4, p: "index", q: "V07.p3.14", k: "word", w: "interspersing", ctx: "The recipes and memoir passages interspersing them…", part: "passage" }, { t: t7 + 7e4, p: "index", q: "V07.p3.14", k: "word", w: "inarguable", ctx: "Yet despite its inarguable value…", part: "passage" }] };
+    const s = { v: 1, id: "old7", group: "SAT Verbal · вечер", lesson: "", t0: t7, t1: t7 + 3600e3, ev: [{ t: t7, p: "index", q: "V07.p3.14", ti: "SAT Verbal · Урок 7 · Практика", k: "at" }, { t: t7 + 6e4, p: "index", q: "V07.p3.14", k: "word", w: "interspersing", ctx: "The recipes and memoir passages interspersing them…", part: "passage" }, { t: t7 + 7e4, p: "index", q: "V07.p3.14", k: "word", w: "zephyrous", ctx: "A zephyrous afternoon…", part: "passage" }] };
     await SITE.api("admin/progress?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ ls_s_old7: { v: JSON.stringify(s), t: t7 + 3600e3 } }) }) });
     const ids = []; for (const l of ["ayana", "dias", "aruzhan", "sher"]) ids.push(await SITE.lid(l));
     await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: [{ id: "g1", name: "SAT Verbal · вечер", kind: "group", color: "teal", members: ids }], at: Date.now() }) }) }); }, t7);
@@ -49,7 +49,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   ok(chips.some((c) => /Начать: SAT Verbal · вечер/.test(c)), "hero: one tap to start with the group · " + chips.join(" | "));
   ok(/SAT Verbal · вечер/.test(await lp.textContent("#cr-rv")), "review card lists the prepared review");
   const words = (await lp.textContent("#cr-words")).replace(/\s+/g, " ");
-  ok(/interspersing\s*— перемежать.*в словаре/.test(words) && /inarguable\s*ждёт разбора/.test(words) && /Слова с уроков» · 1 слово/.test(words), "words card: a defined word, a waiting word, the VL deck · " + words.slice(0, 160));
+  ok(/interspersing\s*— перемежать.*в словаре/.test(words) && /zephyrous\s*ждёт разбора/.test(words) && /Слова с уроков» · \d+ слов/.test(words), "words card: a defined word, a waiting word, the VL deck · " + words.slice(0, 160));
   ok(!(await lp.$(".ls-bar [data-a='home']")), "the bar has no «Пульт урока» button on the home page itself");
   await lp.click('#cr-now [data-start="SAT Verbal · вечер"]'); await lp.waitForSelector("#cr-now .live");
   ok(/Идёт урок · SAT Verbal · вечер/.test(await lp.textContent("#cr-now")), "lesson started from the hero");
