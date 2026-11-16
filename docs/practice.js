@@ -69,6 +69,7 @@
     const qs = st.set.q, q = qs[st.cur], n = q.i;
     $("passage").innerHTML = blocks(q.b);
     $("qn").textContent = `Вопрос ${n} из ${qs.length}`;
+    document.body.dataset.lq = `${st.set.id}.${n}`; document.body.dataset.lt = `Сложные вопросы · ${st.set.id} · ${st.set.title}`;   // lesson mode (lesson.js)
     $("t-pos").textContent = `${Object.keys(st.ans).length} / ${qs.length}`;
     $("prog").style.width = `${(100 * Object.keys(st.ans).length) / qs.length}%`;
     $("stem").innerHTML = rich(q.s);

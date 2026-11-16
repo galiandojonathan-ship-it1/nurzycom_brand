@@ -33,6 +33,7 @@
   function openText(id) {
     const t = st.data.texts.find((x) => x.id === id); if (!t) return;
     st.t = t; st.ans = {}; st.ok = null; st.quiz = false;
+    document.body.dataset.lq = t.id; document.body.dataset.lt = `Текст · ${t.title}`;   // lesson mode (lesson.js): a text is marked as a whole
     history.replaceState(null, "", `?t=${id}`);
     $("a-label").textContent = `Текст ${t.id.slice(1)} · Verbal ${Number(t.lesson.slice(1))} · ${t.lt}`;
     $("a-title").textContent = t.title;

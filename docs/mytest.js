@@ -75,6 +75,7 @@
     $("qwrap").classList.toggle("solo", !String(q.passage || "").trim());
     $("passage").classList.toggle("hidden", !String(q.passage || "").trim());
     $("qn").textContent = `Вопрос ${st.cur + 1} из ${qs.length}`;
+    document.body.dataset.lq = `CT.${st.t.id}.${st.cur + 1}`; document.body.dataset.lt = `Мой тест · ${st.t.title || "Без названия"}`;   // lesson mode (lesson.js)
     $("t-pos").textContent = `${n} / ${qs.length}`;
     $("prog").style.width = `${(100 * n) / qs.length}%`;
     $("stem").innerHTML = rich(q.stem);

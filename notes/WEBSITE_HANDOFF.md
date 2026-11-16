@@ -37,7 +37,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | `mock.html` | `mock.js`, `scale.js`, `gloss.js`, `tools.js` | Practice tests PT1–PT19 and Прогнозы PR1–PR3 |
 | `useful.html` + `archaic.html`, `desmos.html`, `circle.html`, `mytest.html` | `archaic.js`, `desmos.js`, `circle.js`, `mytest.js`, `ctlogic.js` | «Полезное» (07.n pages) |
 | `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
-| `cabinet.html` | `cabinet.js`, `cted.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты» |
+| `cabinet.html` | `cabinet.js`, `cted.js`, `cblesson.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты», «Уроки» (lesson-mode sessions) |
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
 | every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`) | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
 
@@ -125,9 +125,10 @@ Tests to run by area:
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
 | Login | `t_auth.js` |
-| Lesson mode | `t_lesson.js desktop`, `t_lesson.js phone` (stand-in on 8768) |
+| Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone` (stand-in on 8768) |
 | General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
 
+- Cabinet tests (`t_cabinet.js`, `t_ct.js`) need the accessibility checker: `npm i axe-core` in the folder you copied the tests to.
 - If a test needs the local login, set `localStorage` `site_pw=fixture-pw`, `site_login=loop-test`.
 - Use `waitUntil: "load"` plus a short wait: `networkidle` hangs on the stand-in.
 - Check phone width too (`devices["iPhone 13"]`, 320 px for tight layouts).

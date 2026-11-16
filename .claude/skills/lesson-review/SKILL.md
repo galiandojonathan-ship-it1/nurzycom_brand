@@ -34,7 +34,8 @@ node tools/private/unpack.mjs <key.b64> notes/private/lesson-log.bin <scratchpad
 L=lesson P=<password> OUT=<scratchpad>/lessons.json node tools/private/lessonlog.js
 ```
 
-- Take finished sessions (`t1 > 0`) whose `id` is not in `db.sessions`. A session still running is left alone.
+- Take finished sessions (`t1 > 0`) whose `id` is not in `db.sessions`.
+- The part of the lesson is in every event as `ti` («SAT Verbal · Урок 7 · Практика»); nobody types it. `s.lesson` is empty in new sessions. A session still running is left alone.
 - Check: the script's summary line per session matches what you loaded. No new sessions → say so and stop.
 
 ## Step 3. Analyse (one pass per kind of mark)
@@ -87,8 +88,13 @@ the old Pages branch, check live. Check: the changed question shows the new word
 2. **Save.** Add the sessions and results to `db.json` (per word: lemma, definition, Russian, verdict, question ids,
    groups, count; per question: flags by reason, votes, notes, the analysis, status). Then
    `node tools/private/pack.mjs <key.b64> notes/private/lesson-log.bin <scratchpad>/lessonlog` and commit the `.bin`.
-3. **Clean up.** `PRUNE=<ids> … lessonlog.js` removes the reviewed sessions from the account (the cloud copy stays small).
-4. Tell Nurassyl in a few lines what shipped, what waits on him, and which rule the skill learned this time.
+3. **Write the review back.** Nurassyl reads lessons in the cabinet (`cabinet.html` → «Уроки», `docs/cblesson.js`), so each
+   reviewed session gets a record there: `PUT=<scratchpad>/reviews.json … lessonlog.js` with
+   `{ "<session id>": { "v": 1, "summary": "2-3 Russian sentences", "pacing": "one Russian sentence", "words": [{ "w": "<as marked>", "en": "…", "ru": ["…", "…"], "verdict": "gloss|deck|skip" }], "questions": { "<question id>": { "text": "the analysis in Russian", "hint": "the proposed hint" } } } }`.
+   Only what he approved or what is plain analysis; no student names. Check: open the cabinet view in a test or ask him to.
+4. **Clean up.** Sessions stay on the account: the cabinet reads its history from there. Prune (`PRUNE=<ids>`) only
+   lessons older than six months, and only after they are saved in `db.json`.
+5. Tell Nurassyl in a few lines what shipped, what waits on him, and which rule the skill learned this time.
 
 ## Limits that do not bend
 

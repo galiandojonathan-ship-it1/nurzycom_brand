@@ -164,7 +164,7 @@
   }
   function render() {
     const its = items(), q = its[T.cur], A = T.st.ans[mkey()], math = curSec() === "math";
-    document.body.dataset.lq = `${T.st.mid}.${mkey()}.${q.n}`;   // lesson mode (lesson.js) reads which question is on screen; same form as the glossary keys
+    document.body.dataset.lq = `${T.st.mid}.${mkey()}.${q.n}`; document.body.dataset.lt = `${T.mock.title || T.st.mid} · ${secInfo(curSec()).name} · Модуль ${T.st.mod === "m1" ? 1 : 2}`;   // lesson mode (lesson.js) reads which question is on screen; same form as the glossary keys
     $("passage").innerHTML = math ? "" : q.stim; $("passage").classList.toggle("hidden", math || !q.stim);
     $("stem").innerHTML = (math ? q.stim : "") + q.stem;
     $("qnum").textContent = q.n; $("qn").textContent = `из ${its.length}`;

@@ -21,7 +21,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   pg.on("request", (r) => { if (/docs\.google\.com/.test(r.url())) forms.push(r.url()); if (/api\/progress/.test(r.url()) && r.method() === "PUT") puts++; });
   await pg.goto(B + "mock.html", { waitUntil: "load" }); await pg.waitForSelector(".ls-bar");
   ok(await pg.$('.ls-bar [data-a="start"]'), "bar offers «Начать урок»");
-  await pg.click('.ls-bar [data-a="start"]'); await pg.fill("#ls-g", "Группа А"); await pg.fill("#ls-l", "Verbal 7"); await pg.click(".ls-pop .ls-go");
+  await pg.click('.ls-bar [data-a="start"]'); ok(!(await pg.$("#ls-l")), "start asks only for the group"); await pg.fill("#ls-g", "Группа А"); await pg.click(".ls-pop .ls-go");
   if (dev === "phone") { ok(await pg.$(".ls-bar.ls-min"), "phone: the bar starts folded"); await pg.click(".ls-bar .ls-tg"); }
   ok(await pg.isVisible('.ls-bar [data-a="flag"]'), "session started: capture buttons shown");
   // no question open yet → flag and vote ask to open one
@@ -47,7 +47,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await pg.click("#next").catch(() => {}); await pg.waitForTimeout(2300);
   const S = await pg.evaluate(() => window.LESSON.session());
   const kinds = S.ev.map((e) => e.k).join(",");
-  ok(S.group === "Группа А" && S.lesson === "Verbal 7", "session header");
+  ok(S.group === "Группа А", "session header");
+  const tis = [...new Set(S.ev.filter((e) => e.q).map((e) => e.ti))]; ok(tis.length === 1 && /Пробный тест 5 · Reading and Writing · Модуль 1/.test(tis[0]), "the part is recognised by itself: " + tis.join(" | "));
+  ok(S.ev.some((e) => !e.q && e.ti === "Пробные тесты"), "pages without a question carry the page name");
   const w = S.ev.find((e) => e.k === "word"); ok(w && w.w === word && w.q === "PT5.rw.m1.1" && w.ctx.includes(word) && w.part === "passage", "word event has the sentence and the question: " + JSON.stringify(w).slice(0, 160));
   ok(S.ev.some((e) => e.k === "flag" && e.why === "trap" && e.q === "PT5.rw.m1.1"), "flag event");
   ok(S.ev.some((e) => e.k === "note" && /своё слово/.test(e.text)), "note event");

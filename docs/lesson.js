@@ -3,6 +3,9 @@
 // struggled with; nothing is analysed here. Everything goes into one session record, localStorage «ls_s_<id>», which
 // travels with the account like results do (encrypted with the master key). Later the /lesson-review skill reads the
 // sessions (tools/private/lessonlog.js) and turns them into definitions, hints and follow-up work.
+// The lesson's parts are not typed in: every page script writes the part on screen to <body data-lt> («SAT Verbal · Урок 7 ·
+// Практика», «Пробный тест 5 · Reading and Writing · Модуль 1») and each «at» event carries it, so the cabinet and the review
+// see what was opened with the class and for how long.
 // Events: at (which question is on screen, logged by itself → the lesson timeline), word (a selected word with its
 // sentence), flag (hard question + reason), note («Сработало»: the explanation that worked), vote (the option most of the
 // class chose). The account is not a student: its results are never sent to the Google Form.
@@ -14,7 +17,8 @@
   const WHY = [["text", "Не поняли текст"], ["rule", "Не знали правило"], ["trap", "Попались в ловушку"], ["slow", "Слишком долго"], ["bug", "Ошибка в вопросе"]];
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
-  let S = null, lastAt = null, undoTimer = 0;
+  const PAGES = { index: "Домашние задания", plan: "План курса", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты", useful: "Полезное", archaic: "Архаичные слова", desmos: "Desmos", circle: "Единичная окружность", mytest: "Тесты преподавателя" };
+  let S = null, lastAt = null, lastTi = null, undoTimer = 0;
 
   // results of this account stay off the teacher's Google Form (it would look like one more student)
   const rawFetch = window.fetch.bind(window);
@@ -29,15 +33,20 @@
   // which question is on screen: solve.js and mock.js write it to <body data-lq>; it counts only while the question view is visible
   function where() {
     const page = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index";
-    const mark = document.getElementById("sv-qn") || document.getElementById("qnum");
-    return { p: page, q: mark && mark.offsetParent ? document.body.dataset.lq || "" : "" };
+    const on = ["sv-qn", "qnum", "qn", "r-read"].some((id) => { const e = document.getElementById(id); return e && e.offsetParent; });
+    return { p: page, q: on ? document.body.dataset.lq || "" : "", ti: on && document.body.dataset.lq ? document.body.dataset.lt || "" : PAGES[page] || page };
   }
   function log(ev, quiet) {
     if (!S) return; const w = where();
-    S.ev.push(Object.assign({ t: Date.now(), p: w.p, q: w.q }, ev)); save();
+    S.ev.push(Object.assign({ t: Date.now(), p: w.p, q: w.q, ti: w.ti }, ev)); save();
     if (!quiet) count();
   }
-  function watch() { if (!S) return; const w = where(), k = w.p + "|" + w.q; if (k !== lastAt) { lastAt = k; log({ k: "at" }, true); } }
+  function watch() {
+    if (!S) return; const w = where(), k = w.p + "|" + w.q; if (k === lastAt) return;
+    lastAt = k; log({ k: "at" }, true);
+    if (w.q && w.ti !== lastTi) { if (!toastEl) toast("Раздел урока: " + w.ti); }   // the teacher sees that the part was recognised
+    lastTi = w.ti;
+  }
 
   // ---- the bar
   const css = `
@@ -115,18 +124,17 @@
     let groups = []; try { groups = JSON.parse(LS.getItem("ls_groups") || "[]"); } catch (e) { groups = []; }
     const p = open(`<h4>Начать урок</h4>
       <label for="ls-g">Группа или ученик</label><input type="text" id="ls-g" list="ls-gl" maxlength="40" autocomplete="off" value="${esc(groups[0] || "")}"><datalist id="ls-gl">${groups.map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
-      <label for="ls-l">Урок или тема</label><input type="text" id="ls-l" maxlength="60" autocomplete="off" placeholder="Например: Verbal 7">
       <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="ls-c" checked> Очистить прошлые ответы этого аккаунта</label>
       <div class="ls-row"><button type="button" class="ls-go">Начать</button><button type="button" data-x>Отмена</button></div>
-      <small>Выделите слово в тексте, чтобы сохранить его. Кнопки внизу отмечают трудный вопрос, удачное объяснение и вариант, который выбрал класс.</small>`);
+      <small>Раздел урока определится сам, когда вы откроете часть урока, тест или текст. Выделите слово в тексте, чтобы сохранить его. Кнопки внизу отмечают трудный вопрос, удачное объяснение и вариант, который выбрал класс.</small>`);
     p.querySelector("[data-x]").onclick = closePop;
     const go = () => {
-      const g = p.querySelector("#ls-g").value.trim(), l = p.querySelector("#ls-l").value.trim();
+      const g = p.querySelector("#ls-g").value.trim(), l = "";
       if (g.length < 2) { p.querySelector("#ls-g").focus(); return; }
       if (p.querySelector("#ls-c").checked) wipe();
       LS.setItem("ls_groups", JSON.stringify([g, ...groups.filter((x) => x !== g)].slice(0, 12)));
       S = { v: 1, id: Date.now().toString(36), group: g, lesson: l, t0: Date.now(), t1: 0, ev: [] };
-      LS.setItem(CUR, S.id); lastAt = null; save(); watch(); draw(); toast("Урок начат.");
+      LS.setItem(CUR, S.id); lastAt = null; lastTi = null; save(); draw(); toast("Урок начат."); watch();
     };
     p.querySelector(".ls-go").onclick = go; p.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") go(); });
   }

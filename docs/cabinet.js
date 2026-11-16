@@ -7,6 +7,7 @@
 // newer side wins on the student's devices; the student sees it at the next page they open.
 (function () {
   "use strict";
+  const LSACC = /^lesson(-[a-z0-9]+)?$/;   // the lesson-mode account (lesson.js) is not a student
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -108,9 +109,10 @@
     const seen = new Set(), users = [];
     for (const x of r.data.users) { let me = { login: "?", name: "?" }; try { me = await SITE.nameOf(x.n); } catch (e) { /* unreadable */ } seen.add(x.id); users.push(Object.assign({ id: x.id, at: x.at }, me)); }
     try { for (const a of await SITE.accounts(await SITE.access())) if (!seen.has(a.id)) users.push(Object.assign({ old: true }, a)); } catch (e) { /* access.json is optional */ }
-    const me = SITE.me(); S.users = users.filter((u) => !me || u.login !== me).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
+    const me = SITE.me(); S.lsAcc = users.filter((u) => LSACC.test(u.login || "")); S.users = users.filter((u) => (!me || u.login !== me) && !LSACC.test(u.login || "")).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
     await loadGroups();
     try { await CTED.load(); } catch (e) { /* the tests are optional: the rest of the cabinet works without them */ }
+    for (const a of S.lsAcc) await fetchCopy(a);   // «Уроки»: the lesson account's sessions
     let i = 0; const next = async () => { while (i < S.users.length) await fetchCopy(S.users[i++]); };
     await Promise.all(Array.from({ length: Math.min(5, S.users.length) }, next));
     S.loaded = true; render();
@@ -142,6 +144,7 @@
       <div class="cb-tool2"><input id="cb-q" type="search" placeholder="Найти ученика: имя или логин" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">
         <button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
         <button class="btn ghost" type="button" data-ct="1" aria-pressed="${S.ct}">Мои тесты</button>
+        <button class="btn ghost" type="button" data-ls="1" aria-pressed="${!!S.ls}">Уроки${window.CBL && CBL.count() ? ` · ${CBL.count()}` : ""}</button>
         <button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button>
         <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>`;
   }
@@ -429,9 +432,10 @@
   function render() {
     const main = $("cb"); if (!S.loaded) return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
-    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG || S.ct);
+    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG || S.ct || !!S.ls);
     let detail;
     if (S.ct) detail = CTED.html();
+    else if (S.ls) detail = CBL.html();
     else if (S.imp) detail = importHTML();
     else if (S.assign) detail = assignHTML();
     else if (S.editG) detail = groupHTML();
@@ -445,26 +449,29 @@
     main.innerHTML = toolbar() + `<section class="cb-detail" aria-live="polite">${detail}</section>`;
     bind(u);
     if (S.ct) CTED.bind(main);
+    if (S.ls) CBL.bind(main);
     if (S.focus) { const el = main.querySelector(S.focus); S.focus = ""; if (el) el.focus({ preventScroll: true }); }
     if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
   // close whichever form is open (button «Закрыть ✕» or Escape) and put focus back on the button that opens it
   function closeForm() {
     if (S.ct) { if (CTED.escape()) return true; if (!CTED.leave()) return true; S.ct = false; S.focus = "[data-ct]"; }
+    else if (S.ls) { if (CBL.escape()) return true; S.ls = false; S.focus = "[data-ls]"; }
     else if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
     else if (S.editG) { const id = S.editG.id; S.editG = null; S.focus = S.groups.some((g) => g.id === id) ? `[data-gedit="${id}"]` : ".gtab.add"; }
     else if (S.imp) { S.imp = null; S.focus = "[data-imp]"; }
     else return false;
     render(); return true;
   }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct) && closeForm()) e.preventDefault(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct || S.ls) && closeForm()) e.preventDefault(); });
   const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
-  const offCt = () => { if (S.ct && !CTED.leave()) return false; S.ct = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
+  const offCt = () => { if (S.ct && !CTED.leave()) return false; S.ct = false; S.ls = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
   function bind(u) {
     const main = $("cb"), on = (sel, fn0) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn0(el, e)));
     const away = (fn) => (el, e) => { if (offCt()) fn(el, e); };
     $("cb-q").oninput = (e) => { if (!offCt()) { e.target.value = S.q; return; } S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
-    on("[data-ct]", () => { if (S.ct) return; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ct = true; CTED.open(); S.focus = ".ct h2"; render(); top(); });
+    on("[data-ls]", away(() => { if (S.ls) return; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ls = true; CBL.open(); S.focus = ".lsn h2"; render(); top(); }));
+    on("[data-ct]", () => { if (S.ct) return; S.ls = false; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ct = true; CTED.open(); S.focus = ".ct h2"; render(); top(); });
     on("[data-g]", away((b) => { S.gview = b.dataset.g; S.cur = null; S.assign = null; S.editG = null; S.imp = null; render(); }));
     on("[data-u]", away((b) => { S.cur = b.dataset.u; S.assign = null; S.editG = null; S.imp = null; S.tab = "over"; render(); top(); }));
     on("[data-back]", away(() => { S.cur = null; render(); top(); }));
@@ -530,6 +537,8 @@
     f.onsubmit = (e) => { e.preventDefault(); submitAssign(); };
   }
 
+  // «Уроки» (cblesson.js): the lesson-mode sessions of the lesson account
+  if (window.CBL) CBL.init({ accounts: () => S.lsAcc || [], lessons: () => S.lessons || [], render, toast, change, focus: (sel) => (S.focus = sel), close: () => { S.ls = false; S.focus = "[data-ls]"; render(); } });
   // «Мои тесты» (cted.js): what the editor needs from the cabinet
   if (window.CTED) CTED.init({ toast, render, users: () => S.users, focus: (sel) => (S.focus = sel),
     close: () => { S.ct = false; S.focus = "[data-ct]"; render(); },
