@@ -8,6 +8,7 @@ const base = await C.subtle.importKey("raw", enc.encode("fixture-pw"), "PBKDF2",
 const kek = await C.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 1000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
 const entry = { v: 1, salt: b64(salt), iter: 1000, wrap: b64([...iv, ...new Uint8Array(await C.subtle.encrypt({ name: "AES-GCM", iv }, kek, raw))]) };
 // a local test login «loop-test» (same password) so pages that need a personal login (Сегодня) can be tested
-const lid = Buffer.from(await C.subtle.digest("SHA-256", enc.encode("bynurzy-login:loop-test"))).toString("base64").slice(0, 24);
-fs.writeFileSync(`${out}/access.json`, JSON.stringify({ ...entry, users: { [lid]: entry } }));
+// and «lesson» (same password): the lesson-mode account (lesson.js), see t_lesson.js
+const lidOf = async (l) => Buffer.from(await C.subtle.digest("SHA-256", enc.encode("bynurzy-login:" + l))).toString("base64").slice(0, 24);
+fs.writeFileSync(`${out}/access.json`, JSON.stringify({ ...entry, users: { [await lidOf("loop-test")]: entry, [await lidOf("lesson")]: entry } }));
 console.log("real copy ready");

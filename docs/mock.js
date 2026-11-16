@@ -164,6 +164,7 @@
   }
   function render() {
     const its = items(), q = its[T.cur], A = T.st.ans[mkey()], math = curSec() === "math";
+    document.body.dataset.lq = `${T.st.mid}.${mkey()}.${q.n}`;   // lesson mode (lesson.js) reads which question is on screen; same form as the glossary keys
     $("passage").innerHTML = math ? "" : q.stim; $("passage").classList.toggle("hidden", math || !q.stim);
     $("stem").innerHTML = (math ? q.stim : "") + q.stem;
     $("qnum").textContent = q.n; $("qn").textContent = `из ${its.length}`;

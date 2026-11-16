@@ -1,0 +1,200 @@
+// «Режим урока» (2026-11-16): the teacher's capture bar for live lessons. auth.js loads this file only for the lesson
+// account (login «lesson» or «lesson-…»), so students never download it. During a lesson the teacher marks what the class
+// struggled with; nothing is analysed here. Everything goes into one session record, localStorage «ls_s_<id>», which
+// travels with the account like results do (encrypted with the master key). Later the /lesson-review skill reads the
+// sessions (tools/private/lessonlog.js) and turns them into definitions, hints and follow-up work.
+// Events: at (which question is on screen, logged by itself → the lesson timeline), word (a selected word with its
+// sentence), flag (hard question + reason), note («Сработало»: the explanation that worked), vote (the option most of the
+// class chose). The account is not a student: its results are never sent to the Google Form.
+(function () {
+  "use strict";
+  if (window.LESSON) return;
+  const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })(); if (!LS) return;
+  const CUR = "ls_cur", KEY = (id) => "ls_s_" + id;
+  const WHY = [["text", "Не поняли текст"], ["rule", "Не знали правило"], ["trap", "Попались в ловушку"], ["slow", "Слишком долго"], ["bug", "Ошибка в вопросе"]];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
+  let S = null, lastAt = null, undoTimer = 0;
+
+  // results of this account stay off the teacher's Google Form (it would look like one more student)
+  const rawFetch = window.fetch.bind(window);
+  window.fetch = function (u, o) {
+    const form = window.CFG && window.CFG.formAction;
+    if (form && String(u && u.url ? u.url : u).indexOf(form) === 0) return Promise.resolve(new Response("", { status: 200 }));
+    return rawFetch(u, o);
+  };
+
+  function load() { const id = LS.getItem(CUR); if (!id) return null; try { const s = JSON.parse(LS.getItem(KEY(id))); return s && !s.t1 ? s : null; } catch (e) { return null; } }
+  function save() { try { LS.setItem(KEY(S.id), JSON.stringify(S)); } catch (e) { toast("Память браузера заполнена: отметка не сохранена."); } }
+  // which question is on screen: solve.js and mock.js write it to <body data-lq>; it counts only while the question view is visible
+  function where() {
+    const page = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index";
+    const mark = document.getElementById("sv-qn") || document.getElementById("qnum");
+    return { p: page, q: mark && mark.offsetParent ? document.body.dataset.lq || "" : "" };
+  }
+  function log(ev, quiet) {
+    if (!S) return; const w = where();
+    S.ev.push(Object.assign({ t: Date.now(), p: w.p, q: w.q }, ev)); save();
+    if (!quiet) count();
+  }
+  function watch() { if (!S) return; const w = where(), k = w.p + "|" + w.q; if (k !== lastAt) { lastAt = k; log({ k: "at" }, true); } }
+
+  // ---- the bar
+  const css = `
+.ls-bar{position:fixed;z-index:60;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
+  max-width:calc(100vw - 16px);background:#0F0F0F;color:#F5F3EE;padding:8px 10px;border-radius:14px;box-shadow:0 6px 24px rgba(15,15,15,.28);font:500 13px/1.2 var(--sans)}
+.ls-bar button{font:500 13px/1 var(--sans);color:#F5F3EE;background:transparent;border:1px solid rgba(245,243,238,.32);border-radius:999px;padding:8px 12px;cursor:pointer}
+.ls-bar button:hover,.ls-bar button:focus-visible{background:#F5F3EE;color:#0F0F0F}
+.ls-bar .ls-main{background:#F5F3EE;color:#0F0F0F;border-color:#F5F3EE}
+.ls-bar .ls-st{display:flex;align-items:center;gap:7px;padding:0 6px 0 4px;white-space:nowrap}
+.ls-bar .ls-dot{width:9px;height:9px;border-radius:50%;background:#A63328;flex:none}
+.ls-bar .ls-vote{display:flex;align-items:center;gap:4px;padding-left:4px;color:rgba(245,243,238,.7)}
+.ls-bar .ls-vote button{width:32px;padding:8px 0}
+.ls-bar .ls-vote button[aria-pressed="true"]{background:#A63328;border-color:#A63328;color:#fff}
+.ls-bar.ls-min > :not(.ls-st):not(.ls-tg){display:none}
+.ls-bar.ls-min{flex-wrap:nowrap}
+.ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:16px;padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
+.ls-pop h4{margin:0 0 10px;font:600 16px/1.3 var(--sans)}
+.ls-pop label{display:block;font:500 13px var(--sans);margin:10px 0 4px}
+.ls-pop input[type=text]{width:100%;font:400 15px var(--sans);padding:10px 12px;border:1.5px solid #D9D5CD;border-radius:10px;background:#fff}
+.ls-pop .ls-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ls-pop button{font:500 14px var(--sans);padding:9px 14px;border-radius:999px;border:1.5px solid #D9D5CD;background:#fff;cursor:pointer}
+.ls-pop button.ls-go{background:#0F0F0F;color:#F5F3EE;border-color:#0F0F0F}
+.ls-pop button:hover{border-color:#0F0F0F}
+.ls-pop small{display:block;color:#5E5A54;margin-top:8px;font-size:13px}
+.ls-word{position:fixed;z-index:62;font:600 13px/1 var(--sans);background:#A63328;color:#fff;border:0;border-radius:999px;padding:9px 13px;cursor:pointer;box-shadow:0 4px 14px rgba(15,15,15,.3)}
+.ls-toast{position:fixed;z-index:63;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);background:#0F0F0F;color:#F5F3EE;border-radius:12px;padding:10px 14px;font:500 14px/1.3 var(--sans);display:flex;gap:12px;align-items:center;max-width:calc(100vw - 16px)}
+.ls-toast button{font:500 13px var(--sans);background:transparent;color:#F5F3EE;border:0;text-decoration:underline;cursor:pointer;padding:0}
+@media(max-width:700px){.ls-bar{gap:5px;padding:7px 8px}.ls-bar button{padding:7px 10px}.ls-bar .ls-vote button{width:30px;padding:7px 0}}
+@media print{.ls-bar,.ls-pop,.ls-word,.ls-toast{display:none !important}}`;
+  document.head.appendChild(Object.assign(document.createElement("style"), { textContent: css }));
+
+  let bar = null, pop = null, wordBtn = null, toastEl = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  function toast(msg, undo) {
+    if (toastEl) toastEl.remove(); clearTimeout(undoTimer);
+    toastEl = el(`<div class="ls-toast" role="status"><span>${esc(msg)}</span>${undo ? '<button type="button">Отменить</button>' : ""}</div>`);
+    if (undo) toastEl.querySelector("button").onclick = () => { if (S && S.ev.length && S.ev[S.ev.length - 1] === undo) { S.ev.pop(); save(); count(); voteSync(); } toast("Отменено."); };
+    document.body.appendChild(toastEl); undoTimer = setTimeout(() => { if (toastEl) { toastEl.remove(); toastEl = null; } }, undo ? 6000 : 2600);
+  }
+  const marks = () => (S ? S.ev.filter((e) => e.k !== "at").length : 0);
+  const mmss = () => { const s = Math.floor((Date.now() - S.t0) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  function count() { const c = bar && bar.querySelector(".ls-n"); if (c) c.textContent = `${S.group} · ${mmss()} · отметок: ${marks()}`; }
+  function voteSync() {
+    if (!bar || !S) return; const q = where().q; let last = null;
+    for (const e of S.ev) if (e.k === "vote" && e.q === q && q) last = e.c;
+    bar.querySelectorAll(".ls-vote button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.c === last)));
+  }
+
+  function draw() {
+    if (bar) bar.remove(); closePop();
+    if (!S) {
+      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
+    } else {
+      bar = el(`<div class="ls-bar${(LS.getItem("ls_min") || (window.innerWidth < 700 ? "1" : "0")) === "1" ? " ls-min" : ""}" role="region" aria-label="Режим урока">
+        <span class="ls-st"><i class="ls-dot"></i><span class="ls-n"></span></span>
+        <button type="button" data-a="flag">Трудный вопрос</button>
+        <button type="button" data-a="note">Сработало</button>
+        <span class="ls-vote" role="group" aria-label="Класс выбрал">Класс выбрал ${["A", "B", "C", "D"].map((c) => `<button type="button" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</span>
+        <button type="button" data-a="end">Завершить</button>
+        <button type="button" class="ls-tg" data-a="min" aria-label="Свернуть или развернуть панель урока">⇕</button></div>`);
+    }
+    bar.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.c) return vote(b.dataset.c);
+      ({ start: askStart, flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+    });
+    document.body.appendChild(bar); if (S) { count(); voteSync(); } place();
+  }
+  // the page keeps room under its last line for the bar, and messages sit just above the bar
+  function place() { if (!bar) return; const h = bar.offsetHeight; document.documentElement.style.setProperty("--ls-h", h + "px"); document.body.style.paddingBottom = h + 24 + "px"; }
+  window.addEventListener("resize", place);
+  function open(html) { closePop(); pop = el(`<div class="ls-pop" role="dialog" aria-modal="false">${html}</div>`); document.body.appendChild(pop); const f = pop.querySelector("input[type=text],button"); if (f) f.focus(); pop.addEventListener("keydown", (e) => { if (e.key === "Escape") closePop(); }); return pop; }
+
+  function askStart() {
+    let groups = []; try { groups = JSON.parse(LS.getItem("ls_groups") || "[]"); } catch (e) { groups = []; }
+    const p = open(`<h4>Начать урок</h4>
+      <label for="ls-g">Группа или ученик</label><input type="text" id="ls-g" list="ls-gl" maxlength="40" autocomplete="off" value="${esc(groups[0] || "")}"><datalist id="ls-gl">${groups.map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
+      <label for="ls-l">Урок или тема</label><input type="text" id="ls-l" maxlength="60" autocomplete="off" placeholder="Например: Verbal 7">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="ls-c" checked> Очистить прошлые ответы этого аккаунта</label>
+      <div class="ls-row"><button type="button" class="ls-go">Начать</button><button type="button" data-x>Отмена</button></div>
+      <small>Выделите слово в тексте, чтобы сохранить его. Кнопки внизу отмечают трудный вопрос, удачное объяснение и вариант, который выбрал класс.</small>`);
+    p.querySelector("[data-x]").onclick = closePop;
+    const go = () => {
+      const g = p.querySelector("#ls-g").value.trim(), l = p.querySelector("#ls-l").value.trim();
+      if (g.length < 2) { p.querySelector("#ls-g").focus(); return; }
+      if (p.querySelector("#ls-c").checked) wipe();
+      LS.setItem("ls_groups", JSON.stringify([g, ...groups.filter((x) => x !== g)].slice(0, 12)));
+      S = { v: 1, id: Date.now().toString(36), group: g, lesson: l, t0: Date.now(), t1: 0, ev: [] };
+      LS.setItem(CUR, S.id); lastAt = null; save(); watch(); draw(); toast("Урок начат.");
+    };
+    p.querySelector(".ls-go").onclick = go; p.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") go(); });
+  }
+  // a new lesson starts on clean pages: only this account's own answers are removed (keys carry the account's name),
+  // so another login used in the same browser keeps its results
+  function wipe() {
+    const name = LS.getItem("hw_student") || ""; if (!name) return; const drop = [];
+    for (let i = 0; i < LS.length; i++) { const k = LS.key(i), m = /^(hw|px|rd|mk|ct)_[a-z]+_(.*)$/.exec(k); if (m && (m[2] === name || m[2].indexOf(name + "_") === 0)) drop.push(k); }
+    drop.forEach((k) => LS.removeItem(k));
+  }
+  function askFlag() {
+    if (!where().q) { toast("Откройте вопрос, который нужно отметить."); return; }
+    const p = open(`<h4>Трудный вопрос: в чём причина?</h4><div class="ls-row">${WHY.map(([k, t]) => `<button type="button" data-w="${k}">${t}</button>`).join("")}</div>`);
+    p.querySelectorAll("[data-w]").forEach((b) => (b.onclick = () => { const ev = { k: "flag", why: b.dataset.w }; log(ev); closePop(); toast("Вопрос отмечен.", S.ev[S.ev.length - 1]); }));
+  }
+  function askNote() {
+    const p = open(`<h4>Сработало: какое объяснение помогло?</h4><input type="text" id="ls-t" maxlength="300" autocomplete="off" placeholder="Одна строка своими словами">
+      <div class="ls-row"><button type="button" class="ls-go">Сохранить</button><button type="button" data-x>Отмена</button></div>`);
+    p.querySelector("[data-x]").onclick = closePop;
+    const go = () => { const t = p.querySelector("#ls-t").value.trim(); if (!t) return; log({ k: "note", text: t }); closePop(); toast("Объяснение сохранено.", S.ev[S.ev.length - 1]); };
+    p.querySelector(".ls-go").onclick = go; p.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  }
+  function vote(c) {
+    if (!where().q) { toast("Откройте вопрос, чтобы отметить выбор класса."); return; }
+    log({ k: "vote", c }); voteSync(); toast(`Класс выбрал ${c}.`, S.ev[S.ev.length - 1]);
+  }
+  function askEnd() {
+    const words = S.ev.filter((e) => e.k === "word").length, flags = S.ev.filter((e) => e.k === "flag").length;
+    const p = open(`<h4>Завершить урок?</h4><p style="margin:0">Сохранено слов: ${words}, трудных вопросов: ${flags}, всего отметок: ${marks()}.</p>
+      <div class="ls-row"><button type="button" class="ls-go">Завершить</button><button type="button" data-x>Продолжить урок</button></div>`);
+    p.querySelector("[data-x]").onclick = closePop;
+    p.querySelector(".ls-go").onclick = () => { S.t1 = Date.now(); save(); LS.removeItem(CUR); S = null; draw(); toast("Урок сохранён."); if (window.SITE && SITE.sync) SITE.sync(); };
+  }
+
+  // ---- a word: select it in the text, then «+ Слово»
+  function sentence(node, word) {
+    let b = node.nodeType === 1 ? node : node.parentElement;
+    while (b && b !== document.body && !/^(P|LI|TD|BLOCKQUOTE|BUTTON|H1|H2|H3)$/.test(b.tagName) && !(b.classList && (b.classList.contains("qhtml") || b.classList.contains("tx")))) b = b.parentElement;
+    const text = ((b && b !== document.body ? b : node.parentElement || node).textContent || "").replace(/\s+/g, " ").trim();
+    const i = text.toLowerCase().indexOf(word.toLowerCase()); if (i < 0) return text.slice(0, 240);
+    let a = i, z = i + word.length;
+    while (a > 0 && !/[.!?]/.test(text[a - 1]) && i - a < 160) a--;
+    while (z < text.length && !/[.!?]/.test(text[z]) && z - i < 160) z++;
+    return text.slice(a, Math.min(text.length, z + 1)).trim();
+  }
+  function hideWord() { if (wordBtn) { wordBtn.remove(); wordBtn = null; } }
+  function onSelect() {
+    hideWord(); if (!S) return;
+    const sel = window.getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const w = sel.toString().replace(/\s+/g, " ").trim(); if (w.length < 2 || w.length > 60 || w.split(" ").length > 6) return;
+    const r = sel.getRangeAt(0), host = r.commonAncestorContainer.nodeType === 1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement;
+    if (!host || host.closest(".ls-bar,.ls-pop,.ls-toast,input,textarea,nav,.top")) return;
+    const box = r.getBoundingClientRect(); if (!box.width) return;
+    wordBtn = el('<button type="button" class="ls-word">+ Слово</button>');
+    wordBtn.style.left = Math.max(8, Math.min(window.innerWidth - 110, box.left + box.width / 2 - 45)) + "px";
+    wordBtn.style.top = (box.top > 56 ? box.top - 44 : box.bottom + 8) + "px";
+    wordBtn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the selection
+    wordBtn.onclick = () => {
+      const part = host.closest(".opt,.ch,#sv-opts,#opts") ? "option" : host.closest("#passage,#sv-stim,.passage") ? "passage" : "question";
+      log({ k: "word", w, ctx: sentence(r.startContainer, w), part }); hideWord(); sel.removeAllRanges(); toast(`Слово сохранено: ${w}`, S.ev[S.ev.length - 1]);
+    };
+    document.body.appendChild(wordBtn);
+  }
+  let selT = 0;
+  document.addEventListener("selectionchange", () => { clearTimeout(selT); selT = setTimeout(onSelect, 250); });
+  window.addEventListener("scroll", hideWord, { passive: true });
+
+  S = load(); draw();
+  setInterval(() => { watch(); if (S) { count(); voteSync(); } }, 2000); watch();
+  window.LESSON = { session: () => S, where };
+})();

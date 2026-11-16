@@ -22,7 +22,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | Marketing site (not live yet) | `site/` (EN `site/index.html`, RU `site/ru/index.html`), meant for https://bynurzy.com |
 | Hosting notes | `deploy/README.md`, `deploy/bump_version.py`, `deploy/set_domain.py` |
 | Test kit | `tools/sitetests/` (Playwright scripts, local stand-ins) |
-| Key and data tools | `tools/private/` (`getkey.js`, `datafile.mjs`, `pack.mjs`, `unpack.mjs`) |
+| Key and data tools | `tools/private/` (`getkey.js`, `datafile.mjs`, `pack.mjs`, `unpack.mjs`, `lessonlog.js` = read lesson-mode sessions) |
 | Private sources | `notes/private/*.bin`: encrypted bundles of deck sources and the SAT pattern study (open with `unpack.mjs`) |
 
 ### Pages and their scripts (all in `docs/`)
@@ -39,6 +39,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
 | `cabinet.html` | `cabinet.js`, `cted.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты» |
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
+| every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`) | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
 
 ## 3. Data and encryption
 
@@ -124,6 +125,7 @@ Tests to run by area:
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
 | Login | `t_auth.js` |
+| Lesson mode | `t_lesson.js desktop`, `t_lesson.js phone` (stand-in on 8768) |
 | General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
 
 - If a test needs the local login, set `localStorage` `site_pw=fixture-pw`, `site_login=loop-test`.

@@ -37,6 +37,7 @@
 
   function render() {
     const q = S.items[S.cur], s = S.st[q.i], n = S.items.length, math = isMath(S.ctx.lesson.tag);
+    document.body.dataset.lq = `${S.ctx.lesson.tag}.${S.ctx.part.id}.${q.n}`;   // lesson mode (lesson.js) reads which question is on screen
     const answered = S.items.filter((x) => S.st[x.i].done || (!learn() && S.st[x.i].tries.length)).length;
     $("sv-pos").textContent = `${answered} / ${n}`; $("sv-prog").style.width = `${(100 * answered) / n}%`;
     $("sv-qn").textContent = `Вопрос ${q.n} · ${S.cur + 1} из ${n}`;
