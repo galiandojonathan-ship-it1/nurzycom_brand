@@ -125,7 +125,7 @@ Tests to run by area:
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
 | Login | `t_auth.js` |
-| Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` (stand-in on 8768) |
+| Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
 | General | `t_a11y.js`, `t_offline.js`, `t_print.js` |
 
 - Group tests need fake class files: `node mkgroupcsv.mjs <key.b64> <docs> group.csv` for `t_group.js`, and the same with `NAMES="Ayana Seitkali,Dias Omarov,Аружан Бек,Sher Zh,Mukhamediya K,Erlan T"` → `group2.csv` for `t_group_cb.js` and `t_lsmist.js` (names of the seeded accounts).

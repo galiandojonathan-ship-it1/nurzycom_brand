@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611161833">
-<script src="auth.js?v=202611161833"></script>
+<link rel="stylesheet" href="site.css?v=202611161908">
+<script src="auth.js?v=202611161908"></script>
 <style>
 main{max-width:1200px}
 .src{display:grid;grid-template-columns:1fr;gap:10px}
@@ -102,6 +102,12 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
 #gh-set summary{cursor:pointer}
 .spell{margin:14px 0 6px;padding:14px 16px}.spl{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.sp{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--studio);background:var(--white);padding:4px 4px 4px 10px;font-size:14px}.sp small{font:11px var(--mono);color:var(--stone)}.sp .chip{padding:5px 8px;font-size:10px}.spell select{max-width:320px}
 .demo-flag{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:4px 8px}
+
+/* «Разобрать на уроке» picker (teacher.js rvMount) */
+.rv-card{margin:0 0 18px}.rv-parts{display:grid;gap:6px;max-height:320px;overflow:auto;margin:10px 0 4px;padding:2px}
+.rv-p{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;align-items:start;padding:8px 10px;border:1px solid var(--studio);background:var(--white,#fff);cursor:pointer}
+.rv-p input{margin:3px 0 0;width:18px;height:18px}.rv-p small{grid-column:2;color:#5E5A54;font-size:13px}.rv-p:has(input:checked){border-color:var(--ink)}
+.rv-all{margin:6px 0 12px;font-size:14px}.rv-all .tlink{font:inherit;background:none;border:0;padding:4px 0;text-decoration:underline;cursor:pointer;color:#5E5A54}
 </style>
 </head>
 <body>
@@ -224,9 +230,9 @@ select{font:inherit;padding:10px 12px;border:1px solid var(--studio);background:
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611161833"></script>
-<script src="scale.js?v=202611161833"></script>
-<script src="formkit.js?v=202611161833"></script>
-<script src="teacher.js?v=202611161833"></script>
+<script src="config.js?v=202611161908"></script>
+<script src="scale.js?v=202611161908"></script>
+<script src="formkit.js?v=202611161908"></script>
+<script src="teacher.js?v=202611161908"></script>
 </body>
 </html>
