@@ -375,12 +375,12 @@
         let b; try { b = await bundleT(S.b); } catch (e) { continue; }
         const m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
         Object.keys(pick).forEach((k) => { const [mn, qn] = k.split("."); const mod = mn === "1" ? "m1" : m2, q = (b.mods[mod] || [])[+qn - 1]; if (!q) return;
-          const st = (Q[`${mid}.${sec}.${mod}.${qn}`] = Q[`${mid}.${sec}.${mod}.${qn}`] || { src: { b: S.b, mod, i: +qn - 1 }, title: `${mockName(mid)} · ${S.name} · ${MODN[mod]} · №${qn}`, sec, sk: q.sk, d: q.d, work: "Пробные тесты", n: 0, wrong: 0, picks: {}, who: new Set() });
+          const st = (Q[`${mid}.${sec}.${mod}.${qn}`] = Q[`${mid}.${sec}.${mod}.${qn}`] || { id: `${mid}.${sec}.${mod}.${qn}`, src: { b: S.b, mod, i: +qn - 1 }, title: `${mockName(mid)} · ${S.name} · ${MODN[mod]} · №${qn}`, sec, sk: q.sk, d: q.d, work: "Пробные тесты", n: 0, wrong: 0, picks: {}, who: new Set() });
           st.n++; st.who.add(r.key); if (bad.has(k)) { st.wrong++; const p = pick[k] || "—"; st.picks[p] = (st.picks[p] || 0) + 1; } });
       } else {
         const P = partOf(r.lesson, r.pid); if (!P) continue;
         P.q.forEach((q) => { const k = String(q.n); if (!(k in pick) && !bad.has(k)) return;
-          const st = (Q[`${r.lesson}.${r.pid}.${k}`] = Q[`${r.lesson}.${r.pid}.${k}`] || { src: { b: P.b, n: q.n }, title: `${r.lesson} · ${P.title} · №${k}`, sec, sk: q.sk, d: "", work: WORK(r, P), n: 0, wrong: 0, picks: {}, who: new Set() });
+          const st = (Q[`${r.lesson}.${r.pid}.${k}`] = Q[`${r.lesson}.${r.pid}.${k}`] || { id: `${r.lesson}.${r.pid}.${k}`, src: { b: P.b, n: q.n }, title: `${r.lesson} · ${P.title} · №${k}`, sec, sk: q.sk, d: "", work: WORK(r, P), n: 0, wrong: 0, picks: {}, who: new Set() });
           st.n++; st.who.add(r.key); if (bad.has(k)) { st.wrong++; const p = pick[k] || "—"; st.picks[p] = (st.picks[p] || 0) + 1; } });
       }
     }
@@ -418,7 +418,9 @@
     if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
     if (top.length) html += `<div class="card" style="margin:0 0 18px"><b>Главное.</b> Больше всего ошибок: ${top.map((s) => `${esc(s.label)} (${pct(s.value)})`).join(", ")}.${traps.length ? ` Общих ловушек: ${traps.length} (вопросы, где большинство ошибившихся выбрали один и тот же неверный вариант).` : ""}</div>`;
-    html += `<h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
+    html += `<h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p>
+      ${hard.length ? `<div class="card ga-send"><p style="margin:0 0 10px"><b>Разобрать на уроке.</b> Отправит эти ${hard.length} ${pl(hard.length, "вопрос", "вопроса", "вопросов")} в аккаунт урока (логин lesson) без имён: сам вопрос, сколько учеников ответили и ошиблись, какие неверные варианты выбрали. На уроке нажмите «Ошибки класса» на панели внизу сайта.</p>
+        <button class="btn" type="button" id="ga-send">Показать на уроке <span class="arr">→</span></button> <span class="hint" id="ga-send-st" role="status"></span></div>` : ""}<div id="ga-hard">`;
     html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
       return `<details class="rv tq ga-q" data-i="${all.indexOf(q)}"><summary><span class="mk${e >= 50 ? " no" : ""}">${i + 1}</span><span class="tq-s"><b>${esc(q.title)}</b><br><small>${esc(q.sk || "—")}${q.d ? " · " + DIFN[q.d] : ""} · ${esc(q.work)}${t ? ` · <span style="color:var(--oxide,#A63328)">общая ловушка ${t[0]}</span>` : ""}</small></span>
         <span class="rate">${pct(e)}<small>${q.wrong} из ${q.n}</small></span></summary><div class="rbody"><p class="hint">Загружаю…</p></div></details>`; }).join("") + (hard.length ? "" : '<p class="hint">Пока ни один вопрос не решили столько учеников. Выберите «от 2 учеников».</p>') + "</div>";
@@ -438,7 +440,32 @@
     hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
+    const sb = $("ga-send"); if (sb) sb.onclick = () => gaSend(hard, grp, sb);
     gaBind(box);
+  }
+  // «Показать на уроке» (2026-11-16): the list above goes to the lesson account (login «lesson», lesson.js → lsmist.js) as
+  // key «ls_m» of its synced copy. Only question ids, counts and the wrong options chosen: no names, no per-student data.
+  async function gaSend(hard, grp, btn) {
+    const st = $("ga-send-st");
+    if (!SITE.adminKey()) { st.textContent = "Нужен ключ администратора в этом браузере: раздел «Аккаунты учеников · регистрация»."; return; }
+    btn.disabled = true; st.textContent = "Отправляю…";
+    try {
+      const r = await SITE.api("admin/users"); if (!r.ok) throw new Error(`Сервер ответил ${r.status}.`);
+      const ids = []; for (const x of r.data.users) { try { const me = await SITE.nameOf(x.n); if (/^lesson(-[a-z0-9]+)?$/.test(me.login || "")) ids.push(x.id); } catch (e) { /* unreadable */ } }
+      if (!ids.length) throw new Error("Аккаунта урока нет. Создайте его в разделе «Логины, созданные вручную»: имя «Урок», логин lesson.");
+      const SEC = { all: "", rw: "Reading and Writing", math: "Math" }, KIND = { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" };
+      const note = [SEC[GA.sec], KIND[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ");
+      const snap = { v: 1, at: Date.now(), group: grp ? grp.name : "Все ученики", note,
+        qs: hard.map((q) => ({ id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n, wrong: q.wrong, picks: q.picks, src: q.src })) };
+      for (const id of ids) {
+        const url = "admin/progress?id=" + encodeURIComponent(id), g = await SITE.api(url); let B = {};
+        if (g.ok) B = await SITE.unsealBlob(g.data.data); else if (g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
+        B.ls_m = { v: JSON.stringify(snap), t: Date.now() };
+        const p = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(B) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
+      }
+      st.textContent = `Отправлено: ${hard.length} ${pl(hard.length, "вопрос", "вопроса", "вопросов")} («${snap.group}»). В аккаунте урока нажмите «Ошибки класса».`;
+    } catch (e) { st.textContent = e.message || "Не удалось отправить. Попробуйте ещё раз."; }
+    finally { btn.disabled = false; }
   }
   function gaBind(box) {
     [["ga-grp", "gid"], ["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));

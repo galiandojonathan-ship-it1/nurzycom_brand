@@ -18,6 +18,14 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
   const PAGES = { index: "Домашние задания", plan: "План курса", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты", useful: "Полезное", archaic: "Архаичные слова", desmos: "Desmos", circle: "Единичная окружность", mytest: "Тесты преподавателя" };
+  // «Ошибки класса»: the group's hardest questions sent from the teacher page (lsmist.js, loaded on first use)
+  const VER = ((document.currentScript && document.currentScript.src) || "").split("?")[1] || "";
+  function openMist() {
+    if (window.LSMIST) return LSMIST.open();
+    const s = document.createElement("script"); s.src = "lsmist.js" + (VER ? "?" + VER : "");
+    s.onload = () => window.LSMIST && LSMIST.open(); s.onerror = () => toast("Не удалось загрузить разбор ошибок. Обновите страницу.");
+    document.head.appendChild(s);
+  }
   let S = null, lastAt = null, lastTi = null, undoTimer = 0;
 
   // results of this account stay off the teacher's Google Form (it would look like one more student)
@@ -33,7 +41,7 @@
   // which question is on screen: solve.js and mock.js write it to <body data-lq>; it counts only while the question view is visible
   function where() {
     const page = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index";
-    const on = ["sv-qn", "qnum", "qn", "r-read"].some((id) => { const e = document.getElementById(id); return e && e.offsetParent; });
+    const on = ["ls-mq", "sv-qn", "qnum", "qn", "r-read"].some((id) => { const e = document.getElementById(id); return e && e.offsetParent; });
     return { p: page, q: on ? document.body.dataset.lq || "" : "", ti: on && document.body.dataset.lq ? document.body.dataset.lt || "" : PAGES[page] || page };
   }
   function log(ev, quiet) {
@@ -99,7 +107,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
   function draw() {
     if (bar) bar.remove(); closePop(); picking = false; document.documentElement.classList.remove("ls-pick");
     if (!S) {
-      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
+      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span><button type="button" data-a="mist">Ошибки класса</button><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
     } else {
       bar = el(`<div class="ls-bar${(LS.getItem("ls_min") || (window.innerWidth < 700 ? "1" : "0")) === "1" ? " ls-min" : ""}" role="region" aria-label="Режим урока">
         <span class="ls-st"><i class="ls-dot"></i><span class="ls-n"></span></span>
@@ -107,13 +115,14 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
         <button type="button" data-a="flag">Трудный вопрос</button>
         <button type="button" data-a="note">Сработало</button>
         <span class="ls-vote" role="group" aria-label="Класс выбрал">Класс выбрал ${["A", "B", "C", "D"].map((c) => `<button type="button" data-c="${c}" aria-pressed="false">${c}</button>`).join("")}</span>
+        <button type="button" data-a="mist">Ошибки класса</button>
         <button type="button" data-a="end">Завершить</button>
         <button type="button" class="ls-tg" data-a="min" aria-label="Свернуть или развернуть панель урока">⇕</button></div>`);
     }
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.c) return vote(b.dataset.c);
-      ({ start: askStart, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+      ({ start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
     document.body.appendChild(bar); if (S) { count(); voteSync(); } place();
   }
@@ -183,7 +192,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
     return text.slice(a, Math.min(text.length, z + 1)).trim();
   }
   function saveWord(w, node, host) {
-    const part = host.closest(".opt,.ch,#sv-opts,#opts") ? "option" : host.closest("#passage,#sv-passage,.passage") ? "passage" : "question";
+    const part = host.closest(".opt,.ch,#sv-opts,#opts,.lm-o") ? "option" : host.closest("#passage,#sv-passage,.passage,.lm-stim") ? "passage" : "question";
     log({ k: "word", w, ctx: sentence(node, w), part }); toast(`Слово сохранено: ${w}`, S.ev[S.ev.length - 1]);
   }
   // «Слово» on the bar: the next click on any word saves it. Answer options are buttons, and a browser does not let
