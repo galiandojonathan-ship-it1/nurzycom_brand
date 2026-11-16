@@ -71,10 +71,18 @@
     if (!wn) return;
     const slow = setTimeout(() => card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Загружаю словарь…</span>`, rect), 250);
     try { await load(wn); clearTimeout(slow); } catch (e) { clearTimeout(slow); return card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Словарь не загрузился. Проверьте интернет.</span>`, rect); }
-    const f = find(wn);
+    let f = find(wn), via = "", also = null;
+    // a form entry («reinvigorated: simple past and past participle of reinvigorate») also shows its base word's meaning;
+    // when the entry has nothing else, the base word becomes the card
+    const FORM = (g) => / of ([a-z'-]+)\W*$/i.test(g) && /\b(past|participle|plural|singular|form|comparative|superlative|present)\b/i.test(g);
+    const formOf = f && (f.e.p.flatMap(([, gs]) => gs).find(FORM) || "").match(/ of ([a-z'-]+)\W*$/i);
+    const base = f && ((formOf && formOf[1].toLowerCase()) || data.f[f.w]);
+    if (base && base !== f.w) { try { await load(base); const b = find(base);
+      if (b) { if (f.e.p.every(([, gs]) => gs.every(FORM))) { via = f.w; f = b; } else also = b; } } catch (e) { /* keep the form entry */ } }
     if (!f) return card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Этого слова нет в словаре сайта.</span>`, rect);
     const senses = f.e.p.map(([pos, gs]) => `<span class="dpop-pos">${esc(POSN[pos] || pos)}</span><ol>${gs.map((g) => `<li lang="en">${esc(g)}</li>`).join("")}</ol>`).join("");
-    card(`<span class="label">Словарь · Wiktionary</span><b lang="en">${esc(f.w)}</b>${senses}${f.e.r.length ? `<span class="gpop-ru">${esc(f.e.r.join(", "))}</span>` : ""}<small class="dpop-src">Wiktionary, CC BY-SA 4.0 · значение может зависеть от контекста</small>`, rect);
+    const more = also ? `<span class="dpop-pos">${esc(also.w)}</span><ol>${also.e.p.flatMap(([, gs]) => gs).filter((g) => !FORM(g)).slice(0, 2).map((g) => `<li lang="en">${esc(g)}</li>`).join("")}</ol>${also.e.r.length && !f.e.r.length ? `<span class="gpop-ru">${esc(also.e.r.join(", "))}</span>` : ""}` : "";
+    card(`<span class="label">Словарь · Wiktionary</span><b lang="en">${esc(f.w)}</b>${via ? `<span class="gpop-en">форма слова: ${esc(via)} → ${esc(f.w)}</span>` : ""}${senses}${more}${f.e.r.length ? `<span class="gpop-ru">${esc(f.e.r.join(", "))}</span>` : ""}<small class="dpop-src">Wiktionary, CC BY-SA 4.0 · значение может зависеть от контекста</small>`, rect);
   }
 
   // a selection of 1–4 words inside the page's text (not in fields, the menu, the lesson bar or a card)

@@ -21,7 +21,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   const clean = () => pg.evaluate(() => { getSelection().removeAllRanges(); const p = document.getElementById("dict-probe"); if (p) p.remove(); });
   for (const [w, re, what] of [["serendipity", /Wiktionary.*serendipity/i, "an ordinary rare word"], ["interspersing", /Словарь курса.*intersperse/i, "a lesson word keeps its course card"],
     ["undermined", /Словарь курса.*undermine/i, "a course word keeps its course card"], ["lighthouse", /Wiktionary.*lighthouse.*маяк/i, "dictionary with Russian equivalents"],
-    ["mice", /Wiktionary.*mice.*plural of mouse/i, "a form names its base word"], ["studies", /Wiktionary.*study/i, "a regular ending finds its base word"], ["thou", /thou.*местоим.*(ye|you)/i, "an archaic pronoun comes first"],
+    ["mice", /Wiktionary.*mice.*plural of mouse/i, "a form names its base word"], ["studies", /Wiktionary.*study/i, "a regular ending finds its base word"], ["abandoned", /Wiktionary|Словарь курса/i, "a past form"], ["reinvigorated", /reinvigorated.*of reinvigorate.*reinvigorate\s*\S/i, "a form also shows its base word"], ["sauntered", /sauntered → saunter/i, "a bare form becomes its base word"], ["thou", /thou.*местоим.*(ye|you)/i, "an archaic pronoun comes first"],
     ["qwzx", /нет в словаре/, "an unknown word says so"]]) {
     await pickText(w); const t = await card(); ok(re.test(t), `${what}: «${w}» → ${t.slice(0, 110)}`); await pg.keyboard.press("Escape"); await clean(); await pg.waitForTimeout(350);
   }
