@@ -92,7 +92,7 @@ KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 - **Language:** student-facing text is Russian. SAT questions, terms and slides are in English. Give Nurassyl click-steps with the English button names.
 - **Brand:**
   - colours: Ink #0F0F0F, Paper #F5F3EE, Mist #ECE9E2, Stone #D9D5CD, one accent Oxide #A63328 (sparingly);
-  - font: Geist everywhere; the homework start page also uses Sofia Sans Condensed 600 (`body.hw-page`, `--disp`); IBM Plex Mono only for the login animation;
+  - font: Onest everywhere (since 2026-11-16; it replaced Geist: same proportions, softer shapes, clearer Cyrillic); the homework start page also uses Sofia Sans Condensed 600 (`body.hw-page`, `--disp`); IBM Plex Mono only for the login animation;
   - layout: no photos; blocks are white rounded cards;
   - teacher pages may use the six group colours.
 - **Hard rules** (CLAUDE.md): no invented results, scores or reviews; practice-test scores are always «примерный балл»; consent before any name; no guarantees.

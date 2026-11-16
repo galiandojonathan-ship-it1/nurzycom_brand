@@ -9,7 +9,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await pg.waitForTimeout(3500); const late = await pg.$eval(".auth-type", (b) => b.textContent);
   ok(early.length < late.length && late === "nurzycom", `login: typed out over time («${early}» → «${late}»)`);
   ok(await pg.$(".auth-type .caret"), "login: caret at the end");
-  const font = await pg.$eval("h1", (h) => getComputedStyle(h).fontFamily + " / " + getComputedStyle(h).fontStyle); ok(/Geist/.test(font) && /normal/.test(font), "plain heading font: " + font);
+  const font = await pg.$eval("h1", (h) => getComputedStyle(h).fontFamily + " / " + getComputedStyle(h).fontStyle); ok(/Onest/.test(font) && /normal/.test(font), "plain heading font: " + font);
   await ctx.close();
   ctx = await br.newContext({ viewport: { width: 1366, height: 860 }, reducedMotion: "reduce" }); pg = await ctx.newPage();
   await pg.goto("http://127.0.0.1:8768/index.html", { waitUntil: "load" }); await pg.waitForTimeout(200);
