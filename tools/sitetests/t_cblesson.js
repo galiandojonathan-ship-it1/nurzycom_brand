@@ -27,13 +27,16 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await lp.click('.ls-bar [data-a="end"]'); await lp.click(".ls-pop .ls-go"); await lp.waitForTimeout(2500);
   // the skill writes its review back to the account
   await lp.evaluate(async ([id, w]) => { localStorage.setItem("ls_r_" + id, JSON.stringify({ v: 1, summary: "Группа путает близкие по смыслу глаголы.", words: [{ w, en: "a test definition", ru: ["проверка", "тест"], verdict: "gloss" }], questions: { "PT5.rw.m1.1": { text: "Вариант B звучит знакомо, но не подходит по смыслу.", hint: "Сначала своё слово." } } })); await SITE.sync(); }, [sid, word]);
+  // a lesson recorded before titles were saved with events (no «ti»): the cabinet rebuilds the part name
+  await lp.evaluate(async () => { const t = Date.now() - 864e5; localStorage.setItem("ls_s_old1", JSON.stringify({ v: 1, id: "old1", group: "Старая группа", lesson: "", t0: t, t1: t + 600000, ev: [{ t, p: "index", q: "", k: "at" }, { t: t + 5000, p: "index", q: "V04.p4.19", k: "at" }, { t: t + 90000, p: "index", q: "V04.p4.19", k: "flag", why: "text" }] })); await SITE.sync(); });
   await lp.waitForTimeout(1500); await lc.close();
 
   // the cabinet
   await pg.goto(B + "cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   ok(!(await pg.$$eval(".sc-nm", (a) => a.map((x) => x.textContent))).includes("Урок"), "the lesson account is not listed as a student");
-  ok(/Уроки · 1/.test(await pg.textContent("[data-ls]")), "toolbar: «Уроки · 1»");
+  ok(/Уроки · 2/.test(await pg.textContent("[data-ls]")), "toolbar: «Уроки · 2»");
   await pg.click("[data-ls]"); await pg.waitForSelector(".lsn-card");
+  const old = (await pg.textContent(".lsn-card:nth-child(2)")).replace(/\s+/g, " "); ok(/Старая группа/.test(old) && /SAT Verbal · Урок 4/.test(old) && !/V04\.p4/.test(old), "an old lesson without titles gets the part name: " + old.slice(0, 150));
   const card = (await pg.textContent(".lsn-card")).replace(/\s+/g, " "); ok(/Группа А/.test(card) && /Пробный тест 5 · Reading and Writing · Модуль 1 → SAT Verbal · Урок 2/.test(card) && /есть разбор/.test(card), "lesson card names the parts by itself: " + card.slice(0, 230));
   await pg.click(".lsn-card"); await pg.waitForSelector(".lsn-kpi");
   const txt = (await pg.textContent(".lsn")).replace(/\s+/g, " ");
@@ -55,7 +58,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await pg.screenshot({ path: `cblesson_${dev}.png`, fullPage: true });
   await pg.keyboard.press("Escape"); await pg.waitForSelector(".lsn-card"); ok(true, "Escape goes back to the list");
   await pg.click(".lsn-card"); await pg.click("[data-lsdel]"); await pg.waitForTimeout(1200);
-  ok(!(await pg.$(".lsn-card")) && /Уроков пока нет/.test(await pg.textContent(".lsn")), "lesson deleted");
+  ok((await pg.$$(".lsn-card")).length === 1, "lesson deleted, the other one stays");
   await pg.click("[data-lsclose]"); await pg.waitForSelector(".scard"); ok(!(await pg.$(".lsn")), "closed: back to students");
   ok(errs.length === 0, "no page errors " + errs.join(" | "));
   console.log(fails ? `${fails} FAILED` : "ALL PASS"); await br.close(); process.exit(fails ? 1 : 0); })();

@@ -31,11 +31,16 @@
     }
     return out.sort((a, b) => b.s.t0 - a.s.t0);
   }
+  // lessons recorded before the part title was saved with each event: rebuild it from the lesson list
+  function oldTitle(q) {
+    const sec = secOf(q), h = /^([A-Z]+\d*[A-Z]?)\.([a-z0-9]+)$/i.exec(sec), les = h && api.lessons().find((x) => x.tag === h[1]), part = les && les.parts.find((x) => x.id === h[2]);
+    return part ? `${les.title || les.tag} · ${part.title}` : sec;
+  }
   function digest(s, rv, u) {
     const end = s.t1 || (s.ev.length ? s.ev[s.ev.length - 1].t : s.t0), at = s.ev.filter((e) => e.k === "at");
     const title = {}, timeQ = {}, parts = [];   // section → title; question → ms on screen; parts in order
     at.forEach((e, i) => {
-      const ms = Math.max(0, (i + 1 < at.length ? at[i + 1].t : end) - e.t), ti = e.ti || (e.q ? secOf(e.q) : e.p);
+      const ms = Math.max(0, (i + 1 < at.length ? at[i + 1].t : end) - e.t), ti = e.ti || (e.q ? oldTitle(e.q) : PAGE(e.p));
       if (e.q) { title[secOf(e.q)] = ti; timeQ[e.q] = (timeQ[e.q] || 0) + ms; }
       let p = parts.find((x) => x.ti === ti); if (!p) parts.push((p = { ti, ms: 0, work: !!e.q, qs: new Set() }));
       p.ms += ms; if (e.q) p.qs.add(e.q);
@@ -108,7 +113,7 @@
       ${tq.length ? `<div class="lsn-bars">${tq.slice(0, 12).map(([q, ms]) => `<div class="lsn-bar"><span class="t">${esc(d.label(q))}</span><span class="b"><i style="width:${Math.max(2, Math.round((100 * ms) / maxQ))}%"></i></span><span class="v">${esc(dur(ms))}</span></div>`).join("")}</div>${tq.length > 12 ? `<p class="td-sub">Показаны 12 самых долгих из ${tq.length}.</p>` : ""}` : '<p class="td-sub">Вопросы в этом уроке не открывались.</p>'}
       ${s.t1 ? `<p class="lsn-del"><button class="tlink" type="button" data-lsdel="${esc(s.id)}">Удалить урок</button></p>` : ""}`;
   }
-  const PAGE = (p) => ({ index: "Домашние задания", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты" }[p] || p || "");
+  const PAGE = (p) => ({ index: "Домашние задания", plan: "План курса", vocab: "Словарь", reading: "Тексты", practice: "Сложные вопросы", mock: "Пробные тесты", useful: "Полезное", archaic: "Архаичные слова", desmos: "Desmos", circle: "Единичная окружность", mytest: "Тесты преподавателя" }[p] || p || "");
 
   // the question itself (text, options, key, explanation), decrypted in this browser like everywhere else in the cabinet
   async function bundle(path) {
