@@ -150,7 +150,9 @@ input[type=text]:focus,input[type=password]:focus,input[type=search]:focus{borde
 .passage p.th:first-child{margin-top:0}
 .passage ul{margin:0 0 14px;padding-left:20px;font-size:17px;line-height:1.6}
 .passage li{margin-bottom:6px}
-.passage u{text-decoration-thickness:1px;text-underline-offset:3px}
+/* the underlined part a question asks about («the underlined sentence», <u> or an inline underline style in College Board HTML):
+   a clear 2 px line that survives a shared screen in Google Meet (2026-11-17, Nurassyl: «не видно underlined sentences») */
+.qhtml u,.qhtml [style*="underline"],.passage u{text-decoration:underline solid var(--ink) !important;text-decoration-thickness:2px !important;text-underline-offset:4px !important;text-decoration-skip-ink:none !important}   /* !important: the question's own inline style would reset the weight */
 .blank{letter-spacing:-.05em}
 .tw{overflow-x:auto;margin:0 0 18px;-webkit-overflow-scrolling:touch}
 .tw:focus-visible{outline:2px solid var(--ink,#0F0F0F);outline-offset:2px}
@@ -405,7 +407,8 @@ input[type=text]:focus,input[type=password]:focus,input[type=search]:focus{box-s
 }
 
 /* hard words in test questions (gloss.js, 2026-11-05): dotted underline, a tap opens an ink card with the meaning */
-.gw{text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:4px;cursor:help;border-radius:1px}
+.gw{text-decoration:underline dotted #77736D;text-decoration-thickness:1px;text-underline-offset:4px;cursor:help;border-radius:1px}   /* lighter than the question's own underline */
+.qhtml u .gw,.qhtml [style*="underline"] .gw{text-decoration:none}   /* inside the underlined sentence a word keeps its card (tap) but not its dots, so the two lines never overlap */
 .gw:hover{text-decoration-style:solid}
 .gw.on{background:var(--ink);color:var(--paper);text-decoration:none;box-shadow:0 0 0 2px var(--ink)}
 .gw:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
