@@ -45,6 +45,16 @@
     $("gl").open = false;
     setQuiet(false);
     $("quiz").classList.add("hidden"); $("to-quiz-row").classList.remove("hidden"); $("gl").classList.remove("hidden");
+    LiveRound.mount("to-quiz", async () => {
+      const passage = st.t.paras.map((text) => "<p>" + esc(text).replace(MK, (match, word) => word) + "</p>").join("");
+      const questions = await Promise.all(st.t.q.slice(0, 10).map(async (q) => {
+        let answer;
+        for (const choice of "ABCD") if (await sha(`${st.t.salt}:${q.i}:${choice}`) === q.h) answer = choice;
+        if (!answer) throw Error("Не удалось проверить ключ вопроса.");
+        return { prompt: passage + "<p>" + esc(q.s) + "</p>", options: q.o.map(esc), type: "mc", accepted: [answer] };
+      }));
+      return { title: st.t.title, questions };
+    });
     show("r-read");
   }
   function setQuiet(q) {

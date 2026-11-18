@@ -12,10 +12,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const message = panel.querySelector("[role=status]");
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
+  let sealedSet = null;
 
   async function api(action, body, id = round) {
     const params = new URLSearchParams({ action });
     if (id) params.set("round", id);
+    if (action === "state" && state?.set) params.set("snapshot", "0");
     if (credentials?.participant) params.set("student", credentials.participant);
     const token = credentials?.host || credentials?.student;
     const result = await SITE.api("live?" + params, {
@@ -45,24 +47,24 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
 
   if (!round) {
     if (!isLesson) return;
-    const create = button("Живая практика · 10 × 45 с", async () => {
+    LiveRound.mount("go", async () => {
       const set = selected();
-      if (!set || set.q.length < 10) throw Error("Выберите набор, в котором есть хотя бы 10 вопросов.");
-      const keys = await Promise.all(set.q.slice(0, 10).map(async (question) => {
+      if (!set) throw Error("Выберите набор вопросов.");
+      const questions = await Promise.all(set.q.slice(0, 10).map(async (question) => {
+        let answer;
         for (const choice of "ABCD") {
-          if (await sha(`${set.salt}:${question.i}:${choice}`) === question.h) return choice;
+          if (await sha(`${set.salt}:${question.i}:${choice}`) === question.h) answer = choice;
         }
-        throw Error("Не удалось проверить ключ вопроса.");
+        if (!answer) throw Error("Не удалось проверить ключ вопроса.");
+        return { prompt: blocks(question.b) + "<p>" + rich(question.s) + "</p>",
+          options: question.o.map((option) => rich(option)), type: "mc", accepted: [answer] };
       }));
-      const created = await api("create", { set: set.id, title: set.title, keys });
-      sessionStorage.setItem("live:" + created.round, JSON.stringify({ host: created.host }));
-      location.href = "practice.html?live=" + created.round;
+      return { title: set.title, questions };
     });
-    document.getElementById("go").parentElement.append(create);
-    create.after(message);
     return;
   }
 
+  document.body.classList.add("live-round-page");
   start.classList.add("hidden");
   panel.hidden = false;
   if (!SITE.me()) {
@@ -79,6 +81,31 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   }
 
   function questionView(question, options) {
+    if (question.prompt !== undefined) {
+      const section = document.createElement("section");
+      section.innerHTML = question.prompt;
+      if (question.type !== "mc" && options) {
+        const label = document.createElement("label");
+        label.textContent = "Ваш ответ";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.maxLength = 64;
+        input.autocomplete = "off";
+        label.append(input);
+        section.append(label, button("Отправить ответ", () => {
+          if (!input.value.trim()) throw Error("Введите ответ.");
+          return options(input.value.trim());
+        }));
+      } else {
+        question.options.forEach((choice, index) => {
+          const letter = "ABCD"[index];
+          const option = options ? button(letter, () => options(letter)) : document.createElement("p");
+          option.innerHTML = letter + ". " + choice;
+          section.append(option);
+        });
+      }
+      return section;
+    }
     const section = document.createElement("section");
     section.innerHTML = blocks(question.b) + "<p>" + rich(question.s) + "</p>";
     question.o.forEach((choice, index) => {
@@ -93,7 +120,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   function scoreboard() {
     const table = document.createElement("table");
     const header = table.createTHead().insertRow();
-    ["Ученик", ...Array.from({ length: 10 }, (_, i) => String(i + 1)), "Верно"].forEach((label) => {
+    ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(i + 1)), "Верно"].forEach((label) => {
       const cell = document.createElement("th");
       cell.scope = "col";
       cell.textContent = label;
@@ -105,7 +132,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     for (const student of state.students) {
       const row = tbody.insertRow(), answers = byStudent.get(student.id);
       row.insertCell().textContent = student.display_name;
-      for (let number = 1; number <= 10; number++) {
+      for (let number = 1; number <= (state.total || 10); number++) {
         const answer = answers.get(number);
         row.insertCell().textContent = answer ? answer.answer + (answer.correct ? " ✓" : " ✗") : "—";
       }
@@ -116,7 +143,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
 
   function render(set) {
     const elapsed = state.started === null ? null : state.now - state.started;
-    const number = elapsed === null || elapsed < 0 ? 0 : Math.min(10, Math.floor(elapsed / 45000) + 1);
+    const number = elapsed === null || elapsed < 0 ? 0 : Math.min(state.total || 10, Math.floor(elapsed / 45000) + 1);
     const seconds = Math.ceil(elapsed < 0 ? -elapsed / 1000 : (number * 45000 - elapsed) / 1000);
     if (credentials.host) {
       let results = content.querySelector("[data-results]");
@@ -142,11 +169,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         const review = document.createElement("div");
         review.dataset.review = "";
         review.append(heading("Разбор вопросов"));
-        set.q.slice(0, 10).forEach((question, index) => {
+        set.q.slice(0, state.total || 10).forEach((question, index) => {
           const detail = document.createElement("details"), summary = document.createElement("summary");
           summary.textContent = "Вопрос " + (index + 1);
           const key = document.createElement("p");
-          key.textContent = "Правильный ответ: " + state.keys[index];
+          const grading = state.keys[index];
+          key.textContent = "Правильный ответ: " + (typeof grading === "string" ? grading : grading.accepted.join("; "));
           detail.append(summary, questionView(question), key);
           review.append(detail);
         });
@@ -157,7 +185,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
 
     const answer = state.answers.find((item) => item.question_number === number);
     const view = state.finished ? "done" : number + ":" + (answer?.answer || "");
-    message.textContent = state.finished ? "Раунд завершён." : number ? `Вопрос ${number} из 10 · ${seconds} с` : "Ждём начала раунда.";
+    message.textContent = state.finished ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total || 10} · ${seconds} с` : "Ждём начала раунда.";
     if (view === shown) return;
     shown = view;
     content.replaceChildren();
@@ -175,9 +203,14 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     try {
       const next = await api("state");
       if (version !== refreshVersion) return;
+      next.set = next.set || state?.set;
       state = next;
-      const set = sets.find((item) => item.id === state.set);
-      if (!set || set.q.length < 10) throw Error("Набор вопросов недоступен.");
+      let set;
+      if (state.set.startsWith("sealed:")) {
+        if (!sealedSet) sealedSet = { q: await SITE.unsealBlob(state.set.slice(7)) };
+        set = sealedSet;
+      } else set = sets.find((item) => item.id === state.set);
+      if (!set || set.q.length < (state.total || 10)) throw Error("Набор вопросов недоступен.");
       render(set);
     } catch (error) {
       if (version !== refreshVersion) return;
