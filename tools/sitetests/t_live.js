@@ -30,6 +30,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await createBtn.click(); await host.waitForTimeout(600);
   ok(/Выберите набор/.test(await host.locator("#p-start").innerText()), "without a set: asks to choose one");
   await host.click('[data-s="X01"]'); await createBtn.click();
+  await host.locator("dialog.live-settings").getByRole("button", { name: "Создать раунд", exact: true }).click();
   await host.waitForURL(/live=/, { timeout: 8000 }); await host.waitForTimeout(2500);
   const link = await host.locator(".live-practice a").getAttribute("href");
   ok(/practice\.html\?live=[a-f0-9]{32}$/.test(link), "round created, link " + link);

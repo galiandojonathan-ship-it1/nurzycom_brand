@@ -653,3 +653,11 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 
 /* The live scoreboard stays clear of the lesson capture toolbar on a phone. */
 .live-round-page .ls-bar{position:static;transform:none;width:fit-content;margin:16px auto}
+
+.live-settings{width:min(540px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:1px solid var(--stone);border-radius:16px;background:var(--paper);color:var(--ink)}
+.live-settings::backdrop{background:rgba(15,15,15,.55)}
+.live-settings h2{margin:0 0 12px}
+.live-settings label{display:block;margin:14px 0;font-weight:500}
+.live-settings input[type=number]{display:block;margin-top:6px;width:100%;padding:10px 12px;border:1px solid var(--stone);border-radius:8px;background:#fff;font:inherit}
+.live-settings .live-setting-check{display:flex;align-items:center;gap:10px}
+.live-settings .live-setting-check input{width:18px;height:18px;accent-color:var(--oxide)}

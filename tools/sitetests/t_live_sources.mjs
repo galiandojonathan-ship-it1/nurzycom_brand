@@ -8,6 +8,7 @@ sql.exec(readFileSync(new URL("../../deploy/live-lesson-d1.sql", import.meta.url
 const db = {
   prepare(query) {
     return { bind(...args) {
+      assert(args.length <= 100, "D1 parameter limit");
       return {
         run: () => ({ meta: sql.prepare(query).run(...args) }),
         first: () => sql.prepare(query).get(...args),
@@ -76,4 +77,53 @@ now += 45000;
 state = await call("state", null, host, 200);
 assert.equal(state.finished,true);
 assert.equal(state.keys.length,2);
-console.log("PASS: authorization, join, synchronized deadlines, single submissions, live scores, and answer-key visibility");
+
+sql.exec("DROP TABLE live_round_responses; DROP TABLE live_round_items;");
+// Configured rounds create their tables on an existing four-table database.
+participant = null;
+({round,host} = await call("create", {title:"Strict custom timer",set:"sealed:YWJj",keys:Array(12).fill("A"),settings:{seconds:5,strict:true}}, "teacher",201));
+({participant,student} = await call("join",{name:"Strict student"},null,201));
+await call("start",{},host,200);
+now += 3000;
+await call("answer",{number:1,answer:"A"},student,200);
+now += 5000;
+await call("answer",{number:1,answer:"A"},student,409);
+await call("answer",{number:2,answer:"A"},student,200);
+state = await call("state",null,host,200);
+assert.equal(state.total,12);
+assert.equal(state.seconds,5);
+assert.equal(state.strict,true);
+await call("next",{number:1},host,409);
+now += 55000;
+state = await call("state",null,host,200);
+assert.equal(state.finished,true);
+assert.equal(state.keys.length,12);
+
+participant = null;
+({round,host} = await call("create",{title:"Flexible timer",set:"sealed:YWJj",keys:["A","B"],settings:{seconds:5,strict:false}},"teacher",201));
+({participant,student} = await call("join",{name:"Flexible student"},null,201));
+await call("start",{},host,200);
+await call("next",{number:1},host,409); // Three-second countdown has not finished.
+now += 3000 + 20000;
+state = await call("state",null,student,200);
+assert.equal(state.finished,false);
+assert.equal(state.current,1);
+await call("answer",{number:1,answer:"A"},student,200); // Overtime remains valid.
+await call("answer",{number:2,answer:"B"},student,409);
+await call("next",{number:1},student,403);
+await call("next",{number:1},host,200);
+await call("next",{number:1},host,409); // A retry cannot skip question two.
+await call("answer",{number:1,answer:"B"},student,409);
+state = await call("state",null,host,200);
+assert.equal(state.current,2);
+assert.equal(state.questionStartedAt,now);
+await call("answer",{number:2,answer:"B"},student,200);
+await call("next",{number:2},host,200);
+state = await call("state",null,host,200);
+assert.equal(state.finished,true);
+await call("create",{...setup,settings:{seconds:0,strict:true}},"teacher",400);
+participant = null;
+({round,host} = await call("create",{title:"Full capacity",set:"sealed:YWJj",keys:Array(100).fill("A"),settings:{seconds:45,strict:true}},"teacher",201));
+state = await call("state",null,host,200);
+assert.equal(state.total,100);
+console.log("PASS original and configured rounds, strict deadlines, flexible overtime, host advancement, counts above ten and retry safety");

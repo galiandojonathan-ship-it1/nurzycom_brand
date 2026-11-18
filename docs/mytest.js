@@ -47,7 +47,7 @@
     document.title = `${t.title || "Тест"} · nurzycom`;
     LiveRound.mount("go", () => ({
       title: st.t.title || "Тест",
-      questions: st.t.q.slice(0, 10).map((q) => ({
+      questions: st.t.q.map((q) => ({
         prompt: CTL.rich(q.passage) + CTL.rich(q.stem),
         options: q.type === "spr" ? [] : q.o.map(CTL.inline),
         type: q.type === "spr" ? "custom" : "mc",

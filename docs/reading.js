@@ -47,7 +47,7 @@
     $("quiz").classList.add("hidden"); $("to-quiz-row").classList.remove("hidden"); $("gl").classList.remove("hidden");
     LiveRound.mount("to-quiz", async () => {
       const passage = st.t.paras.map((text) => "<p>" + esc(text).replace(MK, (match, word) => word) + "</p>").join("");
-      const questions = await Promise.all(st.t.q.slice(0, 10).map(async (q) => {
+      const questions = await Promise.all(st.t.q.map(async (q) => {
         let answer;
         for (const choice of "ABCD") if (await sha(`${st.t.salt}:${q.i}:${choice}`) === q.h) answer = choice;
         if (!answer) throw Error("Не удалось проверить ключ вопроса.");
