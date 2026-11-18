@@ -16,6 +16,13 @@ export async function onRequest({ env, request }) {
   const now = Date.now();
   const action = url.searchParams.get("action") || "state";
   const method = request.method;
+  // Setup check (no data): are the four tables of deploy/live-lesson-d1.sql in the database?
+  if (action === "health" && method === "GET") {
+    const need = ["live_rounds", "live_questions", "live_participants", "live_answers"];
+    const have = (await db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'live_%'").all()).results.map((row) => row.name);
+    const missing = need.filter((name) => !have.includes(name));
+    return reply({ ok: !missing.length, missing });
+  }
   if (method !== (action === "state" ? "GET" : "POST")) return error(405, "Метод недоступен.");
   if (request.headers.get("origin") && request.headers.get("origin") !== url.origin) return error(403, "Доступ закрыт.");
   let data = {};

@@ -17,6 +17,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   const vis = (p, sel) => p.$eval(sel, (e) => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length) && getComputedStyle(e).display !== "none").catch(() => false);
   const msg = (p) => p.$eval(".live-practice [role=status]", (e) => e.textContent).catch(() => "");
 
+  // setup check: the four tables exist
+  const health = await (await fetch(B + "api/live?action=health")).json();
+  ok(health.ok === true && health.missing.length === 0, "api/live health: all tables present " + JSON.stringify(health));
+
   // host: the lesson account (admin key in this browser, as on Nurassyl's computer)
   const host = await ctx("lesson", "Урок", ADMIN);
   await host.goto(B + "practice.html", { waitUntil: "load" }); await host.waitForTimeout(2500);
