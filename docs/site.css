@@ -661,3 +661,9 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-settings input[type=number]{display:block;margin-top:6px;width:100%;padding:10px 12px;border:1px solid var(--stone);border-radius:8px;background:#fff;font:inherit}
 .live-settings .live-setting-check{display:flex;align-items:center;gap:10px}
 .live-settings .live-setting-check input{width:18px;height:18px;accent-color:var(--oxide)}
+
+.live-host-workspace.has-live-question{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:24px;align-items:start;margin-top:20px}
+.live-host-question{min-width:0;background:#fff;border:1px solid var(--stone);border-radius:16px;padding:20px}
+.live-host-question img{max-width:100%;height:auto}
+.live-host-workspace.has-live-question [data-results] table{margin-top:0}
+@media(max-width:760px){.live-host-workspace.has-live-question{grid-template-columns:minmax(0,1fr);gap:16px}.live-host-question{padding:16px}}
