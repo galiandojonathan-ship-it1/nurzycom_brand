@@ -55,6 +55,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   ok(/Вопрос 1 из 10/.test(await msg(s1)), "student timer: " + await msg(s1));
   const hostQuestion = host.locator("[data-current-question]");
   ok(await hostQuestion.isVisible(), "host sees the current question while students answer");
+  const passageBox = await hostQuestion.locator(".passage").boundingBox(), answerBox = await hostQuestion.locator(".ask").boundingBox();
+  ok(!passageBox || answerBox && (dev === "phone" ? answerBox.y >= passageBox.y + passageBox.height - 1 : answerBox.x >= passageBox.x + passageBox.width - 1), "Bluebook passage/answer panes follow the viewport");
+
   const normalized = (s) => s.replace(/\s+/g, " ").trim();
   ok(normalized(await hostQuestion.locator("section").innerText()) === normalized(await s1.locator(".live-practice [data-live-content] section").innerText()), "host and student see the same passage, prompt and choices");
   await s1.screenshot({ path: `live_student_${dev}.png`, fullPage: false });

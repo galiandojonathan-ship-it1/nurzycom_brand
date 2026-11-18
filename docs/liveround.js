@@ -10,6 +10,7 @@
   function workbook(items) {
     return items.map((q) => ({
       prompt: (q.stim || "") + q.stem,
+      passageLength: (q.stim || "").length,
       options: q.t === "mc" ? q.opts : [],
       type: q.t === "mc" ? "mc" : "spr",
       accepted: q.t === "mc" ? [q.ans] : [].concat(q.acc || q.ans).map(String)
@@ -17,7 +18,7 @@
   }
   async function create(set, settings, questions) {
     if (!set?.questions?.length) throw Error("Сначала выберите набор вопросов.");
-    const encrypted = await SITE.sealBlob(questions.map(({ prompt, options, type }) => ({ prompt, options, type })));
+    const encrypted = await SITE.sealBlob(questions.map(({ prompt, passageLength, options, type }) => ({ prompt, passageLength, options, type })));
     const result = await SITE.api("live?action=create", {
       method: "POST",
       body: JSON.stringify({
