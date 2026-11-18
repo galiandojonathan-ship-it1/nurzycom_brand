@@ -7,7 +7,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 
 ## 1. First five minutes
 
-1. `git status --short --branch`. Work on `main`. It is the only working branch, and every push to `main` goes live.
+1. `git status --short --branch`. Start from the latest `main`, work on a `codex/<task>` branch, and merge tested changes through a pull request. Every merge to `main` goes live.
 2. Ask Nurassyl for the password of Claude's own course login `claude` only if the task touches encrypted data (questions,
    vocabulary, tests) or needs a local copy with real data. Never write the password anywhere in the repository.
 3. If OMC is missing and you want it: `npm i -g oh-my-claude-sisyphus@latest && omc setup --no-plugin` (optional).
@@ -103,7 +103,7 @@ KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 - **Hard rules** (CLAUDE.md): no invented results, scores or reviews; practice-test scores are always «примерный балл»; consent before any name; no guarantees.
 - **Commits:** a short summary line, then what changed and why. No model names. End with the attribution lines the session gives.
 - **After pushing to `main`**, also update the old GitHub Pages branch: `git push origin origin/main:refs/heads/claude/ecstatic-mayer-3asg7r`.
-- **Codex** works on `codex/<task>` branches and opens pull requests (see `AGENTS.md`); Claude reviews and merges them.
+- **Codex** is the primary implementation and maintenance agent. It works on `codex/<task>` branches, opens pull requests, reviews and merges tested changes, and monitors deployment (see `AGENTS.md`).
 
 ## 6. Testing locally (do this before every push)
 
