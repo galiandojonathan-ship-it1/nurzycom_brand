@@ -171,13 +171,28 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         results = document.createElement("div");
         results.dataset.results = "";
         results.style.overflowX = "auto";
-        content.append(heading(state.title), link, copy, launch, next, close, results);
+        const workspace = document.createElement("div");
+        workspace.className = "live-host-workspace";
+        const currentQuestion = document.createElement("article");
+        currentQuestion.className = "live-host-question qhtml";
+        currentQuestion.dataset.currentQuestion = "";
+        currentQuestion.hidden = true;
+        workspace.append(currentQuestion, results);
+        content.append(heading(state.title), link, copy, launch, next, close, workspace);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
       const advance = content.querySelector("[data-advance]");
       advance.hidden = strict || !number || ended;
       advance.textContent = number === state.total ? "Завершить после этого вопроса" : "Следующий вопрос";
+      const currentQuestion = content.querySelector("[data-current-question]");
+      const showQuestion = !!number && !ended;
+      currentQuestion.hidden = !showQuestion;
+      currentQuestion.parentElement.classList.toggle("has-live-question", showQuestion);
+      if (showQuestion && currentQuestion.dataset.number !== String(number)) {
+        currentQuestion.replaceChildren(heading("Вопрос " + number), questionView(set.q[number - 1]));
+        currentQuestion.dataset.number = String(number);
+      }
       const signature = JSON.stringify([state.students, state.answers]);
       if (results.dataset.signature !== signature) {
         results.replaceChildren(scoreboard());
