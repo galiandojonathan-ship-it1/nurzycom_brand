@@ -56,7 +56,8 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
           if (await sha(`${set.salt}:${question.i}:${choice}`) === question.h) answer = choice;
         }
         if (!answer) throw Error("Не удалось проверить ключ вопроса.");
-        return { prompt: blocks(question.b) + "<p>" + rich(question.s) + "</p>",
+        const passage = blocks(question.b);
+        return { prompt: passage + "<p>" + rich(question.s) + "</p>", passageLength: passage.length,
           options: question.o.map((option) => rich(option)), type: "mc", accepted: [answer] };
       }));
       return { title: set.title, questions };
@@ -81,39 +82,67 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   }
 
   function questionView(question, options) {
-    if (question.prompt !== undefined) {
-      const section = document.createElement("section");
-      section.innerHTML = question.prompt;
-      if (question.type !== "mc" && options) {
-        const label = document.createElement("label");
-        label.textContent = "Ваш ответ";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.maxLength = 64;
-        input.autocomplete = "off";
-        label.append(input);
-        section.append(label, button("Отправить ответ", () => {
-          if (!input.value.trim()) throw Error("Введите ответ.");
-          return options(input.value.trim());
-        }));
-      } else {
-        question.options.forEach((choice, index) => {
-          const letter = "ABCD"[index];
-          const option = options ? button(letter, () => options(letter)) : document.createElement("p");
-          option.innerHTML = letter + ". " + choice;
-          section.append(option);
-        });
-      }
-      return section;
-    }
     const section = document.createElement("section");
-    section.innerHTML = blocks(question.b) + "<p>" + rich(question.s) + "</p>";
-    question.o.forEach((choice, index) => {
-      const letter = "ABCD"[index];
-      const option = options ? button(letter, () => options(letter)) : document.createElement("p");
-      option.innerHTML = letter + ". " + rich(choice);
-      section.append(option);
-    });
+    section.className = "live-bluebook qwrap";
+    const passage = document.createElement("div");
+    passage.className = "passage qhtml";
+    const ask = document.createElement("div");
+    ask.className = "ask";
+    const stem = document.createElement("div");
+    stem.className = "stem qhtml";
+    let choices, type;
+    if (question.prompt !== undefined) {
+      const boundary = question.passageLength;
+      if (Number.isInteger(boundary) && boundary >= 0 && boundary <= question.prompt.length) {
+        passage.innerHTML = question.prompt.slice(0, boundary);
+        stem.innerHTML = question.prompt.slice(boundary);
+      } else {
+        // Earlier encrypted snapshots combined the passage and stem. Keep all their content.
+        passage.innerHTML = question.prompt;
+      }
+      choices = question.options;
+      type = question.type;
+    } else {
+      passage.innerHTML = blocks(question.b);
+      stem.innerHTML = "<p>" + rich(question.s) + "</p>";
+      choices = question.o.map((choice) => rich(choice));
+      type = "mc";
+    }
+    const hasPassage = !!passage.innerHTML.trim();
+    passage.hidden = !hasPassage;
+    section.classList.toggle("no-passage", !hasPassage);
+    ask.append(stem);
+    if (type !== "mc" && options) {
+      const label = document.createElement("label");
+      label.textContent = "Ваш ответ";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = 64;
+      input.autocomplete = "off";
+      label.append(input);
+      ask.append(label, button("Отправить ответ", () => {
+        if (!input.value.trim()) throw Error("Введите ответ.");
+        return options(input.value.trim());
+      }));
+    } else {
+      choices.forEach((choice, index) => {
+        const letter = "ABCD"[index];
+        const row = document.createElement("div");
+        row.className = "opt";
+        const option = options ? button(letter, () => options(letter)) : document.createElement("div");
+        option.className = options ? "ch btn" : "ch";
+        const badge = document.createElement("span");
+        badge.className = "lt";
+        badge.textContent = letter;
+        const text = document.createElement("span");
+        text.className = "tx qhtml";
+        text.innerHTML = choice;
+        option.replaceChildren(badge, text);
+        row.append(option);
+        ask.append(row);
+      });
+    }
+    section.append(passage, ask);
     return section;
   }
 

@@ -51,7 +51,7 @@
         let answer;
         for (const choice of "ABCD") if (await sha(`${st.t.salt}:${q.i}:${choice}`) === q.h) answer = choice;
         if (!answer) throw Error("Не удалось проверить ключ вопроса.");
-        return { prompt: passage + "<p>" + esc(q.s) + "</p>", options: q.o.map(esc), type: "mc", accepted: [answer] };
+        return { prompt: passage + "<p>" + esc(q.s) + "</p>", passageLength: passage.length, options: q.o.map(esc), type: "mc", accepted: [answer] };
       }));
       return { title: st.t.title, questions };
     });

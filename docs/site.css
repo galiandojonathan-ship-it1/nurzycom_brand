@@ -662,8 +662,27 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-settings .live-setting-check{display:flex;align-items:center;gap:10px}
 .live-settings .live-setting-check input{width:18px;height:18px;accent-color:var(--oxide)}
 
-.live-host-workspace.has-live-question{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:24px;align-items:start;margin-top:20px}
-.live-host-question{min-width:0;background:#fff;border:1px solid var(--stone);border-radius:16px;padding:20px}
+
+/* Full-width question canvas, using the workbook's Bluebook passage/ask and answer-row styles. */
+.live-round-page main{max-width:1240px}
+.live-round-page .live-practice{max-width:none}
+.live-host-workspace.has-live-question{display:block;margin-top:20px}
+.live-host-question{min-width:0;background:#fff;border:1px solid var(--stone);border-radius:12px;overflow:hidden}
+.live-host-question>h3{margin:0;padding:14px 24px;border-bottom:1px solid var(--stone);background:var(--mist);font-size:17px}
 .live-host-question img{max-width:100%;height:auto}
-.live-host-workspace.has-live-question [data-results] table{margin-top:0}
-@media(max-width:760px){.live-host-workspace.has-live-question{grid-template-columns:minmax(0,1fr);gap:16px}.live-host-question{padding:16px}}
+.live-host-workspace.has-live-question [data-results]{margin-top:24px}
+.live-bluebook.qwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;margin:0;background:#fff}
+.live-bluebook>.passage,.live-bluebook>.ask{min-width:0;padding:28px 32px;max-height:70vh;overflow:auto}
+.live-bluebook>.passage{border-right:1px solid var(--stone)}
+.live-bluebook .stem{margin:0 0 22px;font-weight:400}
+.live-practice .live-bluebook .opt .ch{margin:0;padding:14px 16px;width:100%;font:inherit;text-transform:none;letter-spacing:normal}
+.live-bluebook .opt .lt{margin-top:1px}
+.live-bluebook.no-passage{grid-template-columns:minmax(0,1fr)}
+.live-bluebook.no-passage>.ask{width:100%;max-width:760px;margin:0 auto}
+.live-practice [data-review] .live-bluebook{margin-top:16px}
+@media(max-width:760px){
+ .live-bluebook.qwrap{grid-template-columns:minmax(0,1fr)}
+ .live-bluebook>.passage,.live-bluebook>.ask{padding:20px;max-height:none;overflow:visible}
+ .live-bluebook>.passage{border-right:0;border-bottom:1px solid var(--stone)}
+ .live-host-question>h3{padding:14px 20px}
+}

@@ -49,6 +49,7 @@
       title: st.t.title || "Тест",
       questions: st.t.q.map((q) => ({
         prompt: CTL.rich(q.passage) + CTL.rich(q.stem),
+        passageLength: CTL.rich(q.passage).length,
         options: q.type === "spr" ? [] : q.o.map(CTL.inline),
         type: q.type === "spr" ? "custom" : "mc",
         accepted: q.type === "spr" ? CTL.accepted(q.a) : [q.a]
