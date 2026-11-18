@@ -60,12 +60,44 @@
     lastTi = w.ti;
   }
 
+  // The lesson countdown follows the visible question independently of the test's own clock.
+  let timerButton, timerStatus, timerQuestion = "", deadline = 0;
+  let timed = sessionStorage.getItem("ls_timed") === "1";
+  function updateTimer() {
+    if (!timerButton) return;
+    const page = document.querySelector("#sv-qn, #qnum, #qn");
+    const question = page && page.offsetParent ? document.body.dataset.lq || "" : "";
+    if (timerButton.hidden === Boolean(question)) {
+      timerButton.hidden = !question;
+      place();
+    }
+    if (question !== timerQuestion) {
+      timerQuestion = question;
+      deadline = timed && question ? Date.now() + 45000 : 0;
+    }
+    const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    const label = !timed ? "Таймер · 45 с" : seconds ? seconds + " с · Стоп" : "Время вышло · Стоп";
+    if (timerButton.textContent !== label) timerButton.textContent = label;
+    timerButton.setAttribute("aria-pressed", String(timed));
+    timerButton.classList.toggle("ls-time-low", timed && !!question && seconds <= 10);
+    const status = timed && question && !seconds ? "Время на вопрос вышло." : "";
+    if (timerStatus.textContent !== status) timerStatus.textContent = status;
+  }
+  function toggleTimer() {
+    timed = !timed;
+    sessionStorage.setItem("ls_timed", timed ? "1" : "0");
+    timerQuestion = "";
+    updateTimer();
+  }
+
   // ---- the bar
   const css = `
 .ls-bar{position:fixed;z-index:60;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
   max-width:calc(100vw - 16px);background:#0F0F0F;color:#F5F3EE;padding:8px 10px;border-radius:14px;box-shadow:0 6px 24px rgba(15,15,15,.28);font:500 13px/1.2 var(--sans)}
 .ls-bar button{font:500 13px/1 var(--sans);color:#F5F3EE;background:transparent;border:1px solid rgba(245,243,238,.32);border-radius:999px;padding:8px 12px;cursor:pointer}
 .ls-bar button:hover,.ls-bar button:focus-visible{background:#F5F3EE;color:#0F0F0F}
+.ls-bar button.ls-time-low{background:#A63328;color:#fff;border-color:#A63328}
+.ls-timer-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .ls-bar .ls-main{background:#F5F3EE;color:#0F0F0F;border-color:#F5F3EE}
 .ls-bar .ls-st{display:flex;align-items:center;gap:7px;padding:0 6px 0 4px;white-space:nowrap}
 .ls-bar .ls-dot{width:9px;height:9px;border-radius:50%;background:#A63328;flex:none}
@@ -73,7 +105,7 @@
 .ls-bar .ls-vote button{width:32px;padding:8px 0}
 .ls-bar .ls-vote button[aria-pressed="true"],.ls-bar button[data-a="word"][aria-pressed="true"]{background:#A63328;border-color:#A63328;color:#fff}
 html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .ls-bar,html.ls-pick .ls-bar *{cursor:pointer !important}
-.ls-bar.ls-min > :not(.ls-st):not(.ls-tg){display:none}
+.ls-bar.ls-min > :not(.ls-st):not(.ls-tg):not([data-a="timer"]):not(.ls-timer-status){display:none}
 .ls-bar.ls-min{flex-wrap:nowrap}
 .ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:16px;padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
 .ls-pop h4{margin:0 0 10px;font:600 16px/1.3 var(--sans)}
@@ -111,7 +143,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
   function draw() {
     if (bar) bar.remove(); closePop(); picking = false; document.documentElement.classList.remove("ls-pick");
     if (!S) {
-      bar = el('<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span>${HOME}<button type="button" data-a="mist">Ошибки класса</button><button type="button" class="ls-main" data-a="start">Начать урок</button></div>');
+      bar = el(`<div class="ls-bar" role="region" aria-label="Режим урока"><span class="ls-st"><i class="ls-dot" style="background:#77736D"></i>Режим урока</span>${HOME}<button type="button" data-a="mist">Ошибки класса</button><button type="button" class="ls-main" data-a="start">Начать урок</button></div>`);
     } else {
       bar = el(`<div class="ls-bar${(LS.getItem("ls_min") || (window.innerWidth < 700 ? "1" : "0")) === "1" ? " ls-min" : ""}" role="region" aria-label="Режим урока">
         <span class="ls-st"><i class="ls-dot"></i><span class="ls-n"></span></span>
@@ -123,12 +155,16 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
         <button type="button" data-a="end">Завершить</button>
         <button type="button" class="ls-tg" data-a="min" aria-label="Свернуть или развернуть панель урока">⇕</button></div>`);
     }
+    timerButton = el('<button type="button" data-a="timer" title="45 секунд на каждый вопрос"></button>');
+    timerStatus = el('<span class="ls-timer-status" role="status"></span>');
+    bar.querySelector(".ls-st").after(timerButton);
+    bar.appendChild(timerStatus);
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.c) return vote(b.dataset.c);
-      ({ home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+      ({ timer: toggleTimer, home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
-    document.body.appendChild(bar); if (S) { count(); voteSync(); } place();
+    document.body.appendChild(bar); if (S) { count(); voteSync(); } updateTimer(); place();
   }
   // the page keeps room under its last line for the bar, and messages sit just above the bar
   function place() { if (!bar) return; const h = bar.offsetHeight; document.documentElement.style.setProperty("--ls-h", h + "px"); document.body.style.paddingBottom = h + 24 + "px"; }
@@ -263,6 +299,7 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
   window.addEventListener("scroll", hideWord, { passive: true });
 
   S = load(); draw();
+  setInterval(updateTimer, 200);
   setInterval(() => { watch(); if (S) { count(); voteSync(); } }, 2000); watch();
   // the lesson home page (classroom.js) drives the same bar
   window.LESSON = { session: () => S, where, tick: watch, begin, end: () => (S ? askEnd() : null), ask: () => askStart(), openMist, need, toast, groups: () => { try { return JSON.parse(LS.getItem("ls_groups") || "[]"); } catch (e) { return []; } } };

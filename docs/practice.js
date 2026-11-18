@@ -185,6 +185,7 @@
   $("again").onclick = begin;
   $("home").onclick = () => { renderStart(); show("p-start"); };
 
-  SITE.json("practice").then((d) => { st.data = d; renderStart(); })
+  SITE.json("practice").then((d) => { st.data = d; renderStart();
+    window.mountLivePractice?.({ sets: d.sets, blocks, rich, sha, selected: () => st.set }); })
     .catch(() => { $("start-msg").textContent = "Не удалось загрузить вопросы. Обновите страницу."; });
 })();

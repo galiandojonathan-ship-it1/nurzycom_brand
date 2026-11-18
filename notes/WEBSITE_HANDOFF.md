@@ -83,6 +83,8 @@ Routes:
 
 The server never sees passwords or the master key: everything is encrypted in the browser.
 
+`functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
+
 KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 
 ## 5. Rules for every change

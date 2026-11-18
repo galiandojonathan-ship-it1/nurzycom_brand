@@ -487,9 +487,18 @@
     label();
   }
   async function lessonIds() {
-    const r = await SITE.api("admin/users"); if (!r.ok) throw new Error(`Сервер ответил ${r.status}.`);
-    const ids = []; for (const x of r.data.users) { try { const me = await SITE.nameOf(x.n); if (/^lesson(-[a-z0-9]+)?$/.test(me.login || "")) ids.push(x.id); } catch (e) { /* unreadable */ } }
-    if (!ids.length) throw new Error("Аккаунта урока нет. Создайте его в разделе «Логины, созданные вручную»: имя «Урок», логин lesson.");
+    const [r, access] = await Promise.all([SITE.api("admin/users"), SITE.access()]);
+    if (!r.ok) throw new Error(`Сервер ответил ${r.status}.`);
+    const accounts = new Map(Object.entries(access.users || {}));
+    for (const user of r.data.users) accounts.set(user.id, user);
+    const ids = [], lessonId = await SITE.lid("lesson");
+    for (const [id, account] of accounts) {
+      // The ID identifies the exact lesson login even if its name record cannot be decoded.
+      if (id === lessonId) { ids.push(id); continue; }
+      const owner = await SITE.nameOf(account.n).catch(() => null);
+      if (/^lesson-[a-z0-9]+$/.test(owner?.login || "")) ids.push(id);
+    }
+    if (!ids.length) throw new Error("Аккаунта урока нет. Добавьте его в разделе «Логины учеников»: имя «Урок», логин lesson.");
     return ids;
   }
   // «Подготовить урок» (2026-11-16, Nurassyl: «make "prepare a lesson" button for repeating mistakes»): the parts submitted since

@@ -631,3 +631,18 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .hw-page .td-stats b,.hw-page .td-stats .td-big b,.hw-page .td-num b,.hw-page .td-run b{font-family:var(--disp);font-weight:600;letter-spacing:-.01em}
 .hw-page .tile .no{font:600 42px/1 var(--disp);letter-spacing:-.01em}
 .hw-page .promo .pt{font-family:var(--disp);font-weight:600;font-size:22px}
+
+/* «Живая практика» (livepractice.js, 2026-11-18): hidden controls really hide (.btn sets display), separate controls, option cards, scoreboard */
+.live-practice{max-width:920px}
+.live-practice [hidden]{display:none!important}
+.live-practice h3{margin:6px 0 14px}
+.live-practice [data-live-content] > .btn,.live-practice [data-live-content] > a{margin:6px 10px 6px 0;vertical-align:middle}
+.live-practice [data-live-content] > a{display:inline-block}
+.live-practice section .btn{display:flex;width:100%;justify-content:flex-start;text-align:left;background:#fff;color:var(--ink);border:1.5px solid var(--stone);border-radius:14px;padding:16px 20px;margin:10px 0;font-size:17px;line-height:1.45}
+.live-practice section .btn:hover,.live-practice section .btn:focus-visible{border-color:var(--ink)}
+.live-practice section .btn:disabled{opacity:.55}
+.live-practice table{border-collapse:collapse;margin-top:18px;font-size:15px;background:#fff;border-radius:12px;overflow:hidden}
+.live-practice th,.live-practice td{padding:9px 12px;border-bottom:1px solid var(--stone);text-align:center;white-space:nowrap}
+.live-practice th:first-child,.live-practice td:first-child{text-align:left}
+.live-practice details{background:#fff;border:1px solid var(--stone);border-radius:12px;padding:12px 16px;margin:8px 0}
+.live-practice summary{cursor:pointer;font-weight:500}
