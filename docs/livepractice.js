@@ -12,7 +12,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const message = panel.querySelector("[role=status]");
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
-  let sealedSet = null;
+  let sealedSet = null, displayedSet = null, receivedAt = 0;
 
   async function api(action, body, id = round) {
     const params = new URLSearchParams({ action });
@@ -50,7 +50,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     LiveRound.mount("go", async () => {
       const set = selected();
       if (!set) throw Error("Выберите набор вопросов.");
-      const questions = await Promise.all(set.q.slice(0, 10).map(async (question) => {
+      const questions = await Promise.all(set.q.map(async (question) => {
         let answer;
         for (const choice of "ABCD") {
           if (await sha(`${set.salt}:${question.i}:${choice}`) === question.h) answer = choice;
@@ -142,9 +142,16 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   }
 
   function render(set) {
-    const elapsed = state.started === null ? null : state.now - state.started;
-    const number = elapsed === null || elapsed < 0 ? 0 : Math.min(state.total || 10, Math.floor(elapsed / 45000) + 1);
-    const seconds = Math.ceil(elapsed < 0 ? -elapsed / 1000 : (number * 45000 - elapsed) / 1000);
+    const now = state.now + Date.now() - receivedAt;
+    const strict = state.strict !== false, duration = (state.seconds || 45) * 1000;
+    const elapsed = state.started === null ? null : now - state.started;
+    const number = elapsed === null || elapsed < 0 ? 0 : strict
+      ? Math.min(state.total || 10, Math.floor(elapsed / duration) + 1)
+      : state.current;
+    const remaining = strict ? number * duration - elapsed : duration - (now - state.questionStartedAt);
+    const seconds = Math.ceil(remaining / 1000);
+    const ended = state.finished || strict && elapsed !== null && elapsed >= (state.total || 10) * duration;
+    const timing = seconds > 0 ? seconds + " с" : "сверх времени: " + Math.abs(seconds) + " с";
     if (credentials.host) {
       let results = content.querySelector("[data-results]");
       if (!results) {
@@ -154,17 +161,29 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         const copy = button("Копировать ссылку", async () => navigator.clipboard.writeText(link.href));
         const launch = button("Начать раунд", async () => { await api("start", {}); await refresh(); });
         launch.dataset.launch = "";
+        const next = button("Следующий вопрос", async () => {
+          await api("next", { number: state.current });
+          await refresh();
+        });
+        next.dataset.advance = "";
         const close = button("Завершить раунд", async () => { await api("close", {}); await refresh(); });
         close.dataset.close = "";
         results = document.createElement("div");
         results.dataset.results = "";
         results.style.overflowX = "auto";
-        content.append(heading(state.title), link, copy, launch, close, results);
+        content.append(heading(state.title), link, copy, launch, next, close, results);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
-      results.replaceChildren(scoreboard());
-      message.textContent = state.finished ? "Раунд завершён." : number ? `Вопрос ${number} · ${seconds} с` : `В комнате: ${state.students.length}`;
+      const advance = content.querySelector("[data-advance]");
+      advance.hidden = strict || !number || ended;
+      advance.textContent = number === state.total ? "Завершить после этого вопроса" : "Следующий вопрос";
+      const signature = JSON.stringify([state.students, state.answers]);
+      if (results.dataset.signature !== signature) {
+        results.replaceChildren(scoreboard());
+        results.dataset.signature = signature;
+      }
+      message.textContent = ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total} · ${timing} · ${strict ? "строго" : "без строгого лимита"}` : `В комнате: ${state.students.length} · ${state.seconds || 45} с на вопрос · ${strict ? "строго" : "без строгого лимита"}`;
       if (state.finished && !content.querySelector("[data-review]")) {
         const review = document.createElement("div");
         review.dataset.review = "";
@@ -184,12 +203,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     }
 
     const answer = state.answers.find((item) => item.question_number === number);
-    const view = state.finished ? "done" : number + ":" + (answer?.answer || "");
-    message.textContent = state.finished ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total || 10} · ${seconds} с` : "Ждём начала раунда.";
+    const view = ended ? "done" : number + ":" + (answer?.answer || "");
+    message.textContent = ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total || 10} · ${timing}` : "Ждём начала раунда.";
     if (view === shown) return;
     shown = view;
     content.replaceChildren();
-    if (state.finished || !number) return;
+    if (ended || !number) return;
     if (answer) content.append(heading("Ответ принят: " + answer.answer));
     else content.append(questionView(set.q[number - 1], async (letter) => {
       await api("answer", { number, answer: letter });
@@ -205,12 +224,14 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       if (version !== refreshVersion) return;
       next.set = next.set || state?.set;
       state = next;
+      receivedAt = Date.now();
       let set;
       if (state.set.startsWith("sealed:")) {
         if (!sealedSet) sealedSet = { q: await SITE.unsealBlob(state.set.slice(7)) };
         set = sealedSet;
       } else set = sets.find((item) => item.id === state.set);
       if (!set || set.q.length < (state.total || 10)) throw Error("Набор вопросов недоступен.");
+      displayedSet = set;
       render(set);
     } catch (error) {
       if (version !== refreshVersion) return;
@@ -218,6 +239,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     }
     if (!state?.finished) pollTimer = setTimeout(refresh, 1500);
   }
+
+  const clockTimer = setInterval(() => {
+    if (state && displayedSet) render(displayedSet);
+  }, 200);
+  window.addEventListener("pagehide", () => { clearInterval(clockTimer); clearTimeout(pollTimer); });
+  window.addEventListener("pageshow", (event) => { if (event.persisted) location.reload(); });
 
   if (credentials) {
     refresh();

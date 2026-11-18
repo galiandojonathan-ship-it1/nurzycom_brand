@@ -62,6 +62,12 @@
 
   // The lesson countdown follows the visible question independently of the test's own clock.
   let timerButton, timerStatus, timerQuestion = "", deadline = 0;
+  let timerPreferences = { seconds: 45, strict: false }, advancedQuestion = "";
+  try {
+    const saved = JSON.parse(LS.getItem("ls_timer_settings") || "{}");
+    if (Number.isInteger(saved.seconds) && saved.seconds >= 5 && saved.seconds <= 600) timerPreferences.seconds = saved.seconds;
+    timerPreferences.strict = saved.strict === true;
+  } catch { /* defaults */ }
   let timed = sessionStorage.getItem("ls_timed") === "1";
   function updateTimer() {
     if (!timerButton) return;
@@ -73,13 +79,22 @@
     }
     if (question !== timerQuestion) {
       timerQuestion = question;
-      deadline = timed && question ? Date.now() + 45000 : 0;
+      advancedQuestion = "";
+      deadline = timed && question ? Date.now() + timerPreferences.seconds * 1000 : 0;
     }
     const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
-    const label = !timed ? "Таймер · 45 с" : seconds ? seconds + " с · Стоп" : "Время вышло · Стоп";
+    const label = !timed ? "Таймер · " + timerPreferences.seconds + " с" : seconds ? seconds + " с · Стоп" : "Время вышло · Стоп";
     if (timerButton.textContent !== label) timerButton.textContent = label;
     timerButton.setAttribute("aria-pressed", String(timed));
     timerButton.classList.toggle("ls-time-low", timed && !!question && seconds <= 10);
+    const expired = timed && !!question && !seconds;
+    document.body.classList.toggle("ls-timer-expired", expired && timerPreferences.strict);
+    if (expired && timerPreferences.strict && advancedQuestion !== question) {
+      advancedQuestion = question;
+      const next = document.querySelector("#sv-next, #next");
+      if (next && !next.disabled) next.click();
+    }
+    if (question !== timerQuestion) return;
     const status = timed && question && !seconds ? "Время на вопрос вышло." : "";
     if (timerStatus.textContent !== status) timerStatus.textContent = status;
   }
@@ -88,6 +103,24 @@
     sessionStorage.setItem("ls_timed", timed ? "1" : "0");
     timerQuestion = "";
     updateTimer();
+  }
+
+  function configureTimer() {
+    const panel = open(`<h4>Таймер на вопрос</h4>
+      <label>Секунд на вопрос<input id="ls-seconds" type="number" min="5" max="600" step="1" value="${timerPreferences.seconds}" required></label>
+      <label><input id="ls-strict" type="checkbox" ${timerPreferences.strict ? "checked" : ""}> Строго по времени</label>
+      <small>Строгий режим автоматически переходит дальше. Без него можно остаться на вопросе после сигнала.</small>
+      <div class="ls-row"><button type="button" class="ls-go">Сохранить</button><button type="button" data-x>Отмена</button></div>`);
+    panel.querySelector("[data-x]").onclick = closePop;
+    panel.querySelector(".ls-go").onclick = () => {
+      const input = panel.querySelector("#ls-seconds");
+      if (!input.reportValidity()) return;
+      timerPreferences = { seconds: Number(input.value), strict: panel.querySelector("#ls-strict").checked };
+      LS.setItem("ls_timer_settings", JSON.stringify(timerPreferences));
+      timerQuestion = "";
+      closePop();
+      updateTimer();
+    };
   }
 
   // ---- the bar
@@ -105,6 +138,7 @@
 .ls-bar .ls-vote button{width:32px;padding:8px 0}
 .ls-bar .ls-vote button[aria-pressed="true"],.ls-bar button[data-a="word"][aria-pressed="true"]{background:#A63328;border-color:#A63328;color:#fff}
 html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .ls-bar,html.ls-pick .ls-bar *{cursor:pointer !important}
+.ls-timer-expired .qwrap{visibility:hidden;pointer-events:none}
 .ls-bar.ls-min > :not(.ls-st):not(.ls-tg):not([data-a="timer"]):not(.ls-timer-status){display:none}
 .ls-bar.ls-min{flex-wrap:nowrap}
 .ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:16px;padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
@@ -155,14 +189,15 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
         <button type="button" data-a="end">Завершить</button>
         <button type="button" class="ls-tg" data-a="min" aria-label="Свернуть или развернуть панель урока">⇕</button></div>`);
     }
-    timerButton = el('<button type="button" data-a="timer" title="45 секунд на каждый вопрос"></button>');
+    timerButton = el('<button type="button" data-a="timer" title="Запустить или остановить таймер на вопрос"></button>');
     timerStatus = el('<span class="ls-timer-status" role="status"></span>');
-    bar.querySelector(".ls-st").after(timerButton);
+    const settingsButton = el('<button type="button" data-a="timerSettings">Настройки таймера</button>');
+    bar.querySelector(".ls-st").after(timerButton, settingsButton);
     bar.appendChild(timerStatus);
     bar.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.c) return vote(b.dataset.c);
-      ({ timer: toggleTimer, home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
+      ({ timerSettings: configureTimer, timer: toggleTimer, home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
     document.body.appendChild(bar); if (S) { count(); voteSync(); } updateTimer(); place();
   }

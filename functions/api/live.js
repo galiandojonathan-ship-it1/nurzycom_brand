@@ -81,21 +81,57 @@ export async function onRequest({ env, request }) {
     const key = request.headers.get("x-admin-key");
     const adminHash = key && env.USERS && await env.USERS.get("admin");
     if (!adminHash || await hash("bynurzy-admin:" + key) !== adminHash) return error(403, "Откройте кабинет преподавателя в этом браузере.");
-    const { set, title, keys } = data;
+    const { set, title, keys, settings } = data;
+    const configured = settings !== undefined;
+    if (configured && (!settings || !Number.isInteger(settings.seconds) ||
+        settings.seconds < 5 || settings.seconds > 600 || typeof settings.strict !== "boolean")) {
+      return error(400, "Время на вопрос: от 5 до 600 секунд.");
+    }
+    const maximum = configured ? 100 : 10;
     if (!(typeof set === "string" && (/^X\d{2}$/.test(set) || /^sealed:[A-Za-z0-9+/=]+$/.test(set) && set.length <= 650000)) || typeof title !== "string" || title.length > 160 ||
-        !Array.isArray(keys) || keys.length < 1 || keys.length > 10 || keys.some((key) =>
+        !Array.isArray(keys) || keys.length < 1 || keys.length > maximum || keys.some((key) =>
           typeof key === "string" ? !/^[A-D]$/.test(key) :
           !key || !["mc", "spr", "custom"].includes(key.type) || !Array.isArray(key.accepted) ||
           !key.accepted.length || key.accepted.length > 20 ||
           key.accepted.some((answer) => typeof answer !== "string" || answer.length > 64))) {
-      return error(400, "Выберите от 1 до 10 вопросов.");
+      return error(400, "Выберите от 1 до 100 вопросов.");
     }
     const round = token(), host = token();
+    if (configured) {
+      // Separate versioned tables preserve every existing round and its ten-question constraint.
+      await db.batch([
+        db.prepare(`CREATE TABLE IF NOT EXISTS live_round_items (
+          round_id TEXT NOT NULL REFERENCES live_rounds(id) ON DELETE CASCADE,
+          number INTEGER NOT NULL CHECK(number BETWEEN 1 AND 100),
+          grading_json TEXT NOT NULL,
+          PRIMARY KEY (round_id, number))`).bind(),
+        db.prepare(`CREATE TABLE IF NOT EXISTS live_round_responses (
+          round_id TEXT NOT NULL,
+          participant_id TEXT NOT NULL,
+          question_number INTEGER NOT NULL,
+          answer TEXT NOT NULL,
+          correct INTEGER NOT NULL CHECK(correct IN (0,1)),
+          submitted_at INTEGER NOT NULL,
+          PRIMARY KEY (round_id, participant_id, question_number),
+          FOREIGN KEY (round_id, participant_id) REFERENCES live_participants(round_id, id) ON DELETE CASCADE,
+          FOREIGN KEY (round_id, question_number) REFERENCES live_round_items(round_id, number) ON DELETE CASCADE)`).bind()
+      ]);
+    }
+    const questionTable = configured ? "live_round_items" : "live_questions";
+    const storedSet = configured ? JSON.stringify({ v: 2, source: set, seconds: settings.seconds, strict: settings.strict, current: 1, questionStartedAt: null }) : set;
+    // Keep D1 bind counts and per-invocation query counts small on the Free plan.
+    const questionInserts = [];
+    for (let start = 0; start < keys.length; start += 30) {
+      const group = keys.slice(start, start + 30);
+      const rows = group.map(() => "(?, ?, ?)").join(", ");
+      const values = group.flatMap((key, index) => [round, start + index + 1, JSON.stringify(key)]);
+      questionInserts.push(db.prepare(`INSERT INTO ${questionTable} VALUES ${rows}`).bind(...values));
+    }
     await db.batch([
       db.prepare("DELETE FROM live_rounds WHERE expires_at <= ?").bind(now),
       db.prepare("INSERT INTO live_rounds (id, host_token_hash, title, set_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(round, await hash(host), title, set, now, now + 86400000),
-      ...keys.map((key, index) => db.prepare("INSERT INTO live_questions VALUES (?, ?, ?)").bind(round, index + 1, JSON.stringify(key)))
+        .bind(round, await hash(host), title, storedSet, now, now + 86400000),
+      ...questionInserts
     ]);
     return reply({ round, host }, 201);
   }
@@ -103,18 +139,39 @@ export async function onRequest({ env, request }) {
   if (!validToken(id)) return error(404, "Раунд не найден.");
   const round = await db.prepare("SELECT * FROM live_rounds WHERE id = ? AND expires_at > ?").bind(id, now).first();
   if (!round) return error(404, "Раунд не найден или истёк.");
+  const config = round.set_id.startsWith("{") ? JSON.parse(round.set_id) : null;
+  const questionTable = config ? "live_round_items" : "live_questions";
+  const answerTable = config ? "live_round_responses" : "live_answers";
+  const seconds = config?.seconds || 45;
+  const strict = config?.strict !== false;
   const secret = request.headers.get("x-live-token");
   const authenticated = validToken(secret) ? await hash(secret) : null;
   const host = authenticated === round.host_token_hash;
   const started = round.starts_at;
-  const { total } = await db.prepare("SELECT count(*) AS total FROM live_questions WHERE round_id = ?").bind(id).first();
-  const end = started === null ? null : started + total * 45000;
+  const { total } = await db.prepare(`SELECT count(*) AS total FROM ${questionTable} WHERE round_id = ?`).bind(id).first();
+  const end = !strict || started === null ? null : started + total * seconds * 1000;
   const finished = round.closed_at !== null || (end !== null && now >= end);
 
   if (action === "start" && host) {
     await db.prepare("UPDATE live_rounds SET starts_at = ? WHERE id = ? AND starts_at IS NULL AND closed_at IS NULL")
       .bind(now + 3000, id).run();
     return reply({ ok: true });
+  }
+  if (action === "next" && host) {
+    if (strict || started === null || now < started || finished || data.number !== config.current) {
+      return error(409, "Обновите состояние раунда.");
+    }
+    let update;
+    if (config.current === total) {
+      update = db.prepare("UPDATE live_rounds SET closed_at = ? WHERE id = ? AND set_id = ? AND closed_at IS NULL")
+        .bind(now, id, round.set_id);
+    } else {
+      const next = JSON.stringify({ ...config, current: config.current + 1, questionStartedAt: now });
+      update = db.prepare("UPDATE live_rounds SET set_id = ? WHERE id = ? AND set_id = ? AND closed_at IS NULL")
+        .bind(next, id, round.set_id);
+    }
+    const result = await update.run();
+    return result.meta.changes ? reply({ ok: true }) : error(409, "Вопрос уже изменился. Обновите раунд.");
   }
   if (action === "close" && host) {
     await db.prepare("UPDATE live_rounds SET closed_at = ? WHERE id = ? AND closed_at IS NULL").bind(now, id).run();
@@ -138,34 +195,44 @@ export async function onRequest({ env, request }) {
 
   if (action === "answer" && participant) {
     if (!Number.isInteger(data.number) || data.number < 1 || data.number > total || typeof data.answer !== "string" || !data.answer.trim() || data.answer.length > 64) return error(400, "Неверный ответ.");
-    const question = await db.prepare("SELECT grading_json FROM live_questions WHERE round_id = ? AND number = ?").bind(id, data.number).first();
+    const question = await db.prepare(`SELECT grading_json FROM ${questionTable} WHERE round_id = ? AND number = ?`).bind(id, data.number).first();
     if (!question) return error(404, "Вопрос недоступен.");
     const correct = isCorrect(JSON.parse(question.grading_json), data.answer);
-    const insert = await db.prepare(`INSERT INTO live_answers
+    const timing = strict
+      ? "AND ? >= r.starts_at + (q.number - 1) * ? AND ? < r.starts_at + q.number * ?"
+      : "AND ? >= r.starts_at AND q.number = json_extract(r.set_id, '$.current')";
+    const timingArgs = strict ? [now, seconds * 1000, now, seconds * 1000] : [now];
+    const insert = await db.prepare(`INSERT INTO ${answerTable}
       SELECT q.round_id, ?, q.number, ?, ?, ?
-      FROM live_questions q JOIN live_rounds r ON r.id = q.round_id
+      FROM ${questionTable} q JOIN live_rounds r ON r.id = q.round_id
       WHERE q.round_id = ? AND q.number = ? AND r.closed_at IS NULL
-      AND ? >= r.starts_at + (q.number - 1) * 45000 AND ? < r.starts_at + q.number * 45000
+      ${timing}
       ON CONFLICT DO NOTHING`)
-      .bind(participant.id, data.answer, correct ? 1 : 0, now, id, data.number, now, now).run();
+      .bind(participant.id, data.answer, correct ? 1 : 0, now, id, data.number, ...timingArgs).run();
     return insert.meta.changes ? reply({ ok: true }) : error(409, "Ответ уже принят или время вышло.");
   }
 
   if (action === "state" && (host || participant)) {
-    const state = { title: round.title, set: url.searchParams.get("snapshot") === "0" ? undefined : round.set_id, total, started, now, finished };
+    const state = {
+      title: round.title,
+      set: url.searchParams.get("snapshot") === "0" ? undefined : (config?.source || round.set_id),
+      total, started, now, finished, seconds, strict,
+      current: config?.current || 1,
+      questionStartedAt: config?.questionStartedAt || started
+    };
     if (host) {
       const [students, answers] = await db.batch([
         db.prepare("SELECT id, display_name FROM live_participants WHERE round_id = ? ORDER BY joined_at").bind(id),
-        db.prepare("SELECT participant_id, question_number, answer, correct FROM live_answers WHERE round_id = ?").bind(id)
+        db.prepare(`SELECT participant_id, question_number, answer, correct FROM ${answerTable} WHERE round_id = ?`).bind(id)
       ]);
       state.students = students.results;
       state.answers = answers.results;
       if (finished) {
-        const keys = await db.prepare("SELECT grading_json FROM live_questions WHERE round_id = ? ORDER BY number").bind(id).all();
+        const keys = await db.prepare(`SELECT grading_json FROM ${questionTable} WHERE round_id = ? ORDER BY number`).bind(id).all();
         state.keys = keys.results.map(({ grading_json }) => JSON.parse(grading_json));
       }
     } else if (participant) {
-      const answers = await db.prepare("SELECT question_number, answer FROM live_answers WHERE round_id = ? AND participant_id = ?")
+      const answers = await db.prepare(`SELECT question_number, answer FROM ${answerTable} WHERE round_id = ? AND participant_id = ?`)
         .bind(id, participant.id).all();
       state.answers = answers.results;
     }
