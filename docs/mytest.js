@@ -45,6 +45,15 @@
     $("restart").classList.toggle("hidden", !run);
     $("s-msg").textContent = run && run.deadline ? `Время идёт: осталось ${clockTxt(Math.max(0, run.deadline - Date.now()))}.` : "";
     document.title = `${t.title || "Тест"} · nurzycom`;
+    LiveRound.mount("go", () => ({
+      title: st.t.title || "Тест",
+      questions: st.t.q.slice(0, 10).map((q) => ({
+        prompt: CTL.rich(q.passage) + CTL.rich(q.stem),
+        options: q.type === "spr" ? [] : q.o.map(CTL.inline),
+        type: q.type === "spr" ? "custom" : "mc",
+        accepted: q.type === "spr" ? CTL.accepted(q.a) : [q.a]
+      }))
+    }));
     show("p-start"); $("s-title").focus({ preventScroll: true });
   }
   function loadRun() { try { const r = JSON.parse(store(runKey(st.t.id)) || "null"); return r && r.at === st.t.at ? r : null; } catch (e) { return null; } }

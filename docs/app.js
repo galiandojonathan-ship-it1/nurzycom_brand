@@ -80,6 +80,11 @@
   }
   function check() {
     const ready = $("student").value.trim().length >= 2 && state.lesson && state.part;
+    LiveRound.mount("go", async () => {
+      if (!state.lesson || !state.part) throw Error("Выберите урок и часть урока.");
+      return { title: state.lesson.title + " · " + state.part.title,
+        questions: LiveRound.workbook(await LiveRound.bundle(state.part.b)) };
+    });
     $("go").disabled = !ready;
     $("go-paper").disabled = !ready;
   }
