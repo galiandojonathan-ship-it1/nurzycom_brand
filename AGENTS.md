@@ -5,11 +5,11 @@ student site. These rules add what agents working side by side need.
 
 ## Who works where
 
-- Several agents work on this repository: Claude Code (the orchestrator) and Codex. Nurassyl (the owner) gives the tasks.
-- **Codex never pushes to `main`.** Work on a branch named `codex/<short-task-name>` and open a pull request into `main`.
-  Claude reviews and merges it, then fast-forwards `claude/ecstatic-mayer-3asg7r` (see `CLAUDE.md`, deploy section).
-  Reason: every push to `main` goes live on https://study.bynurzy.com within two minutes, and two agents pushing to
-  `main` at once caused a merge conflict on 2026-11-06.
+- Nurassyl (the owner) gives the tasks. Codex is the primary implementation and maintenance agent.
+- Work on a branch named `codex/<short-task-name>` and open a pull request into `main`.
+  Codex may review and merge its tested changes and monitor deployment without waiting for another agent.
+  Every merge to `main` deploys to https://study.bynurzy.com. Coordinate concurrent work and check the latest
+  `main` before merging. After merging, fast-forward `claude/ecstatic-mayer-3asg7r` while that legacy deployment remains enabled.
 - One task per branch and pull request. Keep the diff to what the task needs.
 - Before starting, pull the latest `main`; before opening the pull request, merge `main` into your branch again.
 
