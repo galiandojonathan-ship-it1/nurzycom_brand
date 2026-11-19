@@ -9,9 +9,9 @@
   const css = `
 .lb{display:flex;flex-direction:column;min-height:0;height:100%}
 .lb-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--studio,#D9D5CD);background:#fff}
-.lb-tools button{font:500 14px var(--sans);border:1.5px solid var(--studio,#D9D5CD);background:#fff;border-radius:999px;padding:7px 12px;cursor:pointer;color:#0F0F0F}
+.lb-tools button{font:500 14px var(--sans);border:1.5px solid var(--studio,#D9D5CD);background:#fff;border-radius:var(--control-radius);padding:7px 12px;cursor:pointer;color:#0F0F0F}
 .lb-tools button[aria-pressed="true"]{border-color:var(--ink,#0F0F0F);box-shadow:inset 0 0 0 1px var(--ink,#0F0F0F)}
-.lb-tools .lb-col{width:30px;height:30px;padding:0;border-radius:50%;background:var(--c)}.lb-tools .lb-col[aria-pressed="true"]{box-shadow:0 0 0 2px #fff inset,0 0 0 2px var(--ink,#0F0F0F)}
+.lb-tools .lb-col{width:30px;height:30px;padding:0;border-radius:var(--control-radius);background:var(--c)}.lb-tools .lb-col[aria-pressed="true"]{box-shadow:0 0 0 2px #fff inset,0 0 0 2px var(--ink,#0F0F0F)}
 .lb-tools .lb-sz{width:36px;height:30px;padding:0;display:inline-grid;place-items:center}.lb-tools .lb-sz i{display:block;width:18px;background:#0F0F0F;border-radius:4px}
 .lb-sep{width:1px;height:22px;background:var(--studio,#D9D5CD);margin:0 2px}
 .lb-c{flex:1;min-height:0;position:relative;background:#fff radial-gradient(circle,#D9D5CD 1px,transparent 1.3px) 0 0/24px 24px;touch-action:none;user-select:none;-webkit-user-select:none}

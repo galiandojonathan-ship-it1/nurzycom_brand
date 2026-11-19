@@ -126,8 +126,8 @@
   // ---- the bar
   const css = `
 .ls-bar{position:fixed;z-index:60;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
-  max-width:calc(100vw - 16px);background:#0F0F0F;color:#F5F3EE;padding:8px 10px;border-radius:14px;box-shadow:0 6px 24px rgba(15,15,15,.28);font:500 13px/1.2 var(--sans)}
-.ls-bar button{font:500 13px/1 var(--sans);color:#F5F3EE;background:transparent;border:1px solid rgba(245,243,238,.32);border-radius:999px;padding:8px 12px;cursor:pointer}
+  max-width:calc(100vw - 16px);background:var(--ink);color:var(--paper);padding:8px 10px;border-radius:var(--panel-radius);box-shadow:0 6px 24px rgba(15,15,15,.28);font:500 13px/1.2 var(--sans)}
+.ls-bar button{font:500 13px/1 var(--sans);color:#F5F3EE;background:transparent;border:1px solid rgba(245,243,238,.32);border-radius:var(--control-radius);padding:8px 12px;cursor:pointer}
 .ls-bar button:hover,.ls-bar button:focus-visible{background:#F5F3EE;color:#0F0F0F}
 .ls-bar button.ls-time-low{background:#A63328;color:#fff;border-color:#A63328}
 .ls-timer-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
@@ -141,16 +141,16 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
 .ls-timer-expired .qwrap{visibility:hidden;pointer-events:none}
 .ls-bar.ls-min > :not(.ls-st):not(.ls-tg):not([data-a="timer"]):not(.ls-timer-status){display:none}
 .ls-bar.ls-min{flex-wrap:nowrap}
-.ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:16px;padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
+.ls-pop{position:fixed;z-index:61;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);width:min(440px,calc(100vw - 16px));background:#fff;color:#0F0F0F;border:1.5px solid #0F0F0F;border-radius:var(--panel-radius);padding:16px;box-shadow:0 10px 32px rgba(15,15,15,.25);font:400 15px/1.4 var(--sans)}
 .ls-pop h4{margin:0 0 10px;font:600 16px/1.3 var(--sans)}
 .ls-pop label{display:block;font:500 13px var(--sans);margin:10px 0 4px}
-.ls-pop input[type=text]{width:100%;font:400 15px var(--sans);padding:10px 12px;border:1.5px solid #D9D5CD;border-radius:10px;background:#fff}
+.ls-pop input[type=text]{width:100%;font:400 15px var(--sans);padding:10px 12px;border:1.5px solid #D9D5CD;border-radius:var(--control-radius);background:var(--white)}
 .ls-pop .ls-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.ls-pop button{font:500 14px var(--sans);padding:9px 14px;border-radius:999px;border:1.5px solid #D9D5CD;background:#fff;cursor:pointer}
+.ls-pop button{font:500 14px var(--sans);padding:9px 14px;border-radius:var(--control-radius);border:1.5px solid #D9D5CD;background:#fff;cursor:pointer}
 .ls-pop button.ls-go{background:#0F0F0F;color:#F5F3EE;border-color:#0F0F0F}
 .ls-pop button:hover{border-color:#0F0F0F}
 .ls-pop small{display:block;color:#5E5A54;margin-top:8px;font-size:13px}
-.ls-word{position:fixed;z-index:62;font:600 13px/1 var(--sans);background:#A63328;color:#fff;border:0;border-radius:999px;padding:9px 13px;cursor:pointer;box-shadow:0 4px 14px rgba(15,15,15,.3)}
+.ls-word{position:fixed;z-index:62;font:600 13px/1 var(--sans);background:#A63328;color:#fff;border:0;border-radius:var(--control-radius);padding:9px 13px;cursor:pointer;box-shadow:0 4px 14px rgba(15,15,15,.3)}
 .ls-toast{position:fixed;z-index:63;left:50%;bottom:calc(var(--ls-h,56px) + 22px);transform:translateX(-50%);background:#0F0F0F;color:#F5F3EE;border-radius:12px;padding:10px 14px;font:500 14px/1.3 var(--sans);display:flex;gap:12px;align-items:center;max-width:calc(100vw - 16px)}
 .ls-toast button{font:500 13px var(--sans);background:transparent;color:#F5F3EE;border:0;text-decoration:underline;cursor:pointer;padding:0}
 @media(max-width:700px){.ls-bar{gap:5px;padding:7px 8px}.ls-bar button{padding:7px 10px}.ls-bar .ls-vote button{width:30px;padding:7px 0}}
