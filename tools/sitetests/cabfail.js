@@ -3,7 +3,7 @@ const { chromium } = require("playwright"); const { seed, page } = require("./cb
 let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
 (async () => { const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
   console.log(await seed(pg)); await pg.route(/api\/admin\/groups/, (r) => r.fulfill({ status: 503, body: "{}" }));
-  await pg.goto("http://127.0.0.1:8768/cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  await pg.goto("http://127.0.0.1:8768/cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   ok((await pg.$$eval(".gtab", (a) => a.length)) >= 3, "cabinet opens with the groups server down");
   const G = await pg.$eval('.gtab[data-g]:nth-child(2)', (b) => b.dataset.g);
   await pg.selectOption('.scard:has(.sc-nm:text-is("Ayana Seitkali")) select[data-place]', G); await pg.waitForTimeout(600);

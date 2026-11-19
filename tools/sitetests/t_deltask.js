@@ -5,7 +5,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
 (async () => { const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
   let dialogs = 0; pg.on("dialog", (d) => { dialogs++; d.dismiss(); });
   console.log(await seed(pg));
-  const open = async () => { await pg.goto("http://127.0.0.1:8768/cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  const open = async () => { await pg.goto("http://127.0.0.1:8768/cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
     await pg.click(`.scard:has(.sc-nm:text-is("Ayana Seitkali")) .sc-open`); await pg.waitForSelector(".cb-head"); await pg.click('[data-tab="tasks"]'); await pg.waitForTimeout(300); };
   const count = () => pg.$$eval(".cb-tasks li", (a) => a.length).catch(() => 0);
   await open(); const n0 = await count(); ok(n0 >= 1, "Ayana has tasks: " + n0);

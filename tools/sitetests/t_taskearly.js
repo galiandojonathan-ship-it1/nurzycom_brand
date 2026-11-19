@@ -3,7 +3,7 @@
 const { chromium } = require("playwright"); const { seed, page } = require("./cbseed");
 let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
 (async () => { const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
-  console.log(await seed(pg)); await pg.goto("http://127.0.0.1:8768/cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  console.log(await seed(pg)); await pg.goto("http://127.0.0.1:8768/cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   const r = await pg.evaluate(() => { const now = Date.now(), D = 864e5, N = "Ann";
     const tasks = [{ id: "a", t: "early", at: now - D, rk: ["hw_last_", "V01_p3"] }, { id: "b", t: "after", at: now - 3 * D, rk: ["hw_last_", "V02_p3"] },
       { id: "c", t: "none", at: now - D, rk: ["hw_last_", "V03_p3"], due: new Date(now - 2 * D).toISOString().slice(0, 10) }, { id: "d", t: "custom", at: now - D }];

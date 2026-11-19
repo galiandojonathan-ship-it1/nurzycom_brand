@@ -13,7 +13,19 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
-  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false };
+  const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false, archived: new Set(), view: "overview" };
+  const VIEWS = [
+    ["overview", "Обзор"], ["students", "Ученики"], ["archive", "Бывшие ученики"],
+    ["tests", "Мои тесты", "ct"], ["lessons", "Уроки", "ls"], ["forms", "Результаты из Google Form", "imp"]
+  ];
+
+  function setView(view) {
+    S.view = view;
+    const url = new URL(location.href);
+    if (view === "overview") url.searchParams.delete("view");
+    else url.searchParams.set("view", view);
+    history.replaceState(null, "", url);
+  }
 
   // ---------- groups (2026-11-09, Nurassyl: «one group I need to distinguish clearly, and my individual students»). Each group has a
   // name, a kind (a class group or individual students), a colour and its members (account ids; a student is in one group at most).
@@ -24,7 +36,9 @@
   const col = (g) => GCOL[(g && g.color) || ""] || null;
   const gStyle = (g) => { const c = col(g); return c ? ` style="--g:${c[1]};--gt:${c[2]}"` : ""; };
   const groupOf = (u) => S.groups.find((g) => g.members.includes(u.id)) || null;
-  const membersOf = (g) => S.users.filter((u) => (g ? g.members.includes(u.id) : !groupOf(u)));
+  const archived = (u) => S.archived.has(u.id);
+  const activeUsers = () => S.users.filter((u) => !archived(u));
+  const membersOf = (g) => activeUsers().filter((u) => (g ? g.members.includes(u.id) : !groupOf(u)));
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
   async function loadGroups() {   // the newer of the server copy and this browser's copy wins; a newer local copy is sent back up
     let srv = null, loc = null;
@@ -35,14 +49,44 @@
     const pick = srv && Array.isArray(srv.groups) && (!loc || !Array.isArray(loc.groups) || (srv.at || 0) >= (loc.at || 0)) ? srv : loc && Array.isArray(loc.groups) ? loc : null;
     const G = pick ? pick.groups : [{ id: newId(), name: "Группа", kind: "group", color: "blue", members: [] }, { id: newId(), name: "Индивидуальные ученики", kind: "solo", color: "green", members: [] }];
     S.groups = G.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || "Группа").slice(0, 60), kind: g.kind === "solo" ? "solo" : "group", color: GCOL[g.color] ? g.color : "blue", members: Array.isArray(g.members) ? g.members.map(String) : [] }));
+    S.archived = new Set(Array.isArray(pick?.archived) ? pick.archived.map(String) : []);
     S.groupsAt = pick ? pick.at || 0 : 0;
     if (pick && pick === loc && r.status !== 0 && r.status !== 503 && (r.ok || r.status === 404)) saveGroups("Группы из этого браузера сохранены на сервере", true);
   }
-  async function saveGroups(msg, quiet) {
-    S.groupsAt = Date.now();
-    try { localStorage.setItem("cb_groups", JSON.stringify({ groups: S.groups, at: S.groupsAt })); } catch (e) { /* private mode */ }
-    const r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: S.groups, at: S.groupsAt }) }) }).catch(() => ({ status: 0 }));
-    if (!quiet || r.ok) toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${why(r.status || 0)})`, !r.ok);
+  let groupWrites = Promise.resolve();
+  function saveGroups(msg, quiet) {
+    S.groupsAt = Math.max(Date.now(), S.groupsAt + 1);
+    const raw = JSON.stringify({ groups: S.groups, archived: [...S.archived], at: S.groupsAt });
+    let locally = false;
+    try { localStorage.setItem("cb_groups", raw); locally = true; } catch (e) { /* private mode */ }
+    const at = S.groupsAt;
+    groupWrites = groupWrites.then(async () => {
+      let r;
+      try {
+        const data = await SITE.sealBlob(JSON.parse(raw));
+        r = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data }) });
+      } catch (e) { r = { status: 0 }; }
+      if (at !== S.groupsAt || (quiet && !r.ok)) return;
+      toast(r.ok ? msg : locally ? `${msg} · сохранено только в этом браузере (${why(r.status || 0)})` :
+        `Не сохранилось: ${why(r.status || 0)}`, !r.ok);
+    });
+    return groupWrites;
+  }
+  async function toggleArchive(u) {
+    const restoring = archived(u);
+    if (restoring) S.archived.delete(u.id);
+    else S.archived.add(u.id);
+    S.cur = null;
+    setView(restoring ? "students" : "archive");
+    S.gview = "all";
+    S.q = "";
+    S.focus = ".cb-section-title";
+    render();
+    saveGroups(restoring ? `${u.name} · в активных учениках` : `${u.name} · в бывших учениках`);
+    if (restoring && u.B === undefined) {
+      await fetchCopy(u);
+      if (S.loaded && S.view === "students" && !S.cur && !S.assign && !S.editG) render();
+    }
   }
   function moveTo(uid, gid) { S.groups.forEach((g) => (g.members = g.members.filter((x) => x !== uid))); const g = S.groups.find((x) => x.id === gid); if (g) g.members.push(uid); }
 
@@ -111,11 +155,11 @@
     try { for (const a of await SITE.accounts(await SITE.access())) if (!seen.has(a.id)) users.push(Object.assign({ old: true }, a)); } catch (e) { /* access.json is optional */ }
     const me = SITE.me(); S.lsAcc = users.filter((u) => LSACC.test(u.login || "")); S.users = users.filter((u) => (!me || u.login !== me) && !LSACC.test(u.login || "")).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
     await loadGroups();
-    try { await CTED.load(); } catch (e) { /* the tests are optional: the rest of the cabinet works without them */ }
-    for (const a of S.lsAcc) await fetchCopy(a);   // «Уроки»: the lesson account's sessions
-    let i = 0; const next = async () => { while (i < S.users.length) await fetchCopy(S.users[i++]); };
-    await Promise.all(Array.from({ length: Math.min(5, S.users.length) }, next));
-    S.loaded = true; render();
+    const pupils = activeUsers();
+    let i = 0; const next = async () => { while (i < pupils.length) await fetchCopy(pupils[i++]); };
+    await Promise.all(Array.from({ length: Math.min(5, pupils.length) }, next));
+    S.loaded = true;
+    await openView(S.view);
   }
   const gate = (t) => `<div class="cb-gate"><span class="label">[ Кабинет закрыт ]</span><p>${esc(t)}</p><a class="btn" href="teacher.html#reg">Аккаунты учеников <span class="arr">→</span></a></div>`;
 
@@ -132,21 +176,59 @@
 
   // ---------- overview: who needs attention, then one coloured block per group with a card per student
   const pctTxt = (I) => (I ? `${I.pct}%` : "—");
-  function shown() {   // the students of the chosen group tab, filtered by the search
-    const q = S.q.trim().toLowerCase();
-    return S.users.filter((u) => (S.gview === "all" ? true : S.gview === "none" ? !groupOf(u) : (groupOf(u) || {}).id === S.gview) && (!q || `${u.name} ${u.login}`.toLowerCase().includes(q)));
+  const matchesSearch = (u) => `${u.name} ${u.login}`.toLowerCase().includes(S.q.trim().toLowerCase());
+  function shown() {
+    return activeUsers().filter((u) => (S.gview === "all" ||
+      (S.gview === "none" ? !groupOf(u) : groupOf(u)?.id === S.gview)) && matchesSearch(u));
   }
   function toolbar() {
     const none = membersOf(null).length, tab = (v, label, n, g, sr) => `<button class="gtab" type="button" data-g="${esc(v)}" aria-pressed="${S.gview === v}"${gStyle(g)}>${g ? '<i class="gdot" aria-hidden="true"></i>' : ""}${esc(label)} <b>${n}</b>${sr ? `<span class="sr-only">, ${esc(sr)}</span>` : ""}</button>`;
-    return `<div class="cb-tool">
-      <div class="cb-gtabs" role="group" aria-label="Группы учеников">${tab("all", "Все ученики", S.users.length)}${S.groups.map((g) => tab(g.id, g.name, membersOf(g).length, g, KINDS[g.kind])).join("")}${none ? tab("none", "Без группы", none) : ""}
-        <button class="gtab add" type="button" data-gnew="1">+ Новая группа</button></div>
-      <div class="cb-tool2"><input id="cb-q" type="search" placeholder="Найти ученика: имя или логин" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">
-        <button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
-        <button class="btn ghost" type="button" data-ct="1" aria-pressed="${S.ct}">Мои тесты</button>
-        <button class="btn ghost" type="button" data-ls="1" aria-pressed="${!!S.ls}">Уроки${window.CBL && CBL.count() ? ` · ${CBL.count()}` : ""}</button>
-        <button class="btn ghost" type="button" data-imp="1">Результаты из Google Form</button>
-        <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>`;
+    const isList = !S.cur && !S.assign && !S.editG;
+    const page = `<nav class="cb-nav" aria-label="Разделы кабинета">${VIEWS.map(([view, title, hook]) =>
+      `<button class="cb-nav-link" type="button" data-cb-view="${view}"${hook ? ` data-${hook}="1"` : ""}${S.view === view ? ' aria-current="page"' : ""}>${title}</button>`).join("")}</nav>`;
+    const studentFilters = isList && S.view === "students" ? `<div class="cb-gtabs" role="group" aria-label="Группы учеников">${tab("all", "Все ученики", activeUsers().length)}${S.groups.map((g) => tab(g.id, g.name, membersOf(g).length, g, KINDS[g.kind])).join("")}${none ? tab("none", "Без группы", none) : ""}
+        <button class="gtab add" type="button" data-gnew="1">+ Новая группа</button></div>` : "";
+    const search = isList && ["students", "archive"].includes(S.view);
+    const actions = `<div class="cb-tool2">${search ? `<input id="cb-q" type="search" placeholder="Найти по имени или логину" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">` : ""}
+      ${search && S.view === "students" ? '<button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>' : ""}
+      <button class="tlink" type="button" id="cb-reload">Обновить</button></div>`;
+    return `<div class="cb-tool">${page}${studentFilters}${actions}</div>`;
+  }
+
+  const sectionTitle = (title) => `<h2 class="cb-section-title" tabindex="-1">${title}</h2>`;
+
+  function dashboardHTML() {
+    const pupils = activeUsers(), stats = pupils.filter((u) => u.B).map((u) => {
+      const { late, last } = info(u);
+      return { u, late, last };
+    });
+    const overdue = stats.filter((x) => x.late).sort((a, b) => b.late - a.late);
+    const quiet = stats.filter((x) => !x.last || Date.now() - x.last > 7 * DAY);
+    const groupCount = S.groups.filter((g) => membersOf(g).length).length;
+    const tiles = [["students", "Активные ученики", pupils.length], ["students", "Группы с учениками", groupCount],
+      ["archive", "Бывшие ученики", S.users.length - pupils.length]];
+    const people = (list, detail, empty) => list.length ? `<ul class="cb-rows">${list.slice(0, 5).map(({ u, ...I }) =>
+      `<li><span><button class="tlink" type="button" data-u="${esc(u.id)}">${esc(u.name)}</button><small>${esc(detail(I))}</small></span></li>`).join("")}</ul>
+      ${list.length > 5 ? `<button class="tlink cb-more" type="button" data-cb-view="students">Все ученики · ещё ${list.length - 5}</button>` : ""}` :
+      `<p class="hint">${empty}</p>`;
+    return `<div class="cb-dash-head">${sectionTitle("Обзор")}<button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button></div>
+      <div class="cb-dash-stats">${tiles.map(([view, label, n]) => `<button class="cb-dash-stat" type="button" data-cb-view="${view}">
+        <span>${label}</span><b>${n}</b></button>`).join("")}</div>
+      <div class="cb-dash-columns">
+        <section class="cb-dash-card"><h3>Ученики с просрочкой · ${overdue.length}</h3>${people(overdue, (x) => `Просрочено заданий: ${x.late}`, "Просроченных заданий нет.")}</section>
+        <section class="cb-dash-card"><h3>Без активности 7+ дней · ${quiet.length}</h3>${people(quiet, (x) => x.last ? `Последняя активность: ${ago(x.last)}` : "Активности пока нет", "Все активные ученики заходили недавно.")}</section>
+      </div>`;
+  }
+
+  function archiveHTML() {
+    const people = S.users.filter((u) => archived(u) && matchesSearch(u));
+    return `${sectionTitle("Бывшие ученики")}
+      ${people.length ? `<ul class="gb-cards cb-archive-list">${people.map((u) => {
+        const group = groupOf(u);
+        return `<li class="scard"${gStyle(group)}><button class="sc-open" type="button" data-u="${esc(u.id)}" aria-label="Открыть: ${esc(u.name)}">
+          <span class="sc-nm">${esc(u.name)}</span><span class="sc-sub">${esc(u.login)}${group ? ` · ${esc(group.name)}` : ""}</span></button>
+          <div class="sc-act"><button class="chip" type="button" data-archive="${esc(u.id)}">Вернуть в активные</button></div></li>`;
+      }).join("")}</ul>` : `<p class="gb-empty">${S.q.trim() ? "По вашему запросу никого не нашлось." : "Здесь появятся ученики, которых вы переведёте в архив."}</p>`}`;
   }
   function card(u) {
     const I = u.B ? info(u) : null, g = groupOf(u), T = I ? PLAN.trend(I.course, u.nm, I.get) : [], pt = T[T.length - 1];
@@ -169,17 +251,13 @@
       ${list.length ? `<ul class="gb-cards">${list.map(card).join("")}</ul>` : `<p class="gb-empty">${g ? "В группе пока никого. Нажмите «Настроить» и отметьте учеников." : ""}</p>`}</section>`;
   }
   function overviewHTML() {
-    const list = shown(), q = S.q.trim();
-    const late = list.filter((u) => u.B && info(u).late), quiet = list.filter((u) => u.B && (() => { const I = info(u); return !I.last || Date.now() - I.last > 7 * DAY; })()), none = membersOf(null);
-    const who = (us) => us.map((u) => `<button class="tlink" type="button" data-u="${esc(u.id)}">${esc(u.name)}</button>`).join(", ");
-    const att = [late.length ? `<li class="att late"><b>Просрочены задания</b><span>${who(late)}</span></li>` : "", quiet.length ? `<li class="att quiet"><b>Не заходили 7+ дней</b><span>${who(quiet)}</span></li>` : "",
-      none.length && S.gview === "all" ? `<li class="att place"><b>Без группы: ${none.length}</b><span>Выберите группу в карточке ученика («В группу…») или нажмите «Настроить» у группы.</span></li>` : ""].join("");
+    const list = shown(), q = S.q.trim(), none = membersOf(null);
     let blocks;
-    if (q) blocks = list.length ? block(S.gview !== "all" && S.gview !== "none" ? S.groups.find((g) => g.id === S.gview) : null, list).replace('<h2>Без группы</h2>', `<h2>Поиск: «${esc(q)}»</h2>`) : '<p class="gb-empty">Никого не нашлось.</p>';
+    if (q) blocks = list.length ? block(S.groups.find((g) => g.id === S.gview), list) : '<p class="gb-empty">Никого не нашлось.</p>';
     else if (S.gview === "all") blocks = S.groups.map((g) => block(g, membersOf(g))).join("") + (none.length ? block(null, none) : "");
     else if (S.gview === "none") blocks = block(null, none);
     else { const g = S.groups.find((x) => x.id === S.gview); blocks = g ? block(g, membersOf(g)) : ""; }
-    return `${att ? `<ul class="cb-att" aria-label="Требуют внимания">${att}</ul>` : ""}${blocks}${S.users.length ? "" : '<p class="gb-empty">Учеников пока нет: аккаунты создаются на странице «Аккаунты учеников».</p>'}`;
+    return `${sectionTitle("Активные ученики")}${blocks}${activeUsers().length ? "" : '<p class="gb-empty">Активных учеников пока нет.</p>'}`;
   }
   // ---------- group settings: name, kind, colour, members
   function groupHTML() {
@@ -189,8 +267,8 @@
       <div class="cb-grid"><label class="f"><span>Название</span><input id="g-name" type="text" maxlength="60" required value="${esc(E.name)}" placeholder="Например: SAT группа · ноябрь"></label>
         <fieldset class="f g-kind"><legend>Тип</legend>${Object.entries(KINDS).map(([k, t]) => `<label class="radio"><input type="radio" name="g-kind" value="${k}" ${E.kind === k ? "checked" : ""}> ${t}</label>`).join("")}</fieldset></div>
       <fieldset class="g-colors"><legend>Цвет</legend>${Object.entries(GCOL).map(([k, [t, c]]) => `<label class="sw" style="--g:${c}"><input type="radio" name="g-color" value="${k}" ${E.color === k ? "checked" : ""}><i aria-hidden="true"></i>${t}</label>`).join("")}</fieldset>
-      <fieldset class="cb-who"><legend>Ученики · выбрано ${E.members.length}</legend>
-        <div class="cb-whol">${S.users.map((u) => { const g = groupOf(u); return `<label class="cb-tick"><input type="checkbox" data-gm="${esc(u.id)}" ${E.members.includes(u.id) ? "checked" : ""}><span>${esc(u.name)}<small>${esc(u.login)}${g && g.id !== E.id ? ` · сейчас: ${esc(g.name)}` : ""}</small></span></label>`; }).join("")}</div></fieldset>
+      <fieldset class="cb-who"><legend>Ученики · выбрано ${activeUsers().filter((u) => E.members.includes(u.id)).length}</legend>
+        <div class="cb-whol">${activeUsers().map((u) => { const g = groupOf(u); return `<label class="cb-tick"><input type="checkbox" data-gm="${esc(u.id)}" ${E.members.includes(u.id) ? "checked" : ""}><span>${esc(u.name)}<small>${esc(u.login)}${g && g.id !== E.id ? ` · сейчас: ${esc(g.name)}` : ""}</small></span></label>`; }).join("")}</div></fieldset>
       <p class="hint">Ученик может быть только в одной группе: если отметить ученика из другой группы, он перейдёт сюда. Группы видите только вы.</p>
       <div class="row"><button class="btn" type="submit">Сохранить группу</button>${isNew ? "" : '<button class="btn ghost" type="button" id="g-del">Удалить группу</button>'}</div></form>`;
   }
@@ -244,7 +322,7 @@
           <b>${esc(r.score)}</b><button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}`;
   }
   function tasks(u, I) {
-    return `<div class="cb-bar"><button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>
+    return `<div class="cb-bar">${archived(u) ? "" : '<button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>'}
         <p class="hint">Ученик видит задания вверху страницы «Домашние задания». Работа с результатом отмечается сама, когда ученик её сдаст; если он уже сделал её раньше, задание сразу считается выполненным («сделано раньше»). Чтобы ученик сделал работу заново, сбросьте результат во вкладке «Результаты».</p></div>
       ${I.T.length ? `<ul class="cb-rows cb-tasks">${I.T.map((x) => `<li class="${x.done ? "ok" : x.late ? "late" : ""}">
           <span>${esc(x.t)}<small>${x.done ? `сделано${x.early ? " раньше" : ""}${x.result ? ` · ${esc(PLAN.est(x.result) ? "≈ " + PLAN.est(x.result) : x.result)}` : ""}` : esc(PLAN.dueTxt(x.due))}${x.note ? ` · ${esc(x.note)}` : ""} · задано ${esc(ago(x.at))}</small></span>
@@ -282,7 +360,7 @@
       <section class="step"><h3><span class="sn">1</span> Кому <small>· выбрано ${n}</small></h3>
         <div class="chips gsel-row">${groupsWith.map((g) => { const ids = membersOf(g).filter((u) => !u.err).map((u) => u.id), on = ids.length && ids.every((x) => A.ids.has(x));
           return `<button class="gsel" type="button" data-gsel="${esc(g.id)}" aria-pressed="${!!on}"${gStyle(g)}><i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${ids.length}</button>`; }).join("")}
-          <button class="chip" type="button" id="cb-all">${n && n === S.users.filter((u) => !u.err).length ? "Снять всех" : "Все ученики"}</button></div>
+          <button class="chip" type="button" id="cb-all">${n && n === activeUsers().filter((u) => !u.err).length ? "Снять всех" : "Все ученики"}</button></div>
         ${groupsWith.map((g) => whoList(g, membersOf(g))).join("")}${none.length ? whoList(null, none) : ""}</section>
       <section class="step"><h3><span class="sn">2</span> Что задать</h3>
         <div class="chips kind-row" role="radiogroup" aria-label="Что задать">${KIND.map(([k, t]) => `<button class="chip" type="button" role="radio" data-kind="${k}" aria-checked="${k === A.kind}">${t}</button>`).join("")}</div>
@@ -301,7 +379,8 @@
   function openAssign(ids, kind, item) {
     const due = iso(Date.now() + 7 * DAY), first = (S.lessons[0] || {}).tag || "";
     S.editG = null; S.imp = null; S.ct = false;
-    S.assign = { kind: kind || (S.lessons.length ? "hw" : "mk"), item: item || first, part: "", due, note: "", own: "", link: "", ids: new Set(ids) };
+    const allowed = new Set(activeUsers().filter((u) => !u.err).map((u) => u.id));
+    S.assign = { kind: kind || (S.lessons.length ? "hw" : "mk"), item: item || first, part: "", due, note: "", own: "", link: "", ids: new Set(ids.filter((id) => allowed.has(id))) };
     S.focus = "#cb-assign h2"; fixAssign(); render(); setTimeout(() => { const f = $("cb-assign"); if (f) f.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 30);
   }
   function fixAssign() {   // keep item and part valid for the chosen kind
@@ -317,16 +396,21 @@
     const it = items(A.kind).find((x) => x.v === A.item); return it ? Object.assign(base, { t: it.t, href: it.href, rk: it.rk }) : null;
   }
   async function submitAssign() {
-    const t = taskOf(), msg = (s) => ($("cb-amsg").textContent = s);
+    const assigning = S.assign, t = taskOf(), msg = (s) => { if (S.assign === assigning && $("cb-amsg")) $("cb-amsg").textContent = s; };
+    if (S.assignBusy) return;
     if (!t) { msg("Выберите задание."); return; }
-    const who = S.users.filter((u) => S.assign.ids.has(u.id)); let ok = 0; const bad = [];
+    const who = activeUsers().filter((u) => assigning.ids.has(u.id));
+    if (!who.length) { msg("Выберите активного ученика."); return; }
+    let ok = 0; const bad = [];
+    S.assignBusy = true;
     $("cb-ago").disabled = true;
     for (const u of who) {
       msg(`Сохраняю ${ok + bad.length + 1} из ${who.length}…`);
       try { await change(u, (B, set, get) => { let L = []; try { L = JSON.parse(get("tasks") || "[]"); } catch (e) { L = []; } L.push(Object.assign({}, t)); set("tasks", JSON.stringify(L.slice(-60))); }); ok++; }
       catch (e) { bad.push(u.name); }
     }
-    S.assign = null; render();
+    S.assignBusy = false;
+    if (S.assign === assigning) { S.assign = null; render(); }
     toast(bad.length ? `Задано ${ok} из ${who.length}. Не получилось: ${bad.join(", ")}` : `«${t.t}» задано ${ok === 1 ? `ученику ${who[0].name}` : `${ok} ${pl(ok, "ученику", "ученикам", "ученикам")}`} · появится при следующем открытии сайта`, !!bad.length);
   }
 
@@ -334,9 +418,10 @@
   // another device, then ticks the plan, shows in «Сегодня» and in this cabinet. A key is written only when the account has no
   // newer value; its time is the time of the form answer, so a newer result on the student's device still wins.
   async function openImport() {
-    S.assign = null; S.imp = { busy: "Загружаю ответы формы…", map: {} }; render();
+    S.assign = null; const loading = { busy: "Загружаю ответы формы…", map: {} }; S.imp = loading; render();
     const r = await SITE.api("admin/form").catch(() => ({ status: 0 }));
-    if (r.ok) { try { const f = await SITE.unsealBlob(r.data.data); return useForm(f.csv, f.aliases || {}, `сохранены ${new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`); } catch (e) { /* fall through */ } }
+    if (S.imp !== loading) return;
+    if (r.ok) { try { const f = await SITE.unsealBlob(r.data.data); if (S.imp !== loading) return; return useForm(f.csv, f.aliases || {}, `сохранены ${new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`); } catch (e) { /* fall through */ } }
     S.imp = { busy: "", none: true, map: {} }; render();
   }
   function useForm(csv, aliases, label) {
@@ -344,7 +429,7 @@
     const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
     const G = FORMKIT.group(counts, aliases), me = SITE.me(), map = {};
     G.groups.forEach((g) => {
-      const hit = S.users.filter((u) => !u.err && u.login !== me && FORMKIT.key(u.name) === g.key);
+      const hit = activeUsers().filter((u) => !u.err && u.login !== me && FORMKIT.key(u.name) === g.key);
       map[g.key] = hit.length === 1 ? hit[0].id : "";
     });
     S.imp = { csv, aliases, label, rows, G, map }; render();
@@ -378,11 +463,11 @@
   function importHTML() {
     const I = S.imp;
     if (I.busy) return `<p class="cb-wait">${esc(I.busy)}</p>`;
-    const head = `<div class="cb-ah"><h2>Результаты из Google Form</h2><button class="tlink" type="button" id="cb-icancel">Закрыть ✕</button></div>`;
+    const head = `<div class="cb-ah"><h2 tabindex="-1">Результаты из Google Form</h2><button class="tlink" type="button" id="cb-icancel">Закрыть ✕</button></div>`;
     if (I.none) return `<div class="cb-assign">${head}<p class="td-sub">${esc(I.err || "Ответы формы ещё не сохранены в кабинете.")} Выберите файл ответов: Google Forms → Responses → View in Sheets → File → Download → Comma Separated Values (.csv).</p>
       <label class="drop" for="cb-ifile">Выбрать CSV<input id="cb-ifile" type="file" accept=".csv,text/csv" hidden></label>
       <p class="hint">Файл, загруженный на странице «Ответы из Google Form», сохраняется в кабинете сам.</p></div>`;
-    const accs = S.users.filter((u) => !u.err);
+    const accs = activeUsers().filter((u) => !u.err);
     const P = I.G.groups.map((g) => ({ g, p: planFor(g), n: I.rows.filter((r) => g.spellings[r.raw]).length }));
     const go = P.filter((x) => x.p && x.p.add), total = go.reduce((a, x) => a + x.p.add, 0);
     return `<div class="cb-assign cb-imp">${head}
@@ -395,96 +480,146 @@
   }
   function bindImport() {
     if ($("cb-icancel")) $("cb-icancel").onclick = closeForm;
-    if ($("cb-ifile")) $("cb-ifile").onchange = () => { const f = $("cb-ifile").files[0]; if (!f) return; const rd = new FileReader();
-      rd.onload = async () => { useForm(rd.result, {}, "файл " + f.name);
+    if ($("cb-ifile")) $("cb-ifile").onchange = () => { const f = $("cb-ifile").files[0], importing = S.imp; if (!f) return; const rd = new FileReader();
+      rd.onload = async () => { if (S.imp !== importing) return; useForm(rd.result, {}, "файл " + f.name);
         if (S.imp && S.imp.rows) SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: rd.result, aliases: {}, at: Date.now() }) }) }).catch(() => {}); };
       rd.readAsText(f, "utf-8"); };
     $("cb").querySelectorAll("[data-imap]").forEach((sel) => (sel.onchange = () => { S.imp.map[sel.dataset.imap] = sel.value; render(); }));
     if ($("cb-igo")) $("cb-igo").onclick = async () => {
-      const go = S.imp.G.groups.map(planFor).filter((p) => p && p.add); let ok = 0, n = 0; const bad = [];
+      const importing = S.imp;
+      const go = importing.G.groups.map(planFor).filter((p) => p && p.add); let ok = 0, n = 0; const bad = [];
       $("cb-igo").disabled = true;
       for (const p of go) {
-        $("cb-imsg").textContent = `Переношу ${ok + bad.length + 1} из ${go.length}…`;
+        if (S.imp === importing && $("cb-imsg")) $("cb-imsg").textContent = `Переношу ${ok + bad.length + 1} из ${go.length}…`;
         try { await change(p.u, (B) => { for (const [k, e] of fresh(B, p.E)) { B[k] = e; if (/_last_/.test(k)) n++; } }); ok++; } catch (e) { bad.push(p.u.name); }
       }
-      S.imp = null; render();
+      if (S.imp === importing) closeSection();
       toast(bad.length ? `Перенесено в ${ok} из ${go.length}. Не получилось: ${bad.join(", ")}` : `Перенесено ${n} результатов в ${ok} ${ok === 1 ? "аккаунт" : "аккаунта(ов)"} · ученики увидят их при следующем входе`, !!bad.length);
     };
   }
 
   // ---------- page
   function profileHead(u, I) {
-    const g = groupOf(u), names = Object.keys(I.names), mates = (g ? membersOf(g) : membersOf(null)), k = mates.findIndex((x) => x.id === u.id);
+    const former = archived(u), g = groupOf(u), names = Object.keys(I.names), mates = former ? [] : membersOf(g), k = mates.findIndex((x) => x.id === u.id);
     const prev = k > 0 ? mates[k - 1] : null, next = k >= 0 && k < mates.length - 1 ? mates[k + 1] : null;
     return `<header class="cb-head"${gStyle(g)}>
-        <nav class="crumbs" aria-label="Навигация"><button class="tlink" type="button" data-back="1">← ${esc(g ? g.name : "Все ученики")}</button>
+        <nav class="crumbs" aria-label="Навигация"><button class="tlink" type="button" data-back="1">← ${esc(former ? "Бывшие ученики" : g ? g.name : "Все ученики")}</button>
           <span class="pn">${prev ? `<button class="tlink" type="button" data-u="${esc(prev.id)}" aria-label="Предыдущий: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : ""}${next ? `<button class="tlink" type="button" data-u="${esc(next.id)}" aria-label="Следующий: ${esc(next.name)}">${esc(next.name)} ›</button>` : ""}</span></nav>
         <div class="ph-row"><div class="ph-id">
-          <span class="gpill">${g ? `<i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${esc(KINDS[g.kind])}` : "Без группы"}</span>
-          <h1 class="cb-name">${esc(u.name)}</h1>
+          <span class="gpill">${former ? "Бывший ученик" : g ? `<i class="gdot" aria-hidden="true"></i>${esc(g.name)} · ${esc(KINDS[g.kind])}` : "Без группы"}</span>
+          <h2 tabindex="-1" class="cb-name">${esc(u.name)}</h2>
           <span class="label">[ ${esc(u.login)} · ${esc(COURSES.find((c) => c[0] === I.course)[1])} · ${I.last ? `был(а) ${esc(ago(I.last))}` : "ещё не сдавал(а)"} ]</span></div>
-          <div class="ph-act"><button class="btn" type="button" data-new="1">Задать задание <span class="arr">+</span></button>
-            <label class="cb-as"><span>Группа</span><select id="cb-grp"><option value="">Без группы</option>${S.groups.map((x) => `<option value="${esc(x.id)}"${g && g.id === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label></div></div>
+          <div class="ph-act">${former ? "" : `<button class="btn" type="button" data-new="1">Задать задание <span class="arr">+</span></button>
+            <label class="cb-as"><span>Группа</span><select id="cb-grp"><option value="">Без группы</option>${S.groups.map((x) => `<option value="${esc(x.id)}"${g && g.id === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>`}
+            <button class="tlink cb-archive-action" type="button" data-archive="${esc(u.id)}">${former ? "Вернуть в активные" : "Перевести в архив"}</button></div></div>
         ${names.length > 1 || (names.length && !I.names[u.name]) ? `<label class="cb-as"><span>Результаты под именем</span><select id="cb-nm">${[...new Set([u.name, ...names])].map((x) => `<option${x === u.nm ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>` : ""}
-        ${u.none ? '<p class="hint">Ученик ещё ничего не сохранил в аккаунте. Задание всё равно можно задать: оно появится, когда ученик войдёт.</p>' : ""}
+        ${u.none && !former ? '<p class="hint">Ученик ещё ничего не сохранил в аккаунте. Задание всё равно можно задать: оно появится, когда ученик войдёт.</p>' : ""}
       </header>`;
   }
+  let viewChange = 0, returnView = "overview";
+  async function openView(view, focus = false) {
+    const step = ++viewChange;
+    if (["overview", "students", "archive"].includes(S.view) && ["tests", "lessons", "forms"].includes(view)) returnView = S.view;
+    setView(view);
+    S.cur = null; S.assign = null; S.imp = null; S.editG = null; S.ct = false; S.ls = false; S.q = "";
+    S.loadingView = view === "tests" || view === "lessons";
+    if (focus && !S.loadingView && view !== "forms") S.focus = ".cb-section-title";
+    if (view === "forms") { await openImport(); if (step === viewChange && focus) $("cb").querySelector(".cb-ah h2")?.focus(); return; }
+    render();
+    if (view === "tests") {
+      try { await CTED.load(); } catch (e) { /* a local copy may still be available */ }
+      if (step !== viewChange) return;
+      S.ct = true; CTED.open(); S.focus = ".ct h2";
+    } else if (view === "lessons") {
+      await Promise.all(S.lsAcc.map(fetchCopy));
+      if (step !== viewChange) return;
+      S.ls = true; CBL.open(); S.focus = ".lsn h2";
+    } else return;
+    S.loadingView = false;
+    render();
+  }
+
   function render() {
     const main = $("cb"); if (!S.loaded) return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
     document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG || S.ct || !!S.ls);
     let detail;
-    if (S.ct) detail = CTED.html();
+    if (S.loadingView) detail = '<p class="cb-wait" role="status">Загружаю…</p>';
+    else if (S.ct) detail = CTED.html();
     else if (S.ls) detail = CBL.html();
     else if (S.imp) detail = importHTML();
     else if (S.assign) detail = assignHTML();
     else if (S.editG) detail = groupHTML();
-    else if (!u) detail = overviewHTML();
-    else if (u.err) detail = `<div class="cb-empty"><button class="tlink" type="button" data-back="1">← Все ученики</button><h2>${esc(u.name)}</h2><p class="td-sub">${u.err === "key" ? "Копию этого ученика не удалось расшифровать." : esc(why(u.err))}</p></div>`;
+    else if (!u) detail = S.view === "archive" ? archiveHTML() : S.view === "students" ? overviewHTML() : dashboardHTML();
+    else if (u.loadingProgress) detail = '<p class="cb-wait" role="status">Загружаю результаты…</p>';
+    else if (u.err) detail = `<div class="cb-empty"><button class="tlink" type="button" data-back="1">← ${archived(u) ? "Бывшие ученики" : "Все ученики"}</button><h2 tabindex="-1" class="cb-name">${esc(u.name)}</h2><p class="td-sub">${u.err === "key" ? "Копию этого ученика не удалось расшифровать." : esc(why(u.err))}</p><button class="tlink" type="button" data-archive="${esc(u.id)}">${archived(u) ? "Вернуть в активные" : "Перевести в архив"}</button></div>`;
     else {
       const I = info(u);
       detail = profileHead(u, I) + `<div class="chips cb-tabs" role="tablist">${[["over", "Обзор"], ["plan", "План"], ["res", `Результаты · ${I.R.length}`], ["tasks", `Задания${I.open ? ` · ${I.open}` : ""}`]].map(([k, t]) => `<button class="chip" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join("")}</div>
         <div class="cb-body">${S.tab === "plan" ? plan(u, I) : S.tab === "res" ? results(u, I) : S.tab === "tasks" ? tasks(u, I) : over(u, I)}</div>`;
     }
-    main.innerHTML = toolbar() + `<section class="cb-detail" aria-live="polite">${detail}</section>`;
+    main.innerHTML = toolbar() + `<section class="cb-detail">${detail}</section>`;
     bind(u);
     if (S.ct) CTED.bind(main);
     if (S.ls) CBL.bind(main);
     if (S.focus) { const el = main.querySelector(S.focus); S.focus = ""; if (el) el.focus({ preventScroll: true }); }
-    if (focusQ) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+    if (focusQ && $("cb-q")) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
   // close whichever form is open (button «Закрыть ✕» or Escape) and put focus back on the button that opens it
   function closeForm() {
-    if (S.ct) { if (CTED.escape()) return true; if (!CTED.leave()) return true; S.ct = false; S.focus = "[data-ct]"; }
-    else if (S.ls) { if (CBL.escape()) return true; S.ls = false; S.focus = "[data-ls]"; }
+    if (S.assignBusy) return true;
+    if (S.ct) { if (CTED.escape() || !CTED.leave()) return true; closeSection(); return true; }
+    else if (S.ls) { if (CBL.escape()) return true; closeSection(); return true; }
     else if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
     else if (S.editG) { const id = S.editG.id; S.editG = null; S.focus = S.groups.some((g) => g.id === id) ? `[data-gedit="${id}"]` : ".gtab.add"; }
-    else if (S.imp) { S.imp = null; S.focus = "[data-imp]"; }
+    else if (S.imp) { closeSection(); return true; }
     else return false;
     render(); return true;
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct || S.ls) && closeForm()) e.preventDefault(); });
   const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
-  const offCt = () => { if (S.ct && !CTED.leave()) return false; S.ct = false; S.ls = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
+  function closeSection() { openView(returnView, true); }
+  const offCt = () => { if (S.assignBusy || (S.ct && !CTED.leave())) return false; S.ct = false; S.ls = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
   function bind(u) {
     const main = $("cb"), on = (sel, fn0) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn0(el, e)));
     const away = (fn) => (el, e) => { if (offCt()) fn(el, e); };
-    $("cb-q").oninput = (e) => { if (!offCt()) { e.target.value = S.q; return; } S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
-    on("[data-ls]", away(() => { if (S.ls) return; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ls = true; CBL.open(); S.focus = ".lsn h2"; render(); top(); }));
-    on("[data-ct]", () => { if (S.ct) return; S.ls = false; S.assign = null; S.imp = null; S.editG = null; S.cur = null; S.ct = true; CTED.open(); S.focus = ".ct h2"; render(); top(); });
+    if ($("cb-q")) $("cb-q").oninput = (e) => { S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
+    on("[data-cb-view]", (b) => {
+      const next = b.dataset.cbView;
+      if (next === S.view && (S.ct || S.ls || S.imp || S.loadingView)) return;
+      if (!offCt()) return;
+      if (next === "students") S.gview = "all";
+      openView(next, true);
+      top();
+    });
+    on("[data-archive]", (b) => {
+      const learner = S.users.find((x) => x.id === b.dataset.archive);
+      if (learner) toggleArchive(learner);
+    });
     on("[data-g]", away((b) => { S.gview = b.dataset.g; S.cur = null; S.assign = null; S.editG = null; S.imp = null; render(); }));
-    on("[data-u]", away((b) => { S.cur = b.dataset.u; S.assign = null; S.editG = null; S.imp = null; S.tab = "over"; render(); top(); }));
-    on("[data-back]", away(() => { S.cur = null; render(); top(); }));
-    on("[data-bulk]", away(() => openAssign(S.cur ? [S.cur] : S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : [])));
+    on("[data-u]", away(async (b) => {
+      const selected = S.users.find((x) => x.id === b.dataset.u);
+      if (!selected) return;
+      S.cur = selected.id; S.assign = null; S.editG = null; S.imp = null; S.tab = "over";
+      if (selected.B === undefined) {
+        selected.loadingProgress ||= fetchCopy(selected);
+        render(); top();
+        await selected.loadingProgress;
+        selected.loadingProgress = null;
+        if (S.cur !== selected.id) return;
+      }
+      S.focus = ".cb-name"; render(); top();
+    }));
+    on("[data-back]", away(() => { S.cur = null; S.focus = ".cb-section-title"; render(); top(); }));
+    on("[data-bulk]", away(() => openAssign(S.cur ? [S.cur] : S.view === "students" && S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : [])));
     on("[data-bulkg]", away((b) => { const g = S.groups.find((x) => x.id === b.dataset.bulkg); openAssign(membersOf(g).filter((x) => !x.err).map((x) => x.id)); }));
     on("[data-assign1]", away((b) => openAssign([b.dataset.assign1])));
-    on("[data-imp]", away(() => { S.editG = null; openImport(); }));
     on("[data-tab]", (b) => { S.tab = b.dataset.tab; render(); });
     on("[data-gnew]", away(() => { S.assign = null; S.imp = null; S.cur = null; S.editG = { id: newId(), name: "", kind: "group", color: Object.keys(GCOL).find((c) => !S.groups.some((g) => g.color === c)) || "blue", members: [] }; S.focus = "#cb-gform h2"; render(); top(); }));
     on("[data-gedit]", away((b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; S.focus = "#cb-gform h2"; render(); top(); } }));
     main.querySelectorAll("[data-place]").forEach((sel) => (sel.onchange = () => { if (!sel.value) return; const st = S.users.find((x) => x.id === sel.dataset.place), g = S.groups.find((x) => x.id === sel.value);
       moveTo(sel.dataset.place, sel.value); render(); saveGroups(`${st.name} → ${g.name}`); }));
-    $("cb-reload").onclick = async () => { S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
+    $("cb-reload").onclick = async () => { if (!offCt()) return; await groupWrites; S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
     if ($("cb-nm")) $("cb-nm").onchange = (e) => { u.nm = e.target.value; render(); };
     if ($("cb-grp")) $("cb-grp").onchange = (e) => { const g = S.groups.find((x) => x.id === e.target.value); moveTo(u.id, e.target.value); render(); saveGroups(g ? `${u.name} → ${g.name}` : `${u.name}: без группы`); };
     if (u) {
@@ -516,8 +651,8 @@
       gf.querySelectorAll("[name=g-color]").forEach((r) => (r.onchange = () => { E.color = r.value; render(); }));
       gf.querySelectorAll("[data-gm]").forEach((c) => (c.onchange = () => { E.members = E.members.filter((x) => x !== c.dataset.gm); if (c.checked) E.members.push(c.dataset.gm); render(); }));
       gf.onsubmit = (e) => { e.preventDefault(); E.name = E.name.trim() || "Группа";
-        const old = S.groups.find((g) => g.id === E.id); if (old) Object.assign(old, { name: E.name, kind: E.kind, color: E.color, members: [] }); else S.groups.push({ id: E.id, name: E.name, kind: E.kind, color: E.color, members: [] });
-        E.members.forEach((uid) => moveTo(uid, E.id)); S.gview = E.id; S.editG = null; render(); saveGroups(`Группа «${E.name}» сохранена`); };
+        const old = S.groups.find((g) => g.id === E.id); if (old) Object.assign(old, { name: E.name, kind: E.kind, color: E.color, members: old.members.filter((uid) => S.archived.has(uid)) }); else S.groups.push({ id: E.id, name: E.name, kind: E.kind, color: E.color, members: [] });
+        E.members.filter((uid) => !S.archived.has(uid)).forEach((uid) => moveTo(uid, E.id)); S.gview = E.id; S.editG = null; render(); saveGroups(`Группа «${E.name}» сохранена`); };
       if ($("g-del")) $("g-del").onclick = () => { if (!confirm(`Удалить группу «${E.name}»? Ученики останутся, но без группы.`)) return; S.groups = S.groups.filter((g) => g.id !== E.id); S.gview = "all"; S.editG = null; render(); saveGroups(`Группа «${E.name}» удалена`); };
     }
     const f = $("cb-assign"); if (!f) return;
@@ -532,22 +667,28 @@
     if ($("cb-own")) $("cb-own").oninput = (e) => { A.own = e.target.value; const b = $("cb-ago"); if (b) b.disabled = !(A.ids.size && A.own.trim()); };
     if ($("cb-link")) $("cb-link").oninput = (e) => (A.link = e.target.value);
     main.querySelectorAll("[data-who]").forEach((c) => (c.onchange = () => { c.checked ? A.ids.add(c.dataset.who) : A.ids.delete(c.dataset.who); render(); }));
-    $("cb-all").onclick = () => { const ok = S.users.filter((x) => !x.err); if (A.ids.size === ok.length) A.ids.clear(); else ok.forEach((x) => A.ids.add(x.id)); render(); };
+    $("cb-all").onclick = () => { const ok = activeUsers().filter((x) => !x.err); if (A.ids.size === ok.length) A.ids.clear(); else ok.forEach((x) => A.ids.add(x.id)); render(); };
     $("cb-acancel").onclick = closeForm;
     f.onsubmit = (e) => { e.preventDefault(); submitAssign(); };
   }
 
   // «Уроки» (cblesson.js): the lesson-mode sessions of the lesson account
-  if (window.CBL) CBL.init({ accounts: () => S.lsAcc || [], lessons: () => S.lessons || [], render, toast, change, focus: (sel) => (S.focus = sel), close: () => { S.ls = false; S.focus = "[data-ls]"; render(); } });
+  if (window.CBL) CBL.init({ accounts: () => S.lsAcc || [], lessons: () => S.lessons || [], render, toast, change, focus: (sel) => (S.focus = sel), close: closeSection });
   // «Мои тесты» (cted.js): what the editor needs from the cabinet
-  if (window.CTED) CTED.init({ toast, render, users: () => S.users, focus: (sel) => (S.focus = sel),
-    close: () => { S.ct = false; S.focus = "[data-ct]"; render(); },
-    give: (id) => openAssign(S.gview !== "all" ? shown().filter((x) => !x.err).map((x) => x.id) : [], "ct", id),
+  if (window.CTED) CTED.init({ toast, render, users: activeUsers, focus: (sel) => (S.focus = sel),
+    close: closeSection,
+    give: (id) => {
+      S.ct = false;
+      const ids = returnView === "students" && S.gview !== "all" ? shown().map((u) => u.id) : [];
+      setView("students"); openAssign(ids, "ct", id);
+    },
     copy: (u) => { if (!u.B || u.err) return null; const I = info(u); return { nm: u.nm, get: I.get, meta: I.meta, tasks: I.T }; } });
   window.addEventListener("DOMContentLoaded", () => {
     if (!window.SITE) return;
     SITE.ready.then(async () => {
       try { const d = await SITE.json("lessons"); S.lessons = (d.lessons || d).filter((l) => l && l.tag && Array.isArray(l.parts)); } catch (e) { S.lessons = []; }
+      const view = new URLSearchParams(location.search).get("view");
+      if (VIEWS.some(([key]) => key === view)) S.view = view;
       load();
     });
   });
