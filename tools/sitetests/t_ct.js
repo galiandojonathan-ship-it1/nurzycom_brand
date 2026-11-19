@@ -9,7 +9,7 @@ const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); cons
 (async () => {
   const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push("teacher: " + e.message)); pg.on("dialog", (d) => d.accept());
   console.log(await seed(pg));
-  await pg.goto(B + "cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  await pg.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   await pg.click("[data-ct]"); await pg.waitForSelector(".ct h2");
   ok(/Тестов пока нет/.test(await pg.textContent(".ct")), "empty list at first");
   await axe(pg, "tests list");
@@ -103,7 +103,7 @@ const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); cons
   await pg.click("[data-ct]"); await pg.click("[data-ctedit]"); await pg.fill("#ct-title", "Transitions · v2"); await pg.keyboard.press("Escape"); await pg.waitForTimeout(200);
   ok(!!(await pg.$(".ct-list")), "Escape from the editor goes back to the list");
   // phone widths
-  const tp = await page(br, { width: 390, height: 844 }); await tp.goto(B + "cabinet.html", { waitUntil: "load" }); await tp.waitForSelector(".scard", { timeout: 20000 });
+  const tp = await page(br, { width: 390, height: 844 }); await tp.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await tp.waitForSelector(".scard", { timeout: 20000 });
   await tp.click("[data-ct]"); await tp.click("[data-ctedit]"); await tp.waitForSelector("#ct-form"); await tp.click("details.ct-q:nth-of-type(1) summary");
   ok((await tp.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone 390px: the editor has no sideways scroll");
   await tp.screenshot({ path: __dirname + "/../ct-editor-phone.png", fullPage: true });

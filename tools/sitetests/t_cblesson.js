@@ -32,10 +32,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await lp.waitForTimeout(1500); await lc.close();
 
   // the cabinet
-  await pg.goto(B + "cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  await pg.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   ok(!(await pg.$$eval(".sc-nm", (a) => a.map((x) => x.textContent))).includes("Урок"), "the lesson account is not listed as a student");
-  ok(/Уроки · 2/.test(await pg.textContent("[data-ls]")), "toolbar: «Уроки · 2»");
   await pg.click("[data-ls]"); await pg.waitForSelector(".lsn-card");
+  ok(await pg.locator(".lsn-card").count() === 2, "both sessions are shown in the lessons tab");
   const old = (await pg.textContent(".lsn-card:nth-child(2)")).replace(/\s+/g, " "); ok(/Старая группа/.test(old) && /SAT Verbal · Урок 4/.test(old) && !/V04\.p4/.test(old), "an old lesson without titles gets the part name: " + old.slice(0, 150));
   const card = (await pg.textContent(".lsn-card")).replace(/\s+/g, " "); ok(/Группа А/.test(card) && /Пробный тест 5 · Reading and Writing · Модуль 1 → SAT Verbal · Урок 2/.test(card) && /есть разбор/.test(card), "lesson card names the parts by itself: " + card.slice(0, 230));
   await pg.click(".lsn-card"); await pg.waitForSelector(".lsn-kpi");

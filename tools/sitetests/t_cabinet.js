@@ -5,7 +5,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
 const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); const v = await pg.evaluate(async () => (await axe.run(document, { runOnly: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] })).violations.map((x) => `${x.id}×${x.nodes.length} ${x.nodes[0].target.join(" ")}`));
   ok(!v.length, `axe ${label}: ${v.length ? v.join(" | ") : "clean"}`); };
 (async () => { const br = await chromium.launch(); const pg = await page(br); const errs = []; pg.on("pageerror", (e) => errs.push(e.message)); pg.on("dialog", (d) => d.accept());
-  console.log(await seed(pg)); await pg.goto("http://127.0.0.1:8768/cabinet.html", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
+  console.log(await seed(pg)); await pg.goto("http://127.0.0.1:8768/cabinet.html?view=students", { waitUntil: "load" }); await pg.waitForSelector(".scard", { timeout: 20000 });
   const vis = (a) => a.map((b) => { const c = b.cloneNode(true); c.querySelectorAll(".sr-only").forEach((x) => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); });
   const tabs = await pg.$$eval(".gtab", vis); console.log("tabs:", tabs.join(" | "));
   ok(tabs.includes("Группа 0") && tabs.includes("Индивидуальные ученики 0"), "two default groups");
@@ -43,7 +43,7 @@ const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); cons
   await axe(pg, "profile");
   await pg.selectOption("#cb-grp", G2); await pg.waitForTimeout(400); ok(/Индивидуальные/.test(await pg.textContent(".gpill")), "moving Dias to another group from his profile");
   // phone width
-  const ph = await page(br, { width: 390, height: 844 }); await ph.goto("http://127.0.0.1:8768/cabinet.html", { waitUntil: "load" }); await ph.waitForSelector(".scard", { timeout: 20000 });
+  const ph = await page(br, { width: 390, height: 844 }); await ph.goto("http://127.0.0.1:8768/cabinet.html?view=students", { waitUntil: "load" }); await ph.waitForSelector(".scard", { timeout: 20000 });
   ok((await ph.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone 390px: no sideways scroll on the overview");
   await ph.screenshot({ path: __dirname + "/../cab-phone.png", fullPage: false });
   await pg.click("[data-back]"); await pg.click('.gtab[data-g="all"]'); await pg.waitForTimeout(300); await pg.screenshot({ path: __dirname + "/../cab-after2.png", fullPage: true });
