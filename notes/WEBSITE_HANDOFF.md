@@ -85,7 +85,7 @@ The server never sees passwords or the master key: everything is encrypted in th
 
 The lesson account can upload a PDF from its lesson card under «Пульт урока» using the administrator key. The browser converts it to slides
 with the vendored PDF.js 4.10.38 distribution (Apache-2.0), seals them with the course key, and uses `GET admin/decks` to list and
-`GET/PUT admin/deck?id=V01` to read or replace a presentation. The PDF itself stays on the uploading device.
+`GET/PUT/DELETE admin/deck?id=V01` to read, replace or delete an uploaded presentation. The PDF itself stays on the uploading device.
 
 `functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
 
