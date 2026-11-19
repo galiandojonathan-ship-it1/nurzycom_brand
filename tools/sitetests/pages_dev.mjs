@@ -14,10 +14,11 @@ const stmt = (q, args = []) => ({ bind: (...a) => stmt(q, a),
   async run() { const r = sql.prepare(q).run(...args); return { results: [], meta: { changes: Number(r.changes) } }; },
   _q: q, _a: args });
 const D1 = { prepare: (q) => stmt(q), async batch(list) { sql.exec("BEGIN"); try { const out = list.map((s) => /^\s*select/i.test(s._q) ? { results: sql.prepare(s._q).all(...s._a), meta: {} } : { results: [], meta: { changes: Number(sql.prepare(s._q).run(...s._a).changes) } }); sql.exec("COMMIT"); return out; } catch (e) { sql.exec("ROLLBACK"); throw e; } } };
-const mem = new Map();
-const KV = { async get(k, t) { const v = mem.get(k); return v == null ? null : t === "json" ? JSON.parse(v) : v; }, async put(k, v) { mem.set(k, String(v)); }, async delete(k) { mem.delete(k); },
-  async list({ prefix = "" } = {}) { return { keys: [...mem.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name })), list_complete: true }; } };
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".bin": "application/octet-stream", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
+const mem = new Map(), metadata = new Map();
+const KV = { async get(k, t) { const v = mem.get(k); return v == null ? null : t === "json" ? JSON.parse(v) : v; }, async put(k, v, opts) { mem.set(k, String(v)); metadata.set(k, opts?.metadata); },
+  async delete(k) { mem.delete(k); metadata.delete(k); },
+  async list({ prefix = "" } = {}) { return { keys: [...mem.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name, metadata: metadata.get(name) })), list_complete: true }; } };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".bin": "application/octet-stream", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
 const file = (p) => { const f = path.join(root, decodeURIComponent(p.split("?")[0])); return fs.existsSync(f) && fs.statSync(f).isFile() ? f : fs.existsSync(f + ".html") ? f + ".html" : fs.existsSync(path.join(f, "index.html")) ? path.join(f, "index.html") : null; };
 const ASSETS = { async fetch(u) { const f = file(new URL(u).pathname); return f ? new Response(fs.readFileSync(f)) : new Response("", { status: 404 }); } };
 http.createServer(async (req, res) => {

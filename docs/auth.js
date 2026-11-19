@@ -10,7 +10,11 @@
   const VER = ((document.currentScript && document.currentScript.src) || "").split("?")[1] || "";
   const enc = new TextEncoder(), dec = new TextDecoder();
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  const toB64 = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));
+  const toB64 = (buffer) => {
+    const bytes = new Uint8Array(buffer), chunks = [];
+    for (let i = 0; i < bytes.length; i += 32768) chunks.push(String.fromCharCode(...bytes.subarray(i, i + 32768)));
+    return btoa(chunks.join(""));
+  };
   const get = (k) => { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch (e) { return null; } };
   const put = (k, v, keep) => { try { (keep ? localStorage : sessionStorage).setItem(k, v); } catch (e) { /* private mode */ } };
   const drop = () => { try { ["site_pw", "site_key", "site_wrap", "site_login", "site_sync"].forEach((k) => { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch (e) { /* private mode */ } };
@@ -66,7 +70,14 @@
     await useKey(raw);
   }
   async function aes(raw, usage) { return crypto.subtle.importKey("raw", raw, "AES-GCM", false, usage); }
-  async function seal(raw, obj) { const iv = crypto.getRandomValues(new Uint8Array(12)); return toB64(new Uint8Array([...iv, ...new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aes(raw, ["encrypt"]), enc.encode(JSON.stringify(obj))))])); }
+  async function seal(raw, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aes(raw, ["encrypt"]), enc.encode(JSON.stringify(obj)));
+    const bytes = new Uint8Array(iv.length + encrypted.byteLength);
+    bytes.set(iv);
+    bytes.set(new Uint8Array(encrypted), iv.length);
+    return toB64(bytes);
+  }
   async function unseal(raw, s) { const u = b64(s); return JSON.parse(dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, await aes(raw, ["decrypt"]), u.slice(12)))); }
   const sessionRaw = () => { const k = get("site_key"); if (!k) throw new Error("Войдите на сайт заново."); return b64(k); };
   // ---- results on the account (added 2026-11-05): finished work, scores and progress follow the login to any device.

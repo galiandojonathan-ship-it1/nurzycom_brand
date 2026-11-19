@@ -41,7 +41,7 @@ This file is public, like the whole repository. Never write passwords, the maste
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
 | question and text pages | `dict.js` | Dictionary on selection (Wiktionary, `data/dict.json` + `q/dict/`; rebuild: `tools/dict/`) |
 | every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`), `lsmist.js` («Ошибки класса», loaded by `lesson.js`) |
-| `classroom.html` (lesson login only, «Пульт урока») | `classroom.js`, `lsboard.js` | Lesson home: start, reviews, presentations (`data/decks.bin`, `q/decks/`), words from lessons, past lessons | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
+| `classroom.html` (lesson login only, «Пульт урока») | `classroom.js`, `lsboard.js` | Lesson home: start, reviews, presentations (imported PDF slides via encrypted `admin/deck`, or `data/decks.bin` and `q/decks/`), words from lessons, past lessons | «Режим урока»: the teacher's capture bar (words, hard questions, notes, class vote, timeline); analysed by the `/lesson-review` skill |
 
 ## 3. Data and encryption
 
@@ -82,6 +82,10 @@ Routes:
 - `admin/*` routes need the `X-Admin-Key` header, which lives only in the teacher's browser (`admin_key`): `users`, `user` (PUT, DELETE), `progress`, `form`, `groups`, `custom`, `invite`.
 
 The server never sees passwords or the master key: everything is encrypted in the browser.
+
+The lesson account can upload a PDF from its lesson card under «Пульт урока» using the administrator key. The browser converts it to slides
+with the vendored PDF.js 4.10.38 distribution (Apache-2.0), seals them with the course key, and uses `GET admin/decks` to list and
+`GET/PUT admin/deck?id=V01` to read or replace a presentation. The PDF itself stays on the uploading device.
 
 `functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
 
