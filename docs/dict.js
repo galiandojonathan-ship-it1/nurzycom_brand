@@ -56,23 +56,26 @@
   }
 
   function card(html, rect) {
-    if (!pop) { pop = document.createElement("div"); pop.className = "gpop dpop hidden"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-live", "polite"); document.body.appendChild(pop); }
+    if (!pop) { pop = document.createElement("div"); pop.className = "gpop dpop hidden"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-live", "polite"); }
+    const parent = document.fullscreenElement || document.body;
+    if (pop.parentNode !== parent) parent.appendChild(pop);
     pop.innerHTML = html; pop.classList.remove("hidden");
     const pw = pop.offsetWidth, ph = pop.offsetHeight;
     pop.style.left = Math.max(8, Math.min(innerWidth - pw - 8, rect.left + rect.width / 2 - pw / 2)) + "px";
     pop.style.top = (rect.bottom + 10 + ph <= innerHeight - 8 ? rect.bottom + 10 : Math.max(8, rect.top - ph - 10)) + "px";
   }
   function hide() { if (pop) pop.classList.add("hidden"); lastKey = ""; }
-  async function show(text, rect) {
+  async function show(text, rect, active = () => true) {
     const t = String(text || "").replace(/\s+/g, " ").trim(); if (!t || !rect) return;
+    const display = (html) => { if (active()) card(html, rect); };
     // 1. a course or test word keeps its own card
     if (window.GLOSS) { try { await GLOSS.ready; } catch (e) { /* no course data */ } const g = GLOSS.find && GLOSS.find(t);
-      if (g) return card(`<span class="label">Словарь курса</span><b lang="en">${esc(g.w)}</b>${g.en ? `<span class="gpop-en" lang="en">${esc(g.en)}</span>` : ""}${g.ru && g.ru.length ? `<span class="gpop-ru">${esc(g.ru.join(", "))}</span>` : ""}`, rect); }
+      if (g) return display(`<span class="label">Словарь курса</span><b lang="en">${esc(g.w)}</b>${g.en ? `<span class="gpop-en" lang="en">${esc(g.en)}</span>` : ""}${g.ru && g.ru.length ? `<span class="gpop-ru">${esc(g.ru.join(", "))}</span>` : ""}`); }
     // 2. the site dictionary
     const wn = t.toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z' -]/g, " ").replace(/\s+/g, " ").trim();
     if (!wn) return;
-    const slow = setTimeout(() => card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Загружаю словарь…</span>`, rect), 250);
-    try { await load(wn); clearTimeout(slow); } catch (e) { clearTimeout(slow); return card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Словарь не загрузился. Проверьте интернет.</span>`, rect); }
+    const slow = setTimeout(() => display(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Загружаю словарь…</span>`), 250);
+    try { await load(wn); clearTimeout(slow); } catch (e) { clearTimeout(slow); return display(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Словарь не загрузился. Проверьте интернет.</span>`); }
     let f = find(wn), via = "", also = null;
     // a form entry («reinvigorated: simple past and past participle of reinvigorate») also shows its base word's meaning;
     // when the entry has nothing else, the base word becomes the card
@@ -81,10 +84,10 @@
     const base = f && ((formOf && formOf[1].toLowerCase()) || data.f[f.w]);
     if (base && base !== f.w) { try { await load(base); const b = find(base);
       if (b) { if (f.e.p.every(([, gs]) => gs.every(FORM))) { via = f.w; f = b; } else also = b; } } catch (e) { /* keep the form entry */ } }
-    if (!f) return card(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Этого слова нет в словаре сайта.</span>`, rect);
+    if (!f) return display(`<span class="label">Словарь</span><b lang="en">${esc(t)}</b><span class="gpop-en">Этого слова нет в словаре сайта.</span>`);
     const senses = f.e.p.map(([pos, gs]) => `<span class="dpop-pos">${esc(POSN[pos] || pos)}</span><ol>${gs.map((g) => `<li lang="en">${esc(g)}</li>`).join("")}</ol>`).join("");
     const more = also ? `<span class="dpop-pos">${esc(also.w)}</span><ol>${also.e.p.flatMap(([, gs]) => gs).filter((g) => !FORM(g)).slice(0, 2).map((g) => `<li lang="en">${esc(g)}</li>`).join("")}</ol>${also.e.r.length && !f.e.r.length ? `<span class="gpop-ru">${esc(also.e.r.join(", "))}</span>` : ""}` : "";
-    card(`<span class="label">Словарь · Wiktionary</span><b lang="en">${esc(f.w)}</b>${via ? `<span class="gpop-en">форма слова: ${esc(via)} → ${esc(f.w)}</span>` : ""}${senses}${more}${f.e.r.length ? `<span class="gpop-ru">${esc(f.e.r.join(", "))}</span>` : ""}<small class="dpop-src">Wiktionary, CC BY-SA 4.0 · значение может зависеть от контекста</small>`, rect);
+    display(`<span class="label">Словарь · Wiktionary</span><b lang="en">${esc(f.w)}</b>${via ? `<span class="gpop-en">форма слова: ${esc(via)} → ${esc(f.w)}</span>` : ""}${senses}${more}${f.e.r.length ? `<span class="gpop-ru">${esc(f.e.r.join(", "))}</span>` : ""}<small class="dpop-src">Wiktionary, CC BY-SA 4.0 · значение может зависеть от контекста</small>`);
   }
 
   // a selection of 1–4 words inside the page's text (not in fields, the menu, the lesson bar or a card)
@@ -96,7 +99,7 @@
     if (!host || host.closest("input,textarea,nav,header,footer,.ls-bar,.ls-pop,.ls-toast,.gpop,.lb-tools,.cr-tiles")) return;
     if (selectionScope && !host.closest(selectionScope)) return;
     const key = text + "|" + Math.round(r.getBoundingClientRect().top); if (key === lastKey) return; lastKey = key;
-    show(text, r.getBoundingClientRect());
+    show(text, r.getBoundingClientRect(), () => lastKey === key && host.isConnected && sel.toString().replace(/\s+/g, " ").trim() === text);
   }
   document.addEventListener("selectionchange", () => { clearTimeout(timer); timer = setTimeout(onSelect, 280); });
   document.addEventListener("pointerdown", (e) => { if (pop && !pop.contains(e.target)) hide(); }, true);
@@ -106,6 +109,7 @@
     hide();
   });
   addEventListener("scroll", hide, { passive: true, capture: true });
+  document.addEventListener("fullscreenchange", hide);
   const css = `.dpop{z-index:70;max-width:min(380px,calc(100vw - 16px))}.dpop ol{margin:4px 0 6px;padding-left:18px}.dpop li{margin:2px 0;font-size:14px;line-height:1.4}
 .dpop-pos{display:block;margin-top:6px;font:500 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;opacity:.75}.dpop-src{display:block;margin-top:6px;font-size:11px;opacity:.65}`;
   document.head.appendChild(Object.assign(document.createElement("style"), { textContent: css }));

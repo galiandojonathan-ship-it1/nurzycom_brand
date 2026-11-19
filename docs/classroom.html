@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611191628">
+<link rel="stylesheet" href="site.css?v=202611191640">
 <style>
 /* «Пульт урока» (classroom.js): the lesson account's home page, only for login «lesson» */
 .cr-hero .sub{max-width:720px}
@@ -58,17 +58,34 @@
 .dk-bar button{font:500 14px var(--sans);border:1.5px solid rgba(245,243,238,.35);background:transparent;color:#F5F3EE;border-radius:999px;padding:8px 13px;cursor:pointer}
 .dk-bar button:hover,.dk-bar button:focus-visible,.dk-bar button[aria-pressed="true"]{background:#F5F3EE;color:#0F0F0F}
 .dk-bar .dk-pos{font:500 14px var(--sans);color:rgba(245,243,238,.75);min-width:84px;text-align:center}
-.dk-stage{flex:1;min-height:0;position:relative;display:grid;place-items:center;padding:0 12px calc(var(--ls-h,56px) + 24px)}
-.dk:fullscreen .dk-stage{padding-bottom:12px}
-.dk-frame{position:relative;max-width:100%;max-height:100%;aspect-ratio:var(--ar,16/9);height:100%}
+.dk-workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:12px;padding:0 12px calc(var(--ls-h,56px) + 24px)}
+.dk.with-calc .dk-workspace{grid-template-columns:minmax(0,3fr) minmax(300px,2fr)}
+.dk:fullscreen .dk-workspace{padding-bottom:12px}
+.dk-stage{min-width:0;min-height:0;display:grid;place-items:center;container-type:size}
+.dk-frame{position:relative;width:min(100%,calc(100cqh * var(--ar)));aspect-ratio:var(--ar);container-type:inline-size}
 .dk-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;border-radius:6px;user-select:none}
+.dk-text{position:absolute;inset:0;pointer-events:none}
+.dk-text-page,.dk-text-layer{position:absolute;top:0;left:0;transform-origin:0 0}
+.dk-text-page{overflow:hidden}
+.dk-text-layer{-webkit-text-size-adjust:none;text-size-adjust:none;forced-color-adjust:none}
+.dk-text-layer[data-main-rotation="90"]{transform:rotate(90deg) translateY(-100%)}
+.dk-text-layer[data-main-rotation="180"]{transform:rotate(180deg) translate(-100%,-100%)}
+.dk-text-layer[data-main-rotation="270"]{transform:rotate(270deg) translateX(-100%)}
+.dk-text-layer :is(span,br){position:absolute;white-space:pre;transform-origin:0 0;color:transparent;line-height:1;cursor:text;pointer-events:auto;user-select:text}
+.dk-text-layer ::selection{background:rgba(65,130,240,.32);color:transparent}
+.dk-native{position:absolute;inset:0;overflow:auto;background:#fff;color:#0F0F0F;border-radius:6px;padding:6cqw;overflow-wrap:anywhere}
+.dk-native h2{margin:0 0 .55em;font:600 clamp(16px,5cqw,64px)/1.1 var(--sans);letter-spacing:-.02em;white-space:pre-wrap}
+.dk-native p{margin:0 0 .6em;font:400 clamp(14px,3.1cqw,38px)/1.4 var(--sans);white-space:pre-wrap}
+.dk-native:not([hidden])~.dk-nav,.dk.drawing .dk-text{display:none}
+#dk-calc iframe{display:block;width:100%;height:100%;border:0;border-radius:6px;background:#fff;min-height:0}
+@media(max-width:700px){.dk.with-calc .dk-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,2fr) minmax(0,3fr)}}
 .dk-draw{position:absolute;inset:0;display:none}.dk.drawing .dk-draw{display:block}
 .dk.drawing .dk-stage{padding-top:64px}.dk-draw .lb-tools{position:absolute;left:0;right:0;top:-58px;border-radius:12px}.dk-draw .lb-c{position:absolute;inset:0}
 .dk-nav{position:absolute;top:0;bottom:0;width:18%;border:0;background:transparent;cursor:pointer;color:transparent}
 .dk-nav.prev{left:0}.dk-nav.next{right:0}.dk.drawing .dk-nav{display:none}
 .dk-nav:focus-visible{outline:2px solid #F5F3EE;outline-offset:-4px}
 </style>
-<script src="auth.js?v=202611191628"></script>
+<script src="auth.js?v=202611191640"></script>
 </head>
 <body>
 <a class="skip" href="#main">Перейти к содержанию</a>
@@ -97,8 +114,9 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="lsboard.js?v=202611191628"></script>
-<script src="classroom.js?v=202611191628"></script>
-<script src="dict.js?v=202611191628" data-selection-scope=".qhtml"></script>
+<script src="lsboard.js?v=202611191640"></script>
+<script src="tools.js?v=202611191640"></script>
+<script src="classroom.js?v=202611191640"></script>
+<script src="dict.js?v=202611191640" data-selection-scope=".qhtml,.dk-text,.dk-native"></script>
 </body>
 </html>

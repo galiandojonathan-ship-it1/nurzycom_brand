@@ -78,6 +78,7 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (ref) toggleRef(false); } });
 
   window.BBTools = {
+    desmosURL: DESMOS,
     mount(el) {
       bar = el; el.classList.add("bb-tools");
       el.innerHTML = '<button type="button" class="chip bb-t-calc" aria-pressed="false">Калькулятор</button><button type="button" class="chip bb-t-ref">Справочник</button>';
