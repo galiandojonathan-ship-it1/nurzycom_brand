@@ -61,6 +61,7 @@
           : '<p class="cr-empty">Пока пусто. На своём устройстве откройте страницу преподавателя: «Анализ группы» для группы или карточку ученика, затем «Подготовить урок».</p>'}</div>
       <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Слова, отмеченные на уроках. Раз в два дня они получают определение и перевод и подчёркиваются на сайте, как слова курса.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
       <div class="cr-card cr-wide" id="cr-lessons"><h2>Презентации и материалы</h2><p class="cr-sub">Выберите урок: его презентация, части рабочей тетради и слова.</p>
+        ${SITE.adminKey() ? '<div class="cr-acts cr-import"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><span>PDF с кодом урока в имени, например V01_v4.pdf. Существующие презентации пропускаются.</span></div><input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
         <div class="cr-tabs" role="group" aria-label="Курс"><button type="button" data-course="V" aria-pressed="${C.course === "V"}">SAT Verbal</button><button type="button" data-course="M" aria-pressed="${C.course === "M"}">SAT Math</button></div>
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
         <input id="cr-deck-file" type="file" hidden>
@@ -75,6 +76,15 @@
       e.target.value = "";
       if (file && C.open) uploadDeck(C.open, file);
     };
+    const zip = $("cr-zip-file");
+    if (zip) {
+      $("cr-zip-upload").onclick = () => zip.click();
+      zip.onchange = () => {
+        const file = zip.files[0];
+        zip.value = "";
+        if (file) importDecks(file);
+      };
+    }
     tiles(); words();
   }
   function tiles() {
@@ -85,6 +95,8 @@
     panel();
   }
   function panel() {
+    const importer = $("cr-zip-upload");
+    if (importer) importer.disabled = C.deckBusy;
     const box = $("cr-panel"), l = C.lessons.find((x) => x.tag === C.open); if (!box) return;
     if (!l) { box.innerHTML = ""; return; }
     const d = deckFor(l.tag);
@@ -120,7 +132,7 @@
 
   const pdfModule = () => import("./vendor/pdfjs-4.10.38/pdf.min.mjs");
 
-  async function readPDF(file, msg) {
+  async function readPDF(file, progress) {
     const pdfjs = await pdfModule();
     pdfjs.GlobalWorkerOptions.workerSrc = new URL("vendor/pdfjs-4.10.38/pdf.worker.min.mjs", location.href).href;
     const pdf = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
@@ -131,7 +143,7 @@
       const encoder = new TextEncoder();
       let bytes = 0, w, h;
       for (let i = 1; i <= source.numPages; i++) {
-        msg.textContent = `Подготавливаю слайд ${i} из ${source.numPages}…`;
+        progress(`Подготавливаю слайд ${i} из ${source.numPages}…`);
         const page = await source.getPage(i), size = page.getViewport({ scale: 1 });
         const viewport = page.getViewport({ scale: 1600 / Math.max(size.width, size.height) });
         canvas.width = Math.max(1, Math.round(viewport.width));
@@ -176,23 +188,108 @@
     panel();
     msg.textContent = json ? "Открываю JSON…" : "Открываю PDF…";
     try {
-      const { slides, w, h } = await (json ? readSource(file) : readPDF(file, msg));
+      const deck = await (json ? readSource(file) : readPDF(file, (status) => { msg.textContent = status; }));
       msg.textContent = "Сохраняю презентацию…";
-      const data = await SITE.sealBlob(slides);
-      const response = await SITE.api("admin/deck?id=" + encodeURIComponent(id), {
-        method: "PUT", body: JSON.stringify({ n: slides.length, w, h, data })
-      });
-      if (response.status === 403) throw new Error("Проверьте ключ администратора в кабинете преподавателя.");
-      if (!response.ok || !response.data?.deck) throw new Error("Не удалось сохранить презентацию. Попробуйте ещё раз.");
-      C.uploaded = C.uploaded.filter((d) => d.id !== id).concat(response.data.deck);
-      C.lastUpload = { id, slides };
-      try { localStorage.removeItem("dk_pos_" + id); } catch (e) { /* storage blocked */ }
+      const { slides } = deck;
+      await saveDeck(id, deck);
       msg.textContent = `Презентация ${id} сохранена · ${slides.length} ${pl(slides.length, "слайд", "слайда", "слайдов")}.`;
     } catch (e) {
       const known = e instanceof Error && /[А-Яа-яЁё]/.test(e.message);
       msg.textContent = known ? e.message : "Не удалось открыть или сохранить презентацию. Проверьте файл и подключение.";
     } finally {
       finishDeckChange(id);
+    }
+  }
+
+  async function saveDeck(id, { slides, w, h }, createOnly = false) {
+    const data = await SITE.sealBlob(slides);
+    const response = await SITE.api("admin/deck?id=" + encodeURIComponent(id), {
+      method: "PUT", headers: createOnly ? { "If-None-Match": "*" } : undefined,
+      body: JSON.stringify({ n: slides.length, w, h, data })
+    });
+    if (createOnly && response.status === 412) return false;
+    if (response.status === 403) throw new Error("Проверьте ключ администратора в кабинете преподавателя.");
+    if (!response.ok || !response.data?.deck) throw new Error("Не удалось сохранить презентацию. Попробуйте ещё раз.");
+    C.uploaded = C.uploaded.filter((d) => d.id !== id).concat(response.data.deck);
+    C.lastUpload = { id, slides };
+    try { localStorage.removeItem("dk_pos_" + id); } catch (e) { /* storage blocked */ }
+    return true;
+  }
+
+  async function readDeckArchive(file, skipped, errors) {
+    const files = new Map(), duplicates = new Set();
+    const tags = new Set(C.lessons.map((lesson) => lesson.tag));
+    let totalBytes = 0;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const entries = window.fflate.unzipSync(bytes, { filter: ({ name, originalSize }) => {
+      const parts = name.split(/[\\/]/);
+      const filename = parts.at(-1);
+      if (!/\.pdf$/i.test(filename) || parts.includes("__MACOSX") || filename.startsWith("._")) return false;
+      const id = filename.match(/^([VM]\d{2}|VA|MD)(?:[ ._-].*)?\.pdf$/i)?.[1].toUpperCase();
+      if (!tags.has(id)) {
+        errors.push(filename + " — урок не найден");
+        return false;
+      }
+      if (deckFor(id)) {
+        skipped.add(id);
+        return false;
+      }
+      if (files.has(id)) {
+        duplicates.add(id);
+        return false;
+      }
+      files.set(id, name);
+      if (originalSize > 20000000) {
+        errors.push(id + " — PDF больше 20 МБ");
+        return false;
+      }
+      totalBytes += originalSize;
+      if (totalBytes > 120000000) throw new Error("После распаковки PDF занимают больше 120 МБ. Разделите архив.");
+      return true;
+    } });
+    for (const id of duplicates) {
+      files.delete(id);
+      errors.push(id + " — в ZIP несколько PDF для одного урока");
+    }
+    return [...files].filter(([, name]) => Object.hasOwn(entries, name)).map(([id, name]) => [id, entries[name]]);
+  }
+
+  async function importDecks(file) {
+    if (C.deckBusy) return;
+    const msg = $("cr-zip-msg");
+    if (!/\.zip$/i.test(file.name) || file.size > 50000000) { msg.textContent = "Выберите ZIP до 50 МБ."; return; }
+    C.deckBusy = true;
+    panel();
+    msg.textContent = "Проверяю список презентаций и ZIP…";
+    const saved = [], skipped = new Set(), errors = [];
+    try {
+      const response = await SITE.api("admin/decks");
+      if (response.status === 403) throw new Error("Проверьте ключ администратора в кабинете преподавателя.");
+      if (!response.ok || !Array.isArray(response.data?.decks)) throw new Error("Не удалось проверить список. Попробуйте ещё раз.");
+      C.uploaded = response.data.decks;
+      const entries = await readDeckArchive(file, skipped, errors);
+      if (!entries.length && !skipped.size && !errors.length) throw new Error("В ZIP нет PDF для загрузки.");
+      for (const [index, [id, pdf]] of entries.entries()) {
+        const prefix = (index + 1) + "/" + entries.length + " · " + id + ". ";
+        try {
+          const deck = await readPDF(new Blob([pdf]), (status) => { msg.textContent = prefix + status; });
+          msg.textContent = prefix + "Сохраняю…";
+          if (await saveDeck(id, deck, true)) saved.push(id);
+          else skipped.add(id);
+        } catch (e) {
+          errors.push(id + " — " + (/[\u0400-\u04ff]/.test(e.message) ? e.message : "не удалось загрузить PDF"));
+        }
+      }
+      msg.textContent = [
+        "Загружено " + saved.length + ". Уже были " + skipped.size + ". С ошибками " + errors.length + ".",
+        saved.length && "Загружены — " + saved.join(", "),
+        skipped.size && "Пропущены — " + [...skipped].join(", "),
+        ...errors
+      ].filter(Boolean).join("\n");
+    } catch (e) {
+      msg.textContent = /[\u0400-\u04ff]/.test(e.message) ? e.message : "Не удалось прочитать ZIP. Проверьте архив и подключение.";
+    } finally {
+      finishDeckChange();
     }
   }
 
