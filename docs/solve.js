@@ -6,20 +6,47 @@
   let S = null;  // session: ctx, items, state per question, current index, marks, eliminated options
   const isMath = (tag) => /^(M|[DU]\d)/.test(tag);   // Math lessons, the Desmos lesson (MD) and the Desmos page sets (D01…): one column + Desmos
 
-  const key = () => `hw_prog_${S.ctx.student}_${S.ctx.lesson.tag}_${S.ctx.part.id}`;
-  function save() { try { localStorage.setItem(key(), JSON.stringify({ st: S.st, mk: [...S.mk], el: Date.now() - S.t0 })); } catch (e) { /* private mode */ } }
-  function clear() { try { localStorage.removeItem(key()); } catch (e) { /* private mode */ } }
+  const legacyKey = () => `hw_prog_${S.ctx.student}_${S.ctx.lesson.tag}_${S.ctx.part.id}`;
+  const key = () => S.ctx.draftKey || legacyKey();
+  function save() {
+    if (S.review) return;
+    try {
+      localStorage.setItem(key(), JSON.stringify({
+        st: S.st, mk: [...S.mk], el: Date.now() - S.t0, cur: S.cur, pending: S.pending
+      }));
+      if (S.ctx.draftKey) localStorage.removeItem(legacyKey());
+      S.ctx.onSave?.();
+    } catch (e) { /* private mode */ }
+  }
+  function clear() {
+    try {
+      localStorage.removeItem(key());
+      if (S.ctx.draftKey) localStorage.removeItem(legacyKey());
+    } catch (e) { /* private mode */ }
+  }
+  function restoreSelection() {
+    const question = S.items[S.cur], value = S.pending[question.i];
+    S.sel = question.t === "mc" ? value : null;
+    S.spr = question.t === "mc" ? null : value;
+  }
 
   function open(ctx) {
-    S = { ctx, items: ctx.items, cur: 0, st: {}, mk: new Set(), out: {}, t0: Date.now(), review: !!ctx.review, timer: null };
+    if (S) clearInterval(S.timer);
+    S = { ctx, items: ctx.items, cur: 0, st: {}, pending: {}, mk: new Set(), out: {}, t0: Date.now(), review: !!ctx.review, timer: null };
     S.hash = {}; ctx.part.q.forEach((q) => (S.hash[q.i] = q.h));
     S.items.forEach((q) => (S.st[q.i] = { tries: [], done: false, ok: false }));
     if (ctx.review) { Object.assign(S.st, ctx.review); }
     else {
-      let saved = null; try { saved = JSON.parse(localStorage.getItem(key())); } catch (e) { saved = null; }
-      if (saved && saved.st && Object.values(saved.st).some((s) => s.tries.length) && confirm("Продолжить с того места, где вы остановились?")) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(key()) || localStorage.getItem(legacyKey())); }
+      catch (e) { /* ignore an unreadable draft */ }
+      const hasProgress = saved?.st && (Number.isInteger(saved.cur) || Object.values(saved.st).some((s) => s.tries.length));
+      if (hasProgress && (ctx.resume || confirm("Продолжить с того места, где вы остановились?"))) {
         Object.assign(S.st, saved.st); S.mk = new Set(saved.mk || []); S.t0 = Date.now() - (saved.el || 0);
-        const k = S.items.findIndex((q) => !S.st[q.i].done && !(ctx.part.mode === "test" && S.st[q.i].tries.length)); S.cur = k < 0 ? 0 : k;
+        const k = S.items.findIndex((q) => !S.st[q.i].done && !(ctx.part.mode === "test" && S.st[q.i].tries.length));
+        S.cur = Number.isInteger(saved.cur) && saved.cur >= 0 && saved.cur < S.items.length ? saved.cur : Math.max(0, k);
+        S.pending = saved.pending || {};
+        restoreSelection();
       } else clear();
     }
     $("sv-title").textContent = `${ctx.lesson.tag} · ${ctx.part.title}${S.review ? " · разбор" : ""}`;
@@ -30,6 +57,12 @@
     $("sv-finish").textContent = S.review ? "Закрыть разбор" : "Сдать";
     if ($("sv-exit")) $("sv-exit").classList.toggle("hidden", !S.review);   // review: a visible way back to the result on every question
     ctx.show("s-solve"); render();
+    focusQuestion();
+  }
+  function focusQuestion() {
+    const label = $("sv-qn");
+    label.tabIndex = -1;
+    label.focus({ preventScroll: true });
   }
   function tick() { const s = Math.floor((Date.now() - S.t0) / 1000); $("sv-clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
   const learn = () => S.ctx.part.mode !== "test";
@@ -52,14 +85,14 @@
         const good = revealed(s) && c === q.ans;
         const on = !S.review && !s.done && (learn() ? S.sel === c : s.tries[0] === c);
         const cls = `${on ? " on" : ""}${out.has(c) && !s.done ? " out" : ""}${bad ? " bad" : ""}${good ? " good" : ""}`;
-        return `<div class="opt${cls}" data-c="${c}"><button class="ch" data-c="${c}"${s.done || bad ? " disabled" : ""}><span class="lt">${c}</span><span class="tx qhtml">${o}</span></button><button class="x" data-c="${c}" aria-label="Вычеркнуть ${c}"${s.done ? " disabled" : ""}>${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
+        return `<div class="opt${cls}" data-c="${c}"><button class="ch" data-c="${c}" aria-pressed="${on}"${s.done || bad ? " disabled" : ""}><span class="lt">${c}</span><span class="tx qhtml">${o}</span></button><button class="x" data-c="${c}" aria-label="Вычеркнуть ${c}"${s.done ? " disabled" : ""}>${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
       $("sv-opts").querySelectorAll(".ch").forEach((b) => (b.onclick = () => choose(b.dataset.c)));
       $("sv-opts").querySelectorAll(".x").forEach((b) => (b.onclick = () => strike(b.dataset.c)));
     } else {
       const val = S.spr ?? (s.done || !learn() ? last || "" : "");
       $("sv-opts").innerHTML = `<div class="spr"><label class="label" for="sv-in">Ваш ответ</label><input id="sv-in" type="text" autocomplete="off" inputmode="text" value="${(val || "").replace(/"/g, "&quot;")}"${s.done ? " disabled" : ""}>
         <p class="hint" id="sv-in-h">Целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются.</p></div>`;
-      $("sv-in").oninput = () => { S.spr = $("sv-in").value; const v = S.spr.trim(); $("sv-in-h").textContent = !v || S.ctx.parseSpr(v) !== null ? "Ответ: " + (v || "—") : "Формат: 12, -3, 7/2 или .75";
+      $("sv-in").oninput = () => { S.spr = $("sv-in").value; S.pending[q.i] = S.spr; const v = S.spr.trim(); $("sv-in-h").textContent = !v || S.ctx.parseSpr(v) !== null ? "Ответ: " + (v || "—") : "Формат: 12, -3, 7/2 или .75";
         if (!learn()) { const st = S.st[q.i]; st.tries = v ? [v] : []; save(); renderGrid(); } };
       $("sv-in").onkeydown = (e) => { if (e.key === "Enter" && learn()) check(); };
     }
@@ -129,15 +162,20 @@
   }
   function choose(c) {
     const q = S.items[S.cur], s = S.st[q.i]; if (s.done || S.review) return;
-    if (learn()) S.sel = c; else { s.tries = [c]; save(); }
+    if (learn()) { S.sel = c; S.pending[q.i] = c; } else s.tries = [c];
+    save();
     if (S.out[q.i]) S.out[q.i].delete(c);
+    const focused = $("sv-opts").contains(document.activeElement);
     render();
+    if (focused) $("sv-opts").querySelector(`.ch[data-c="${c}"]`)?.focus({ preventScroll: true });
   }
   function strike(c) {
     const q = S.items[S.cur]; if (S.st[q.i].done) return;
     const o = S.out[q.i] || (S.out[q.i] = new Set()); o.has(c) ? o.delete(c) : o.add(c);
-    if (S.sel === c) S.sel = null;
+    if (S.sel === c) { S.sel = null; delete S.pending[q.i]; save(); }
+    const focused = document.activeElement.matches(".x");
     render();
+    if (focused) $("sv-opts").querySelector(`.x[data-c="${c}"]`)?.focus({ preventScroll: true });
   }
   async function graded(q, raw) {
     const v = q.t === "mc" ? raw : S.ctx.parseSpr(raw);
@@ -149,20 +187,38 @@
     if (!raw) { $("sv-fb").innerHTML = q.t === "mc" ? "Выберите вариант." : "Введите ответ."; $("sv-fb").className = "fb no"; return; }
     if (q.t !== "mc" && S.ctx.parseSpr(raw) === null) { $("sv-in-h").textContent = "Формат: 12, -3, 7/2 или .75"; return; }
     if (q.t === "mc" && s.tries.includes(raw)) return;
-    const ok = await graded(q, raw);
+    const session = S;
+    session.checking = true;
+    let ok;
+    try { ok = await graded(q, raw); }
+    finally { session.checking = false; }
+    if (S !== session) return;
+    delete S.pending[q.i];
     s.tries.push(raw); S.sel = null; S.spr = null;
     if (ok || s.tries.length >= 2) { s.done = true; s.ok = ok; }
     save(); render();
+    if (s.done) { $("sv-fb").tabIndex = -1; $("sv-fb").focus({ preventScroll: true }); }
     if (s.done) $("sv-fb").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   }
-  function go(k) { S.cur = Math.max(0, Math.min(S.items.length - 1, k)); S.sel = null; S.spr = null; $("sv-nav").classList.add("hidden"); render(); window.scrollTo(0, 0); }
+  function go(k) {
+    if (S.checking || S.finishing) return;
+    S.cur = Math.max(0, Math.min(S.items.length - 1, k));
+    restoreSelection();
+    save();
+    $("sv-nav").classList.add("hidden");
+    render();
+    window.scrollTo(0, 0);
+    focusQuestion();
+  }
 
   async function finish() {
+    if (S.checking || S.finishing) return;
     if (window.BBTools) BBTools.close();
     if (S.review) { S.ctx.onClose(); return; }
     const n = S.items.length;
     const open_ = S.items.filter((q) => learn() ? !S.st[q.i].done : !S.st[q.i].tries.length).map((q) => q.n);
     if (open_.length && !confirm(`Без ответа: ${open_.join(", ")}. Сдать всё равно?`)) return;
+    S.finishing = true;
     clearInterval(S.timer);
     if (!learn()) for (const q of S.items) { const s = S.st[q.i]; s.ok = !!s.tries.length && (await graded(q, s.tries[0])); s.done = true; }
     const seconds = Math.round((Date.now() - S.t0) / 1000);
@@ -172,8 +228,8 @@
     const res = { lesson: S.ctx.lesson.tag, part: `${S.ctx.part.id} · ${S.ctx.part.title} · экран${learn() ? ` · 2-я: ${any.length}/${n}` : ""}${hints ? ` · подсказок: ${hints}` : ""}`,
       answers: S.items.map((q) => `${q.n}:${S.st[q.i].tries.join(">") || "-"}`).join(" "),
       score: `${first.length}/${n}`, wrong: S.items.filter((q) => !first.includes(q)).map((q) => q.n).join(","), seconds: String(seconds) };
-    const st = JSON.parse(JSON.stringify(S.st)); clear();
-    S.ctx.onFinish(res, { second: `${any.length}/${n}`, learn: learn(), state: st, hints });
+    const st = JSON.parse(JSON.stringify(S.st));
+    if (S.ctx.onFinish(res, { second: `${any.length}/${n}`, learn: learn(), state: st, hints }) !== false) clear();
   }
 
   $("sv-check").onclick = check;
@@ -190,7 +246,7 @@
     if (!S || $("s-solve").classList.contains("hidden") || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
     const k = e.key.toUpperCase(), q = S.items[S.cur];
     if (q.t === "mc" && "ABCD".includes(k) && k.length === 1) choose(k);
-    else if (e.key === "Enter" && learn()) check();
+    else if (e.key === "Enter" && learn() && !document.activeElement.closest("button,a,select,[role=button]")) check();
     else if (e.key === "ArrowRight") go(S.cur + 1);
     else if (e.key === "ArrowLeft") go(S.cur - 1);
   });

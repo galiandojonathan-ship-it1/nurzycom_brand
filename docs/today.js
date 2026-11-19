@@ -63,6 +63,21 @@
     const P = PLAN.state(PLAN.course()), todo = P.flat.filter((it) => !it.ok && !it.opt);
     const next = todo.find((it) => it.need) || todo[0], then = todo.filter((it) => it !== next).slice(0, 2);
     const R = results(name), Wk = week(R), first = name.split(" ")[0];
+    const saved = window.HWHistory?.attempts().filter((a) => a.result.student === name) || [];
+    const latest = new Map();
+    for (const a of saved) {
+      const rest = `${a.result.lesson}_${a.part}`;
+      if (a.status === "sent" && !latest.has(rest)) latest.set(rest, a);
+    }
+    const recent = [...saved.map((a) => ({
+      t: a.t, score: a.result.score, href: window.HWHistory.resultURL(a.id).href,
+      label: PLAN.label(`${a.result.lesson}_${a.part}`, "hw", lessons),
+      status: a.status === "sent" ? "" : a.status === "sending" ? " · проверьте отправку" : " · не отправлено"
+    })), ...R.filter((r) => {
+      const a = r.kind === "hw" && latest.get(r.rest);
+      return !a || a.result.score !== r.raw || r.t > (a.sentAt || a.t) + 1000;
+    })]
+      .sort((a, b) => b.t - a.t).slice(0, 4);
     const T = PLAN.trend(P.course, name, store);
     const full = P.course === "VM", lo = full ? 400 : 200, hi = full ? 1600 : 800;
     const vals = T.map((t) => t.v), min = Math.max(lo, Math.floor((Math.min(...vals, hi) - 60) / 100) * 100), max = Math.min(hi, Math.ceil((Math.max(...vals, lo) + 60) / 100) * 100);
@@ -105,7 +120,7 @@
         </section>
         <section class="td-recent" aria-label="Последние сдачи">
           <h3>Последние сдачи</h3>
-          ${R.length ? `<ul>${R.slice(0, 4).map((r) => `<li><span>${esc(r.label)}<small>${esc(ago(r.t))}</small></span><b>${esc(r.score)}</b></li>`).join("")}</ul>`
+          ${recent.length ? `<ul>${recent.map((r) => `<li><span>${r.href ? `<a href="${esc(r.href)}">${esc(r.label)} · ${esc(r.score)}</a>` : esc(r.label)}<small>${esc(ago(r.t) + (r.status || ""))}</small></span>${r.href ? "" : `<b>${esc(r.score)}</b>`}</li>`).join("")}</ul>`
           : '<p class="td-sub">Здесь появятся ваши результаты после первой сдачи.</p>'}
         </section>
       </div>`;
@@ -119,6 +134,7 @@
     }));
   }
 
+  window.addEventListener("hw-history", render);
   window.addEventListener("DOMContentLoaded", () => {
     if (!window.SITE) return;
     SITE.ready.then(() => {

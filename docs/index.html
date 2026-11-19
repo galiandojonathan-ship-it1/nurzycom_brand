@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611190039">
-<script src="auth.js?v=202611190039"></script>
+<link rel="stylesheet" href="site.css?v=202611191327">
+<script src="auth.js?v=202611191327"></script>
 </head>
 <body class="hw-page">
 <a class="skip" href="#main">Перейти к содержанию</a>
@@ -36,6 +36,10 @@
       <p class="hint" style="margin-top:12px"><a href="plan.html">Что делать после урока и в каком порядке — программа курса →</a></p>
     </div>
 
+    <section id="hw-recovery" class="step hidden" aria-label="Незавершённая работа">
+      <button type="button" class="btn hidden" id="hw-resume"></button>
+      <p class="hint" id="hw-pending"></p>
+    </section>
     <section id="today" class="today hidden" aria-label="Сегодня"></section>
 
     <div class="step" id="student-step">
@@ -85,7 +89,7 @@
     <div class="qwrap" id="sv-wrap">
       <div class="passage qhtml" id="sv-passage"></div>
       <div class="ask">
-        <div class="qhead"><span class="qn" id="sv-qn"></span><span class="qtools"><button class="flag gloss-tg hidden" id="sv-gloss" aria-pressed="true" title="Подчёркивать трудные слова: нажмите на слово, чтобы увидеть значение и перевод">Слова: вкл</button><button class="flag elim-tg" id="sv-elim" aria-pressed="false" title="Показать кнопки, чтобы вычёркивать неверные варианты">Вычеркнуть</button><button class="flag" id="sv-flag" aria-pressed="false">Отметить</button></span></div>
+        <div class="qhead"><span class="qn" id="sv-qn" tabindex="-1"></span><span class="qtools"><button class="flag gloss-tg hidden" id="sv-gloss" aria-pressed="true" title="Подчёркивать трудные слова: нажмите на слово, чтобы увидеть значение и перевод">Слова: вкл</button><button class="flag elim-tg" id="sv-elim" aria-pressed="false" title="Показать кнопки, чтобы вычёркивать неверные варианты">Вычеркнуть</button><button class="flag" id="sv-flag" aria-pressed="false">Отметить</button></span></div>
         <div class="stem qhtml" id="sv-stem"></div>
         <div id="sv-opts"></div>
         <div id="sv-fb" class="fb hidden"></div>
@@ -102,19 +106,21 @@
 
   <!-- Step 3: result -->
   <section id="s-result" class="hidden">
-    <span class="label" id="res-title"></span>
+    <span class="label" id="res-title" tabindex="-1"></span>
     <div class="result-grid">
       <div><div class="big" id="res-score"></div><div class="meter"><i id="res-meter"></i></div></div>
       <div class="stats"><div><span class="label">Время</span><b id="res-time"></b></div><div><span class="label">Попытка</span><b id="res-att"></b></div><div id="res-2-box" class="hidden"><span class="label">Со 2-й попытки</span><b id="res-2"></b></div><div id="res-mode-box" class="hidden"><span class="label">Режим</span><b id="res-mode"></b></div></div>
     </div>
     <span class="label" id="res-wrong-h">Ошибки и пропуски</span>
     <div class="wrong" id="res-wrong"></div>
-    <p id="send-status" class="hint" style="margin-top:22px"></p>
+    <p id="send-status" role="status" aria-atomic="true" tabindex="-1" class="hint" style="margin-top:22px"></p>
+    <button type="button" class="tlink resend hidden" id="resend">Отправить ещё раз</button>
     <div id="backup" class="hidden">
       <p class="hint">Если результат не отправился, скопируйте код и пришлите преподавателю в Telegram.</p>
       <div class="code" id="res-code"></div>
       <div class="row"><button class="btn ghost" id="copy">Скопировать код</button><a class="btn ghost" id="tg" target="_blank" rel="noopener">Открыть Telegram</a></div>
     </div>
+    <p id="review-msg" role="status" class="hint"></p>
     <div class="row"><button class="btn ghost hidden" id="review">Посмотреть разбор</button><button class="btn" id="again">Новая попытка</button><button class="btn ghost" id="home">Другой урок</button></div>
   </section>
 </main>
@@ -123,14 +129,14 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611190039"></script>
-<script src="tools.js?v=202611190039"></script>
-<script src="gloss.js?v=202611190039"></script>
-<script src="solve.js?v=202611190039"></script>
-<script src="liveround.js?v=202611190039"></script>
-<script src="app.js?v=202611190039"></script>
-<script src="planlogic.js?v=202611190039"></script>
-<script src="today.js?v=202611190039"></script>
-<script src="dict.js?v=202611190039"></script>
+<script src="config.js?v=202611191327"></script>
+<script src="tools.js?v=202611191327"></script>
+<script src="gloss.js?v=202611191327"></script>
+<script src="solve.js?v=202611191327"></script>
+<script src="liveround.js?v=202611191327"></script>
+<script src="app.js?v=202611191327"></script>
+<script src="planlogic.js?v=202611191327"></script>
+<script src="today.js?v=202611191327"></script>
+<script src="dict.js?v=202611191327"></script>
 </body>
 </html>
