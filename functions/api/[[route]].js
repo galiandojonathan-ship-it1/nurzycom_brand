@@ -175,7 +175,7 @@ export async function onRequest(context) {
       const b = await body(request);
       if (!b || !okB64(b.data, 14000000) ||
           ![b.n, b.w, b.h].every(Number.isInteger) || b.n < 1 || b.n > 120 ||
-          b.w < 1 || b.w > 1600 || b.h < 1 || b.h > 1600) return fail(400, "invalid presentation");
+          b.w < 1 || b.w > 2560 || b.h < 1 || b.h > 2560) return fail(400, "invalid presentation");
       if (request.headers.get("if-none-match") === "*" && await env.USERS.get(key) !== null) {
         return fail(412, "presentation already exists");
       }
