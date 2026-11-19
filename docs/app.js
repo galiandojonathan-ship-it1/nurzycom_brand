@@ -9,6 +9,73 @@
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
   function show(id) { ["s-start", "s-answers", "s-solve", "s-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
 
+  const account = () => encodeURIComponent(SITE.me() || "@" + (store("hw_student") || ""));
+  const attemptPrefix = () => `hw_saved_${account()}:`;
+  const resumeKey = () => `hw_resume_${account()}`;
+  const draftKey = (lesson, part) => `hw_draft_${account()}:${lesson.tag}:${part.id}`;
+  let active = null;
+  const sending = new Set();
+
+  function read(key) {
+    try { return JSON.parse(store(key)); } catch (e) { return null; }
+  }
+
+  function saveAttempt(attempt) {
+    try {
+      localStorage.setItem(attemptPrefix() + attempt.id, JSON.stringify(attempt));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function attempts() {
+    const prefix = attemptPrefix();
+    try {
+      return Object.keys(localStorage).filter((k) => k.startsWith(prefix))
+        .map(read).filter(Boolean).sort((a, b) => b.t - a.t);
+    } catch (e) { return []; }
+  }
+
+  function resultURL(id) {
+    const url = new URL(location.href);
+    url.searchParams.set("result", id);
+    return url;
+  }
+
+  function updateRecovery() {
+    window.dispatchEvent(new Event("hw-history"));
+    const draft = read(resumeKey());
+    let lesson = state.data.lessons.find((l) => l.tag === draft?.lesson);
+    let part = lesson?.parts.find((p) => p.id === draft.part);
+    if (!part || !read(draftKey(lesson, part))) {
+      // Drafts created before the resume button were keyed by the student's name.
+      const student = store("hw_student");
+      part = null;
+      for (const candidate of state.data.lessons) {
+        if (!student || !/^[VM]/.test(candidate.tag)) continue;
+        part = candidate.parts.find((p) => {
+          const saved = read(`hw_prog_${student}_${candidate.tag}_${p.id}`);
+          return saved?.st && Object.values(saved.st).some((q) => q.tries.length);
+        });
+        if (part) { lesson = candidate; break; }
+      }
+    }
+    const canResume = !!part;
+    const pending = attempts().filter((a) => a.status !== "sent");
+    $("hw-recovery").classList.toggle("hidden", !canResume && !pending.length);
+    $("hw-resume").classList.toggle("hidden", !canResume);
+    $("hw-resume").textContent = canResume ? `Продолжить · ${lesson.tag} · ${part.title}` : "";
+    $("hw-resume").onclick = canResume ? () => { pickLesson(lesson.tag); pickPart(part.id); startScreen(true); } : null;
+    $("hw-pending").replaceChildren(...pending.map((a) => {
+      const link = document.createElement("a");
+      link.className = "td-link";
+      link.href = resultURL(a.id);
+      link.textContent = `${a.result.lesson} · попытка ${a.result.attempt} · ${a.status === "sending" ? "проверьте отправку" : "не отправлено"}`;
+      const row = document.createElement("span");
+      row.append(link, document.createElement("br"));
+      return row;
+    }));
+  }
+
   async function sha(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
@@ -121,11 +188,14 @@
     $("prog").style.width = `${(100 * n) / total}%`;
   }
 
+  let grading = false;
   async function grade() {
+    if (grading) return;
     const { lesson, part, answers } = state;
     const qs = part.q;
     const blanks = qs.filter((q) => !answers[q.n]).map((q) => q.n);
     if (blanks.length && !confirm(`Без ответа: ${blanks.join(", ")}. Сдать всё равно?`)) return;
+    grading = true;
     clearInterval(state.timer);
     const seconds = Math.round((Date.now() - state.t0) / 1000);
     const wrong = []; let right = 0;
@@ -136,47 +206,84 @@
       if (ok) right++; else wrong.push(q.n);
     }
     const key = `hw_att_${store("hw_student")}_${lesson.tag}_${part.id}`;
-    const attempt = Number(store(key) || 0) + 1; store(key, String(attempt));
+    const attempt = Number(store(key) || 0) + 1;
     const ansStr = qs.map((q) => `${q.n}:${answers[q.n] || "-"}`).join(" ");
     const res = { student: store("hw_student") || $("student").value.trim(), lesson: lesson.tag, part: `${part.id} · ${part.title}`,
       answers: ansStr, score: `${right}/${qs.length}`, wrong: wrong.join(","), seconds: String(seconds), attempt: String(attempt) };
-    store(lastKey(lesson.tag, part.id), res.score);
-    renderResult(res, part, seconds);
-    send(res);
+    complete(res, part);
+    grading = false;
   }
 
   // ---- on-screen workbook (solve.js): decrypt the part's bundle and hand it over
-  async function startScreen() {
+  async function loadItems(part) {
+    const response = await fetch(part.b, { cache: "no-store" });
+    if (!response.ok) throw Error("Questions unavailable");
+    return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));
+  }
+
+  let opening = false;
+  async function startScreen(resume = false, newAttempt = false) {
+    if (opening) return;
     store("hw_student", $("student").value.trim());
-    const { lesson, part } = state; state.mode = "screen";
+    const { lesson, part } = state;
+    opening = true;
     $("start-msg").textContent = "Загружаю вопросы…";
     let items;
-    try {
-      items = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(part.b, { cache: "no-store" })).arrayBuffer())));
-    } catch (e) { $("start-msg").textContent = SITE.failMsg("нажмите «Решать на экране» ещё раз"); return; }
+    try { items = await loadItems(part); }
+    catch (e) {
+      $(newAttempt ? "review-msg" : "start-msg").textContent = SITE.failMsg("попробуйте открыть задание ещё раз");
+      return;
+    }
+    finally { opening = false; }
     $("start-msg").textContent = "";
-    state.items = items;
+    if (newAttempt) leaveResult();
+    state.mode = "screen";
     HWSolve.open({ lesson, part, items, student: store("hw_student"), sha, parseSpr, show,
+      draftKey: draftKey(lesson, part), resume: resume === true,
+      onSave: () => store(resumeKey(), JSON.stringify({ lesson: lesson.tag, part: part.id })),
       onClose: () => show("s-result"),
       onFinish: (r, extra) => {
         const key = `hw_att_${store("hw_student")}_${lesson.tag}_${part.id}`;
-        const attempt = Number(store(key) || 0) + 1; store(key, String(attempt));
+        const attempt = Number(store(key) || 0) + 1;
         const res = Object.assign({ student: store("hw_student") }, r, { attempt: String(attempt) });
-        store(lastKey(lesson.tag, part.id), res.score);
-        state.review = extra.state;
-        renderResult(res, part, Number(r.seconds), extra);
-        send(res);
+        return complete(res, part, extra);
       } });
   }
 
+  function complete(result, part, review) {
+    const attempt = { id: crypto.randomUUID(), t: Date.now(), part: part.id, result, review,
+      bundle: part.b, status: "pending" };
+    const saved = saveAttempt(attempt);
+    if (saved) {
+      store(`hw_att_${result.student}_${result.lesson}_${part.id}`, result.attempt);
+      history.replaceState(null, "", resultURL(attempt.id));
+    }
+    openResult(attempt, part);
+    if (!saved) $("send-status").textContent = "Не удалось сохранить попытку в браузере. Скопируйте код результата.";
+    else if (navigator.onLine) send(attempt.id);
+    return saved;
+  }
+
+  function openResult(attempt, part) {
+    active = attempt;
+    pickLesson(attempt.result.lesson);
+    pickPart(attempt.part);
+    $("student").value = attempt.result.student;
+    state.mode = attempt.review ? "screen" : "paper";
+    renderResult(attempt.result, part, Number(attempt.result.seconds), attempt.review);
+    renderDelivery();
+    $("res-title").focus();
+  }
+
   function renderResult(r, part, seconds, extra) {
+    $("review-msg").textContent = "";
     $("res-title").textContent = `${r.lesson} · ${part.title}`;
     $("res-score").textContent = r.score;
     const [a, b] = r.score.split("/").map(Number);
     $("res-meter").style.width = `${(100 * a) / b}%`;
     $("res-time").textContent = `${Math.floor(seconds / 60)} мин ${seconds % 60} с`;
     $("res-att").textContent = r.attempt;
-    $("res-wrong").innerHTML = r.wrong ? r.wrong.split(",").map((n) => `<span>${n}</span>`).join("") : "<p>Нет. Всё верно.</p>";
+    $("res-wrong").innerHTML = r.wrong ? r.wrong.split(",").map((n) => `<span>${esc(n)}</span>`).join("") : "<p>Нет. Всё верно.</p>";
     // on screen the main score counts first attempts; the second attempt is shown next to it
     $("res-2-box").classList.toggle("hidden", !(extra && extra.learn)); if (extra) $("res-2").textContent = extra.second;
     $("res-mode-box").classList.remove("hidden");
@@ -190,35 +297,115 @@
     show("s-result");
   }
 
-  async function send(r) {
-    const f = CFG.fields || {};
-    const ready = CFG.formAction && Object.keys(r).every((k) => f[k]);
-    if (!ready) { $("send-status").textContent = "Отправка не настроена: пришлите код преподавателю."; $("backup").classList.remove("hidden"); return; }
-    $("send-status").textContent = "Отправляю…";
-    const body = new URLSearchParams();
-    Object.keys(r).forEach((k) => body.append(f[k], r[k]));
-    try {
-      await fetch(CFG.formAction, { method: "POST", mode: "no-cors", body });
-      $("send-status").textContent = "Результат отправлен преподавателю.";
-      $("backup").classList.add("hidden");
-    } catch (e) {
-      // retry by hand or by itself when the connection returns; the code below stays as the last resort
-      $("send-status").innerHTML = 'Не удалось отправить (нет интернета?). <button class="tlink resend" id="resend">Отправить ещё раз</button>';
-      $("resend").onclick = () => send(r);
-      addEventListener("online", () => { const b = $("resend"); if (b && b.isConnected && !$("s-result").classList.contains("hidden")) send(r); }, { once: true });   // only while still unsent
-      $("backup").classList.remove("hidden");
-    }
+  function renderDelivery() {
+    const {status, id} = active;
+    const busy = sending.has(id);
+    const messages = {
+      pending: "Результат сохранён. Не отправлено.",
+      sending: "Отправка была прервана. Уточните у преподавателя, получен ли результат, прежде чем повторить.",
+      sent: "Результат отправлен. Google Forms не подтверждает получение на этой странице."
+    };
+    const message = busy ? "Отправляю…" : messages[status];
+    if ($("send-status").textContent !== message) $("send-status").textContent = message;
+    if (busy && document.activeElement === $("resend")) $("send-status").focus({ preventScroll: true });
+    $("resend").classList.toggle("hidden", status === "sent" || busy || !read(attemptPrefix() + id));
+    $("backup").classList.toggle("hidden", status === "sent" || busy);
   }
 
-  $("go").onclick = startScreen;
+  async function send(id, retry = false) {
+    if (sending.has(id) || !navigator.onLine) return;
+    const key = attemptPrefix() + id;
+    async function deliver() {
+      const attempt = read(key);
+      if (!attempt || attempt.status === "sent" || (attempt.status === "sending" && !retry)) return;
+      const r = attempt.result, f = CFG.fields || {};
+      if (!CFG.formAction || !Object.keys(r).every((k) => f[k])) return;
+      if (!saveAttempt({ ...attempt, status: "sending" })) return;
+      sending.add(id);
+      if (active?.id === id) { active = { ...attempt, status: "sending" }; renderDelivery(); }
+      try {
+        const body = new URLSearchParams(Object.keys(r).map((k) => [f[k], r[k]]));
+        const response = await fetch(CFG.formAction, { method: "POST", mode: "no-cors", body });
+        if (response.type !== "opaque" && !response.ok) throw Error("Delivery failed");
+        attempt.status = "sent";
+        attempt.sentAt = Date.now();
+      } catch (e) {
+        attempt.status = "pending";
+      } finally {
+        saveAttempt(attempt);
+        sending.delete(id);
+        if (attempt.status === "sent") {
+          const scoreKey = `hw_last_${r.student}_${r.lesson}_${attempt.part}`;
+          const newerDelivered = attempts().some((a) => a.status === "sent" && a.t > attempt.t &&
+            a.result.student === r.student && a.result.lesson === r.lesson && a.part === attempt.part);
+          if (!newerDelivered) store(scoreKey, r.score);
+        }
+        if (active?.id === id) { active = attempt; renderDelivery(); }
+        updateRecovery();
+      }
+    }
+    if (navigator.locks) await navigator.locks.request(key, { ifAvailable: true }, (lock) => lock && deliver());
+    else await deliver();
+  }
+
+  $("go").onclick = () => startScreen();
   $("go-paper").onclick = startAnswers;
-  $("review").onclick = () => HWSolve.open({ lesson: state.lesson, part: state.part, items: state.items, review: state.review, student: store("hw_student"), sha, parseSpr, show, onClose: () => show("s-result"), onFinish: () => {} });
+  $("resend").onclick = () => { if (active) send(active.id, true); };
+  addEventListener("online", () => {
+    if (state.data) attempts().filter((a) => a.status === "pending").forEach((a) => send(a.id));
+  });
+  addEventListener("storage", (event) => {
+    if (!state.data || !event.key?.startsWith(attemptPrefix())) return;
+    if (active && event.key === attemptPrefix() + active.id) {
+      active = read(event.key) || active;
+      renderDelivery();
+    }
+    updateRecovery();
+  });
+
+  $("review").onclick = async () => {
+    const attempt = active, { lesson, part } = state;
+    $("review").disabled = true;
+    try {
+      const items = await loadItems({ b: attempt.bundle });
+      if (attempt.id !== active?.id || $("s-result").classList.contains("hidden")) return;
+      HWSolve.open({ lesson, part, items, review: attempt.review.state, student: attempt.result.student,
+        sha, parseSpr, show, onClose: () => { show("s-result"); $("review").focus(); }, onFinish: () => {} });
+    } catch (e) { $("review-msg").textContent = SITE.failMsg("нажмите «Посмотреть разбор» ещё раз"); }
+    finally { $("review").disabled = false; }
+  };
   $("back").onclick = () => { clearInterval(state.timer); show("s-start"); };
   $("submit").onclick = grade;
-  $("again").onclick = () => (state.mode === "screen" ? startScreen() : startAnswers());
-  $("home").onclick = () => { renderStart(); if (state.lesson) pickLesson(state.lesson.tag); show("s-start"); };
+  function leaveResult() {
+    const url = new URL(location.href);
+    url.searchParams.delete("result");
+    history.replaceState(null, "", url);
+    active = null;
+  }
+  $("again").onclick = () => {
+    if (state.mode === "screen") startScreen(false, true);
+    else { leaveResult(); startAnswers(); }
+  };
+  $("home").onclick = () => {
+    leaveResult();
+    const tag = state.lesson?.tag;
+    renderStart();
+    if (tag) pickLesson(tag);
+    updateRecovery();
+    show("s-start");
+  };
 
-  SITE.json("lessons").then((d) => { state.data = d; renderStart(); })
-    .catch(() => { $("start-msg").textContent = "Не удалось загрузить уроки. Обновите страницу."; });
+  SITE.json("lessons").then((d) => {
+    state.data = d;
+    renderStart();
+    updateRecovery();
+    const id = new URL(location.href).searchParams.get("result");
+    const attempt = id && read(attemptPrefix() + id);
+    const part = attempt && d.lessons.find((l) => l.tag === attempt.result.lesson)?.parts.find((p) => p.id === attempt.part);
+    if (part) openResult(attempt, part);
+    else if (id) $("start-msg").textContent = "Эта попытка недоступна в текущем браузере.";
+  }).catch(() => { $("start-msg").textContent = "Не удалось загрузить уроки. Обновите страницу."; });
+
+  window.HWHistory = { attempts, resultURL };
   window.__hw = { parseSpr, sha };  // for testing
 })();
