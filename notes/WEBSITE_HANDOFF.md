@@ -86,6 +86,15 @@ The server never sees passwords or the master key: everything is encrypted in th
 The lesson account can upload a PDF from its lesson card under «Пульт урока» using the administrator key. The browser converts it to slides
 with the vendored PDF.js 4.10.38 distribution (Apache-2.0), seals them with the course key, and uses `GET admin/decks` to list and
 `GET/PUT/DELETE admin/deck?id=V01` to read, replace or delete an uploaded presentation. The PDF itself stays on the uploading device.
+New PDF imports save the text and coordinates alongside the images so the site dictionary works on selected words. Image-only decks
+need a fresh import from a PDF with embedded text. In Math lessons, the Desmos button opens the SAT graphing calculator next to the slides.
+
+For code edits, download the text as JSON from the lesson card, edit or reorder `slides`, and upload the result via «Заменить из JSON».
+The JSON renderer uses the site's slide template. PDF graphics and original formatting stay in the PDF. This example shows the source format.
+
+```json
+{"version":1,"slides":[{"title":"Linear equations","paragraphs":["Solve for x.","Check the result using Desmos."]}]}
+```
 
 `functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
 
