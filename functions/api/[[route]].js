@@ -26,6 +26,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 const fail = (status, error) => json({ error }, status);
 async function sha(s) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join(""); }
 const norm = (s) => String(s || "").trim().toLowerCase();
+const deckId = (id) => /^(?:[VM]\d{2}|VA|MD)$/.test(id || "");
 const okId = (id) => typeof id === "string" && /^[A-Za-z0-9+/=]{16,64}$/.test(id);
 const okB64 = (s, max) => typeof s === "string" && s.length > 0 && s.length <= max && /^[A-Za-z0-9+/=]+$/.test(s);
 const okEntry = (e) => e && okB64(e.salt, 64) && okB64(e.wrap, 200) && okB64(e.n, 1200) && Number.isInteger(e.iter) && e.iter >= 100000 && e.iter <= 2000000;
@@ -145,6 +146,35 @@ export async function onRequest(context) {
     if (route === "admin/groups" && m === "PUT") {   // the cabinet's groups (names, colours, members), encrypted in the browser
       const b = await body(request); if (!b || !okB64(b.data, 200000)) return fail(400, "bad data");
       await env.USERS.put("groups", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
+    }
+    if (route === "admin/decks" && m === "GET") {
+      const decks = [];
+      let cursor;
+      do {
+        const batch = await env.USERS.list({ prefix: "deck:", cursor });
+        for (const { name, metadata } of batch.keys) {
+          const id = name.slice(5);
+          if (deckId(id) && metadata) decks.push({ id, ...metadata });
+        }
+        cursor = batch.list_complete ? null : batch.cursor;
+      } while (cursor);
+      return json({ decks });
+    }
+    if (route === "admin/deck" && (m === "GET" || m === "PUT")) {
+      const id = url.searchParams.get("id");
+      if (!deckId(id)) return fail(400, "invalid lesson");
+      const key = "deck:" + id;
+      if (m === "GET") {
+        const data = await env.USERS.get(key);
+        return data ? json({ data }) : fail(404, "presentation not found");
+      }
+      const b = await body(request);
+      if (!b || !okB64(b.data, 14000000) ||
+          ![b.n, b.w, b.h].every(Number.isInteger) || b.n < 1 || b.n > 120 ||
+          b.w < 1 || b.w > 1600 || b.h < 1 || b.h > 1600) return fail(400, "invalid presentation");
+      const metadata = { n: b.n, w: b.w, h: b.h };
+      await env.USERS.put(key, b.data, { metadata });
+      return json({ deck: { id, ...metadata } });
     }
     if (route === "admin/custom" && m === "PUT") {   // the teacher's tests, sealed in the browser (up to about 3 MB)
       const b = await body(request); if (!b || !okB64(b.data, 4000000)) return fail(400, "bad data");
