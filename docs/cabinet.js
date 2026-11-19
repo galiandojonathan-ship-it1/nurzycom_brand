@@ -14,17 +14,34 @@
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
   const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false, archived: new Set(), view: "overview" };
-  const VIEWS = [
-    ["overview", "Обзор"], ["students", "Ученики"], ["archive", "Бывшие ученики"],
-    ["tests", "Мои тесты", "ct"], ["lessons", "Уроки", "ls"], ["forms", "Результаты из Google Form", "imp"]
-  ];
+  const VIEWS = ["overview", "students", "results", "archive", "tests", "lessons", "accounts", "forms"];
+  const ACCOUNT_BOOKMARKS = ["#reg", "#acc", "#pw", "#gh-set"];
+  function viewFromURL() {
+    const view = new URLSearchParams(location.search).get("view");
+    if (VIEWS.includes(view)) return view;
+    if (ACCOUNT_BOOKMARKS.includes(location.hash)) return "accounts";
+    if (["#src", "#dash"].includes(location.hash)) return "results";
+    return "overview";
+  }
 
   function setView(view) {
     S.view = view;
     const url = new URL(location.href);
     if (view === "overview") url.searchParams.delete("view");
     else url.searchParams.set("view", view);
+    if (view !== "accounts" && view !== "results") url.hash = "";
     history.replaceState(null, "", url);
+    const external = view === "results" || view === "accounts";
+    $("cb").classList.toggle("hidden", external);
+    $("teacher-results").classList.toggle("hidden", view !== "results");
+    $("teacher-accounts").classList.toggle("hidden", view !== "accounts");
+    $("teacher-result-nav").classList.toggle("hidden", view !== "results" && view !== "forms");
+    document.querySelectorAll(".cb-nav [data-cb-view], #teacher-result-nav [data-cb-view]").forEach((link) => {
+      const current = link.dataset.cbView === view ||
+        (view === "forms" && link.dataset.cbView === "results" && link.closest(".cb-nav"));
+      if (current) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
   }
 
   // ---------- groups (2026-11-09, Nurassyl: «one group I need to distinguish clearly, and my individual students»). Each group has a
@@ -159,9 +176,8 @@
     let i = 0; const next = async () => { while (i < pupils.length) await fetchCopy(pupils[i++]); };
     await Promise.all(Array.from({ length: Math.min(5, pupils.length) }, next));
     S.loaded = true;
-    await openView(S.view);
   }
-  const gate = (t) => `<div class="cb-gate"><span class="label">[ Кабинет закрыт ]</span><p>${esc(t)}</p><a class="btn" href="teacher.html#reg">Аккаунты учеников <span class="arr">→</span></a></div>`;
+  const gate = (t) => `<div class="cb-gate">${sectionTitle("Добро пожаловать")}<p>${esc(t)}</p><a class="btn" href="cabinet.html?view=accounts#reg" data-cb-view="accounts">Настроить доступ <span class="arr">→</span></a></div>`;
 
   // ---------- small formatters
   const midnight = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
@@ -182,25 +198,24 @@
       (S.gview === "none" ? !groupOf(u) : groupOf(u)?.id === S.gview)) && matchesSearch(u));
   }
   function toolbar() {
+    if (S.view === "overview" && !S.cur && !S.assign) return "";
     const none = membersOf(null).length, tab = (v, label, n, g, sr) => `<button class="gtab" type="button" data-g="${esc(v)}" aria-pressed="${S.gview === v}"${gStyle(g)}>${g ? '<i class="gdot" aria-hidden="true"></i>' : ""}${esc(label)} <b>${n}</b>${sr ? `<span class="sr-only">, ${esc(sr)}</span>` : ""}</button>`;
     const isList = !S.cur && !S.assign && !S.editG;
-    const page = `<nav class="cb-nav" aria-label="Разделы кабинета">${VIEWS.map(([view, title, hook]) =>
-      `<button class="cb-nav-link" type="button" data-cb-view="${view}"${hook ? ` data-${hook}="1"` : ""}${S.view === view ? ' aria-current="page"' : ""}>${title}</button>`).join("")}</nav>`;
     const studentFilters = isList && S.view === "students" ? `<div class="cb-gtabs" role="group" aria-label="Группы учеников">${tab("all", "Все ученики", activeUsers().length)}${S.groups.map((g) => tab(g.id, g.name, membersOf(g).length, g, KINDS[g.kind])).join("")}${none ? tab("none", "Без группы", none) : ""}
         <button class="gtab add" type="button" data-gnew="1">+ Новая группа</button></div>` : "";
     const search = isList && ["students", "archive"].includes(S.view);
     const actions = `<div class="cb-tool2">${search ? `<input id="cb-q" type="search" placeholder="Найти по имени или логину" aria-label="Найти ученика" value="${esc(S.q)}" autocomplete="off">` : ""}
       ${search && S.view === "students" ? '<button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>' : ""}
       <button class="tlink" type="button" id="cb-reload">Обновить</button></div>`;
-    return `<div class="cb-tool">${page}${studentFilters}${actions}</div>`;
+    return `<div class="cb-tool">${studentFilters}${actions}</div>`;
   }
 
   const sectionTitle = (title) => `<h2 class="cb-section-title" tabindex="-1">${title}</h2>`;
 
   function dashboardHTML() {
     const pupils = activeUsers(), stats = pupils.filter((u) => u.B).map((u) => {
-      const { late, last } = info(u);
-      return { u, late, last };
+      const { late, last, R } = info(u);
+      return { u, late, last, results: R };
     });
     const overdue = stats.filter((x) => x.late).sort((a, b) => b.late - a.late);
     const quiet = stats.filter((x) => !x.last || Date.now() - x.last > 7 * DAY);
@@ -211,10 +226,16 @@
       `<li><span><button class="tlink" type="button" data-u="${esc(u.id)}">${esc(u.name)}</button><small>${esc(detail(I))}</small></span></li>`).join("")}</ul>
       ${list.length > 5 ? `<button class="tlink cb-more" type="button" data-cb-view="students">Все ученики · ещё ${list.length - 5}</button>` : ""}` :
       `<p class="hint">${empty}</p>`;
-    return `<div class="cb-dash-head">${sectionTitle("Обзор")}<button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button></div>
+    const recent = stats.flatMap(({ u, results }) => results.filter((r) => r.t).map((result) => ({ u, result })))
+      .sort((a, b) => b.result.t - a.result.t);
+    return `<div class="cb-dash-head">${sectionTitle("Добро пожаловать, Нурасыл")}<div class="cb-dash-actions"><button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
+        <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>
       <div class="cb-dash-stats">${tiles.map(([view, label, n]) => `<button class="cb-dash-stat" type="button" data-cb-view="${view}">
         <span>${label}</span><b>${n}</b></button>`).join("")}</div>
       <div class="cb-dash-columns">
+        <section class="cb-dash-card"><h3>Последние сдачи</h3>${people(recent, (x) =>
+          `${x.result.label} · ${x.result.score} · ${ago(x.result.t)}`, "Сдачи появятся после синхронизации результатов учеников.")}
+          <a class="tlink cb-more" href="cabinet.html?view=results" data-cb-view="results">Открыть аналитику результатов →</a></section>
         <section class="cb-dash-card"><h3>Ученики с просрочкой · ${overdue.length}</h3>${people(overdue, (x) => `Просрочено заданий: ${x.late}`, "Просроченных заданий нет.")}</section>
         <section class="cb-dash-card"><h3>Без активности 7+ дней · ${quiet.length}</h3>${people(quiet, (x) => x.last ? `Последняя активность: ${ago(x.last)}` : "Активности пока нет", "Все активные ученики заходили недавно.")}</section>
       </div>`;
@@ -418,7 +439,10 @@
   // another device, then ticks the plan, shows in «Сегодня» and in this cabinet. A key is written only when the account has no
   // newer value; its time is the time of the form answer, so a newer result on the student's device still wins.
   async function openImport() {
-    S.assign = null; const loading = { busy: "Загружаю ответы формы…", map: {} }; S.imp = loading; render();
+    S.assign = null;
+    const form = window.TeacherWorkspace.form();
+    if (form) { useForm(form.csv, form.aliases, form.label); return; }
+    const loading = { busy: "Загружаю ответы формы…", map: {} }; S.imp = loading; render();
     const r = await SITE.api("admin/form").catch(() => ({ status: 0 }));
     if (S.imp !== loading) return;
     if (r.ok) { try { const f = await SITE.unsealBlob(r.data.data); if (S.imp !== loading) return; return useForm(f.csv, f.aliases || {}, `сохранены ${new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`); } catch (e) { /* fall through */ } }
@@ -466,7 +490,7 @@
     const head = `<div class="cb-ah"><h2 tabindex="-1">Результаты из Google Form</h2><button class="tlink" type="button" id="cb-icancel">Закрыть ✕</button></div>`;
     if (I.none) return `<div class="cb-assign">${head}<p class="td-sub">${esc(I.err || "Ответы формы ещё не сохранены в кабинете.")} Выберите файл ответов: Google Forms → Responses → View in Sheets → File → Download → Comma Separated Values (.csv).</p>
       <label class="drop" for="cb-ifile">Выбрать CSV<input id="cb-ifile" type="file" accept=".csv,text/csv" hidden></label>
-      <p class="hint">Файл, загруженный на странице «Ответы из Google Form», сохраняется в кабинете сам.</p></div>`;
+      <p class="hint">Файл, загруженный на странице «Результаты» → «Аналитика», сохраняется в кабинете сам.</p></div>`;
     const accs = activeUsers().filter((u) => !u.err);
     const P = I.G.groups.map((g) => ({ g, p: planFor(g), n: I.rows.filter((r) => g.spellings[r.raw]).length }));
     const go = P.filter((x) => x.p && x.p.add), total = go.reduce((a, x) => a + x.p.add, 0);
@@ -481,8 +505,12 @@
   function bindImport() {
     if ($("cb-icancel")) $("cb-icancel").onclick = closeForm;
     if ($("cb-ifile")) $("cb-ifile").onchange = () => { const f = $("cb-ifile").files[0], importing = S.imp; if (!f) return; const rd = new FileReader();
-      rd.onload = async () => { if (S.imp !== importing) return; useForm(rd.result, {}, "файл " + f.name);
-        if (S.imp && S.imp.rows) SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: rd.result, aliases: {}, at: Date.now() }) }) }).catch(() => {}); };
+      rd.onload = async () => {
+        if (S.imp !== importing) return;
+        const label = "файл " + f.name;
+        useForm(rd.result, {}, label);
+        if (S.imp?.rows) window.TeacherWorkspace.useFile(rd.result, label);
+      };
       rd.readAsText(f, "utf-8"); };
     $("cb").querySelectorAll("[data-imap]").forEach((sel) => (sel.onchange = () => { S.imp.map[sel.dataset.imap] = sel.value; render(); }));
     if ($("cb-igo")) $("cb-igo").onclick = async () => {
@@ -516,12 +544,35 @@
         ${u.none && !former ? '<p class="hint">Ученик ещё ничего не сохранил в аккаунте. Задание всё равно можно задать: оно появится, когда ученик войдёт.</p>' : ""}
       </header>`;
   }
-  let viewChange = 0, returnView = "overview";
-  async function openView(view, focus = false) {
+  let viewChange = 0, returnView = "overview", loadingCabinet = null;
+  async function openView(view, focus = false, hash = "") {
     const step = ++viewChange;
-    if (["overview", "students", "archive"].includes(S.view) && ["tests", "lessons", "forms"].includes(view)) returnView = S.view;
+    if (["overview", "students", "archive"].includes(S.view) && ["tests", "lessons", "forms", "results", "accounts"].includes(view)) returnView = S.view;
+    if (hash || (S.view !== view && location.hash)) {
+      const url = new URL(location.href);
+      url.hash = hash;
+      history.replaceState(null, "", url);
+    }
     setView(view);
     S.cur = null; S.assign = null; S.imp = null; S.editG = null; S.ct = false; S.ls = false; S.q = "";
+    if (view === "results" || view === "accounts") {
+      if (view === "accounts") S.loaded = false;
+      const panel = window.TeacherWorkspace.open(view);
+      if (view === "accounts" && ACCOUNT_BOOKMARKS.includes(location.hash)) {
+        const target = $(location.hash.slice(1));
+        if (target?.tagName === "DETAILS") target.open = true;
+        target?.scrollIntoView();
+      } else if (view === "results" && ["#src", "#dash"].includes(location.hash)) {
+        const target = $(location.hash.slice(1));
+        panel.then(() => { if (step === viewChange) target.scrollIntoView(); });
+      } else if (focus) $("teacher-" + view + "-title").focus({ preventScroll: true });
+      return;
+    }
+    if (!S.loaded) {
+      if (!loadingCabinet) loadingCabinet = load().finally(() => { loadingCabinet = null; });
+      await loadingCabinet;
+      if (step !== viewChange || !S.loaded) return;
+    }
     S.loadingView = view === "tests" || view === "lessons";
     if (focus && !S.loadingView && view !== "forms") S.focus = ".cb-section-title";
     if (view === "forms") { await openImport(); if (step === viewChange && focus) $("cb").querySelector(".cb-ah h2")?.focus(); return; }
@@ -540,9 +591,8 @@
   }
 
   function render() {
-    const main = $("cb"); if (!S.loaded) return;
+    const main = $("cb"); if (!S.loaded || S.view === "results" || S.view === "accounts") return;
     const u = S.users.find((x) => x.id === S.cur), focusQ = document.activeElement && document.activeElement.id === "cb-q";
-    document.body.classList.toggle("cb-has", !!u || !!S.assign || !!S.imp || !!S.editG || S.ct || !!S.ls);
     let detail;
     if (S.loadingView) detail = '<p class="cb-wait" role="status">Загружаю…</p>';
     else if (S.ct) detail = CTED.html();
@@ -577,21 +627,25 @@
     render(); return true;
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct || S.ls) && closeForm()) e.preventDefault(); });
-  const top = () => window.scrollTo({ top: Math.max(0, ($("cb").getBoundingClientRect().top + scrollY) - 70) });
+  const top = () => window.scrollTo({ top: 0 });
   function closeSection() { openView(returnView, true); }
   const offCt = () => { if (S.assignBusy || (S.ct && !CTED.leave())) return false; S.ct = false; S.ls = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("[data-cb-view]");
+    if (!link || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const next = link.dataset.cbView;
+    if (next === S.view && (S.ct || S.ls || S.imp || S.loadingView)) return;
+    if (!offCt()) return;
+    const hash = link instanceof HTMLAnchorElement ? link.hash : "";
+    if (!hash) top();
+    if (next === "students") S.gview = "all";
+    openView(next, true, hash);
+  });
   function bind(u) {
     const main = $("cb"), on = (sel, fn0) => main.querySelectorAll(sel).forEach((el) => (el.onclick = (e) => fn0(el, e)));
     const away = (fn) => (el, e) => { if (offCt()) fn(el, e); };
     if ($("cb-q")) $("cb-q").oninput = (e) => { S.q = e.target.value; S.cur = null; S.assign = null; S.editG = null; render(); };
-    on("[data-cb-view]", (b) => {
-      const next = b.dataset.cbView;
-      if (next === S.view && (S.ct || S.ls || S.imp || S.loadingView)) return;
-      if (!offCt()) return;
-      if (next === "students") S.gview = "all";
-      openView(next, true);
-      top();
-    });
     on("[data-archive]", (b) => {
       const learner = S.users.find((x) => x.id === b.dataset.archive);
       if (learner) toggleArchive(learner);
@@ -619,7 +673,7 @@
     on("[data-gedit]", away((b) => { const g = S.groups.find((x) => x.id === b.dataset.gedit); if (g) { S.editG = JSON.parse(JSON.stringify(g)); S.cur = null; S.focus = "#cb-gform h2"; render(); top(); } }));
     main.querySelectorAll("[data-place]").forEach((sel) => (sel.onchange = () => { if (!sel.value) return; const st = S.users.find((x) => x.id === sel.dataset.place), g = S.groups.find((x) => x.id === sel.value);
       moveTo(sel.dataset.place, sel.value); render(); saveGroups(`${st.name} → ${g.name}`); }));
-    $("cb-reload").onclick = async () => { if (!offCt()) return; await groupWrites; S.loaded = false; S.users.forEach((x) => (x.nm = "")); await load(); toast("Обновлено"); };
+    $("cb-reload").onclick = async () => { if (!offCt()) return; await groupWrites; S.loaded = false; S.users.forEach((x) => (x.nm = "")); await openView(S.view); if (S.loaded) toast("Обновлено"); };
     if ($("cb-nm")) $("cb-nm").onchange = (e) => { u.nm = e.target.value; render(); };
     if ($("cb-grp")) $("cb-grp").onchange = (e) => { const g = S.groups.find((x) => x.id === e.target.value); moveTo(u.id, e.target.value); render(); saveGroups(g ? `${u.name} → ${g.name}` : `${u.name}: без группы`); };
     if (u) {
@@ -687,9 +741,8 @@
     if (!window.SITE) return;
     SITE.ready.then(async () => {
       try { const d = await SITE.json("lessons"); S.lessons = (d.lessons || d).filter((l) => l && l.tag && Array.isArray(l.parts)); } catch (e) { S.lessons = []; }
-      const view = new URLSearchParams(location.search).get("view");
-      if (VIEWS.some(([key]) => key === view)) S.view = view;
-      load();
+      S.view = viewFromURL();
+      openView(S.view);
     });
   });
 })();

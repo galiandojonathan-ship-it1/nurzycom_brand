@@ -27,7 +27,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   if (dev === "phone") await lp.click(".ls-bar .ls-tg");
 
   // the teacher page sends the group's hardest questions
-  await pg.goto(B + "teacher.html", { waitUntil: "load" }); await pg.waitForTimeout(2000);
+  await pg.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await pg.waitForTimeout(2000);
   await pg.setInputFiles("#file", __dirname + "/group2.csv"); await pg.waitForTimeout(1500);
   await pg.click('#tabs .chip[data-v="group"]'); await pg.waitForSelector("#ga-send", { timeout: 30000 });
   const titles = await pg.$$eval(".ga-q summary b", (a) => a.map((x) => x.textContent));
