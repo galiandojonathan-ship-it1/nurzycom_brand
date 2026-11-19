@@ -61,7 +61,7 @@
           : '<p class="cr-empty">Пока пусто. На своём устройстве откройте страницу преподавателя: «Анализ группы» для группы или карточку ученика, затем «Подготовить урок».</p>'}</div>
       <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Слова, отмеченные на уроках. Раз в два дня они получают определение и перевод и подчёркиваются на сайте, как слова курса.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
       <div class="cr-card cr-wide" id="cr-lessons"><h2>Презентации и материалы</h2><p class="cr-sub">Выберите урок: его презентация, части рабочей тетради и слова.</p>
-        ${SITE.adminKey() ? '<div class="cr-acts cr-import"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><span>PDF с кодом урока в имени, например V01_v4.pdf. Существующие презентации пропускаются.</span></div><input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
+        ${SITE.adminKey() ? '<div class="cr-acts cr-import"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><button type="button" id="cr-zip-replace">Заменить из ZIP</button><span>PDF с кодом урока в имени, например V01_v4.pdf.</span></div><input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
         <div class="cr-tabs" role="group" aria-label="Курс"><button type="button" data-course="V" aria-pressed="${C.course === "V"}">SAT Verbal</button><button type="button" data-course="M" aria-pressed="${C.course === "M"}">SAT Math</button></div>
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
         <input id="cr-deck-file" type="file" hidden>
@@ -78,11 +78,14 @@
     };
     const zip = $("cr-zip-file");
     if (zip) {
-      $("cr-zip-upload").onclick = () => zip.click();
+      let replace = false;
+      $("cr-zip-upload").onclick = () => { replace = false; zip.click(); };
+      $("cr-zip-replace").onclick = () => { replace = true; zip.click(); };
       zip.onchange = () => {
         const file = zip.files[0];
         zip.value = "";
-        if (file) importDecks(file);
+        if (file) importDecks(file, replace);
+        replace = false;
       };
     }
     tiles(); words();
@@ -95,8 +98,7 @@
     panel();
   }
   function panel() {
-    const importer = $("cr-zip-upload");
-    if (importer) importer.disabled = C.deckBusy;
+    document.querySelectorAll("#cr-zip-upload, #cr-zip-replace").forEach((button) => { button.disabled = C.deckBusy; });
     const box = $("cr-panel"), l = C.lessons.find((x) => x.tag === C.open); if (!box) return;
     if (!l) { box.innerHTML = ""; return; }
     const d = deckFor(l.tag);
@@ -232,7 +234,7 @@
     return true;
   }
 
-  async function readDeckArchive(file, skipped, errors) {
+  async function readDeckArchive(file, replace, skipped, errors) {
     const files = new Map(), duplicates = new Set();
     const tags = new Set(C.lessons.map((lesson) => lesson.tag));
     let totalBytes = 0;
@@ -246,7 +248,7 @@
         errors.push(filename + " — урок не найден");
         return false;
       }
-      if (deckFor(id)) {
+      if (!replace && deckFor(id)) {
         skipped.add(id);
         return false;
       }
@@ -270,35 +272,44 @@
     return [...files].filter(([, name]) => Object.hasOwn(entries, name)).map(([id, name]) => [id, entries[name]]);
   }
 
-  async function importDecks(file) {
+  async function importDecks(file, replace) {
     if (C.deckBusy) return;
     const msg = $("cr-zip-msg");
     if (!/\.zip$/i.test(file.name) || file.size > 50000000) { msg.textContent = "Выберите ZIP до 50 МБ."; return; }
     C.deckBusy = true;
     panel();
     msg.textContent = "Проверяю список презентаций и ZIP…";
-    const saved = [], skipped = new Set(), errors = [];
+    const saved = [], replaced = [], skipped = new Set(), errors = [];
     try {
       const response = await SITE.api("admin/decks");
       if (response.status === 403) throw new Error("Проверьте ключ администратора в кабинете преподавателя.");
       if (!response.ok || !Array.isArray(response.data?.decks)) throw new Error("Не удалось проверить список. Попробуйте ещё раз.");
       C.uploaded = response.data.decks;
-      const entries = await readDeckArchive(file, skipped, errors);
+      const entries = await readDeckArchive(file, replace, skipped, errors);
       if (!entries.length && !skipped.size && !errors.length) throw new Error("В ZIP нет PDF для загрузки.");
+      const replacing = new Set(replace ? entries.map(([id]) => id).filter((id) => deckFor(id)) : []);
+      if (replacing.size) {
+        const adding = entries.map(([id]) => id).filter((id) => !replacing.has(id));
+        const changes = ["Заменить презентации для уроков " + [...replacing].join(", ") + "?"];
+        if (adding.length) changes.push("Будут также добавлены презентации для уроков " + adding.join(", ") + ".");
+        if (!confirm(changes.join("\n"))) { msg.textContent = "Замена отменена."; return; }
+      }
       for (const [index, [id, pdf]] of entries.entries()) {
         const prefix = (index + 1) + "/" + entries.length + " · " + id + ". ";
         try {
           const deck = await readPDF(new Blob([pdf]), (status) => { msg.textContent = prefix + status; });
           msg.textContent = prefix + "Сохраняю…";
-          if (await saveDeck(id, deck, true)) saved.push(id);
+          const overwrite = replacing.has(id);
+          if (await saveDeck(id, deck, !overwrite)) (overwrite ? replaced : saved).push(id);
           else skipped.add(id);
         } catch (e) {
           errors.push(id + " — " + (/[\u0400-\u04ff]/.test(e.message) ? e.message : "не удалось загрузить PDF"));
         }
       }
       msg.textContent = [
-        "Загружено " + saved.length + ". Уже были " + skipped.size + ". С ошибками " + errors.length + ".",
+        "Загружено " + saved.length + (replace ? ". Заменено " + replaced.length : "") + ". Уже были " + skipped.size + ". С ошибками " + errors.length + ".",
         saved.length && "Загружены — " + saved.join(", "),
+        replaced.length && "Заменены — " + replaced.join(", "),
         skipped.size && "Пропущены — " + [...skipped].join(", "),
         ...errors
       ].filter(Boolean).join("\n");
