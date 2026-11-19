@@ -88,8 +88,11 @@
         const good = revealed(s) && c === q.ans;
         const on = !S.review && !s.done && (learn() ? S.sel === c : s.tries[0] === c);
         const cls = `${on ? " on" : ""}${out.has(c) && !s.done ? " out" : ""}${bad ? " bad" : ""}${good ? " good" : ""}`;
-        return `<div class="opt${cls}" data-c="${c}"><button class="ch" data-c="${c}" aria-pressed="${on}"${s.done || bad ? " disabled" : ""}><span class="lt">${c}</span><span class="tx qhtml">${o}</span></button><button class="x" data-c="${c}" aria-label="Вычеркнуть ${c}"${s.done ? " disabled" : ""}>${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
-      $("sv-opts").querySelectorAll(".ch").forEach((b) => (b.onclick = () => choose(b.dataset.c)));
+        const text = `<span class="lt">${c}</span><span class="tx qhtml">${o}</span>`;
+        // Reviewed options are text so native selection works inside the answer card.
+        if (S.review || s.done) return `<div class="opt${cls}" data-c="${c}"><div class="ch ch-review">${text}</div></div>`;
+        return `<div class="opt${cls}" data-c="${c}"><button class="ch" data-c="${c}" aria-pressed="${on}"${bad ? " disabled" : ""}>${text}</button><button class="x" data-c="${c}" aria-label="Вычеркнуть ${c}">${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
+      $("sv-opts").querySelectorAll("button.ch").forEach((b) => (b.onclick = () => choose(b.dataset.c)));
       $("sv-opts").querySelectorAll(".x").forEach((b) => (b.onclick = () => strike(b.dataset.c)));
     } else {
       const val = S.spr ?? (s.done || !learn() ? last || "" : "");

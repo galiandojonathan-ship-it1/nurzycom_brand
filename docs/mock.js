@@ -362,6 +362,8 @@
       if (e.target.closest(".try-show")) return open(d, "Ответ открыт.");
       if (e.target.closest(".try-go")) return typed(d);
       const o = e.target.closest(".ropt"); if (!o || o.classList.contains("tried")) return;
+      const selection = window.getSelection();
+      if (e.detail && selection?.rangeCount && !selection.isCollapsed && selection.getRangeAt(0).intersectsNode(o)) return;
       if (o.dataset.l === qOf(d).ans) open(d, "Верно. Разбор ниже."); else { o.classList.add("tried"); say(d, `${o.dataset.l} — неверно. Попробуйте другой вариант.`); }
     };
     r.onkeydown = (e) => {
