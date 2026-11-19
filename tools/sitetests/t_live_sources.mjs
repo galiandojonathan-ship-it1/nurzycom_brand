@@ -126,4 +126,49 @@ participant = null;
 ({round,host} = await call("create",{title:"Full capacity",set:"sealed:YWJj",keys:Array(100).fill("A"),settings:{seconds:45,strict:true}},"teacher",201));
 state = await call("state",null,host,200);
 assert.equal(state.total,100);
-console.log("PASS original and configured rounds, strict deadlines, flexible overtime, host advancement, counts above ten and retry safety");
+
+// Joining never restarts the shared timer, and missed strict questions stay closed.
+participant = null;
+({round,host} = await call("create",{title:"Late strict join",set:"sealed:YWJj",keys:["A","B","C"],settings:{seconds:5,strict:true}},"teacher",201));
+await call("start",{},host,200);
+const strictStart = (await call("state",null,host,200)).started;
+now += 3000 + 6000;
+({participant,student} = await call("join",{name:"Late strict student"},null,201));
+state = await call("state",null,student,200);
+assert.equal(state.started,strictStart);
+assert.equal(state.answers.length,0);
+await call("answer",{number:1,answer:"A"},student,409);
+await call("answer",{number:2,answer:"B"},student,200);
+state = await call("state",null,host,200);
+assert.equal(state.students.length,1);
+assert.equal(state.answers[0].question_number,2);
+now += 10000;
+await call("join",{name:"After automatic finish"},null,409);
+assert.equal((await call("state",null,host,200)).students.length,1);
+
+// Flexible rounds remain joinable in overtime and after the host advances.
+participant = null;
+({round,host} = await call("create",{title:"Late flexible join",set:"sealed:YWJj",keys:["A","B"],settings:{seconds:5,strict:false}},"teacher",201));
+await call("start",{},host,200);
+now += 3000 + 20000;
+({participant,student} = await call("join",{name:"Late flexible student"},null,201));
+await call("answer",{number:1,answer:"A"},student,200);
+await call("next",{number:1},host,200);
+({participant,student} = await call("join",{name:"Joined at question two"},null,201));
+state = await call("state",null,student,200);
+assert.equal(state.current,2);
+await call("answer",{number:1,answer:"A"},student,409);
+await call("answer",{number:2,answer:"B"},student,200);
+await call("close",{},host,200);
+await call("join",{name:"After manual close"},null,409);
+
+// Original fixed-timer rounds also allow late arrivals.
+participant = null;
+({round,host} = await call("create",setup,"teacher",201));
+await call("start",{},host,200);
+const legacyStart = (await call("state",null,host,200)).started;
+now += 3000 + 46000;
+({participant,student} = await call("join",{name:"Late legacy student"},null,201));
+assert.equal((await call("state",null,student,200)).started,legacyStart);
+await call("answer",{number:2,answer:"A"},student,200);
+console.log("PASS late joins in legacy, strict and flexible rounds; shared deadlines, missed questions and closed-round rejection");
