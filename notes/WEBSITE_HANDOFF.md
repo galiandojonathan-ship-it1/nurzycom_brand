@@ -88,6 +88,8 @@ with the vendored PDF.js 4.10.38 distribution (Apache-2.0), seals them with the 
 `GET/PUT/DELETE admin/deck?id=V01` to read, replace or delete an uploaded presentation. The PDF itself stays on the uploading device.
 New PDF imports save the text and coordinates alongside the images so the site dictionary works on selected words. Image-only decks
 need a fresh import from a PDF with embedded text. In Math lessons, the Desmos button opens the SAT graphing calculator next to the slides.
+«Загрузить ZIP» imports PDFs named with their lesson code, such as `Math/M01_v4.pdf`. It checks both the built-in library and the uploaded
+catalog, then sends conditional uploads for missing lessons. The browser extracts the archive and uses the same encrypted flow as individual PDF uploads.
 
 For code edits, download the text as JSON from the lesson card, edit or reorder `slides`, and upload the result via «Заменить из JSON».
 The JSON renderer uses the site's slide template. PDF graphics and original formatting stay in the PDF. This example shows the source format.

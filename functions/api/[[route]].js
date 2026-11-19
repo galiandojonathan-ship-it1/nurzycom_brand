@@ -176,6 +176,9 @@ export async function onRequest(context) {
       if (!b || !okB64(b.data, 14000000) ||
           ![b.n, b.w, b.h].every(Number.isInteger) || b.n < 1 || b.n > 120 ||
           b.w < 1 || b.w > 1600 || b.h < 1 || b.h > 1600) return fail(400, "invalid presentation");
+      if (request.headers.get("if-none-match") === "*" && await env.USERS.get(key) !== null) {
+        return fail(412, "presentation already exists");
+      }
       const metadata = { n: b.n, w: b.w, h: b.h };
       await env.USERS.put(key, b.data, { metadata });
       return json({ deck: { id, ...metadata } });
