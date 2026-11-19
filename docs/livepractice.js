@@ -148,6 +148,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
 
   function scoreboard() {
     const table = document.createElement("table");
+    table.createCaption().textContent = "Ответы группы";
     const header = table.createTHead().insertRow();
     ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(i + 1)), "Верно"].forEach((label) => {
       const cell = document.createElement("th");
@@ -163,7 +164,9 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       row.insertCell().textContent = student.display_name;
       for (let number = 1; number <= (state.total || 10); number++) {
         const answer = answers.get(number);
-        row.insertCell().textContent = answer ? answer.answer + (answer.correct ? " ✓" : " ✗") : "—";
+        const cell = row.insertCell();
+        cell.textContent = answer ? answer.answer + (answer.correct ? " ✓" : " ✗") : "—";
+        if (answer) cell.classList.add(answer.correct ? "answer-correct" : "answer-incorrect");
       }
       row.insertCell().textContent = String([...answers.values()].filter((answer) => answer.correct).length);
     }
@@ -188,6 +191,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         link.href = new URL("practice.html?live=" + round, location.href);
         link.textContent = "Ссылка для учеников";
         const copy = button("Копировать ссылку", async () => navigator.clipboard.writeText(link.href));
+        copy.classList.add("ghost");
         const launch = button("Начать раунд", async () => { await api("start", {}); await refresh(); });
         launch.dataset.launch = "";
         const next = button("Следующий вопрос", async () => {
@@ -197,9 +201,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         next.dataset.advance = "";
         const close = button("Завершить раунд", async () => { await api("close", {}); await refresh(); });
         close.dataset.close = "";
+        close.classList.add("ghost");
         results = document.createElement("div");
         results.dataset.results = "";
-        results.style.overflowX = "auto";
+        results.tabIndex = 0;
+        results.setAttribute("role", "region");
+        results.setAttribute("aria-label", "Ответы группы");
         const workspace = document.createElement("div");
         workspace.className = "live-host-workspace";
         const currentQuestion = document.createElement("article");
