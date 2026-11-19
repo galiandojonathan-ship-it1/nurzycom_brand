@@ -178,7 +178,7 @@ table.dt td:not(:first-child){font-family:var(--mono);font-size:13px}
 .stem{font-size:17px;line-height:1.6;font-weight:500;margin:0 0 16px}
 .opt{display:flex;align-items:stretch;gap:0;margin-bottom:8px}
 .opt .ch{flex:1;display:flex;gap:14px;align-items:flex-start;text-align:left;padding:13px 14px;border:1px solid var(--studio);background:var(--white);font-size:16px;line-height:1.5;transition:border-color .1s}
-.opt .ch:hover{border-color:var(--ink)}
+.opt button.ch:hover{border-color:var(--ink)}
 .opt .lt{flex:none;width:28px;height:28px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:13px var(--mono);margin-top:-1px}
 .opt.on .ch{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .opt.on .lt{background:var(--ink);color:var(--paper)}
@@ -608,7 +608,8 @@ main:focus{outline:none}
 html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons show only after «Вычеркнуть» is switched on */
 .opt{margin-bottom:10px}
 .opt .ch{padding:16px 18px;font-size:17px;border:1.5px solid var(--studio);border-radius:12px;background:#fff}
-.elim-on .opt .ch,.opt.out .ch{border-radius:12px 0 0 12px}
+.elim-on .opt button.ch,.opt.out button.ch{border-radius:12px 0 0 12px}
+.opt .ch.ch-review{cursor:text;-webkit-user-select:text;user-select:text}
 .opt .x{border:1.5px solid var(--studio);border-left:0;border-radius:0 12px 12px 0;width:48px;font-size:16px}
 .opt .lt{width:32px;height:32px;font:600 14px var(--sans)}
 .opt.on .ch{border:2px solid var(--ink);box-shadow:0 0 0 4px rgba(15,15,15,.07)}

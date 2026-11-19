@@ -6,7 +6,7 @@
 //    of speech and up to 5 Russian equivalents, built by tools/dict/build_dict.py. A dictionary does not know the context: it shows
 //    the most common senses, which is why words marked in lessons still get a checked definition in the deck «VL».
 // The data: docs/data/dict.json names the build, and only the small two-letter part a word needs loads (about 30 KB), then stays cached.
-// Answer options are buttons, and a browser does not select text inside a button; course words there are underlined as before.
+// Answer options in the workbook review are selectable text. Course words still have their own card.
 (function () {
   "use strict";
   if (window.DICT) return;
