@@ -35,7 +35,10 @@
     S = { ctx, items: ctx.items, cur: 0, st: {}, pending: {}, mk: new Set(), out: {}, t0: Date.now(), review: !!ctx.review, timer: null };
     S.hash = {}; ctx.part.q.forEach((q) => (S.hash[q.i] = q.h));
     S.items.forEach((q) => (S.st[q.i] = { tries: [], done: false, ok: false }));
-    if (ctx.review) { Object.assign(S.st, ctx.review); }
+    if (ctx.review) {
+      Object.assign(S.st, ctx.review);
+      S.cur = Math.max(0, S.items.findIndex((q) => String(q.n) === ctx.reviewQuestion));
+    }
     else {
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem(key()) || localStorage.getItem(legacyKey())); }
