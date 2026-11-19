@@ -1,5 +1,5 @@
 // «Живая практика» (livepractice.js + functions/api/live.js): a full round on the local stand-in (pages_dev.mjs on 8768, D1 in memory).
-// The lesson account creates a round from a hard set, two students join by the link and answer, a third is refused after the start,
+// The lesson account creates a round from a hard set, two students join by the link and answer, a third joins after the start,
 // the host sees the scoreboard and, after closing, the keys. Also: the lesson bar's 45 s timer, and no round button for a student.
 // usage: node t_live.js [desktop|phone]   (needs mkreal.mjs copy served by pages_dev.mjs; logins lesson and loop-test, password fixture-pw)
 const { chromium, devices } = require("playwright");
@@ -65,15 +65,15 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await s2.locator(".live-practice [data-live-content] .btn").nth(1).click(); await s2.waitForTimeout(1200);
   ok(/Ответ принят: A/.test(await s1.locator(".live-practice").innerText()), "student 1: «Ответ принят: A»");
 
-  // late join is refused
+  // Late students join the question already running.
   const s3 = await ctx("loop-test", "Поздний Тест");
   await s3.goto(link, { waitUntil: "load" }); await s3.waitForTimeout(2500); await s3.locator("button", { hasText: "Войти в раунд" }).click(); await s3.waitForTimeout(1200);
-  ok(/Вход в раунд закрыт/.test(await msg(s3)), "late join refused: " + await msg(s3));
+  ok(/Вопрос 1 из 10/.test(await msg(s3)), "late student joins the current question: " + await msg(s3));
 
   // host scoreboard
   await host.waitForTimeout(2000);
   const rows = await host.$$eval(".live-practice table tbody tr", (rs) => rs.map((r) => [...r.cells].map((c) => c.textContent)));
-  ok(rows.length === 2, "scoreboard has 2 students");
+  ok(rows.length === 3, "scoreboard includes the late student");
   ok(rows.some((r) => r[0] === "Аяна Тест" && /^A [✓✗]$/.test(r[1])) && rows.some((r) => r[0] === "Диас Тест" && /^B [✓✗]$/.test(r[1])), "scoreboard shows each answer with ✓/✗: " + JSON.stringify(rows.map((r) => r.slice(0, 2))));
   const right = rows.filter((r) => /✓/.test(r[1])).length; ok(right <= 1, "at most one of A/B is right (" + right + ")");
   ok(rows.every((r) => r[11] === (/✓/.test(r[1]) ? "1" : "0")), "«Верно» column counts the right answers");

@@ -178,13 +178,15 @@ export async function onRequest({ env, request }) {
     return reply({ ok: true });
   }
   if (action === "join") {
+    if (finished) return error(409, "Раунд уже завершён.");
     const name = typeof data.name === "string" && data.name.trim().slice(0, 60);
     if (!name) return error(400, "Введите имя.");
     const participant = token(), student = token();
     const insert = await db.prepare(`INSERT INTO live_participants
-      SELECT id, ?, ?, ?, ? FROM live_rounds WHERE id = ? AND starts_at IS NULL AND closed_at IS NULL
+      SELECT id, ?, ?, ?, ? FROM live_rounds WHERE id = ? AND closed_at IS NULL AND expires_at > ?
+      AND (starts_at IS NULL OR ? = 0 OR ? < starts_at + ?)
       AND (SELECT count(*) FROM live_participants WHERE round_id = ?) < 100`)
-      .bind(participant, name, await hash(student), now, id, id).run();
+      .bind(participant, name, await hash(student), now, id, now, strict ? 1 : 0, now, total * seconds * 1000, id).run();
     return insert.meta.changes ? reply({ participant, student }, 201) : error(409, "Вход в раунд закрыт.");
   }
 
