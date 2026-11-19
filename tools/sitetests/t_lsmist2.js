@@ -12,7 +12,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
     await SITE.api("admin/progress?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({}) }) });
     const ids = []; for (const l of ["ayana", "dias", "aruzhan", "sher"]) ids.push(await SITE.lid(l));
     await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ groups: [{ id: "g1", name: "SAT Verbal · вечер", kind: "group", color: "teal", members: ids }], at: Date.now() }) }) }); });
-  await pg.goto(B + "teacher.html", { waitUntil: "load" }); await pg.waitForTimeout(2000);
+  await pg.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await pg.waitForTimeout(2000);
   await pg.setInputFiles("#file", __dirname + "/group2.csv"); await pg.waitForTimeout(1500);
 
   // 1. group: pick one lesson part

@@ -352,13 +352,19 @@
     const r = await SITE.api("admin/users").catch(() => ({ status: 0 }));
     if (!r.ok) return (D.cbg = { err: "users", groups: [] });
     const users = {}; for (const x of r.data.users) { try { users[x.id] = await SITE.nameOf(x.n); } catch (e) { /* unreadable */ } }
-    let G = null; const g = await SITE.api("admin/groups").catch(() => ({ status: 0 }));
-    if (g.ok) { try { G = (await SITE.unsealBlob(g.data.data)).groups; } catch (e) { G = null; } }
-    if (!Array.isArray(G)) { try { G = (JSON.parse(localStorage.getItem("cb_groups") || "null") || {}).groups; } catch (e) { G = null; } }
-    const groups = (Array.isArray(G) ? G : []).filter((x) => x && x.id && Array.isArray(x.members) && x.members.length).map((x) => {
-      const names = x.members.map((id) => users[id] && users[id].name).filter(Boolean);
+    let saved = null;
+    const g = await SITE.api("admin/groups").catch(() => ({ status: 0 }));
+    if (g.ok) { try { saved = await SITE.unsealBlob(g.data.data); } catch (e) { /* use the local copy below */ } }
+    try {
+      let local = JSON.parse(store("cb_groups"));
+      if (Array.isArray(local)) local = { groups: local };
+      if (Array.isArray(local?.groups) && (!Array.isArray(saved?.groups) || local.at > saved.at)) saved = local;
+    } catch (e) { /* ignore an unreadable local copy */ }
+    const archived = new Set(Array.isArray(saved?.archived) ? saved.archived : []);
+    const groups = (saved?.groups || []).filter((x) => x && x.id && Array.isArray(x.members)).map((x) => {
+      const names = x.members.filter((id) => !archived.has(id)).map((id) => users[id]?.name).filter(Boolean);
       return { id: String(x.id), name: String(x.name || "Группа"), kind: x.kind === "solo" ? "solo" : "group", color: GCOLT[x.color] || GCOLT.blue, names, keys: new Set(names.map((n) => FORMKIT.key(n)).filter(Boolean)) };
-    });
+    }).filter((x) => x.names.length);
     return (D.cbg = { groups });
   }
   const WORK = (r, P) => (r.kind === "P" ? "Пробные тесты" : "DUA".includes(r.kind) ? "Наборы «Полезное»" : !P ? "Другое" : /Холодный/.test(P.title) ? "Холодный старт" : /Финальный/.test(P.title) ? "Финальный тест" : /Дополнительное/.test(P.title) ? "Дополнительное ДЗ" : /Домашнее/.test(P.title) ? "Домашнее задание" : "Практика на уроке");
@@ -632,23 +638,45 @@
   }
   function fromFile(f) {
     const rd = new FileReader();
-    rd.onload = () => { try { D.demo = false; load(rd.result, "файл " + f.name); cloudSave(); } catch (e) { $("src-msg").textContent = e.message; } };
+    rd.onload = () => { try { useFile(rd.result, "файл " + f.name); } catch (e) { $("src-msg").textContent = e.message; } };
     rd.readAsText(f, "utf-8");
+  }
+  function useFile(csv, label, aliases) {
+    D.demo = false;
+    if (aliases) D.aliases = aliases;
+    load(csv, label);
+    store("teacher_url", null);
+    $("url").value = "";
+    return cloudSave();
   }
   // ---------- the answers in the cloud (api/admin/form, admin key only, encrypted here): the dashboard and the cabinet open them
   // on any device without loading the file again
-  let lastSaved = "";
-  async function cloudSave() {
+  let lastSaved = "", formWrites = Promise.resolve();
+  function formBadge() {
+    const line = $("st-line");
+    if (!line.querySelector("[data-form-saved]")) line.insertAdjacentHTML("beforeend", ' <span class="pill" data-form-saved>сохранено в кабинете</span>');
+  }
+  function cloudSave() {
     if (!SITE.adminKey() || !D.csv) return;
-    const body = JSON.stringify({ csv: D.csv, aliases: D.aliases }); if (body === lastSaved) return;
-    try { const r = await SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ csv: D.csv, aliases: D.aliases, at: Date.now() }) }) });
-      if (r.ok) { lastSaved = body; $("st-line").insertAdjacentHTML("beforeend", ' <span class="pill">сохранено в кабинете</span>'); } } catch (e) { /* offline: the page still works */ }
+    const body = JSON.stringify({ csv: D.csv, aliases: D.aliases });
+    formWrites = formWrites.then(async () => {
+      try {
+        if (body !== lastSaved) {
+          const data = await SITE.sealBlob({ ...JSON.parse(body), at: Date.now() });
+          const r = await SITE.api("admin/form", { method: "PUT", body: JSON.stringify({ data }) });
+          if (!r.ok) return;
+          lastSaved = body;
+        }
+        if (body === JSON.stringify({ csv: D.csv, aliases: D.aliases }) && !D.demo) formBadge();
+      } catch (e) { /* the results can still be viewed without a server copy */ }
+    });
+    return formWrites;
   }
   async function cloudLoad() {
     if (!SITE.adminKey()) return false;
-    try { const r = await SITE.api("admin/form"); if (!r.ok) return false; const f = await SITE.unsealBlob(r.data.data); if (!f || !f.csv) return false;
+    try { const r = await SITE.api("admin/form"); if (!r.ok) return false; const f = await SITE.unsealBlob(r.data.data); if (!f || !f.csv || D.csv) return false;
       D.aliases = Object.assign({}, f.aliases || {}, D.aliases); D.demo = false; load(f.csv, "сохранено " + new Date(r.data.at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
-      lastSaved = JSON.stringify({ csv: f.csv, aliases: D.aliases }); return true; } catch (e) { return false; }
+      lastSaved = JSON.stringify({ csv: f.csv, aliases: D.aliases }); formBadge(); return true; } catch (e) { return false; }
   }
   function sources(on) { $("src").classList.toggle("hidden", !on); $("demo-row").classList.toggle("hidden", !on); }
   $("change").onclick = () => sources($("src").classList.contains("hidden"));
@@ -659,10 +687,10 @@
   drop.addEventListener("drop", (e) => e.dataTransfer.files[0] && fromFile(e.dataTransfer.files[0]));
   $("load-url").onclick = () => $("url").value.trim() && fromUrl($("url").value.trim());
   $("reload").onclick = () => { const u = store("teacher_url"); if (u && !D.demo) fromUrl(u); else $("file").click(); };
-  $("forget").onclick = () => { store("teacher_url", null); D.rows = []; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
+  $("forget").onclick = () => { store("teacher_url", null); D.rows = []; D.csv = ""; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
   $("demo").onclick = () => { D.demo = true; const a = D.aliases; D.aliases = {}; load(demoCSV(), "пример"); D.aliases = a; };
   $("tabs").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.view = b.dataset.v; if (D.view !== "students") D.student = null; render(); }));
-  addEventListener("resize", () => { if (!$("dash").classList.contains("hidden") && D.view === "overview") render(); });
+  addEventListener("resize", () => { if (!$("teacher-results").classList.contains("hidden") && !$("dash").classList.contains("hidden") && D.view === "overview") render(); });
 
 
   // ---------- site password: re-wrap the master key with a new password and publish access.json
@@ -712,7 +740,7 @@
     п: "p", р: "r", с: "s", т: "t", у: "u", ұ: "u", ү: "u", ф: "f", х: "kh", һ: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sh", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya", ә: "a" };
   const toLogin = (s) => s.toLowerCase().split("").map((c) => (c in TR ? TR[c] : c)).join("").replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "").slice(0, 24);
   function genPw() { const A = "abcdefghjkmnpqrstuvwxyz23456789", r = crypto.getRandomValues(new Uint8Array(10)); const s = Array.from(r, (x) => A[x % A.length]).join(""); return s.slice(0, 5) + "-" + s.slice(5); }
-  const siteUrl = () => location.href.replace(/teacher(\.html)?([?#].*)?$/, "");
+  const siteUrl = () => new URL("./", location.href).href;
   const accMsg = (t) => ($("acc-msg").textContent = t);
   async function accLoad() { try { ACC.a = await SITE.access(); ACC.list = await SITE.accounts(ACC.a); accRender(); } catch (e) { $("acc-list").innerHTML = '<p class="hint">Не удалось загрузить список логинов. Обновите страницу.</p>'; } }
   function accRender() {
@@ -776,7 +804,6 @@
     accMsg("Файл скачан. Загрузите его на GitHub: репозиторий → папка docs → Add file → Upload files → Commit changes.");
   };
   addEventListener("beforeunload", (e) => { if (ACC.dirty) { e.preventDefault(); e.returnValue = ""; } });
-  SITE.ready.then(accLoad);
 
   // ---------- accounts students create themselves (Cloudflare function api/…, KV storage); works only on study.bynurzy.com
   const REG = { list: [], invite: false };
@@ -790,6 +817,10 @@
   async function regLoad() {
     const box = $("reg-admin");
     if (!SITE.adminKey()) {
+      REG.list = []; REG.invite = false;
+      $("reg-invite").classList.add("hidden");
+      $("reg-list").replaceChildren();
+      $("reg-new")?.remove();
       const probe = await SITE.api("admin/users").catch(() => ({ status: 0 }));
       if (probe.status !== 403) { box.innerHTML = `<p class="hint">${esc(regExplain(probe.status || 503))}</p>`; return; }
       box.innerHTML = `<span class="label">Ключ администратора</span>
@@ -878,7 +909,6 @@
     $("reg-pwcopy").onclick = async () => { try { await navigator.clipboard.writeText(text); $("reg-pwcopy").textContent = "Скопировано"; } catch (e) { regMsg("Не удалось скопировать: выделите текст выше вручную."); } };
     box.scrollIntoView({ block: "center" });
   }
-  SITE.ready.then(regLoad);
 
   $("gh-save").onclick = () => {
     const raw = $("gh-token").value, tok = cleanTok(raw);
@@ -887,10 +917,29 @@
   $("gh-forget").onclick = () => { store("gh_token", null); ghState(); };
   ghState();
 
-  Promise.all(["lessons", "practice", "reading", "mocks"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t, m]) => {
-    D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || []; D.mocks = m;
-    try { D.aliases = JSON.parse(store("name_alias") || "{}") || {}; } catch (e) { D.aliases = {}; }
-    const u = store("teacher_url"); if (u) { $("url").value = u; fromUrl(u); } else SITE.ready.then(cloudLoad);
-  });
+  let resultsReady = null, accountsLoading = null;
+  window.TeacherWorkspace = {
+    useFile: (csv, label) => useFile(csv, label, {}),
+    form: () => D.csv && !D.demo ? { csv: D.csv, aliases: D.aliases, label: D.label } : null,
+    open(view) {
+      if (view === "accounts") {
+        if (!accountsLoading) accountsLoading = Promise.all([accLoad(), regLoad()]).finally(() => { accountsLoading = null; });
+        return accountsLoading;
+      }
+      hideTip();
+      D.cbg = null;
+      if (!resultsReady) {
+        resultsReady = Promise.all(["lessons", "practice", "reading", "mocks"].map((f) => SITE.json(f).catch(() => null))).then(([l, p, t, m]) => {
+          D.lessons = (l && l.lessons) || []; D.sets = (p && p.sets) || []; D.texts = (t && t.texts) || []; D.mocks = m;
+          try { D.aliases = JSON.parse(store("name_alias") || "{}") || {}; } catch (e) { D.aliases = {}; }
+          if (D.csv) { render(); return; }
+          const u = store("teacher_url");
+          if (u) { $("url").value = u; return fromUrl(u); }
+          return cloudLoad();
+        });
+      } else if (!$("dash").classList.contains("hidden")) render();
+      return resultsReady;
+    }
+  };
   window.__teacher = { parseCSV, parseDate, columns };   // for testing
 })();

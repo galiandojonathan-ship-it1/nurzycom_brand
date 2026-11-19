@@ -7,7 +7,7 @@ const run = async (pg, label, out) => { await pg.addScriptTag({ content: AXE });
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     const pg = await br.newPage({ viewport: vp }); await pg.route(/docs\.google\.com/, (r) => r.abort());
     await pg.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); });
-    await pg.goto("http://127.0.0.1:8767/teacher.html", { waitUntil: "networkidle" }); await pg.waitForTimeout(500);
+    await pg.goto("http://127.0.0.1:8767/cabinet.html?view=results", { waitUntil: "networkidle" }); await pg.waitForTimeout(500);
     await run(pg, `${vp.width} teacher:source`, out);
     await pg.setInputFiles("#file", __dirname + "/run11.csv"); await pg.waitForTimeout(1200);
     const views = await pg.$$eval("#tabs .chip", (a) => a.map((b) => b.dataset.v));

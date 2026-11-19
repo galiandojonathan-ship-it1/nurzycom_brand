@@ -5,7 +5,7 @@ const vp = process.argv[2] === "phone" ? { width: 390, height: 664 } : { width: 
 (async () => { const br = await chromium.launch(); const res = { full: {}, part: {} }; let checked = 0;
   for (const p of pages) { const pg = await br.newPage({ viewport: vp }); await pg.route(/docs\.google\.com/, (r) => r.abort());
     await pg.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.setItem("hw_student", "Loop Test"); });
-    await pg.goto("http://127.0.0.1:8767/" + p, { waitUntil: "networkidle" }); await pg.waitForTimeout(400);
+    await pg.goto("http://127.0.0.1:8767/" + (p === "teacher.html" ? "cabinet.html?view=results" : p), { waitUntil: "networkidle" }); await pg.waitForTimeout(400);
     if (process.argv[4] === "solve") { if (p.startsWith("index")) { await pg.click('.tile[data-l="V03"]'); await pg.click('.pick[data-p="p1"]'); await pg.click("#go"); } else if (p.startsWith("practice")) { await pg.click(".set >> nth=0").catch(() => {}); await pg.click("#start, #go").catch(() => {}); } await pg.waitForTimeout(1500); await pg.mouse.wheel(0, 600); }
     if (p === "teacher.html") { await pg.setInputFiles("#file", __dirname + "/solo.csv"); await pg.waitForTimeout(900); await pg.click('#tabs .chip[data-v="log"]').catch(() => {}); await pg.waitForTimeout(400); }
     const probe = async () => pg.evaluate(() => { const e = document.activeElement; if (!e || e === document.body) return null; const r = e.getBoundingClientRect(); if (!r.height) return null;

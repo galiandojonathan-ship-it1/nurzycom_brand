@@ -6,7 +6,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   const pg = await br.newPage({ viewport: vp }); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
   await pg.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.removeItem("name_alias"); });
   await pg.route(/docs\.google\.com/, (r) => r.abort());
-  await pg.goto("http://127.0.0.1:8767/teacher.html", { waitUntil: "networkidle" }); await pg.waitForTimeout(400);
+  await pg.goto("http://127.0.0.1:8767/cabinet.html?view=results", { waitUntil: "networkidle" }); await pg.waitForTimeout(400);
   await pg.setInputFiles("#file", __dirname + "/solo.csv"); await pg.waitForTimeout(1000);
   await pg.click('#tabs .chip[data-v="students"]'); await pg.waitForTimeout(400);
   await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForTimeout(500);

@@ -36,8 +36,8 @@ This file is public, like the whole repository. Never write passwords, the maste
 | `practice.html` | `practice.js` | Hard sets X01–X07 |
 | `mock.html` | `mock.js`, `scale.js`, `gloss.js`, `tools.js` | Practice tests PT1–PT19 and Прогнозы PR1–PR3 |
 | `useful.html` + `archaic.html`, `desmos.html`, `circle.html`, `mytest.html` | `archaic.js`, `desmos.js`, `circle.js`, `mytest.js`, `ctlogic.js` | «Полезное» (07.n pages) |
-| `teacher.html` | `teacher.js`, `formkit.js` | Teacher dashboard: Google Form CSV, group analysis, logins |
-| `cabinet.html` | `cabinet.js`, `cted.js`, `cblesson.js`, `ctlogic.js`, `formkit.js` | Teacher's cabinet: groups, tasks, «Мои тесты», «Уроки» (lesson-mode sessions) |
+| `cabinet.html` | `cabinet.js`, `teacher.js`, `teacher.css`, `cted.js`, `cblesson.js`, `ctlogic.js`, `formkit.js` | Teacher dashboard, groups and former students, assignments, tests, lesson sessions, Google Forms analytics and import, accounts and access |
+| `teacher.html` | `teacher_entry.js` | Legacy entry point for the teacher dashboard. Keeps section queries and account bookmarks |
 | every page | `auth.js`, `config.js`, `site.css` | Login, decryption, sync, shared styles |
 | question and text pages | `dict.js` | Dictionary on selection (Wiktionary, `data/dict.json` + `q/dict/`; rebuild: `tools/dict/`) |
 | every page, lesson account only | `lesson.js` (loaded by `auth.js` for login `lesson`), `lsmist.js` («Ошибки класса», loaded by `lesson.js`) |

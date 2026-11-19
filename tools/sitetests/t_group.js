@@ -5,7 +5,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   const pg = await br.newPage({ viewport: dev === "phone" ? { width: 390, height: 844 } : { width: 1280, height: 900 } }); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
   await pg.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); });
   await pg.route(/docs\.google\.com/, (r) => r.abort());
-  await pg.goto("http://127.0.0.1:8767/teacher.html", { waitUntil: "networkidle" }); await pg.waitForTimeout(500);
+  await pg.goto("http://127.0.0.1:8767/cabinet.html?view=results", { waitUntil: "networkidle" }); await pg.waitForTimeout(500);
   await pg.setInputFiles("#file", __dirname + "/group.csv"); await pg.waitForTimeout(1200);
   await pg.click('#tabs .chip[data-v="group"]'); await pg.waitForSelector("#ga-hard", { timeout: 20000 });
   const k = await pg.$$eval("#v-group .kpi", (a) => a.map((x) => x.innerText.replace(/\s+/g, " "))); console.log(k.join(" | "));
