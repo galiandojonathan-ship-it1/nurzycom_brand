@@ -10,6 +10,8 @@
 (function () {
   "use strict";
   if (window.DICT) return;
+  // The teacher tools contain names and account details alongside educational text.
+  const selectionScope = document.currentScript?.dataset.selectionScope;
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const POSN = { n: "сущ.", v: "глаг.", adj: "прил.", adv: "нареч.", phr: "выражение", pron: "местоим.", prep: "предлог", conj: "союз", det: "определитель" };
   let data = null, pop = null, timer = 0, lastKey = "";
@@ -92,12 +94,17 @@
     if (text.length < 2 || text.length > 48 || text.split(" ").length > 4 || !/[a-z]/i.test(text) || /[а-яё]/i.test(text)) return;
     const r = sel.getRangeAt(0), host = r.commonAncestorContainer.nodeType === 1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement;
     if (!host || host.closest("input,textarea,nav,header,footer,.ls-bar,.ls-pop,.ls-toast,.gpop,.lb-tools,.cr-tiles")) return;
+    if (selectionScope && !host.closest(selectionScope)) return;
     const key = text + "|" + Math.round(r.getBoundingClientRect().top); if (key === lastKey) return; lastKey = key;
     show(text, r.getBoundingClientRect());
   }
   document.addEventListener("selectionchange", () => { clearTimeout(timer); timer = setTimeout(onSelect, 280); });
   document.addEventListener("pointerdown", (e) => { if (pop && !pop.contains(e.target)) hide(); }, true);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pop && !pop.classList.contains("hidden")) hide(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !pop || pop.classList.contains("hidden")) return;
+    e.preventDefault();  // dismiss the dictionary before dismissing the surrounding review
+    hide();
+  });
   addEventListener("scroll", hide, { passive: true, capture: true });
   const css = `.dpop{z-index:70;max-width:min(380px,calc(100vw - 16px))}.dpop ol{margin:4px 0 6px;padding-left:18px}.dpop li{margin:2px 0;font-size:14px;line-height:1.4}
 .dpop-pos{display:block;margin-top:6px;font:500 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;opacity:.75}.dpop-src{display:block;margin-top:6px;font-size:11px;opacity:.65}`;
