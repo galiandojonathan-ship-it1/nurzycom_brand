@@ -90,6 +90,8 @@ New PDF imports save the text and coordinates alongside the images so the site d
 need a fresh import from a PDF with embedded text. In Math lessons, the Desmos button opens the SAT graphing calculator next to the slides.
 «Загрузить ZIP» imports PDFs named with their lesson code, such as `Math/M01_v4.pdf`. It checks both the built-in library and the uploaded
 catalog, then sends conditional uploads for missing lessons. The browser extracts the archive and uses the same encrypted flow as individual PDF uploads.
+PDF imports render the long edge at 2560 px, using WebP where the browser supports encoding. If the high-resolution deck exceeds
+the existing upload limit, the importer retries at 1600 px. Reimport the original PDF to upgrade a deck stored at the old resolution.
 
 For code edits, download the text as JSON from the lesson card, edit or reorder `slides`, and upload the result via «Заменить из JSON».
 The JSON renderer uses the site's slide template. PDF graphics and original formatting stay in the PDF. This example shows the source format.

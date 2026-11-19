@@ -127,7 +127,7 @@
   function deckFor(id) {
     const uploaded = C.uploaded.find((d) => d.id === id);
     if (!uploaded) return C.decks.find((d) => d.id === id);
-    return { ...uploaded, uploaded: true, fmt: "jpeg", title: C.lessons.find((l) => l.tag === id)?.title || id };
+    return { ...uploaded, uploaded: true, title: C.lessons.find((l) => l.tag === id)?.title || id };
   }
 
   const pdfModule = () => import("./vendor/pdfjs-4.10.38/pdf.min.mjs");
@@ -139,30 +139,46 @@
     try {
       const source = await pdf.promise;
       if (source.numPages < 1 || source.numPages > 120) throw new Error("Выберите PDF до 120 страниц.");
-      const canvas = document.createElement("canvas"), slides = [];
+      const canvas = document.createElement("canvas");
+      const format = canvas.toDataURL("image/webp").startsWith("data:image/webp;") ? "webp" : "jpeg";
+      const high = await renderPDFSlides(source, canvas, { edge: 2560, format, quality: 0.94 }, progress);
+      if (high) return high;
+      const compact = await renderPDFSlides(source, canvas, { edge: 1600, format, quality: 0.85 }, (status) => {
+        progress("Уменьшаю размер презентации. " + status);
+      });
+      if (compact) return compact;
+      throw new Error("Слайды слишком велики. Сожмите PDF или разбейте на несколько файлов.");
+    } finally {
+      await pdf.destroy().catch(() => {});
+    }
+  }
+
+  async function renderPDFSlides(source, canvas, { edge, format, quality }, progress) {
+    const slides = [];
+    let bytes = 2, w, h;
+    try {
       const encoder = new TextEncoder();
-      let bytes = 0, w, h;
       for (let i = 1; i <= source.numPages; i++) {
         progress(`Подготавливаю слайд ${i} из ${source.numPages}…`);
         const page = await source.getPage(i), size = page.getViewport({ scale: 1 });
-        const viewport = page.getViewport({ scale: 1600 / Math.max(size.width, size.height) });
+        const viewport = page.getViewport({ scale: edge / Math.max(size.width, size.height) });
         canvas.width = Math.max(1, Math.round(viewport.width));
         canvas.height = Math.max(1, Math.round(viewport.height));
         if (i === 1) { w = canvas.width; h = canvas.height; }
         await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-        const image = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+        const image = canvas.toDataURL("image/" + format, quality).split(",")[1];
         if (!image) throw new Error("Не удалось подготовить слайды.");
         const text = await page.getTextContent();
         const { width, height, scale, rotation, rawDims } = viewport;
-        const slide = { image, ...(text.items.some((item) => item.str.trim()) ? { text, viewport: { width, height, scale, rotation, rawDims } } : {}) };
+        const slide = { image, format, ...(text.items.some((item) => item.str.trim()) ? { text, viewport: { width, height, scale, rotation, rawDims } } : {}) };
         bytes += encoder.encode(JSON.stringify(slide)).length + 1;
-        if (bytes > 10000000) throw new Error("Слайды слишком велики. Сожмите PDF или разбейте на несколько файлов.");
-        slides.push(slide);
         page.cleanup();
+        if (bytes > 10000000) return null;
+        slides.push(slide);
       }
       return { slides, w, h };
     } finally {
-      await pdf.destroy().catch(() => {});
+      canvas.width = canvas.height = 1;
     }
   }
 
@@ -387,7 +403,8 @@
         const encoded = typeof entry === "string" ? entry : entry?.image;
         if (typeof encoded !== "string") throw new Error("slide missing");
         const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
-        return { url: URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" })), text: entry?.text, viewport: entry?.viewport };
+        const type = entry?.format === "webp" ? "image/webp" : "image/jpeg";
+        return { url: URL.createObjectURL(new Blob([bytes], { type })), text: entry?.text, viewport: entry?.viewport };
       });
     }
     if (!DK.slides[i]) DK.slides[i] = fetch(`${d.dir}/${i + 1}.bin`).then((r) => { if (!r.ok) throw new Error("slide " + r.status); return r.arrayBuffer(); })
