@@ -191,7 +191,7 @@
   let grading = false;
   async function grade() {
     if (grading) return;
-    const { lesson, part, answers } = state;
+    const { lesson, part } = state, answers = { ...state.answers };
     const qs = part.q;
     const blanks = qs.filter((q) => !answers[q.n]).map((q) => q.n);
     if (blanks.length && !confirm(`Без ответа: ${blanks.join(", ")}. Сдать всё равно?`)) return;
@@ -210,7 +210,7 @@
     const ansStr = qs.map((q) => `${q.n}:${answers[q.n] || "-"}`).join(" ");
     const res = { student: store("hw_student") || $("student").value.trim(), lesson: lesson.tag, part: `${part.id} · ${part.title}`,
       answers: ansStr, score: `${right}/${qs.length}`, wrong: wrong.join(","), seconds: String(seconds), attempt: String(attempt) };
-    complete(res, part);
+    complete(res, part, null, answers);
     grading = false;
   }
 
@@ -250,8 +250,8 @@
       } });
   }
 
-  function complete(result, part, review) {
-    const attempt = { id: crypto.randomUUID(), t: Date.now(), part: part.id, result, review,
+  function complete(result, part, review, paperAnswers) {
+    const attempt = { id: crypto.randomUUID(), t: Date.now(), part: part.id, result, review, paperAnswers,
       bundle: part.b, status: "pending" };
     const saved = saveAttempt(attempt);
     if (saved) {
@@ -283,18 +283,59 @@
     $("res-meter").style.width = `${(100 * a) / b}%`;
     $("res-time").textContent = `${Math.floor(seconds / 60)} мин ${seconds % 60} с`;
     $("res-att").textContent = r.attempt;
-    $("res-wrong").innerHTML = r.wrong ? r.wrong.split(",").map((n) => `<span>${esc(n)}</span>`).join("") : "<p>Нет. Всё верно.</p>";
+    renderMistakes(active, part);
     // on screen the main score counts first attempts; the second attempt is shown next to it
     $("res-2-box").classList.toggle("hidden", !(extra && extra.learn)); if (extra) $("res-2").textContent = extra.second;
     $("res-mode-box").classList.remove("hidden");
     $("res-mode").textContent = !extra ? "ответы из тетради" : extra.learn ? "на экране, 2 попытки" : "на экране, экзамен";
     $("res-wrong-h").textContent = extra && extra.learn ? "Не с первой попытки" : "Ошибки и пропуски";
-    $("review").classList.toggle("hidden", !extra);
+    $("review").classList.toggle("hidden", !active.bundle);
     const code = ["HW", r.lesson, r.part, r.student, r.score, r.wrong || "-", r.seconds + "s", "a" + r.attempt, r.answers].join(" | ");
     $("res-code").textContent = code;
     $("tg").href = `https://t.me/${CFG.telegram || "nurzycom"}`;
     $("copy").onclick = async () => { try { await navigator.clipboard.writeText(code); $("copy").textContent = "Скопировано"; } catch (e) { $("copy").textContent = "Выделите код вручную"; } };
     show("s-result");
+  }
+
+  function answersFromPaper(attempt) {
+    if (attempt.paperAnswers) return attempt.paperAnswers;
+    // Earlier saved paper attempts store the answers in the form submission format.
+    return Object.fromEntries(Array.from(attempt.result.answers.matchAll(/(?:^| )(\d+):(\S+)/g), ([, n, answer]) =>
+      [n, answer === "-" ? "" : answer]));
+  }
+
+  function renderMistakes(attempt, part) {
+    const missed = new Set(attempt.result.wrong.split(",").filter(Boolean));
+    const container = $("res-wrong");
+    container.replaceChildren();
+    if (!missed.size) {
+      const message = document.createElement("p");
+      message.textContent = "Нет. Всё верно.";
+      container.append(message);
+      return;
+    }
+    const list = document.createElement("ul");
+    const paper = attempt.review ? null : answersFromPaper(attempt);
+    for (const n of missed) {
+      const q = part.q.find((question) => String(question.n) === n);
+      const status = attempt.review?.state[q?.i];
+      const tries = status?.tries || (paper?.[n] ? [paper[n]] : []);
+      const row = document.createElement("li");
+      const detail = document.createElement("span");
+      detail.textContent = tries.length > 1 ? `Попытки: ${tries.join(" → ")}${status?.ok ? " · исправлено" : ""}` :
+        tries.length ? `Ваш ответ: ${tries[0]}` : "Пропуск";
+      if (attempt.bundle) {
+        const button = document.createElement("button");
+        button.className = "tlink";
+        button.type = "button";
+        button.textContent = `Вопрос ${n}`;
+        button.setAttribute("aria-label", `Разобрать вопрос ${n}`);
+        button.onclick = () => openReview(button, n);
+        row.append(button, detail);
+      } else row.append(`Вопрос ${n}`, detail);
+      list.append(row);
+    }
+    container.append(list);
   }
 
   function renderDelivery() {
@@ -363,17 +404,30 @@
     updateRecovery();
   });
 
-  $("review").onclick = async () => {
+  let reviewOpening = false;
+  async function openReview(opener, number) {
+    if (reviewOpening || !active) return;
     const attempt = active, { lesson, part } = state;
-    $("review").disabled = true;
+    reviewOpening = true;
+    $("review-msg").textContent = "Загружаю разбор…";
     try {
       const items = await loadItems({ b: attempt.bundle });
       if (attempt.id !== active?.id || $("s-result").classList.contains("hidden")) return;
-      HWSolve.open({ lesson, part, items, review: attempt.review.state, student: attempt.result.student,
-        sha, parseSpr, show, onClose: () => { show("s-result"); $("review").focus(); }, onFinish: () => {} });
-    } catch (e) { $("review-msg").textContent = SITE.failMsg("нажмите «Посмотреть разбор» ещё раз"); }
-    finally { $("review").disabled = false; }
-  };
+      let review = attempt.review?.state;
+      if (!review) {
+        const answers = answersFromPaper(attempt), missed = new Set(attempt.result.wrong.split(","));
+        review = Object.fromEntries(items.map((q) => [q.i, {
+          tries: answers[q.n] ? [answers[q.n]] : [], done: true, ok: !missed.has(String(q.n))
+        }]));
+      }
+      $("review-msg").textContent = "";
+      HWSolve.open({ lesson, part, items, review, reviewQuestion: number, student: attempt.result.student,
+        sha, parseSpr, show, onClose: () => { show("s-result"); opener.focus(); }, onFinish: () => {} });
+    } catch (e) {
+      if (attempt.id === active?.id) $("review-msg").textContent = SITE.failMsg("попробуйте открыть разбор ещё раз");
+    } finally { reviewOpening = false; }
+  }
+  $("review").onclick = () => openReview($("review"));
   $("back").onclick = () => { clearInterval(state.timer); show("s-start"); };
   $("submit").onclick = grade;
   function leaveResult() {
