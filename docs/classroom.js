@@ -16,7 +16,7 @@
   const time = (t) => new Date(t).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const initials = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase() + ".").join(" ");
   const store = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], lastUpload: null, uploading: false };
+  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], lastUpload: null, deckBusy: false };
 
   function sessions() {
     const out = [];
@@ -90,7 +90,8 @@
     const d = deckFor(l.tag);
     box.innerHTML = `<div class="cr-panel"><h3>${esc(l.title)}</h3><div class="cr-acts">
         ${d ? `<button type="button" class="main" data-deck="${esc(d.id)}">Открыть презентацию · ${d.n} ${pl(d.n, "слайд", "слайда", "слайдов")}</button>` : ""}
-        ${SITE.adminKey() ? `<button type="button" data-deck-upload${C.uploading ? " disabled" : ""}>${d ? "Заменить PDF" : "Загрузить PDF"}</button>` : '<a href="cabinet.html?view=accounts#reg">Настроить доступ к PDF</a>'}
+        ${SITE.adminKey() ? `<button type="button" data-deck-upload${C.deckBusy ? " disabled" : ""}>${d ? "Заменить PDF" : "Загрузить PDF"}</button>` : '<a href="cabinet.html?view=accounts#reg">Настроить доступ к PDF</a>'}
+        ${d?.uploaded && SITE.adminKey() ? `<button type="button" class="cr-remove" data-deck-delete="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Удалить презентацию</button>` : ""}
         ${l.parts.map((p) => `<a href="./?l=${encodeURIComponent(l.tag)}&p=${encodeURIComponent(p.id)}">${esc(p.title)}</a>`).join("")}
         <a href="vocab.html?l=${encodeURIComponent(l.tag)}">${C.course === "V" ? "Слова урока" : "Термины урока"}</a></div>
       ${!d && SITE.adminKey() ? '<p class="cr-note">Каждая страница PDF станет отдельным слайдом.</p>' : ""}</div>`;
@@ -116,11 +117,11 @@
   }
 
   async function uploadDeck(id, file) {
-    if (C.uploading) return;
+    if (C.deckBusy) return;
     const msg = $("cr-deck-msg");
     if (!/\.pdf$/i.test(file.name) || file.size > 20000000) { msg.textContent = "Выберите файл PDF до 20 МБ."; return; }
     if (deckFor(id) && !confirm(`Заменить презентацию урока ${id}?`)) return;
-    C.uploading = true;
+    C.deckBusy = true;
     panel();
     msg.textContent = "Открываю PDF…";
     let pdf;
@@ -163,9 +164,34 @@
       msg.textContent = known ? e.message : "Не удалось открыть или сохранить PDF. Проверьте файл и подключение.";
     } finally {
       if (pdf) await pdf.destroy().catch(() => {});
-      C.uploading = false;
-      tiles();
-      if (C.open === id) $("cr-panel").querySelector("[data-deck], [data-deck-upload]")?.focus({ preventScroll: true });
+      finishDeckChange(id);
+    }
+  }
+
+  function finishDeckChange(id) {
+    C.deckBusy = false;
+    tiles();
+    if (C.open === id) $("cr-panel").querySelector("[data-deck], [data-deck-upload]")?.focus({ preventScroll: true });
+  }
+
+  async function deleteDeck(id) {
+    if (C.deckBusy || !deckFor(id)?.uploaded || !confirm(`Удалить загруженную презентацию урока ${id}?`)) return;
+    C.deckBusy = true;
+    panel();
+    const msg = $("cr-deck-msg");
+    msg.textContent = "Удаляю презентацию…";
+    try {
+      const response = await SITE.api("admin/deck?id=" + encodeURIComponent(id), { method: "DELETE" });
+      if (response.status === 403) { msg.textContent = "Проверьте ключ администратора в кабинете преподавателя."; return; }
+      if (!response.ok) throw new Error("delete failed");
+      C.uploaded = C.uploaded.filter((d) => d.id !== id);
+      if (C.lastUpload?.id === id) C.lastUpload = null;
+      try { localStorage.removeItem("dk_pos_" + id); } catch (e) { /* storage blocked */ }
+      msg.textContent = `Презентация ${id} удалена. Можно загрузить другой PDF.`;
+    } catch (e) {
+      msg.textContent = "Не удалось удалить презентацию. Проверьте подключение и попробуйте ещё раз.";
+    } finally {
+      finishDeckChange(id);
     }
   }
 
@@ -243,7 +269,7 @@
 
   // ---------- events and start
   document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-deck],[data-deck-upload]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
+    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-deck],[data-deck-upload],[data-deck-delete]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
     if (b.dataset.start) LESSON.begin(b.dataset.start, true);
     else if (b.dataset.ask) LESSON.ask();
     else if (b.dataset.end) LESSON.end();
@@ -252,6 +278,7 @@
     else if (b.dataset.l) { C.open = C.open === b.dataset.l ? null : b.dataset.l; document.querySelectorAll(".cr-tile").forEach((x) => x.setAttribute("aria-expanded", String(x.dataset.l === C.open))); panel(); }
     else if (b.dataset.deck) openDeck(b.dataset.deck);
     else if (b.hasAttribute("data-deck-upload")) $("cr-deck-file").click();
+    else if (b.dataset.deckDelete) deleteDeck(b.dataset.deckDelete);
   });
   document.addEventListener("ls-change", now);
   window.addEventListener("DOMContentLoaded", () => {

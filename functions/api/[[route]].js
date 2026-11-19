@@ -160,13 +160,17 @@ export async function onRequest(context) {
       } while (cursor);
       return json({ decks });
     }
-    if (route === "admin/deck" && (m === "GET" || m === "PUT")) {
+    if (route === "admin/deck" && (m === "GET" || m === "PUT" || m === "DELETE")) {
       const id = url.searchParams.get("id");
       if (!deckId(id)) return fail(400, "invalid lesson");
       const key = "deck:" + id;
       if (m === "GET") {
         const data = await env.USERS.get(key);
         return data ? json({ data }) : fail(404, "presentation not found");
+      }
+      if (m === "DELETE") {
+        await env.USERS.delete(key);
+        return json({ ok: true });
       }
       const b = await body(request);
       if (!b || !okB64(b.data, 14000000) ||
