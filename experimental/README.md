@@ -68,6 +68,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 ## Key checks
 
+- 2026-11-20 · C10: 19 homework questions and two slide examples independently solved. Re-solved the revised SAT 1–2, Reading 10–11 and Exit 2 after tightening the evidence and its scope.
+
 - 2026-11-20 · C09: 19 homework questions and two slide examples solved independently from redacted text and diagram. Re-solved the revised homework questions after narrowing the wording of SAT 1 and 3, Reading 4 and Exit 2.
 
 20 November audit: C04–C08, C12 and K2 (118 scored items) independently solved from redacted copies before the course files were edited. The QA report records the wording and acceptance fixes. The keyed options stayed in the same positions.
@@ -156,7 +158,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] Lesson C08 "How a Report Persuades" (15 Nov, run 1): homework (8 words; 4 SAT Text Structure and Purpose; IELTS passage "A Report Built to Persuade" on Chadwick's 1842 report, about 860 words, grade 11.8, 22.3 words per sentence, with matching information (paragraph letters, any letter more than once), sentence completion and multiple choice; Speaking Part 2 for two full minutes; a Task 2 body paragraph of 90+ words; exit), deck `DECKS.C08`, office hours `OFFICE.C08`, check-in `K2` and its progress table. Blind re-solve: 30 of 30 plus both slide examples; afterwards one SAT text, one passage sentence, one K2 option and the K2 passage (now two sentences per paragraph, less word-matching) were reworded.
 - [x] QA pass (20 Nov): 118 scored items independently solved. C04–C08 passed reading size, grade and sentence checks. See the QA report for measurements, corrections and the limits of source and device verification.
 - [x] C09 · Inferences and diagram label completion (20 Nov): 692 words, grade 11.3, 23.1 words per sentence. Yes / No / Not Given, diagram labels, multiple choice. Homework, slides and office hours.
-- [ ] C10 · Command of Evidence (textual).
+- [x] C10 · Command of Evidence (textual), 20 Nov: 653 words, grade 12.6, 20.4 words per sentence. Matching headings, summary with a word box and multiple choice. Homework, slides and office hours.
 - [ ] C11 and K3 · Cross-Text Connections and Block C check-in.
 - [ ] C13 · Listening lecture.
 - [ ] C14 · Speaking.
@@ -168,6 +170,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 
 ## Loop log
 
+- 2026-11-20 · C10: compared medical claims with the results that would support them. Dates and structure of the historical comparison checked against the [James Lind Library](https://www.jameslindlibrary.org/semmelweis-i-1861/) and a [historical review](https://pmc.ncbi.nlm.nih.gov/articles/PMC3807776/).
+
 - 2026-11-20 · C09: lesson, deck and office hours added. Browser test checks an accessible SVG and typed diagram labels.
 
 - 2026-11-20: audited C04–C08, C12 and K2. Two blind solves recovered all 118 intended keys. Fixed ambiguities, source-word grading, a C12 recording-order problem, historical figures and mobile/keyboard issues. Reading measurements (words / Flesch–Kincaid grade / words per sentence): C04 987 / 12.2 / 25.3; C05 759 / 13.6 / 25.3; C06 814 / 11.6 / 23.3; C07 750 / 11.2 / 22.1; C08 721 / 12.0 / 23.3. Queued the remaining lessons and a final QA pass.
@@ -175,6 +179,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
 
 ## Calls after QA (to confirm with Nurassyl)
+
+- C10 uses the title “What Changed in the Ward”. The earlier “The Doctor Nobody Believed” overstated what the historical evidence supports.
 
 - C09 uses a fictional canal log and a teaching model of its gauge. The diagram is original and its labels use words from the article.
 

@@ -36,7 +36,7 @@ window.COURSE = {
       shared: "Structure and purpose", sat: "Text Structure and Purpose", ielts: "Reading: matching information · Task 2 paragraph", speak: "Part 2 · two full minutes", write: "One body paragraph" },
     { id: "C09", code: "INF", block: "C", status: "live", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
       shared: "Inference", sat: "Inferences", ielts: "Reading: diagram labels · Yes / No / Not Given", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
-    { id: "C10", code: "COET", block: "C", status: "planned", title: "The Doctor Nobody Believed", thread: "A claim needs support that others accept.",
+    { id: "C10", code: "COET", block: "C", status: "live", title: "What Changed in the Ward", thread: "A claim needs support that others accept.",
       shared: "Claim and support", sat: "Command of Evidence (textual)", ielts: "Writing Task 2: Task Response", speak: "Part 3 · point + example", write: "Support one claim" },
     { id: "C11", code: "CTC", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
       shared: "Two points of view", sat: "Cross-Text Connections", ielts: "Task 2: discuss both views", speak: "Part 3 · compare views", write: "Introduction for a two-view essay" },
@@ -1788,6 +1788,375 @@ window.LESSONS.C09 = {
   handoff: {
     text: 'You marked the gap between a claim and its evidence. Next, you will decide which evidence actually supports a claim.',
     next: 'C10'
+  }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C10 = {
+  id: 'C10',
+  title: 'What Changed in the Ward',
+  thread: 'A claim needs support that others accept.',
+  intro: 'C09 ограничил вывод тем, что было измерено. Теперь разберём, какой результат действительно усиливает гипотезу. История Земмельвейса показывает, почему наблюдать разницу и объяснить её — две разные задачи.',
+  words: [
+    {
+      w: 'hypothesis',
+      pos: 'n.',
+      ru: 'проверяемое предположение',
+      sat: 'The researchers tested the hypothesis with an independent comparison.',
+      ielts: 'The hypothesis predicted a fall after the change in routine.'
+    },
+    {
+      w: 'attribute',
+      pos: 'v.',
+      ru: 'приписывать причину',
+      sat: 'The report attributes the delay to a change in the timetable.',
+      ielts: 'A difference is not enough to attribute the outcome to one cause.'
+    },
+    {
+      w: 'intervention',
+      pos: 'n.',
+      ru: 'целенаправленное изменение, вмешательство',
+      sat: 'The team compared records from before and after the intervention.',
+      ielts: 'An intervention creates a chance to test a prediction.'
+    },
+    {
+      w: 'alternative',
+      pos: 'n.',
+      ru: 'другая возможность, альтернатива',
+      sat: 'The finding weakens one explanation without ruling out every alternative.',
+      ielts: 'A reader can ask which alternative the evidence makes less likely.'
+    },
+    {
+      w: 'observation',
+      pos: 'n.',
+      ru: 'наблюдение',
+      sat: 'The second observation was made after the route changed.',
+      ielts: 'An observation may establish a pattern before anyone knows the cause.'
+    },
+    {
+      w: 'consistent',
+      pos: 'adj.',
+      ru: 'согласующийся, последовательный',
+      sat: 'The pattern is consistent with the original explanation.',
+      ielts: 'Results from a second site were consistent with the first report.'
+    },
+    {
+      w: 'replicate',
+      pos: 'v.',
+      ru: 'воспроизвести результат',
+      sat: 'The committee asked a separate group to replicate the comparison.',
+      ielts: 'Other investigators can try to replicate the finding in a new setting.'
+    },
+    {
+      w: 'plausible',
+      pos: 'adj.',
+      ru: 'правдоподобный',
+      sat: 'Both explanations are plausible until the missing information is supplied.',
+      ielts: 'A plausible story still needs evidence that favours it over an alternative.'
+    }
+  ],
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Select evidence for a claim',
+      ru: 'Выбери находку, которая лучше всего проверяет утверждение. Ситуации и предполагаемые находки в этом блоке вымышлены.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'Two waiting rooms at a clinic use different ticket systems. A researcher claims that a sign telling patients where to take a ticket reduces missed turns, because newcomers otherwise walk straight to the seats.',
+          stem: 'Which finding, if true, would most directly support the claim?',
+          opts: [
+            'Patients liked the colour of the new sign.',
+            'The busiest room had the longest queue.',
+            'After the sign was added to the same room, fewer newcomers skipped the ticket and fewer missed their turn.',
+            'Some regular patients arrived before the rooms opened.'
+          ],
+          key: 2,
+          ru: 'C. Утверждение называет конкретный механизм: незнакомый с системой посетитель проходит мимо билетов. C показывает меньше пропущенных билетов и меньше пропущенных очередей после изменения. A измеряет отношение к виду таблички, B — очередь, D — время прихода.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A clinic manager argues that delays sending test results arose because staff entered the same address twice. She predicts that the delay will fall if the second entry is removed while other steps stay the same.',
+          stem: 'Which finding, if true, would most directly support the claim?',
+          opts: [
+            'After the second entry was removed, results went out sooner even though staffing and the other steps stayed the same.',
+            'The two forms used different text sizes.',
+            'Some patients preferred messages to letters.',
+            'The clinic processed more tests in winter than in summer.'
+          ],
+          key: 0,
+          ru: 'A. Меняется повторный ввод, а штат и остальные шаги сохраняются. B касается оформления, C — предпочтения, D — числа тестов. Ни один из них не проверяет предсказание о задержке.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A reviewer argues that a reduction in missed appointments came from a new reminder rather than from the new location of a health centre. Another centre kept its location and used the same reminder.',
+          stem: 'Which finding, if true, would most directly support the claim?',
+          opts: [
+            'Signs with the old address were removed from the first centre.',
+            'The first centre had more consultation rooms at its new location.',
+            'Many patients at both centres requested morning appointments.',
+            'Missed appointments also fell at the centre that introduced the reminder without moving.'
+          ],
+          key: 3,
+          ru: 'D. Второй центр даёт сопоставимый пример с напоминанием и прежним адресом. A и B относятся к переезду. C показывает предпочтение по времени, но не меняет оценку напоминания.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'In a fictional evaluation, a director concludes that a clear return label reduces lost specimen boxes. A reviewer notes that boxes with the new label were also handled by a more experienced team.',
+          stem: 'Which finding would most directly address the reviewer’s alternative explanation?',
+          opts: [
+            'Both teams received the same number of boxes.',
+            'Within the same team, boxes with the clear label were lost less often than boxes with the old label.',
+            'The experienced team said the boxes were easy to stack.',
+            'The department had ordered more labels than it needed.'
+          ],
+          key: 1,
+          ru: 'B. Внутри одной команды опыт не меняется, а вид этикетки меняется. A сравнивает объём работ, но оставляет разные команды. C и D не объясняют потери.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading',
+      title: 'Evidence for a change in practice',
+      ru: 'В каждом абзаце различай наблюдение, объяснение и то, что могло бы его проверить.',
+      lettered: true,
+      passageTitle: 'When One Ward Was Safer',
+      passage: [
+        'A striking difference between two groups can be the beginning of an explanation, but it rarely tells a complete story by itself. At the Vienna maternity hospital in the middle of the nineteenth century, one clinic had a much higher death rate than the other. For Ignaz Semmelweis, the physician who tried to account for the difference, the difficulty was finding evidence that would make one explanation more plausible than its rivals. The hospital was already collecting the records he needed to describe the problem. What it did not supply in advance was a simple instruction for how those records ought to be read.',
+        'The clinics served patients in the same institution, and admissions generally alternated between them according to the day. This arrangement gave the comparison a value that a comparison between unrelated hospitals would have lacked: the clinics shared a setting and drew patients from the same city. It did not make the groups identical. Some women tried to avoid the clinic with the worse reputation, and the two clinics followed different routines. The difference in mortality could therefore point to several causes, even though it was strong enough to make inaction difficult to justify.',
+        "A difference in work before patients arrived eventually became central to Semmelweis's hypothesis. In the first clinic, physicians and medical students examined patients, and their professional training included dissection. The second clinic was used to train midwives, whose duties did not include that work. Semmelweis came to suspect that material from the dissecting room could be carried on hands into the clinic. The explanation connected a routine specific to one group with a problem particularly severe there. It also suggested a change that could be made without trying to redesign the entire hospital.",
+        'In 1847 Semmelweis introduced a new requirement for hand cleaning in the first clinic. If material carried on hands was the important difference, mortality ought to fall after that intervention. The records subsequently showed a substantial reduction in mortality. A decline by itself does not identify its cause any more than the original difference did, since other conditions can change over time. What made this observation especially relevant was its connection to a prediction: an alteration aimed at the proposed route of transmission was followed by the change that the hypothesis predicted.',
+        'The first clinic did not suddenly become a setting in which each possible influence was controlled. Nor did an improvement tell observers precisely what had been transferred on hands. Semmelweis was writing before a widely accepted account of disease based on microorganisms was available, and accepting the practical result did not require accepting every detail of his explanation. The two claims had different strengths. The records provided a reason to take the new practice seriously, while the wider explanation still gave other investigators something to verify and, where necessary, revise.',
+        'The difficulty of persuading other people is sometimes told as a story in which a single clear result faced nothing but stubborn opposition. That reading leaves out a distinction essential to scientific argument. A person can acknowledge a pattern and still disagree about what caused it, just as a person can be slow to accept evidence for reasons that have little to do with its quality. A fair account has room for both possibilities, and it separates the question of how convincing an observation was from the question of why particular readers responded as they did.',
+        'Semmelweis eventually published an extended account in 1861, allowing others to inspect the comparisons and decide what they could support. Later investigators could ask whether a different team could replicate a result consistent with his more limited claim about hygiene, without assuming that every detail of the original explanation was correct. The example remains valuable because it shows what well chosen evidence can do: it can make an alternative less likely, change what a hospital should try next and leave open a question that a new comparison might answer.'
+      ],
+      items: [
+        {
+          group: {
+            title: 'Questions 1–5',
+            task: 'The passage has seven paragraphs, A–G. Choose the correct heading for paragraphs B–F from the list below.',
+            ru: 'Выбери главную мысль абзаца. Три заголовка лишние.',
+            headings: [
+              'A recorded change following a targeted test',
+              'Two claims with different levels of support',
+              'A dispute with more than one possible source',
+              'Why the two groups were comparable only to a point',
+              'A routine that suggested a testable explanation',
+              'New buildings as the main explanation',
+              'A result from a later independent replication',
+              'Why the two clinics stopped keeping records'
+            ]
+          },
+          kind: 'match',
+          stem: 'Paragraph B',
+          key: 3,
+          ru: 'iv. B объясняет, почему клиники удобно сравнить и почему сходство всё же неполное. i относится к изменению после вмешательства в D.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Paragraph C',
+          key: 4,
+          ru: 'v. Различие в работе до осмотра подсказало объяснение. i подошёл бы абзацу D, где проверка уже состоялась.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Paragraph D',
+          key: 0,
+          ru: 'i. Требование меняет один предполагаемый путь переноса, затем смертность падает. v описывает появление гипотезы раньше.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Paragraph E',
+          key: 1,
+          ru: 'ii. Автор разводит свидетельства в пользу практики и полное объяснение переноса. vi неверен: об изменении здания здесь нет сведений.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Paragraph F',
+          key: 2,
+          ru: 'iii. Сомнение в объяснении и отказ принять данные могут иметь разные причины. vii требует нового эксперимента, а F обсуждает реакцию на прежнее наблюдение.',
+          chk: 2
+        },
+        {
+          group: {
+            title: 'Questions 6–9',
+            task: 'Complete the summary using the list of words, A–H, below.',
+            ru: 'Подставь одно слово из списка. Смысл должен совпасть с абзацами C–E.',
+            labels: 'letters',
+            listTitle: 'List of words',
+            headings: [ 'training', 'instructions', 'drop', 'wards', 'explanation', 'hands', 'records', 'rise' ]
+          },
+          kind: 'match',
+          stem: 'Semmelweis suspected that material could travel from the dissecting room to the first clinic on people’s ______.',
+          key: 5,
+          ru: 'F, hands. В C материал переносится на руках. Rooms — это место, а не способ переноса.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'The new requirement led him to expect a ______ in mortality.',
+          key: 2,
+          ru: 'C, drop. В D предсказано снижение. Rise — противоположное движение.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'The hospital’s ______ showed that mortality subsequently declined.',
+          key: 6,
+          ru: 'G, records. Снижение видно в записях D. Instructions описывают требование, а не итог.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Agreement about the practice did not settle every part of the broader ______.',
+          key: 4,
+          ru: 'E, explanation. В E можно принять практический результат и всё же проверять механизм. Training — тема C.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What made the two clinics useful to compare?',
+          opts: [
+            'They were in the same institution and generally took patients on alternating days.',
+            'Their staff carried out the same work before examining patients.',
+            'They let all women choose a preferred clinic.',
+            'They treated exactly the same number of patients on every day.'
+          ],
+          key: 0,
+          ru: 'A. Абзац B называет общую больницу и чередование приёма. B противоречит C. C и D не установлены.',
+          group: {
+            title: 'Questions 10–13',
+            task: 'Choose the correct letter, A, B, C or D.',
+            ru: 'Следи за порядком. Различай ожидаемое объяснение и наблюдение.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Why is the reduction in mortality particularly relevant in paragraph D?',
+          opts: [
+            'It occurred before Semmelweis changed the routine.',
+            'It proved that all other conditions were constant.',
+            'It was the outcome predicted by the proposed explanation.',
+            'It showed that the two clinics had treated identical groups.'
+          ],
+          key: 2,
+          ru: 'C. Снижение совпало с предсказанным направлением после целевого изменения. A путает порядок. B и D претендуют на контроль, которого не было.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What distinction does the writer make in paragraph F?',
+          opts: [
+            'Between those who worked in the clinic and those who read the records.',
+            'Between a finding’s strength and the reasons people reacted as they did.',
+            'Between an experienced investigator and a reader without training.',
+            'Between records from one clinic and those from two clinics.'
+          ],
+          key: 1,
+          ru: 'B. F прямо разделяет убедительность данных и причины реакции. В A, C и D есть детали темы, но нет этого различия.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What does paragraph G suggest later investigators could attempt?',
+          opts: [
+            'Reconstruct the missing figures in the old hospital records.',
+            'Establish that every part of Semmelweis’s explanation was correct.',
+            'Replace the original comparison with an account of public reactions.',
+            'Test whether a separate group could obtain a similar result on hygiene.'
+          ],
+          key: 3,
+          ru: 'D. В G предлагают воспроизвести более узкий вывод другой командой. B лишён оговорки: детали можно пересмотреть. A и C не названы задачами.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 3',
+      title: 'Defend a claim with one example',
+      ru: 'Скажи, что именно подтверждает твой пример. Если возможна другая причина, назови её и покажи, какое наблюдение поможет различить варианты.',
+      prompts: [
+        'Why might people hesitate to change a familiar routine even when new evidence is available?',
+        'What would make a trial of a new routine convincing to you?'
+      ],
+      prep: 30,
+      talk: 90,
+      pron: {
+        title: 'Stress the contrast in your evidence',
+        ru: 'Выдели то, что изменили, и то, что оставили прежним. После первой части сделай короткую паузу.',
+        items: [ 'the SAME team', 'a DIFFERENT label', 'the proposed CAUSE', 'the ALternative' ]
+      },
+      model: 'People may hesitate because a useful intervention has costs as well as benefits. Suppose a clinic tests a different system for sending results. A manager might attribute a faster reply to the system, whereas the staff might point to a quieter week. A comparison at the same clinic during weeks with similar workloads would make one account more plausible. I would also want another team to replicate the result before changing how all the clinics work.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Writing micro-task',
+      title: 'Support one claim',
+      ru: 'Напиши абзац в поддержку позиции. Приведи один конкретный пример, затем поясни, чем он подтверждает мысль.',
+      prompts: [
+        'Public services should test a proposed change on a small scale before adopting it everywhere. Write one body paragraph supporting this view.'
+      ],
+      minWords: 90,
+      checklist: [
+        'Я объяснил(а), что именно помогает проверить пробное изменение.',
+        'Пример показывает наблюдение, а не только обещание пользы.',
+        'Я связал(а) результат примера со своей позицией.'
+      ],
+      model: [
+        'A small trial allows a public service to test a hypothesis while correcting mistakes that would be more expensive to fix later. A clinic introducing clearer appointment notices, for instance, could keep its usual hours and use the new notice in one part of the building. If visitors find the correct rooms more quickly, the result is consistent with the idea that the old notice was confusing. The team should still ask whether another site can replicate the result. The initial observation gives the clinic a reason to continue the trial, and a comparison across sites makes the wider decision more defensible.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Choose the relevant test',
+      ru: 'Проверь, какое свидетельство поддерживает утверждение и где кончается вывод.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'A clinic wants to test whether larger room numbers help first-time visitors find their appointment room.',
+          stem: 'Which result would most directly support the claim?',
+          opts: [
+            'Older visitors disliked the colour of the wall.',
+            'With the larger numbers visible, each room became more expensive to clean.',
+            'First-time visitors asked for directions less often when the only change was larger room numbers.',
+            'Staff knew the room numbers before the new signs went up.'
+          ],
+          key: 2,
+          ru: 'C. Новый размер — единственное изменение, а просьбы указать дорогу относятся к цели. A, B и D не измеряют, как ориентируются новые посетители.',
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          text: 'A trial tested a new notice in one clinic. The researchers did not carry out a trial at any other clinic.',
+          stem: 'The same researchers repeated the trial at another clinic.',
+          key: 'F',
+          ru: 'FALSE. Только одна клиника участвовала в проверке. Результат мог бы повториться, но утверждение говорит, что вторая проверка уже была.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'The evidence helped readers decide how much of a claim to accept. Next, two writers look at the same standard and reach different judgments.',
+    next: 'C11'
   }
 };
 

@@ -33,7 +33,7 @@ window.CADENCE = {
   ],
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
-    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences",
+    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences", COET: "Command of Evidence (textual)",
     "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
   }
 };
@@ -367,6 +367,87 @@ window.DECKS = {
     ]
   },
 
+  C10: {
+    rules: [
+      [ 'Name the precise claim.', 'Look for what changes and for the outcome the writer expects.' ],
+      [ 'Predict a useful observation.', 'Choose a comparison that isolates the relevant difference.' ],
+      [ 'Test the competing account.', 'Ask whether the finding would fit both explanations equally well.' ]
+    ],
+    mistake: 'Choosing a true detail that never tests the claim.',
+    story: [
+      [
+        'Two clinics',
+        'The clinics in Vienna shared an institution, but their staff followed different routines.'
+      ],
+      [
+        'A practical test',
+        'Semmelweis changed a routine in the first clinic and compared the records before and afterwards.'
+      ],
+      [
+        'What survives scrutiny',
+        'A change in the predicted direction supported a practical decision. Other investigators could still test the wider explanation.'
+      ]
+    ],
+    bridge: [
+      'From evidence to a paragraph',
+      'A Task 2 example earns its place when the next sentence can explain why it supports the point.'
+    ],
+    ex: [
+      {
+        exam: 'SAT',
+        label: 'Command of Evidence',
+        text: 'A supervisor claims that a second practice run improves the accuracy of staff entering room numbers.',
+        stem: 'Which finding, if true, would most directly support the claim?',
+        opts: [
+          'The practice manual had a blue cover.',
+          'Staff who did the extra run entered more correct room numbers in the same test.',
+          'The test included four kinds of patient record.',
+          'Most staff had already worked at the clinic.'
+        ],
+        key: 1,
+        steps: [
+          'Claim: an extra run improves accuracy.',
+          'Look for an outcome that measures correct entries.',
+          'Choose a comparison on the same test.'
+        ],
+        check: 'Is the evidence about the outcome named in the claim?',
+        why: [
+          'Cover colour is irrelevant.',
+          'Correct: the comparison measures accuracy.',
+          'A fact about the test, with no result.',
+          'Experience alone provides no comparison.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Task 2 support',
+        text: 'Point: practising on a small scale can reveal problems before a change reaches many users.',
+        stem: 'Which example most directly supports the point?',
+        opts: [
+          'A clinic tested signs at one entrance and discovered that a door hid a sign when it opened.',
+          'A clinic bought signs from a company that was founded decades ago.',
+          'One visitor liked the lettering on the old sign.',
+          'A manager wants to paint every entrance the same colour.'
+        ],
+        key: 0,
+        steps: [
+          'Look for a trial, a problem and a link between the two.',
+          'The entrance test reveals an obstruction.',
+          'The signage can be fixed before being installed elsewhere.'
+        ],
+        check: 'Explain the link in a separate sentence.',
+        why: [
+          'Correct: the trial uncovered a fixable problem.',
+          'No trial or discovery.',
+          'Preference alone cannot support the point.',
+          'A plan provides no result.'
+        ],
+        chk: 2
+      }
+    ]
+  },
+
   C12: {
     rules: [
       ["Before the audio, decide the answer type.", "A place, a direction, a number or a time. The words around the gap tell you which."],
@@ -464,6 +545,29 @@ window.OFFICE = {
       'How could a council find out why some people never reach its visitor centre?',
       'When is an incomplete record still good enough to use?',
       'Describe a situation in which a large survey could miss an important group.'
+    ]
+  },
+
+  C10: {
+    focus: 'Сформулируй проверяемую часть утверждения. Для выбранного и верного ответа скажи, какой результат они измеряют и какой другой причине оставляют место.',
+    peer: {
+      task: 'Support the view that public services should test a change before adopting it everywhere.',
+      sample: 'A trial is a good idea. One clinic tried new signs and had twelve windows. It was a trial. Therefore all clinics should buy these signs.',
+      issues: [
+        [
+          'TR',
+          'Количество окон ничего не показывает о том, что удалось узнать из проверки. Добавь наблюдение, которое изменило решение.'
+        ],
+        [
+          'CC',
+          'Therefore соединяет описание с выводом о всех учреждениях. Этот вывод требует отдельного аргумента.'
+        ]
+      ]
+    },
+    live: [
+      'What evidence would help you decide whether a sign is easy to follow?',
+      'When might a single successful trial justify a limited change?',
+      'Why do people sometimes disagree about the cause of a result they both accept?'
     ]
   },
 

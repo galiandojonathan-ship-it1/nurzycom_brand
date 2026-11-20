@@ -2,7 +2,7 @@ const SHOTS = process.env.SHOTS || require('os').tmpdir();
 const { chromium } = require('playwright');
 const { answerAll } = require('./answer_all.js');
 const base = 'http://127.0.0.1:8791/';
-const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C12'];
+const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C12'];
 (async () => {
   const b = await chromium.launch(); let fails = 0; const bad = m => { fails++; console.log('FAIL', m); };
   const keyLabels = async (p, id) => p.evaluate(id => { const o = []; window.LESSONS[id].parts.forEach(pt => { if (pt.type === 'questions') pt.items.forEach(q => o.push(q.kind === 'tfng' ? ({ T: 'TRUE', F: 'FALSE', NG: 'NOT GIVEN' })[q.key] : q.opts[q.key])); }); return o; }, id);
