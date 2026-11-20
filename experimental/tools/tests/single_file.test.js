@@ -19,6 +19,13 @@ const { chromium } = require('playwright');
       console.log(vp.width, id, sc, row.join(' '));
     }
     await p.evaluate(() => document.querySelectorAll('.fold-body').forEach(x => x.hidden = false)); await p.locator('#checkins a', { hasText: 'Пройти' }).first().click(); if (!(await p.locator('.q').count())) bad('D0');
+    await p.evaluate(() => window.__go('lesson:C16', 'listen'));
+    if (!(await p.locator('#listen').isVisible())) bad('direct link into Listening');
+    await p.locator('.steps a[data-step="result"]').click();
+    await p.locator('.handoff a[href="lesson.html?id=KF"]').click();
+    if (await p.locator('.q').count() !== 16) bad('KF navigation');
+    await p.reload();
+    if (await p.locator('.q').count() !== 16) bad('KF route survives reload');
     await p.evaluate(() => window.__go('en')); if (!(await p.locator('h1').textContent()).includes('Scores')) bad('en');
     await p.locator('.lang').click(); if (!(await p.locator('h1').textContent()).includes('Баллы')) bad('ru');
     await p.locator('a', { hasText: 'Демо курса' }).first().click(); if (!(await p.locator('#cad-steps li').count())) bad('course cad');

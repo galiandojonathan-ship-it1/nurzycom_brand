@@ -291,7 +291,13 @@
     var recBtn = el("button", { class: "btn ghost", type: "button", text: "● Записать ответ" });
     var player = el("audio", { controls: "", hidden: "", "aria-label": "Запись ответа" });
     var download = p.sections ? el("a", { class: "btn ghost", hidden: "", text: "Скачать запись" }) : null;
-    var tick = null, rec = null;
+    var tick = null, rec = null, disposed = false;
+    document.addEventListener("nz-page-leave", function () {
+      disposed = true;
+      clearInterval(tick);
+      stopRec();
+      if (player.src) URL.revokeObjectURL(player.src);
+    });
     function fmt(s) { return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
     function run(sec0, label, next) {
       var s = sec0; clearInterval(tick); status.textContent = label; time.textContent = fmt(s);
@@ -314,12 +320,14 @@
       recBtn.disabled = true;
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
         var release = function () { stream.getTracks().forEach(function (t) { t.stop(); }); };
+        if (disposed) { release(); return; }
         try {
           var chunks = [];
           var recording = rec = new MediaRecorder(stream);
           recording.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
           recording.onstop = function () {
             release();
+            if (disposed) return;
             recBtn.disabled = false;
             recBtn.textContent = "● Записать ещё раз";
             if (!chunks.length) {
@@ -456,6 +464,13 @@
     var label = (steps[i + 1] || [])[1];
     sec.appendChild(el("p", { class: "next-part" }, [el("button", { class: "btn", type: "button", text: "Дальше: " + label + " →", onclick: function () { show(nxt, true); } })]));
   });
-  show(state.cur || partIds[0], false);
+  function showLinkedPart(scroll) {
+    var linkedPart = location.hash.slice(1);
+    if (partIds.indexOf(linkedPart) < 0) return false;
+    show(linkedPart, scroll);
+    return true;
+  }
+  if (!window.__go) window.addEventListener("hashchange", function () { showLinkedPart(true); });
+  if (!showLinkedPart(false)) show(state.cur || partIds[0], false);
   renderResult();
 })();

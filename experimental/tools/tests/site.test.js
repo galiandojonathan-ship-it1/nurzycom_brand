@@ -16,6 +16,8 @@ const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11',
     for (const u of pages) {
       await p.goto(base + u, { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(120);
       const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad(`${name} ${u} overflow ${ov}`);
+      const navOverflow = await p.locator('.top .nav').evaluate(nav => nav.scrollWidth - nav.clientWidth);
+      if (navOverflow > 1) bad(`${name} ${u} clips header navigation by ${navOverflow}px`);
       const h1 = await p.locator('h1').count(); if (h1 < 1) bad(`${name} ${u} h1=${h1}`);
       if (u.includes('slides')) {
         const n = await p.locator('.slide').count(); if (n < 14) bad(`${u} slides ${n}`);
@@ -72,6 +74,8 @@ const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11',
       await p.goto(base + 'course/lesson.html?id=C16');
       await p.locator('.steps a[data-step="result"]').click();
       if (!(await p.locator('.handoff a[href="lesson.html?id=KF"]').isVisible())) bad('C16 final check hand-off');
+      await p.goto(base + 'course/lesson.html?id=C16#listen');
+      await p.locator('#listen').waitFor({ state: 'visible', timeout: 5000 });
       await p.goto(base + 'course/office.html?id=C05'); await p.screenshot({ path: require('path').join(SHOTS, 'office.png'), fullPage: true });
       await p.goto(base + 'course/index.html'); await p.waitForTimeout(200); await p.screenshot({ path: require('path').join(SHOTS, 'light_course.png'), fullPage: true }); await p.goto(base + 'course/progress.html'); await p.screenshot({ path: require('path').join(SHOTS, 'light_progress.png'), fullPage: true });
     }

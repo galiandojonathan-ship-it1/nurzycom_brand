@@ -42,21 +42,21 @@ Nurassyl Kunanbayev (brand NURZYCOM) is an online tutor from Kazakhstan. His stu
 - **Track 2, "IELTS after SAT":** an 8-lesson bridge for students who have already finished the SAT course.
 - **Proposal only:** a short IELTS fragment inside each of SAT lessons 1–10. The running SAT course is not changed until Nurassyl decides.
 
-**Status on 12 Nov 2026:** 8 of 16 lessons are live (C01–C07, C12), all with the 4-step cadence; C01's IELTS part is rebuilt at exam size (see `IELTS_SPEC.md`). Next: C02–C07 IELTS parts at exam size, C12 Listening question types, then C08–C11, C13–C16.
+**Status on 20 Nov 2026:** all 16 demo lessons and five checks are available. See `README.md` for current measurements, review decisions and device checks.
 
-## 5. The lesson anatomy (private)
+## 5. What learners open
 
-Every lesson lasts 70 minutes at most. Each lesson has these parts, in this order:
+The demo uses these parts according to the target skill:
 
 1. **Words:** 8 words. Each has a Russian translation and two original example sentences, one SAT-style and one IELTS-style.
 2. **SAT:** a 3-line rule card in Russian and 4 questions in the digital SAT format.
-3. **IELTS-style:** one original passage of 200–260 words and 6 questions (True / False / Not Given plus multiple choice).
+3. **IELTS-style:** an original Academic Reading passage with 13 questions when the lesson has a Reading part.
 4. **Speaking:** a timed prompt, an optional recording that stays on the device, a pronunciation focus and a model answer.
 5. **Writing micro-task:** a prompt, a minimum word count, a Russian self-check list and a model answer.
 6. **Exit check:** 2 questions, one per exam.
 7. **Result and hand-off:** the lesson score (never presented as an exam prediction) and the link to the next lesson.
 
-IELTS-only lessons replace the SAT part with a **Listening** part. Its script is read aloud by the browser's speech synthesis, and a transcript opens after answering.
+C12 and C13 focus on **Listening**. C14 focuses on Speaking and C15 on Writing. Its script is read aloud by the browser's speech synthesis, and a transcript opens after answering.
 
 ## 6. Rules that are never broken
 
@@ -76,14 +76,14 @@ IELTS-only lessons replace the SAT part with a **Listening** part. Its script is
 | Bridge for SAT graduates? | Yes, plus IELTS fragments inside the SAT course |
 | Pace | Does not matter |
 | Listening | IELTS-only, taught in class |
-| Speaking range | He takes students from band 5.0 to 7.0 and higher. The course suits strong students who lack exam knowledge. |
+| Speaking feedback | The demo supports practice recording and qualitative feedback on the public criteria. |
 | IELTS Writing as a separate offer | No |
 | Marking load | Claude's choice: one micro-task and one recording per student per week, two full essays per course |
 | Launch | After the December 2026 SAT results, as a demo first |
 
 **Still open:**
 - Keep or replace True / False / Not Given in C12 Listening (real IELTS Listening does not use it).
-- Whether the public site may show a target Speaking band. Verified Speaking is 7.0, so naming "7.0 and higher" is a credibility risk.
+- The minimum entry level and the feedback workload for speaking practice.
 - Prices, start date and minimum level.
 - A checked list of Academic Word List words and its terms of use.
 

@@ -68,7 +68,7 @@ The script reports words, paragraphs, sentence length, word length, Flesch Readi
 - Accents: British, Australian, New Zealand and North American.
 - **Scripts must sound spoken, not read:** short clauses, fillers (*well*, *right*, *so*), self-correction (*it's on the 14th, sorry, the 15th*), turn-taking, a little repetition. Written-style scripts are too dense and unrealistic.
 - **Distractors:** the first thing said is often corrected (*used to be*, *actually*, *instead*). Every Part 1 and Part 2 script has at least two such turns.
-- **True / False / Not Given is a Reading task, not a Listening one.** Lesson C12 currently uses it as attention practice; replace it with multiple choice or completion in the next build.
+- **True / False / Not Given is a Reading task, not a Listening one.** C12 uses a short form, a plan and multiple choice. C13 uses ten lecture notes and C16 uses ten items from a student discussion.
 - **Audio:** browser speech synthesis is a stopgap. For anything exam-like, record real voices.
 
 ## 3. Writing

@@ -81,7 +81,7 @@ window.DECKS = {
     ],
     mistake: "Choosing the option with the most punctuation because it looks academic.",
     story: [
-      ["Noon, everywhere", "Before the 1880s, most towns kept their own local time, set by the sun. Noon in one town came minutes before or after noon in the next."],
+      ["Noon, everywhere", "Before British railways adopted common time, towns kept local time based on the Sun. Noon in one town came minutes before or after noon in the next."],
       ["1884: one line for the world", "At a conference in Washington, D.C., delegates chose the meridian through Greenwich as the starting line for longitude."],
       ["Where one day becomes the next", "On the far side of the globe runs the International Date Line. A line decides what day it is; a punctuation mark decides where one sentence ends."]
     ],
@@ -1113,7 +1113,7 @@ window.LESSONS.D0 = {
           opts: ["record exactly", "reduce", "judge approximately", "doubt"], key: 2,
           ru: "Без приборов, на глаз: сила ветра оценивается приблизительно, judge approximately. «Record exactly» противоречит «rather than by using instruments». Reduce и doubt не подходят по смыслу." },
         { kind: "mcq", chk: 2, skill: "BND",
-          text: "The Beaufort scale runs from 0 ______ of 12 describes hurricane-force winds.",
+          text: "The standard Beaufort scale runs from 0 ______ of 12 describes hurricane-force winds.",
           stem: "Which choice completes the text so that it conforms to the conventions of Standard English?",
           opts: ["to 12, a force", "to 12 a force", "to 12; a force", "to 12: and a force"], key: 2,
           ru: "Две полные мысли: «The scale runs from 0 to 12» и «a force of 12 describes…». Их соединяет точка с запятой. Запятая одна — comma splice, без знака — run-on, двоеточие с and лишнее." },
@@ -1199,12 +1199,12 @@ window.LESSONS.K1 = {
           opts: ["it's", "their", "its", "its'"], key: 2,
           ru: "Each country — одна страна, значит its. It's = it is. Their — для множественного числа. Формы its' не существует." },
         { kind: "mcq", chk: 2, skill: "TRN",
-          text: "The Gregorian calendar corrected most of the Julian error. ______ it is not perfect: it still drifts by about one day every few thousand years.",
+          text: "The Gregorian calendar corrected most of the Julian error. ______ it is not perfect: its average year still differs slightly from the solar year.",
           stem: "Which choice completes the text with the most logical transition?",
           opts: ["Therefore,", "For instance,", "Even so,", "Likewise,"], key: 2,
           ru: "Исправил почти всё, и всё же не идеален: уступка, even so. Therefore — следствие, for instance — пример, likewise — сходство." },
         { kind: "mcq", chk: 2, skill: "TRN",
-          text: "Most countries made the change in a single step. Sweden, ______ tried a gradual plan from 1700, dropping leap days one at a time, but soon abandoned it.",
+          text: "Most countries made the change in a single step. Sweden, ______ attempted a gradual calendar change beginning in 1700, but later abandoned that plan.",
           stem: "Which choice completes the text with the most logical transition?",
           opts: ["consequently,", "by contrast,", "similarly,", "in other words,"], key: 1,
           ru: "Большинство сразу, Швеция постепенно: контраст, by contrast. Consequently — следствие, similarly — сходство, in other words — пересказ того же." }
@@ -1213,12 +1213,12 @@ window.LESSONS.K1 = {
       ru: "Прочитай текст. Отвечай только по тексту, а не по своим знаниям.",
       passageTitle: "Eleven Missing Days",
       passage: [
-        "When Britain changed its calendar in 1752, the start of the legal year also moved, from 25 March to 1 January. A popular story claims that crowds rioted, demanding “Give us our eleven days”.",
+        "The calendar reform took effect in Britain in 1752. In England, the legal year moved from a start on 25 March to one on 1 January, which Scotland had adopted earlier. A popular story claims that crowds rioted, demanding “Give us our eleven days”.",
         "Historians have found little evidence that such riots took place. The slogan does appear in a satirical painting by William Hogarth, which may have helped the story spread."
       ],
       items: [
-        { kind: "tfng", chk: 2, skill: "R-TFNG", stem: "After the change, the legal year in Britain began on 1 January.", key: "T",
-          ru: "TRUE. «The start of the legal year also moved, from 25 March to 1 January»." },
+        { kind: "tfng", chk: 2, skill: "R-TFNG", stem: "In England the legal year started on 1 January after the reform.", key: "T",
+          ru: "TRUE. Первый абзац говорит, что начало английского юридического года перенесли с 25 марта на 1 января. Шотландия перешла на эту дату раньше." },
         { kind: "tfng", chk: 2, skill: "R-TFNG", stem: "Historians have confirmed that large riots followed the change.", key: "F",
           ru: "FALSE. Историки нашли «little evidence», то есть подтверждения нет. Текст противоречит утверждению." },
         { kind: "tfng", chk: 2, skill: "R-TFNG", stem: "Hogarth was paid by the government for his painting.", key: "NG",
@@ -1238,10 +1238,10 @@ window.LESSONS.K2 = {
       ru: "Один вопрос на каждый текст. Выбери лучший вариант. Данные в вопросах 3–4 выдуманные.",
       items: [
         { kind: "mcq", chk: 2, skill: "RS",
-          text: "While researching a topic, a student has taken the following notes:\n• Gas street lamps were demonstrated on Pall Mall, London, in 1807.\n• Gas lighting soon spread to many other British towns.\n• Each gas lamp had to be lit by hand every evening.\n• Electric street lighting later replaced gas in most cities.",
+          text: "While researching a topic, a student has taken the following notes:\n• Gas street lamps were demonstrated on Pall Mall, London, in 1807.\n• Gas lighting soon spread to many other British towns.\n• Lamplighters lit early gas street lamps by hand.\n• Electric street lighting later replaced gas in most cities.",
           stem: "The student wants to emphasize a drawback of gas street lamps. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
-          opts: ["Gas street lamps were demonstrated on Pall Mall, London, in 1807.", "After its demonstration in London, gas lighting soon spread to many other British towns.", "A drawback of gas street lighting was that each lamp had to be lit by hand every evening.", "In most cities, electric street lighting later replaced gas."], key: 2,
-          ru: "Цель: drawback, то есть недостаток. Его показывает только C: каждый газовый фонарь приходилось каждый вечер зажигать вручную. A и B — история распространения. D говорит о замене, но не называет недостаток газа." },
+          opts: ["Gas street lamps were demonstrated on Pall Mall, London, in 1807.", "After its demonstration in London, gas lighting soon spread to many other British towns.", "One drawback of early gas lighting was the work of lighting the street lamps by hand.", "In most cities, electric street lighting later replaced gas."], key: 2,
+          ru: "Цель: drawback, то есть недостаток. Его показывает только C: ранние газовые фонари зажигали вручную. A и B — история распространения. D говорит о замене, но не называет недостаток газа." },
         { kind: "mcq", chk: 2, skill: "RS",
           text: "While researching a topic, a student has taken the following notes about Harbour Point, a fictional town:\n• In 2010, the town had 40 public benches.\n• In 2020, it had 65 public benches.\n• Most of the new benches were placed near the river.\n• A new park opened in 2015.",
           stem: "The student wants to present the overall change in the number of public benches. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
@@ -1284,7 +1284,7 @@ window.LESSONS.K2 = {
       passageTitle: "Lighting the Streets",
       passage: [
         "In 1807, gas lamps were demonstrated to the public on Pall Mall in London. Within a few decades, gas lighting had spread to many British towns, where it gradually replaced dimmer oil lamps.",
-        "Each gas lamp had to be lit and put out by hand. Towns therefore employed lamplighters, who walked the same routes at dusk and again at dawn, carrying long poles.",
+        "Early gas street lamps required someone to light them and put them out by hand. Towns therefore employed lamplighters, who walked the same routes at dusk and again at dawn, carrying long poles.",
         "Electric lighting, which could be switched on from one central point, later replaced most gas lamps. Some cities, however, still keep a small number of gas lamps for their historical character."
       ],
       items: [

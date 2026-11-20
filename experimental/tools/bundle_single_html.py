@@ -28,6 +28,7 @@ router = r'''(function(){
   var SCRIPT={course:1,lesson:1,slides:1,office:1,progress:1};
   var app=document.getElementById("app"), listeners=[], realAdd=document.addEventListener.bind(document);
   function go(r,scrollTo){
+    document.dispatchEvent(new Event("nz-page-leave"));
     listeners.forEach(function(l){document.removeEventListener(l[0],l[1],l[2]);}); listeners=[];
     if(window.speechSynthesis) try{window.speechSynthesis.cancel();}catch(e){}
     var parts=r.split(":"), page=parts[0], id=parts[1]||"";
@@ -41,7 +42,7 @@ router = r'''(function(){
   }
   window.__go=go;
   realAdd("click",function(e){
-    var a=e.target.closest&&e.target.closest("a[href]"); if(!a) return;
+    var a=e.target.closest&&e.target.closest("a[href]"); if(!a||a.hasAttribute("download")) return;
     var h=a.getAttribute("href"); if(/^(https?:|mailto:|tel:)/.test(h)) return;
     e.preventDefault();
     if(h.charAt(0)==="#"){ var n=document.getElementById(h.slice(1)); if(n){n.scrollIntoView({behavior:"smooth"}); if(h==="#main"){n.setAttribute("tabindex","-1");n.focus();}} else window.scrollTo(0,0); return; }
@@ -50,7 +51,7 @@ router = r'''(function(){
     go(page+(id?":"+id:""),u.hash.slice(1));
   });
   var start=(location.hash||"").slice(1);
-  go(/^(en|ru|course|progress|(lesson|slides|office):[A-Z]\d\d)$/.test(start)?start:"course");
+  go(/^(en|ru|course|progress|(?:lesson|slides|office):(?:C\d{2}|D0|K[1-3]|KF))$/.test(start)?start:"course");
 })();'''
 out = ('<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
        '<meta name="robots" content="noindex, nofollow">\n<title>NURZYCOM · experimental site</title>\n%s\n<style>\n%s\n</style>\n</head>\n<body>\n'

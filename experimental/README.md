@@ -68,6 +68,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 ## Key checks
 
+- 2026-11-20 · Final QA: independently re-solved edited C01–C03, D0, K1 and K2 items from redacted text. The new C03 Reading 12 key is “telegraph offices”.
+
 - 2026-11-20 · C16 and KF: 29 homework questions, two slide examples and 16 final-check items independently solved. Re-solved C16 SAT 4, Reading 12 and KF SAT 2 and 6 after editing wording and literal gap insertion.
 
 - 2026-11-20 · C15: three exit questions and two slide examples independently solved.
@@ -112,18 +114,18 @@ Third pass, 2026-11-11 (quality-check run): all 68 questions solved again with t
 ## Open `[FACT NEEDED]`
 
 1. Student result with official score and written consent (landing).
-2. Prices and start date of the combined course.
+2. Start date of the combined course.
 3. Minimum level for the combined course.
 4. Portrait and story text approved by Nurassyl.
-5. IELTS format details checked against ielts.org before anything is published.
+5. Phone playback, human listening recordings and pilot feedback before a public course launch.
 6. Academic Word List: membership of each word and terms of use. No word is labelled "AWL" until this is checked.
 
 ## Lesson data format (for the next build run)
 
 `window.LESSONS.Cnn = { id, title, thread, intro (RU), words: [8 × { w, pos, ru, sat, ielts }], parts: [...], handoff: { text, next } }`
 
-Parts, in order: `sat` (4 questions) → `ielts` (one passage of 200–260 words, 6 questions) → `speak` → `write` → `exit` (2 questions).
-IELTS-only lessons replace `sat` with a `listen` part: `{ type: "questions", id: "listen", audio: [sentences read by the browser], transcript: [...], items: [...] }`.
+Combined lessons use `sat` → `ielts` → `speak` → `write` → `exit`. Academic Reading parts use one full passage and 13 questions. C16 also includes Listening. C12–C15 are IELTS-only and use the parts that fit their focus. Check-ins have their own shorter blueprints.
+A lesson may include a `listen` part: `{ type: "questions", id: "listen", audio: [sentences read by the browser], transcript: [...], items: [...] }`.
 Question kinds: `mcq` (`opts`, `key` = index) and `tfng` (`key` = "T" | "F" | "NG"; add `yn: true` on each item for Yes / No / Not Given). Set a lesson's `status` to `"live"` in `COURSE.lessons` when it is complete.
 
 IELTS-only lessons may also set `wordsTitle`, `wordsRu` and `wordLabels: [a, b]`, and give each word `ex: [a, b]` instead of `sat` / `ielts` (see C12). The renderer shows "IELTS only" in the header when a lesson has no `sat` part, and reads `audio` one sentence per utterance (a single long utterance is cut off in some browsers). Keep `audio` and `transcript` word-for-word the same. Since 15 Nov a listening part may set `voices: { Name: { pitch, rate, lang } }`: audio lines written as `Name: text` are read with that speaker's settings (and a different browser voice where one exists), and the label is not read aloud; the transcript keeps the label once per turn. A plan-labelling group uses `places: n` (letters A…) and `plan` (trusted inline SVG, written in this repo only) with `planCaption`.
@@ -165,7 +167,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C06 IELTS part at exam size (15 Nov, run 1): 814 words, 7 paragraphs, 23.2 words per sentence, grade 11.6. "The Doctor Who Followed the Water". Types: matching headings (9 headings, paragraphs B–G), flow-chart completion (new `group.flow`), multiple choice. Flow chart chosen instead of table completion because C04 already covers tables. Blind re-solve: 13 of 13; flow-chart stems paraphrased and paragraph G now names the General Board of Health's committee (the parish inquiry largely accepted Snow) after its notes.
 - [x] C07 IELTS part at exam size (15 Nov, run 1): about 750 words by the script, 7 paragraphs, 22.6 words per sentence, grade 11.5. "More Than a Lamp", a discursive passage with a clear writer's position (Nightingale as statistician; her diagram as an argument to read critically). Types: Yes / No / Not Given (new: `kind: "tfng", yn: true`, keys stay T / F / NG, labels YES / NO / NOT GIVEN on every page), matching sentence endings (A–G), summary completion (ONE WORD ONLY). Blind re-solve: 13 of 13; two Yes / No / Not Given items and two endings rewritten afterwards because a second answer or word-matching was possible.
 - [x] C12 Listening rebuilt (15 Nov, run 1): two sections in one recording, about 500 words. Section 1 (assistant and student, form completion as a `group.table`, ONE WORD AND/OR A NUMBER, 4 items), Section 2 (guide's tour, plan labelling with an inline SVG plan, `group.places: 8` and `group.plan`, 4 items; then multiple choice, 2 items). Corrections: course (History → Geography), the letter of offer dropped, sports-hall building turned into a lecture theatre, bus stop moved, café closed. No True / False / Not Given. Exit question 2 now tests a time correction. Blind re-solve from the transcript: 12 of 12; the Block item lost its correction afterwards so that not every answer is corrected.
-- [x] Lesson C08 "How a Report Persuades" (15 Nov, run 1): homework (8 words; 4 SAT Text Structure and Purpose; IELTS passage "A Report Built to Persuade" on Chadwick's 1842 report, about 860 words, grade 11.8, 22.3 words per sentence, with matching information (paragraph letters, any letter more than once), sentence completion and multiple choice; Speaking Part 2 for two full minutes; a Task 2 body paragraph of 90+ words; exit), deck `DECKS.C08`, office hours `OFFICE.C08`, check-in `K2` and its progress table. Blind re-solve: 30 of 30 plus both slide examples; afterwards one SAT text, one passage sentence, one K2 option and the K2 passage (now two sentences per paragraph, less word-matching) were reworded.
+- [x] Lesson C08 "How a Report Persuades" (15 Nov, run 1): homework (8 words; 4 SAT Text Structure and Purpose; IELTS passage "A Report Built to Persuade" on Chadwick's 1842 report, 694 words, grade 11.9, 22.4 words per sentence in the original build (remeasured on 20 Nov before edits), with matching information (paragraph letters, any letter more than once), sentence completion and multiple choice; Speaking Part 2 for two full minutes; a Task 2 body paragraph of 90+ words; exit), deck `DECKS.C08`, office hours `OFFICE.C08`, check-in `K2` and its progress table. Blind re-solve: 30 of 30 plus both slide examples; afterwards one SAT text, one passage sentence, one K2 option and the K2 passage (now two sentences per paragraph, less word-matching) were reworded.
 - [x] QA pass (20 Nov): 118 scored items independently solved. C04–C08 passed reading size, grade and sentence checks. See the QA report for measurements, corrections and the limits of source and device verification.
 - [x] C09 · Inferences and diagram label completion (20 Nov): 692 words, grade 11.3, 23.1 words per sentence. Yes / No / Not Given, diagram labels, multiple choice. Homework, slides and office hours.
 - [x] C10 · Command of Evidence (textual), 20 Nov: 653 words, grade 12.6, 20.4 words per sentence. Matching headings, summary with a word box and multiple choice. Homework, slides and office hours.
@@ -174,11 +176,13 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C14 · Speaking (20 Nov): all three parts, local playback and download, Russian self-review, 3 exit items and 2 slide examples. Homework, slides and office hours.
 - [x] C15 · Writing assembly (20 Nov): complete Task 2 discussion, 282-word original model, all four public criteria, three exit items and two worked examples. Homework, slides and office hours.
 - [x] C16 and KF (20 Nov) · Mixed review and final check. C16 Reading: 691 words, grade 12.7, 25.6 words per sentence. C16: 29 scored items across SAT, Reading, a ten-question Listening Part 3 dialogue and exit. KF: 16 scored items across SAT, Reading and Listening.
-- [ ] QA · Recheck new keys, sources, measurements, course navigation and the three browser suites.
+- [x] QA (20 Nov) · Rechecked revised keys, dates and figures, all 12 Reading passages, mobile and keyboard paths, and the three browser suites. See End-of-course QA for measurements and the verification limits.
 
-**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Diagram label completion (C09), using an original SVG and typed labels. Listening notes: C13 and KF. C16 adds matching actions to speakers in a Part 3 discussion. C12 uses forms, plans and multiple choice.
+**Type coverage across the demo.** Reading includes matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Diagram label completion (C09), using an original SVG and typed labels. Listening notes: C13 and KF. C16 adds matching actions to speakers in a Part 3 discussion. C12 uses forms, plans and multiple choice.
 
 ## Loop log
+
+- 2026-11-20 · Final QA: ran all three browser suites, tested contrast and accessible names at 320 and 360 px, remeasured all Reading passages and documented source corrections. The full demo contains 16 lessons and five checks.
 
 - 2026-11-20 · C16 and KF: closed the course thread with a guide trial, a different Listening discussion, a personal review and an original mixed final check. Added a link from C16 and a skill comparison in Progress.
 
@@ -199,6 +203,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
 
 ## Calls after QA (to confirm with Nurassyl)
+
+- Confirm the minimum entry level, launch and bridge plan, and feedback workload. Pilot the short checks before relying on individual skill comparisons. Confirm availability of original human Listening recordings and phone playback.
 
 - KF is a short final check across exam tasks. It reports the sampled skills and gives no converted score. Speaking and Writing remain separate qualitative assessments in C14–C16.
 
@@ -251,7 +257,7 @@ Quality-check run, no new lessons. Only files inside `experimental/` were change
 
 **3. Originality and rules.** No copied or reworded exam material found. Teacher facts are correct on every page (SAT 1560 = RW 760 + Math 800; IELTS 8.0 overall, 28 Feb 2025, L 8, R 8.5, W 8, S 7). No prices, testimonials, student names or promised scores. Every page has `noindex`; the Russian pages now show the words "Experimental draft" too. Changed:
 - Course page: "Десяти минут в уроке мало" and "5-minute IELTS fragment" were timings inside a lesson and are now worded without minutes. The sentence about IELTS fragments in the SAT course now says they are proposed, not already there.
-- Kept: "70 minutes" as the lesson length (it is in CLAUDE.md as a set fact). Say if it should go too.
+- The lesson duration was removed from the public copy in the 20 November QA.
 - C12: real IELTS Listening has no True / False / Not Given task. The lesson now says so in its instruction. **Decision for Nurassyl:** keep questions 4–6 as attention training, or turn them into multiple choice.
 
 **4. Lacing.** Every lesson word now appears in that lesson's texts or model answers. Added: "reliable" and "scale" to the C01 passage, "approximate" to the C01 speaking model, "compensate" and "precise" to the C04 passage, "likewise" to the C04 speaking model. C04's intro now picks up the thread from C03. Hand-off buttons that lead to a lesson not built yet say "(в плане)".
@@ -267,10 +273,10 @@ Quality-check run, no new lessons. Only files inside `experimental/` were change
 
 **Remaining `[FACT NEEDED]`** (unchanged, all waiting on Nurassyl):
 1. Student result with official score and written consent (landing).
-2. Prices and start date of the combined course.
+2. Start date of the combined course.
 3. Minimum level for the combined course.
 4. Portrait and story text approved by Nurassyl.
-5. IELTS format details checked against ielts.org before anything is published.
+5. Phone playback, human listening recordings and pilot feedback before a public course launch.
 6. Academic Word List: membership of each word and terms of use.
 
 **Still not done:** nobody has listened to C12 with a real browser voice (this server has none).
@@ -294,6 +300,18 @@ Two blind solves of C04–C08, C12 and K2 recovered the intended answers for all
 | Code and accessibility | 3/5 | At 320 px, the Russian landing page overflowed by 2 px. C05 SAT example overflowed its slide by 3 px at 1280 px. Enter on a gap answer moved keyboard focus to the document body. The heading wraps, the example is shorter and the answer stays focusable and read-only. Lesson tables can be scrolled with the keyboard. |
 | Product | 3/5 | C12 Listening practice needs an audible English voice, which the test Chromium did not provide. Teacher feedback is a student-shared summary; the app measures first attempts but has no cohort item evidence for calibrating distractors. A worked check-in reports skill shares without predicting a band. |
 
+The second solve found no changed best-option index in the initial 118. It identified these wording and acceptance issues:
+
+| Item | Issue found during the audit |
+|---|---|
+| C04 Exit 2 | Both A and B are plausible in the original stem. Success can motivate further trials, or the demand can be surprising. The revised stem asks for surprise. |
+| C05 Reading 7, 9, 10 | The original grader also accepted forms absent from the passage in 7 and 9. The valid short forms are `hearth tax` or `a hearth tax`, and `householder` or `each householder`. Question 10 originally combined a full short-answer question with a printed unit. The revised question accepts the duration as a number or a phrase. |
+| C06 Reading 8–10 | `water company` was not the source phrase. The old salt clue could also suggest `salt content`. Question 10 used “eight times higher”, which can express different ratios. The new cue asks for the substance and uses “as high as” for the ratio. |
+| C07 Reading 3, 6, 9 | In 3 the original paraphrase compared sanitation with nursing in general, while the writer compares it with what one nurse could do. In 6 the groups and “at least” were changed, giving a strict reader grounds for NOT GIVEN. In 9 “rather than tables” could imply the tables were absent. The revised wording preserves all three distinctions. |
+| C08 SAT 2 and Reading 8–9 | Front-loading evidence and placing recommendations last could coexist in SAT 2. The two placements are now clearly distinct. The demo accepts article and modifier variants in the typed Reading answers. In strict source-word calibration, prefer `gentry` and `engineers`. |
+| C12 Listening 3, 4, 9 | The form expects a single letter for 3, now stated. Both `photo` and `photograph` are spoken and fit 4. The statement answering 9 originally preceded answers 7 and 8. The audio cue and answer are now in order. |
+| K2 SAT 1 | The old C included a comparison with electric lamps unsupported by that item's notes. The revised C gives the manual work drawback directly. |
+
 Five priorities in order of impact:
 
 1. Protect the score from questionable judgments. Resolve double readings in C04 Exit 2 and C07 Reading 6, enforce source-word limits, and keep an item-by-item independent check for every new set.
@@ -304,4 +322,37 @@ Five priorities in order of impact:
 
 Sources for the corrected items and format: [Royal Museums Greenwich, Harrison's timekeepers](https://www.rmg.co.uk/stories/time/harrisons-clocks-longitude-problem), [ONS, story of the census](https://www.ons.gov.uk/visualisations/storyofthecensus/), [UCLA, Snow's Table IX](https://epi-snow.ph.ucla.edu/Stream3_GrandExperiment_d.html), [American Journal of Epidemiology, arithmetic correction](https://doi.org/10.1093/aje/kwh045), [Nightingale's diagram and supporting table](https://onepagepapers.com/nightingale-rose/read/), [National Army Museum, Scutari and the training school](https://www.nam.ac.uk/explore/florence-nightingale-lady-lamp), [Wellcome Collection, Chadwick's report](https://wellcomecollection.org/works/vgy8svyj), [UK Parliament, Public Health Act](https://www.parliament.uk/about/living-heritage/transformingsociety/towncountry/towns/tyne-and-wear-case-study/about-the-group/public-administration/the-1848-public-health-act/), [IELTS Reading format](https://www.ielts.org/take-a-test/test-types/ielts-academic-test/ielts-academic-format-reading), [IELTS Listening format](https://ielts.org/take-a-test/test-types/ielts-academic-test/ielts-academic-format-listening).
 
-The source review confirmed key dates and figures for the audited historical texts and documented the corrections above. The complete line-by-line source register for C01–C03, D0 and K1, the historical generalisations in the examples, and the AWL share remain open. The C12 transcript is fictional and was checked for internal consistency. The Reading measure has no passage to score for C12 or K2's abbreviated check-in.
+The source review confirmed key dates and figures for the audited historical texts and documented the corrections above. At this point, C01–C03, D0 and K1 still needed a source pass. See End-of-course QA for the next review. The C12 transcript is fictional and was checked for internal consistency. The Reading measure has no passage to score for C12 or K2's abbreviated check-in.
+
+## End-of-course QA, 20 November 2026
+
+The demo has 16 complete lesson packages and five checks. There are 326 scored items and 32 worked slide examples across the demo. This build added 129 scored items and 14 worked examples. The second solver received redacted copies and re-solved any item whose wording could change the answer. C03 Reading 12 now asks where people checked their watches. The new key comes from paragraph E: telegraph offices.
+
+| Reading lesson | Words | Approx. grade | Words per sentence |
+|---|---:|---:|---:|
+| C01 | 755 | 11.7 | 22.2 |
+| C02 | 754 | 11.7 | 21.5 |
+| C03 | 685 | 11.5 | 21.4 |
+| C04 | 987 | 12.2 | 25.3 |
+| C05 | 759 | 13.6 | 25.3 |
+| C06 | 814 | 11.6 | 23.3 |
+| C07 | 750 | 11.2 | 22.1 |
+| C08 | 721 | 12.0 | 23.3 |
+| C09 | 692 | 11.3 | 23.1 |
+| C10 | 653 | 12.6 | 20.4 |
+| C11 | 737 | 11.2 | 20.5 |
+| C16 | 691 | 12.7 | 25.6 |
+
+Each Reading lesson has 13 items and passes the measured length, grade and sentence checks. C12–C15 have no Academic Reading passage. Check-ins use short samples. C13 has 482 spoken words and 10 Listening items. C16 has 481 spoken words and 10 Listening items. KF has 165 spoken words and four Listening items. The C15 essay model has 282 words.
+
+The site, IELTS format and single-file browser suites returned `ALL OK`. The site suite covered 320, 360 and 1280 px. Axe checked WCAG 2.0 and 2.1 A/AA rules on 11 representative page and lesson states at 320 and 360 px after adjustments to contrast, logo links, slide navigation and space for the mobile header. The sample returned no automated violations. The retry links now open the reading or listening part directly, and the bundled page retains the final check on reload. Navigation in the bundle releases an active recording and the download stays local. Actual screen-reader use, phone speech synthesis, human recordings and classroom performance remain unverified.
+
+### Historical claims checked
+
+- C01 uses the 1863 opening, Beck's 1931 design and 1933 pocket edition, and New York's 1972 design. The trial's exact year is omitted because the museum accounts differ. MoMA credits Vignelli's colleagues. The TfL walking map and the route-choice study support the examples separately. [London Transport Museum, opening](https://library.ltmuseum.co.uk/portal/Default/en-GB/RecordView/Index/108), [Beck](https://library.ltmuseum.co.uk/portal/Default/en-GB/RecordView/Index/106), [MoMA](https://www.moma.org/collection/works/89300), [Guo](https://www.sciencedirect.com/science/article/pii/S0965856411000590), [TfL walking map](https://content.tfl.gov.uk/walking-tube-map.pdf).
+- C02 uses the 1883 railway change and 1918 U.S. law, the 1884 conference resolutions and vote, the 1911 French civil-time change, the dates skipped in Kiribati and Samoa, and the 2024 Kazakhstan move. The date-line claim now refers to the side of the line. [Library of Congress](https://guides.loc.gov/this-month-in-business-history/november/day-of-two-noons), [1884 proceedings](https://dev.gutenberg.org/cache/epub/17759/pg17759-images.html), [French law reported in Nature](https://www.nature.com/articles/086092b0), [U.S. State Department date-line bulletin](https://www.hiu.state.gov/cartographic_guidance_bulletins/31-International-Dateline-2012.pdf), [Kazakhstan government](https://www.gov.kz/org/mti/press/news/details/688998?lang=ru).
+- C03 keeps the 1840 Great Western decision, 1847 recommendation, 1848 uptake by railways, Greenwich signals from 1852 and the 1880 legislation. The signals provided a reference. The lesson no longer implies that every local clock was automatically adjusted. [British Journal for the History of Science](https://www.cambridge.org/core/journals/british-journal-for-the-history-of-science/article/tremoring-transits-railways-the-royal-observatory-and-the-capitalist-challenge-to-victorian-astronomical-science/3EA125839341F1C175D83538F3D9BA78), [Bristol clock and GWR](https://www.nationalhistoricships.org.uk/page/nhs/railway-200-week-royal-museums-greenwich).
+- C04–C08 corrections are in the first QA report. C05 cross-checked the Han count, Swedish reports, the first U.S. count, the use of Hollerith equipment, the 1897 Russian Empire census and Danish register figures. [CSO](https://www-cloud.cso.ie/en/census/censusthroughhistory/), [Statistics Sweden](https://www.scb.se/statistics-swedens-history/), [U.S. Census Bureau](https://www.census.gov/library/stories/2026/06/america-counts-250-years.html), [1890 Census](https://www.census.gov/programs-surveys/decennial-census/decade/1890/about-1890.html), [Presidential Library](https://www.prlib.ru/history/619019), [Statistics Denmark](https://www.dst.dk/da/Statistik/udgivelser/VisPub?cid=19590).
+- D0 uses the standard Beaufort scale and FitzRoy's 1854 appointment and 1861 warnings. K1 separates Britain's change of calendar from England's change in the start of the legal year. K2 discusses early gas lighting and confines the manual-lighting claim to that context. [Met Office, Beaufort scale](https://weather.metoffice.gov.uk/guides/coast-and-sea/beaufort-scale), [FitzRoy](https://www.metoffice.gov.uk/research/library-and-archive/archive-hidden-treasures/robert-fitzroy), [Calendar (New Style) Act](https://www.legislation.gov.uk/apgb/Geo2/24/23/contents), [National Records of Scotland](https://www.nrscotland.gov.uk/learning-and-events/research-guides/change-in-calendar-dates-in-the-old-parish-registers/), [London Museum, gas street lighting](https://www.londonmuseum.org.uk/collections/london-stories/gas-lamps-illuminated-london/), [Westminster lighting plan](https://www.westminster.gov.uk/sites/default/files/media/documents/2024%20Westminster%20Lighting%20Master%20Plan.pdf).
+
+The fact review addressed dates, counts and directly assessed claims. Some background historical generalisations still lack an individual citation. Academic Word List coverage and calibration against licensed exam passages were not measured. No class pilot was available to establish distractor performance or teaching workload.

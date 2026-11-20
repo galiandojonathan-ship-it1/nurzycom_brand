@@ -41,6 +41,15 @@ a:hover { text-decoration-color: var(--oxide); }
 .nav a:hover { text-decoration: underline; }
 .nav .lang { font: 400 12px/1 var(--mono); letter-spacing: .12em; border: 1px solid var(--ink); padding: 7px 9px; }
 @media (max-width: 760px) { .nav a.opt { display: none; } }
+@media (max-width: 420px) {
+  .top .wrap { padding-inline: 14px; gap: 10px; }
+  .logo { gap: 6px; letter-spacing: .1em; }
+  .logo svg { width: 30px; height: 30px; }
+  .nav { gap: 8px; font-size: 13px; }
+  html:has(.top.overview) { scroll-padding-top: 110px; }
+  .top.overview .wrap { flex-wrap: wrap; gap: 0; padding-block: 8px; }
+  .top.overview .nav { width: 100%; flex-wrap: wrap; row-gap: 0; }
+}
 
 /* type */
 h1, h2, .big { font-family: var(--serif); font-weight: 300; font-style: italic; letter-spacing: -.01em; line-height: 1.04; margin: 0; }
@@ -79,6 +88,7 @@ section.ink .label, section.ink .lead { color: var(--stone); }
 .g4 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .num { font: 300 italic clamp(44px, 6vw, 68px)/1 var(--serif); display: block; margin-bottom: 8px; }
 .ink .grid { background: #2a2a2a; border-color: #2a2a2a; }
+.ink .todo { color: var(--paper); }
 .ink .grid > * { background: var(--ink); }
 .small { font-size: 14.5px; color: var(--text2); }
 .ink .small { color: var(--stone); }
@@ -126,7 +136,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 640px; }
 th, td { border-bottom: 1px solid var(--stone); padding: 10px 12px; text-align: left; vertical-align: top; }
 th { font: 400 11px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text2); background: var(--mist); }
-td.D { font-weight: 600; } td.N { color: var(--graphite); }
+td.D { font-weight: 600; } td.N { color: var(--text2); }
 td.D::after { content: " ●"; color: var(--oxide); }
 
 /* ---------- lesson page ---------- */
@@ -256,13 +266,15 @@ audio { width: 100%; margin-top: 12px; }
 .sl-cad li b { color: var(--ink); font: 500 max(11px, 1.9cqw)/1.2 var(--sans); }
 .sl-cad li.now { border-top: 3px solid var(--oxide); }
 .sl-cad .hex { width: 4cqw; height: 4cqw; font-size: max(8px, 1.1cqw); margin: 0; }
-.sl-foot { position: absolute; left: 6cqw; bottom: 2.4cqw; font: 400 max(8px, 1cqw)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--graphite); }
+.sl-foot { position: absolute; left: 6cqw; bottom: 2.4cqw; font: 400 max(8px, 1cqw)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
+.slide.ink .sl-foot { color: var(--stone); }
 .stage:fullscreen { border: 0; background: var(--ink); display: grid; place-items: center; }
 .deck-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
 .deck-bar .label { margin: 0 6px; }
 .deck-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-.deck-dots button { width: 22px; height: 22px; border: 1px solid var(--stone); background: var(--paper); cursor: pointer; padding: 0; }
-.deck-dots button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); }
+.deck-dots button { position: relative; width: 24px; height: 24px; border: 0; background: none; cursor: pointer; padding: 0; }
+.deck-dots button::before { position: absolute; inset: 6px; content: ""; border: 1px solid var(--graphite); border-radius: 50%; }
+.deck-dots button[aria-selected="true"]::before { background: var(--ink); border-color: var(--ink); }
 @media (max-width: 620px) {
   .stage { aspect-ratio: auto; min-height: 0; }
   .slide { position: relative; inset: auto; padding: 22px 18px 40px; gap: 12px; }
@@ -308,7 +320,7 @@ td.up { color: var(--ok); font-weight: 600; } td.down { color: var(--oxide); fon
    Lighter layer (11 Nov 2026): more air, fewer lines, one thing at a time.
    ====================================================================== */
 body { font-size: 17.5px; line-height: 1.65; }
-.label { font-size: 11px; letter-spacing: .1em; color: var(--graphite); }
+.label { font-size: 11px; letter-spacing: .1em; }
 .draft { padding: 5px 12px; font-size: 10px; letter-spacing: .12em; background: var(--mist); color: var(--text2); }
 .top { background: color-mix(in srgb, var(--paper) 96%, transparent); border-bottom-color: transparent; box-shadow: 0 1px 0 rgba(15,15,15,.06); }
 .nav { gap: 22px; }
@@ -392,8 +404,7 @@ section.fold, .part.fold { padding-top: 28px; padding-bottom: 28px; }
 
 /* slides stay crisp */
 .stage { border-radius: 14px; border-color: var(--mist); box-shadow: 0 1px 2px rgba(15,15,15,.05), 0 10px 40px rgba(15,15,15,.06); }
-.deck-dots button { border-radius: 50%; width: 12px; height: 12px; border-color: var(--stone); }
-.deck-dots { gap: 8px; }
+.deck-dots { gap: 2px; }
 .summary { border-radius: 12px; }
 .crit fieldset { border: 0; background: #fff; box-shadow: 0 1px 2px rgba(15,15,15,.05); }
 .part select, .part input[type="text"], textarea { border-radius: 10px; border-color: var(--stone); }
