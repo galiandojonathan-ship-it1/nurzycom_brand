@@ -46,8 +46,8 @@ window.COURSE = {
       shared: "—", sat: "—", ielts: "Listening: lectures and signposting", speak: "Part 2 · retell the lecture", write: "Summary in three sentences" },
     { id: "C14", code: "SPK", block: "D", status: "live", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
       shared: "—", sat: "—", ielts: "Speaking: all three parts + pronunciation", speak: "Full recorded answer", write: "Self-review of the recording" },
-    { id: "C15", code: "WRT", block: "D", status: "planned", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
-      shared: "—", sat: "—", ielts: "Writing Task 2 from the bricks (inside the course only)", speak: "Part 3", write: "Timed essay" },
+    { id: "C15", code: "WRT", block: "D", status: "live", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
+      shared: "—", sat: "—", ielts: "Writing Task 2 from the bricks (inside the course only)", speak: "Part 3", write: "Full Task 2 essay" },
     { id: "C16", code: "MIX", block: "E", status: "planned", title: "Your Own Map", thread: "Draw the map of your errors. Decide what to leave out.",
       shared: "Mixed review", sat: "Mixed review + range", ielts: "Reading and Listening timing + range", speak: "Final recorded answer", write: "Personal error list" }
   ],
@@ -3217,5 +3217,194 @@ window.LESSONS.C14 = {
   handoff: {
     text: 'A listener needs a clear route through an answer. In the next lesson you will build that route on the page.',
     next: 'C15'
+  }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C15 = {
+  id: 'C15',
+  title: 'Building the Essay',
+  thread: 'Every brick from earlier lessons, in one piece.',
+  intro: 'В C14 слушателю помогали смысловые акценты и паузы. В эссе читателю помогают позиция, порядок и доказательства. Это задание IELTS Academic Writing Task 2 внутри демо-курса.',
+  wordsTitle: 'Eight words for a complete argument',
+  wordsRu: 'Проверь, какую работу каждое слово выполняет в аргументе.',
+  wordLabels: [ 'Argument', 'Revision' ],
+  words: [
+    {
+      w: 'stance',
+      pos: 'n.',
+      ru: 'позиция',
+      ex: [
+        'The opening makes the writer’s stance clear.',
+        'Keep the same stance when you reach the conclusion.'
+      ]
+    },
+    {
+      w: 'concede',
+      pos: 'v.',
+      ru: 'признавать часть довода',
+      ex: [
+        'The writer concedes that one rule may be costly to introduce.',
+        'Concede the point before explaining the limit.'
+      ]
+    },
+    {
+      w: 'qualify',
+      pos: 'v.',
+      ru: 'уточнять границы утверждения',
+      ex: [
+        'The writer qualifies the claim by describing an exception.',
+        'Qualify the rule so that it applies to new labels.'
+      ]
+    },
+    {
+      w: 'develop',
+      pos: 'v.',
+      ru: 'развивать мысль',
+      ex: [
+        'Develop the point with evidence about a transfer.',
+        'Develop a specific consequence in the second sentence.'
+      ]
+    },
+    {
+      w: 'coherent',
+      pos: 'adj.',
+      ru: 'связный, логически цельный',
+      ex: [
+        'A coherent essay keeps its order through the conclusion.',
+        'The paragraphs tell a coherent story about the same journey.'
+      ]
+    },
+    {
+      w: 'specific',
+      pos: 'adj.',
+      ru: 'конкретный',
+      ex: [
+        'A specific example shows why a passenger missed a connection.',
+        'Replace a broad claim with a specific reason.'
+      ]
+    },
+    {
+      w: 'consequence',
+      pos: 'n.',
+      ru: 'следствие',
+      ex: [
+        'A missed connection is a consequence of unclear information.',
+        'Explain the consequence before moving to a second argument.'
+      ]
+    },
+    {
+      w: 'weigh',
+      pos: 'v.',
+      ru: 'взвешивать, сопоставлять по значимости',
+      ex: [
+        'Weigh convenience against the need for local detail.',
+        'The conclusion explains how the writer weighs the two benefits.'
+      ]
+    }
+  ],
+  parts: [
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 3',
+      title: 'Weigh both views aloud',
+      ru: 'Выбери позицию, объясни её и признай сильный довод другой стороны. Отдельно сформулируй, при каком условии твой вывод изменился бы.',
+      prompts: [
+        'Should every transport provider present route information in the same way?',
+        'Which local details are most useful to someone making a connection?'
+      ],
+      prep: 30,
+      talk: 90,
+      pron: {
+        title: 'Give the concession its own thought group',
+        ru: 'Сделай паузу перед главным выводом. Выдели условие, которое ограничивает твою позицию.',
+        items: [
+          'I conCEDE that local detail matters.',
+          'HOWever | the basic layout can stay the same.',
+          'My main conCERN is the connection.',
+          'The rule should apply to ESsential information.'
+        ]
+      },
+      model: 'I would keep a common layout for the details every passenger needs. If the last departure always appears in the same place, it is easier to compare two services. I would qualify that idea by allowing room for local facts, such as which entrance a ferry passenger needs. The main test is whether a person can use the common layout during a short connection.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'IELTS Academic · Writing Task 2',
+      title: 'Write the complete two-view essay',
+      ru: 'Напиши полное эссе из 250 слов или больше. Обсуди обе позиции и вырази собственную. Можно сверить свой ответ с образцом и четырьмя критериями в office hours.',
+      prompts: [
+        'Some people believe that all public transport operators should use one format for route information. Others think each operator should be free to use its own format. Discuss both views and give your own opinion.'
+      ],
+      minWords: 250,
+      checklist: [
+        'Task Response: я рассмотрел(а) обе позиции и объяснил(а), как пришёл(ла) к своей.',
+        'Coherence and Cohesion: каждый абзац развивает одну главную мысль.',
+        'Lexical Resource: я назвал(а) конкретные детали и избегал(а) повтора общей формулировки.',
+        'Grammatical Range and Accuracy: я проверил(а) границы предложений, согласование и артикли.'
+      ],
+      model: [
+        'A passenger changing between services may have to read two very different kinds of route information in one journey. Some people want all operators to use a shared format, while others would let each operator design its own. I favour a common structure for the information needed on any journey, with room for operators to add details that are specific to their routes.',
+        'The case for uniformity is strongest at transfer points. A passenger looking for the last departure should be able to find that information in the same place on a bus timetable and on a ferry timetable. Otherwise, a short connection can become a search through unfamiliar headings. A shared structure would also make it easier to explain delays or cancellations in consistent terms. These benefits arise because passengers can reuse what they have learned about one service on another.',
+        'There is nevertheless a reason to give operators some freedom. A ferry may need to tell passengers where to queue when an entrance is closed, whereas a bus route may need to show where traffic regularly changes the stopping point. A layout designed for only one of these situations could conceal an important detail. I concede that local information deserves enough space to be useful, but this does not require every operator to move the basic information to a different position. A shared core and a clearly marked local section could serve both purposes.',
+        'On balance, I would weigh the consequence of making essential information difficult to find more heavily than the inconvenience of a common template. That stance leaves room for a coherent explanation of local conditions and gives passengers a predictable place to look when they switch services.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Check whether each paragraph earns its place',
+      ru: 'Определи, какое предложение выполняет названную работу в аргументе.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'The essay prompt asks for both positions on a standard timetable format and the writer’s own opinion.',
+          stem: 'Which opening meets both demands?',
+          opts: [
+            'People have many views about public transport.',
+            'A single layout can make comparisons easier, while local layouts can show details unique to a route. I favour a shared layout for essential information.',
+            'Transport companies have used paper timetables for many years.',
+            'I favour a shared layout because buses matter.'
+          ],
+          key: 1,
+          ru: 'B. Названы обе позиции и выбор автора. D называет мнение, но не объясняет вторую позицию. A и C слишком общие.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A writer claims that a common timetable format helps people transfer between services.',
+          stem: 'Which example develops that claim most directly?',
+          opts: [
+            'A ferry operator painted a terminal blue.',
+            'A bus company opened a new depot.',
+            'A passenger found the departure time of the last ferry more quickly because it used the same departure column as the connecting bus.',
+            'A train timetable was printed on thick paper.'
+          ],
+          key: 2,
+          ru: 'C. Пример показывает конкретное сокращение поиска при пересадке. Остальные детали относятся к транспорту, но не проверяют пользу общего формата.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A paragraph argues for a common layout for essential information and a reserved area for local details.',
+          stem: 'Which conclusion stays within that position?',
+          opts: [
+            'A shared layout should cover core information, with a clear space for details specific to each service.',
+            'Operators should remove all local information.',
+            'Every operator must design its own layout for every route.',
+            'All passengers should be required to use one transport company.'
+          ],
+          key: 0,
+          ru: 'A. Основная информация остаётся общей, а локальная сохраняется в выделенном месте. B и C меняют позицию. D переносит спор на число перевозчиков.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'You built a complete argument from a clear route through the evidence. Now map the skills you want to carry into independent practice.',
+    next: 'C16'
   }
 };

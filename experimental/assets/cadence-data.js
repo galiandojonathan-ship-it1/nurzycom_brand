@@ -34,7 +34,7 @@ window.CADENCE = {
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
     RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences", COET: "Command of Evidence (textual)", CTC: "Cross-Text Connections",
-    "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening", SPK: "IELTS Speaking: recognising clear delivery"
+    "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening", SPK: "IELTS Speaking: recognising clear delivery", WRT: "IELTS Writing: recognising claim and support"
   }
 };
 
@@ -709,6 +709,93 @@ window.DECKS = {
         chk: 2
       }
     ]
+  },
+
+  C15: {
+    rules: [
+      [ 'Answer every part of the prompt.', 'Give each view a fair reason before making your judgment.' ],
+      [
+        'Develop the point with a specific consequence.',
+        'Let an example show what changes for a real type of reader or passenger.'
+      ],
+      [
+        'Keep your stance coherent.',
+        'Make the conclusion apply the reasoning that the body has already established.'
+      ]
+    ],
+    mistake: 'Naming both views in the opening and developing only one of them.',
+    story: [
+      [
+        'The reader’s route',
+        'A reader benefits from an opening that identifies both positions and the choice the essay will defend.'
+      ],
+      [
+        'Two reasons given room',
+        'A shared format helps comparison. A local format can make unusual instructions more visible.'
+      ],
+      [
+        'A conclusion that weighs',
+        'Decide which benefit should guide the rule and which exception deserves room.'
+      ]
+    ],
+    bridge: [
+      'Check the job of each sentence',
+      'The same attention to purpose used in SAT helps a writer distinguish a claim, a reason and a specific example.'
+    ],
+    ex: [
+      {
+        exam: 'IELTS',
+        label: 'Writing · Task Response',
+        text: 'A writer says: “All operators should follow the same format. It is simpler.” The prompt also asks why operators might keep their own format.',
+        stem: 'Which revision actually addresses the missing view?',
+        opts: [
+          'Add that buses are common in cities.',
+          'Explain that some routes need unusually prominent information about where to board.',
+          'Repeat that a shared format is simpler.',
+          'Add a quotation about travel.'
+        ],
+        key: 1,
+        steps: [
+          'Find the view the draft omitted.',
+          'Look for a reason an operator would want flexibility.',
+          'Choose a concrete reason that can be developed.'
+        ],
+        check: 'The revision gives the second position a real purpose.',
+        why: [
+          'Unrelated background.',
+          'Correct: a local condition can justify a different emphasis.',
+          'Repeats the first position.',
+          'Does not supply a reason.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Writing · Coherence',
+        text: 'A paragraph argues that transfers are easier when the same kind of information occupies the same place on each timetable.',
+        stem: 'Which sentence most logically follows the point?',
+        opts: [
+          'Operators have different names.',
+          'Some passengers prefer a quiet service.',
+          'A transfer often uses two schedules, so a familiar layout can shorten the search for the next departure.',
+          'The city might build another bridge.'
+        ],
+        key: 2,
+        steps: [
+          'Identify the paragraph’s claim about transfers.',
+          'Look for why the layout matters in that moment.',
+          'Choose a consequence the layout can affect.'
+        ],
+        check: 'Both sentences should deal with the same task for the passenger.',
+        why: [
+          'Does not explain the effect.',
+          'Changes the topic to comfort.',
+          'Correct: explains how the search becomes easier.',
+          'Changes the topic to infrastructure.'
+        ],
+        chk: 2
+      }
+    ]
   }
 };
 
@@ -875,6 +962,33 @@ window.OFFICE = {
       'What is one direction you can give using only a landmark and a turn?',
       'How would you correct yourself if a listener started to follow the wrong route?',
       'What changes when you explain the same route to a first-time visitor?'
+    ]
+  },
+
+  C15: {
+    focus: 'В каждом абзаце обозначь позицию или довод, затем предложение, которое его развивает. Укажи, где вывод стал шире, чем аргументы.',
+    peer: {
+      task: 'Some people believe that all public transport operators should use one format for route information. Others think each operator should be free to use its own format. Discuss both views and give your own opinion.',
+      sample: 'Operators should all use a template. Transport is very important to people, and there are buses and ferries. Moreover the format, it can be useful. I think every company should do what it wants.',
+      issues: [
+        [
+          'TR',
+          'Вторая позиция появляется лишь в конце. Нужен довод в её пользу и устойчивое мнение автора.'
+        ],
+        [
+          'CC',
+          'Перечень видов транспорта не развивает тезис о формате. Свяжи пример с задачей пассажира.'
+        ],
+        [
+          'GRA',
+          '“Moreover the format, it can be useful” дублирует подлежащее. После вводного слова поставь запятую и назови подлежащее один раз.'
+        ]
+      ]
+    },
+    live: [
+      'When is uniform information more valuable than local flexibility?',
+      'What example would make a case for letting operators keep a local section?',
+      'How would you state a final position that respects both concerns?'
     ]
   }
 };

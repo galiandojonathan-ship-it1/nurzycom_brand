@@ -108,6 +108,17 @@ const base = 'http://127.0.0.1:8791/course/';
     await speak.getByRole('button', { name: 'Отметить все три части' }).click();
     await p.reload();
     if (!(await p.locator('.steps a[data-step="speak"]').getAttribute('class')).includes('done')) bad('C14 completion persistence');
+    await p.goto(base + 'lesson.html?id=C15');
+    await p.locator('.steps a[data-step="write"]').click();
+    const essay = p.locator('#write');
+    const model = await p.evaluate(() => window.LESSONS.C15.parts.find(part => part.id === 'write').model.join('\n\n'));
+    const reveal = essay.getByRole('button', { name: 'Показать образец' });
+    if (!(await reveal.isDisabled())) bad('C15 minimum length lock');
+    await essay.locator('textarea').fill(model);
+    await reveal.click();
+    if (await essay.locator('.exp p:visible').count() !== 4) bad('C15 four model paragraphs');
+    await p.reload();
+    if (await essay.locator('textarea').inputValue() !== model) bad('C15 draft persistence');
     const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C13');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }
