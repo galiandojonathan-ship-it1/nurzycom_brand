@@ -57,6 +57,17 @@ const base = 'http://127.0.0.1:8791/course/';
     if (!(await yq.locator('.opt.wrong').count())) bad('C07 YNNG strike');
     const lab = await p.evaluate(() => { const q = window.LESSONS.C07.parts.find(x => x.id === 'ielts').items[0]; return window.NZ.label(q, 'T') + '/' + window.NZ.keyLabel(q); });
     if (lab !== 'YES/NO') bad('C07 label() ' + lab);
+    // C09 diagram labels use source-word grading, with the diagram visible on mobile.
+    await p.goto(base + 'lesson.html?id=C09');
+    await p.locator('.steps a[data-step="ielts"]').click();
+    const diagram = p.locator('#ielts .plan svg');
+    if (!(await diagram.isVisible()) || !(await diagram.getAttribute('aria-label'))) bad('C09 accessible diagram');
+    const labels = p.locator('#ielts .qgroup .plan text');
+    if (await labels.count() !== 6) bad('C09 numbered diagram labels');
+    const label = p.locator('#ielts .gap-in').first();
+    await label.fill('a float');
+    await label.press('Enter');
+    if (!(await label.evaluate(el => el.readOnly && el === document.activeElement)) || !(await label.getAttribute('class')).includes('right')) bad('C09 diagram grading or keyboard focus');
     // C12 listening: form (group table), plan labelling (places + SVG), speaker labels not read aloud
     await p.addInitScript(() => { window.__said = []; window.speechSynthesis.speak = u => window.__said.push(u.text + '|' + u.pitch); window.speechSynthesis.getVoices = () => []; });
     await p.goto(base + 'lesson.html?id=C12'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));

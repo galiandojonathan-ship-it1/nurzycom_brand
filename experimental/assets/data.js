@@ -34,8 +34,8 @@ window.COURSE = {
       shared: "Main idea and detail", sat: "Central Ideas and Details", ielts: "Reading: Yes / No / Not Given · matching endings", speak: "Part 2 · structure", write: "A topic sentence" },
     { id: "C08", code: "TSP", block: "B", status: "live", title: "How a Report Persuades", thread: "Order is part of the message.",
       shared: "Structure and purpose", sat: "Text Structure and Purpose", ielts: "Reading: matching information · Task 2 paragraph", speak: "Part 2 · two full minutes", write: "One body paragraph" },
-    { id: "C09", code: "INF", block: "C", status: "planned", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
-      shared: "Inference", sat: "Inferences", ielts: "Reading: Yes / No / Not Given, summary", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
+    { id: "C09", code: "INF", block: "C", status: "live", title: "What the Data Does Not Say", thread: "The missing cases matter most.",
+      shared: "Inference", sat: "Inferences", ielts: "Reading: diagram labels · Yes / No / Not Given", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
     { id: "C10", code: "COET", block: "C", status: "planned", title: "The Doctor Nobody Believed", thread: "A claim needs support that others accept.",
       shared: "Claim and support", sat: "Command of Evidence (textual)", ielts: "Writing Task 2: Task Response", speak: "Part 3 · point + example", write: "Support one claim" },
     { id: "C11", code: "CTC", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
@@ -1412,6 +1412,383 @@ window.LESSONS.C08 = {
       ] }
   ],
   handoff: { text: "The same evidence can persuade differently when its order changes. Next, the cases a report leaves out: what the data does not say.", next: "C09" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C09 = {
+  id: 'C09',
+  title: 'What the Data Does Not Say',
+  thread: 'The missing cases matter most.',
+  intro: 'В C08 порядок доказательств менял силу аргумента. Здесь проверим, что происходит, когда часть наблюдений пропадает. Пример с каналом вымышленный. В SAT нужен вывод, который следует из данных, а в IELTS важно различать слова автора и собственные догадки.',
+  words: [
+    {
+      w: 'infer',
+      pos: 'v.',
+      ru: 'делать вывод по косвенным признакам',
+      sat: 'The tutor inferred that the second delivery was late from the time on its receipt.',
+      ielts: 'We cannot infer the evening water level from a reading taken at dawn.'
+    },
+    {
+      w: 'omit',
+      pos: 'v.',
+      ru: 'пропускать, исключать',
+      sat: 'The chart omits days when the station was closed.',
+      ielts: 'A report may omit details that readers need to judge the result.'
+    },
+    {
+      w: 'detect',
+      pos: 'v.',
+      ru: 'обнаруживать',
+      sat: 'A second survey detected changes hidden in the first.',
+      ielts: 'The gauge cannot detect what happens upstream.'
+    },
+    {
+      w: 'representative',
+      pos: 'adj.',
+      ru: 'представительный, типичный для всей группы',
+      sat: 'The sample may not be representative of the entire neighbourhood.',
+      ielts: 'Calm mornings may not be representative of all conditions on the canal.'
+    },
+    {
+      w: 'whereabouts',
+      pos: 'n.',
+      ru: 'местонахождение',
+      sat: 'The whereabouts of the missing notebook remained unknown.',
+      ielts: 'The log did not reveal the whereabouts of the inspector.'
+    },
+    {
+      w: 'systematic',
+      pos: 'adj.',
+      ru: 'закономерный, систематический',
+      sat: 'The locations of the gaps suggest a systematic error.',
+      ielts: 'A systematic gap can matter more than several unrelated missing readings.'
+    },
+    {
+      w: 'provisional',
+      pos: 'adj.',
+      ru: 'предварительный',
+      sat: 'The conclusion was provisional until the team checked the missing dates.',
+      ielts: 'A provisional summary can guide the next inspection.'
+    },
+    {
+      w: 'verify',
+      pos: 'v.',
+      ru: 'проверять достоверность',
+      sat: 'The editor verified the dates against the original records.',
+      ielts: 'An independent reading can help verify the scale.'
+    }
+  ],
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Draw the inference the evidence supports',
+      ru: 'Выбери вывод, который логически следует из условий. Все ситуации вымышлены.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'At a canal gate, the last recorded inspection before dawn showed the water below the warning mark. The next inspection took place at noon and again showed water below that mark. No device recorded the intervening hours. Therefore, the two inspections alone cannot establish that ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'the noon reading was below the warning mark.',
+            'the water stayed below the warning mark throughout the morning.',
+            'the later inspection took place after the earlier one.',
+            'the inspection after dawn occurred at noon.'
+          ],
+          key: 1,
+          ru: 'B. Два замера дают точки на линии, оставляя промежуток неизвестным. A, C и D известны из текста.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'To see whether canal users preferred a higher handrail, a council posted a questionnaire at the only staircase without a ramp. Anyone who avoided that entrance because they could not use stairs was unlikely to see the questionnaire. Even if the questionnaire receives many replies, the council should be cautious about claiming that ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'the questionnaire was posted at a canal entrance.',
+            'the chosen staircase had no ramp.',
+            'the responses are representative of everyone who uses the canal.',
+            'people who avoided the staircase were unlikely to see the questionnaire.'
+          ],
+          key: 2,
+          ru: 'C. Много ответов с одной лестницы всё равно не охватывают людей, которые её обходят. A, B и D прямо даны в тексте, их не нужно проверять по откликам.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'Two staff members recorded levels from the same gauge. Mina wrote down the reading every time she visited. Leo wrote it down only on visits when the pointer was above the red line. The difference in recording rules suggests that ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'Leo’s notebook cannot show how often the gauge stayed below the red line.',
+            'the gauge showed a different level to each observer at the same moment.',
+            'Mina’s notebook must contain fewer entries than Leo’s.',
+            'Leo moved the red line before taking each reading.'
+          ],
+          key: 0,
+          ru: 'A. В журнале Лео низкие показания пропущены по правилу. B и D приписывают прибору и Лео действия, о которых текст молчит. Для C не дано число посещений.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A crew noticed that the canal gauge stopped moving after the cover was damaged. They could still read a separate measuring staff beside the gate. When the staff showed a rise but the pointer stayed in the same position, the crew concluded that ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'the staff had never been used to check the gauge.',
+            'the damage made the water level rise.',
+            'all earlier entries in the log had been wrong.',
+            'the fixed pointer should not be taken as proof of a steady water level.'
+          ],
+          key: 3,
+          ru: 'D. Независимый замер меняется, а застывшая стрелка — нет. B путает повреждение прибора с причиной подъёма воды. C распространяет вывод на прошлые записи без доказательства. A в тексте нет.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading',
+      title: 'What a blank column hides',
+      ru: 'Прочитай статью и ответь на 13 вопросов. Схема показывает учебную модель прибора из вымышленного примера.',
+      lettered: true,
+      passageTitle: 'A Blank in the Canal Log',
+      passage: [
+        'A tidy record invites a reader to believe that it tells a complete story, whereas a line of blanks is less reassuring, particularly if the entries on either side look quite ordinary. It may be tempting to draw a smooth line between those entries and carry on with the analysis, although I would treat that line as a guess. The following fictional case, set at a canal gate, is a way of thinking about the difference between a measurement that was made and a measurement that simply looks as though it could have been made.',
+        'Imagine that a caretaker visits a gate twice a day and notes its water level in a book, a routine that seems reliable until she is asked to compare a sheltered stretch of canal with an exposed one. When the track to the exposed gate becomes slippery, the caretaker postpones her visit. The notebook therefore contains many readings from quiet mornings and fewer from mornings when access is difficult. The whereabouts of the caretaker on any particular missed visit cannot be inferred from an empty box, but the pattern of entries gives a reason to question how representative the recorded mornings are.',
+        'The gate in this example has a simple mechanical gauge in which a float rests on the water inside a narrow chamber beside the canal. As the water rises, that part moves upwards and pulls a cord over a pulley at the top of the instrument. At the other end, the cord moves a pointer beside a graduated scale, and a counterweight keeps the cord taut as the level changes. The whole arrangement allows the caretaker to read the level from the path. She can write down the position that it shows even though she cannot see the surface of the water from where she stands.',
+        'There are two different ways to get an unreliable entry. A visit might never take place, in which case the book has a blank. Alternatively, a visit can take place and the instrument can fail to detect a change. If a twig prevented the cord from moving while the water fell, the caretaker would see a pointer in its usual position and might copy the same value as before. A reader could mistake that orderly sequence for unusually stable conditions. I would rather read a report that marks a measurement as doubtful than one that silently treats a fixed pointer as a reliable observation.',
+        'To check whether a blank was isolated or part of a systematic gap, a clerk could compare the notebook with a separate record of gate visits. That second record need not contain a single water level, because a reliable record of path closures can reveal whether the missing dates are concentrated at the exposed gate. Although the comparison cannot put a number into an empty cell, its value is to show when the recorded days might differ from the omitted ones, giving the clerk a reason to qualify any conclusion about which stretch is usually higher.',
+        'The next report should therefore specify which gate and which conditions were covered, so that a reader can tell when the comparison stops being useful. Even within that narrower scope, a low reading can serve a practical purpose by telling an inspector where to look on the next visit. The claim becomes harder to defend when it quietly expands from a description of the mornings recorded to a description of the whole season. Nothing has changed in the notebook at that point; only the range of the claim has changed.',
+        'There is also a useful question for the person who decides what to measure next. If every missing visit is equally inconvenient to replace, it makes sense to start with the kind of morning that is consistently absent rather than collect more entries from the usual easy dates. An independent check with a marked staff can also help verify the gauge when the pointer seems stuck. Both steps give a provisional account a better chance of becoming dependable. The original blanks are still worth keeping visible, because they show future readers where the argument once ran ahead of its support.'
+      ],
+      items: [
+        {
+          kind: 'tfng',
+          yn: true,
+          stem: 'A smooth line drawn across a gap should count as an observation.',
+          key: 'F',
+          ru: 'NO. В A автор называет такую линию guess. Правдоподобная догадка не превращается в замер.',
+          group: {
+            title: 'Questions 1–4',
+            task: 'Do the following statements agree with the claims of the writer? Choose YES, NO or NOT GIVEN.',
+            ru: 'Опирайся на мнение автора. YES — утверждение совпадает, NO — автор говорит обратное, NOT GIVEN — автор этого не обсуждает.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          yn: true,
+          stem: 'The water level at a canal gate can change because of rain farther upstream.',
+          key: 'NG',
+          ru: 'NOT GIVEN. B объясняет, как доступ к шлюзу влияет на журнал. Автор не обсуждает, где шёл дождь и мог ли он поднять уровень воды. Знание о реках из жизни здесь не доказывает ответ.',
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          yn: true,
+          stem: 'Uncertainty about a reading is worth making explicit in a report.',
+          key: 'T',
+          ru: 'YES. В D автор предпочитает отчёт, который отмечает сомнительный замер. Пустая ячейка — другая ситуация: там замера не было совсем.',
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          yn: true,
+          stem: 'If missing visits are equally difficult to replace, collecting more observations from the usual easy dates should come first.',
+          key: 'F',
+          ru: 'NO. В G автор предлагает начать с тех условий, которые регулярно отсутствуют в журнале. Увеличить число привычных замеров легче, но это не заполнит пробел.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          accept: [ 'float', 'a float' ],
+          stem: '5 · Component that lifts as the water goes up: ______',
+          ru: 'C. Float лежит на поверхности и поднимается вместе с водой. Chamber — место, где он движется, а не подвижная часть.',
+          group: {
+            title: 'Questions 5–9',
+            task: 'Label the diagram below. Choose NO MORE THAN TWO WORDS from the passage for each answer.',
+            ru: 'Подпиши части прибора. Сначала сопоставь стрелку на схеме с функцией детали, затем возьми слово из текста.',
+            planCaption: 'Cutaway of the fictional canal gauge',
+            plan: '<svg viewBox="0 0 360 244" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cutaway of a canal gauge. Label 5 points to the solid shape on the water. Label 6 points to the line attached to it. Label 7 points to the wheel the line passes over. Label 8 points to the horizontal indicator beside the ruled markings. Label 9 points to the shape at the hanging end of the line." font-family="monospace" font-size="15" fill="none" stroke="currentColor">\n' +
+              '    <path d="M67 105V216H151 M151 105V216 M68 177H150" stroke-width="2"/>\n' +
+              '    <rect x="91" y="158" width="39" height="18" rx="7" fill="#ece9e2"/>\n' +
+              '    <circle cx="164" cy="76" r="54" fill="#ece9e2" stroke-width="2"/>\n' +
+              '    <path d="M110 158V76 A54 54 0 0 1 218 76V183" stroke-width="2"/>\n' +
+              '    <path d="M218 121H254L247 117M254 121l-7 4" stroke-width="2"/>\n' +
+              '    <path d="M264 95v66m0-60h12m-12 12h8m-8 12h12m-12 12h8m-8 12h12"/>\n' +
+              '    <rect x="206" y="183" width="24" height="30" rx="2" fill="#ece9e2"/>\n' +
+              '    <path d="M45 164H91M45 115h65M168 22L182 14M254 121h50M230 198h74" stroke-dasharray="4 2"/>\n' +
+              '    <g stroke="none" fill="currentColor"><text x="13" y="168">(5)</text><text x="13" y="119">(6)</text><text x="188" y="19">(7)</text><text x="309" y="126">(8)</text><text x="309" y="203">(9)</text><text x="67" y="235">CANAL WATER</text></g>\n' +
+              '  </svg>'
+          },
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          accept: [ 'cord', 'a cord', 'the cord' ],
+          stem: '6 · Flexible line joined to the part at water level: ______',
+          ru: 'C. «Pulls a cord» называет гибкую линию. Pulley — колесо, через которое она проходит.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          accept: [ 'pulley', 'a pulley' ],
+          stem: '7 · Component at the top over which the flexible line passes: ______',
+          ru: 'C. Cord проходит «over a pulley at the top». Counterweight удерживает натяжение на другом конце.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          accept: [ 'pointer', 'a pointer', 'the pointer' ],
+          stem: '8 · Moving indicator from which the caretaker takes a reading: ______',
+          ru: 'C. Стрелка (pointer) движется рядом с делениями. Scale — деления, которые остаются на месте.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          accept: [ 'counterweight', 'a counterweight' ],
+          stem: '9 · Component at the hanging end that maintains tension: ______',
+          ru: 'C. Counterweight держит cord натянутым. Float находится на воде на другом конце.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What prompts the caretaker to delay some visits in paragraph B?',
+          opts: [
+            'The instrument sometimes becomes difficult to read.',
+            'Conditions on the route make it unsafe to proceed.',
+            'The clerk asks her to inspect only one gate.',
+            'The water level must be measured at a fixed hour.'
+          ],
+          key: 1,
+          ru: 'B. В B описана скользкая дорожка на пути к шлюзу. A относится к другой проблеме, сбою прибора в D. C и D текст не устанавливает.',
+          group: {
+            title: 'Questions 10–13',
+            task: 'Choose the correct letter, A, B, C or D.',
+            ru: 'Внутри группы ответы идут по ходу статьи. Ищи свою строку доказательства для каждого пункта.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'In paragraph D, why is the twig important?',
+          opts: [
+            'It shows how a repeated reading can conceal a genuine change.',
+            'It explains why the caretaker missed several visits.',
+            'It allows the caretaker to find the earlier level.',
+            'It shows that a rise in water destroyed the gauge.'
+          ],
+          key: 0,
+          ru: 'A. Ветка мешает стрелке двигаться, хотя вода падает. B — про доступ в B. C и D приписывают ветке то, чего не было.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What could the separate record establish?',
+          opts: [
+            'The exact water level on a missing date.',
+            'Whether the gauge was read accurately on every visit.',
+            'Whether unavailable dates mostly affect one location.',
+            'How long the caretaker spent at each gate.'
+          ],
+          key: 2,
+          ru: 'C. В E журнал закрытий показывает, сосредоточены ли пропуски у открытого ветру шлюза. Он не содержит уровней, поэтому A и B не доказаны. Время на осмотр (D) не обсуждается.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What mistake does paragraph F warn the writer of a report against?',
+          opts: [
+            'Comparing conditions at the same gate on separate visits.',
+            'Indicating which conditions the figures cover.',
+            'Referring to a low reading when arranging an inspection.',
+            'Extending a claim past the conditions actually measured.'
+          ],
+          key: 3,
+          ru: 'D. Сравнение замеренных утр превращается в заявление о целом сезоне. B как раз предлагается делать. C — допустимое применение замера. A не названо ошибкой.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 3',
+      title: 'Explain why a result might mislead',
+      ru: 'Объясни причину и дай конкретный пример. Отдельно скажи, что можно проверить. Запись остаётся на этом устройстве.',
+      prompts: [
+        'Why might a city receive mostly positive comments about a service that many people find difficult to use?',
+        'What additional evidence could help decision-makers interpret those comments?'
+      ],
+      prep: 30,
+      talk: 90,
+      pron: {
+        title: 'Stress the limit of the claim',
+        ru: 'Выдели слово, которое ограничивает вывод. От него зависит, о какой группе ты говоришь.',
+        items: [ 'RECorDed visits', 'ONLY the exposed gate', 'a proVIsionAl account', 'THIS group of users' ]
+      },
+      model: 'A council might hear mostly from people who already use the service because it asks for comments at the point of service. A visitor who gives up after finding a locked gate will not see the questionnaire. The responses can still describe the experience of people who got in, but the group is unlikely to be representative. To verify the impression, the council could ask people at other locations and record how they reached the site.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Writing micro-task',
+      title: 'Claim, reason and example',
+      ru: 'Напиши один абзац о сборе отзывов. Дай ограниченный вывод, объясни пропуск на конкретном примере и назови, чем проверить вывод.',
+      prompts: [
+        'A council asks for feedback only inside its canal visitor centre. How might this affect the conclusions it can draw?'
+      ],
+      minWords: 85,
+      checklist: [
+        'Я ограничил(а) вывод теми, кто мог ответить.',
+        'Мой пример показывает, кого не охватил опрос.',
+        'Предложенная проверка обращается к этой группе.'
+      ],
+      model: [
+        'Feedback collected inside a visitor centre can describe the experiences of people who actually entered. The location may systematically omit readers of the website who try to visit on the wrong day, as well as visitors who cannot use the stairs. A manager who sees positive comments about access should therefore treat that conclusion as provisional. The council could ask for comments at the gate or on the website and record which entrance each person tried. This would make it easier to detect problems that the indoor questionnaire would miss.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Evidence and limits',
+      ru: 'Два коротких вопроса. Проверь границу вывода и значение пустой записи.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'An inspector observes a service every weekday. The schedule is different at weekends, when the inspector is not present.',
+          stem: 'What is the strongest conclusion about the inspector’s report?',
+          opts: [
+            'It directly documents the weekday service.',
+            'The weekend service is always less reliable.',
+            'The report proves the schedule was followed every day.',
+            'The inspector has better records for weekends.'
+          ],
+          key: 0,
+          ru: 'A. Наблюдения сделаны в будни. B и C говорят о выходных, на которых инспектора не было. D переворачивает условие.',
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          text: 'The Sunday box in a fictional canal log is blank because nobody inspected the gate that day.',
+          stem: 'The log records a water level of zero for Sunday.',
+          key: 'F',
+          ru: 'FALSE. В журнале за воскресенье пустая ячейка. Запись уровня, в том числе нуля, отсутствует. Каким был сам уровень, мы не знаем.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'You marked the gap between a claim and its evidence. Next, you will decide which evidence actually supports a claim.',
+    next: 'C10'
+  }
 };
 
 /* ------------------------------------------------------------------ */

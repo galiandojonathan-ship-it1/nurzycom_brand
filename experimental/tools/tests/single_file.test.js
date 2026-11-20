@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
     await p.goto('file://' + require('path').resolve(process.argv[2] || 'NURZYCOM_experimental_site.html'));
     if (await p.locator('#map-list .st').count() !== 16) bad('map');
     // every live lesson: map → slides (walk) → homework (all keys) → office → progress
-    for (const id of ['C01','C02','C03','C04','C05','C06','C07','C12']) {
+    for (const id of ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C12']) {
       await p.evaluate(() => window.__go('course'));
       await p.locator(`#map-list .cadlinks a[href="slides.html?id=${id}"]`).click();
       const n = await p.locator('.slide').count(); for (let i = 0; i < n; i++) await p.keyboard.press('ArrowRight');

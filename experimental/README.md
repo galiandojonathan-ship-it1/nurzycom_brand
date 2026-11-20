@@ -68,6 +68,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 ## Key checks
 
+- 2026-11-20 · C09: 19 homework questions and two slide examples solved independently from redacted text and diagram. Re-solved the revised homework questions after narrowing the wording of SAT 1 and 3, Reading 4 and Exit 2.
+
 20 November audit: C04–C08, C12 and K2 (118 scored items) independently solved from redacted copies before the course files were edited. The QA report records the wording and acceptance fixes. The keyed options stayed in the same positions.
 
 | Lesson | Questions | First check | Second check (independent re-solve) |
@@ -153,7 +155,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C12 Listening rebuilt (15 Nov, run 1): two sections in one recording, about 500 words. Section 1 (assistant and student, form completion as a `group.table`, ONE WORD AND/OR A NUMBER, 4 items), Section 2 (guide's tour, plan labelling with an inline SVG plan, `group.places: 8` and `group.plan`, 4 items; then multiple choice, 2 items). Corrections: course (History → Geography), the letter of offer dropped, sports-hall building turned into a lecture theatre, bus stop moved, café closed. No True / False / Not Given. Exit question 2 now tests a time correction. Blind re-solve from the transcript: 12 of 12; the Block item lost its correction afterwards so that not every answer is corrected.
 - [x] Lesson C08 "How a Report Persuades" (15 Nov, run 1): homework (8 words; 4 SAT Text Structure and Purpose; IELTS passage "A Report Built to Persuade" on Chadwick's 1842 report, about 860 words, grade 11.8, 22.3 words per sentence, with matching information (paragraph letters, any letter more than once), sentence completion and multiple choice; Speaking Part 2 for two full minutes; a Task 2 body paragraph of 90+ words; exit), deck `DECKS.C08`, office hours `OFFICE.C08`, check-in `K2` and its progress table. Blind re-solve: 30 of 30 plus both slide examples; afterwards one SAT text, one passage sentence, one K2 option and the K2 passage (now two sentences per paragraph, less word-matching) were reworded.
 - [x] QA pass (20 Nov): 118 scored items independently solved. C04–C08 passed reading size, grade and sentence checks. See the QA report for measurements, corrections and the limits of source and device verification.
-- [ ] C09 · Inferences and diagram label completion.
+- [x] C09 · Inferences and diagram label completion (20 Nov): 692 words, grade 11.3, 23.1 words per sentence. Yes / No / Not Given, diagram labels, multiple choice. Homework, slides and office hours.
 - [ ] C10 · Command of Evidence (textual).
 - [ ] C11 and K3 · Cross-Text Connections and Block C check-in.
 - [ ] C13 · Listening lecture.
@@ -162,15 +164,19 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [ ] C16 and KF · Mixed review and final check.
 - [ ] QA · Recheck new keys, sources, measurements, course navigation and the three browser suites.
 
-**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Still to use: diagram label completion (queued in C09).
+**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Diagram label completion (C09), using an original SVG and typed labels.
 
 ## Loop log
+
+- 2026-11-20 · C09: lesson, deck and office hours added. Browser test checks an accessible SVG and typed diagram labels.
 
 - 2026-11-20: audited C04–C08, C12 and K2. Two blind solves recovered all 118 intended keys. Fixed ambiguities, source-word grading, a C12 recording-order problem, historical figures and mobile/keyboard issues. Reading measurements (words / Flesch–Kincaid grade / words per sentence): C04 987 / 12.2 / 25.3; C05 759 / 13.6 / 25.3; C06 814 / 11.6 / 23.3; C07 750 / 11.2 / 22.1; C08 721 / 12.0 / 23.3. Queued the remaining lessons and a final QA pass.
 
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
 
 ## Calls after QA (to confirm with Nurassyl)
+
+- C09 uses a fictional canal log and a teaching model of its gauge. The diagram is original and its labels use words from the article.
 
 - Keep C12 as clearly marked short practice. A real recording and playback on a phone are needed before using it as exam simulation.
 - Keep C08's history and teach persuasion through a selected reading route. In C06 use rates recalculated from Snow's original counts so the student can reproduce them.

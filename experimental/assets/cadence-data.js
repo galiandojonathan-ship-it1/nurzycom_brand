@@ -33,7 +33,7 @@ window.CADENCE = {
   ],
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
-    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose",
+    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences",
     "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
   }
 };
@@ -289,6 +289,84 @@ window.DECKS = {
     ]
   },
 
+  C09: {
+    rules: [
+      [ 'List what was measured.', 'Name the place, time and group that the observation covers.' ],
+      [ 'Find what the record omits.', 'A gap and a low result are different pieces of information.' ],
+      [
+        'Keep your claim within the evidence.',
+        'Check that no part of the answer needs an extra assumption.'
+      ]
+    ],
+    mistake: 'Treating a missing reading as a low reading.',
+    story: [
+      [
+        'A neat notebook',
+        'A water-level log can look complete at a glance. Check which mornings are absent before you compare two places.'
+      ],
+      [
+        'A counterweight and a cord',
+        'The model gauge turns the height of water into a mark on a scale. A jam in the mechanism can leave the mark still while the water moves.'
+      ],
+      [
+        'A decision with limits',
+        'The evidence can justify a narrower conclusion today and point to a better observation tomorrow.'
+      ]
+    ],
+    bridge: [
+      'Name the missing link',
+      'SAT asks which inference follows. IELTS can ask whether a claim is present at all. In both, make the evidence carry the answer.'
+    ],
+    ex: [
+      {
+        exam: 'SAT',
+        label: 'Inferences',
+        text: 'A volunteer counted people at a market on dry days. On wet days the counting station closed, although the market remained open. The numbers in the notebook therefore cannot show whether ______',
+        stem: 'Which choice most logically completes the text?',
+        opts: [
+          'the market attracted fewer people in wet weather.',
+          'the volunteer took notes on dry days.',
+          'the market remained open on wet days.',
+          'the counting station closed on wet days.'
+        ],
+        key: 0,
+        steps: [
+          'Locate what the volunteer counted: dry days.',
+          'Circle the missing comparison group: wet days.',
+          'Test which answer needs the missing group.'
+        ],
+        check: 'Point to either a wet-day count or a reason it is unavailable.',
+        why: [
+          'Correct: both weather groups are needed.',
+          'Clearly stated.',
+          'Clearly stated.',
+          'Clearly stated.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'True / False / Not Given',
+        text: 'The north gate was inspected each morning in April. The log records only morning inspections and lists the time of each visit.',
+        stem: 'The water was usually higher in the afternoon than in the morning.',
+        tf: true,
+        key: 'NG',
+        steps: [
+          'Spot the comparison: morning against afternoon.',
+          'The recorded visits took place in the morning.',
+          'The passage neither confirms nor rules out an afternoon rise.'
+        ],
+        check: 'Test the complete comparison rather than the word “morning”.',
+        why: [
+          'No afternoon observation supports it.',
+          'The opposite comparison is also unsupported.',
+          'Correct: no afternoon figures are provided.'
+        ],
+        chk: 2
+      }
+    ]
+  },
+
   C12: {
     rules: [
       ["Before the audio, decide the answer type.", "A place, a direction, a number or a time. The words around the gap tell you which."],
@@ -366,6 +444,29 @@ window.OFFICE = {
       sample: "Governments should spend more on prevention. For example, Chadwick wrote a report in 1842. Prevention is good because it is good for people. Some people say that it is expensive, I disagree with them.",
       issues: [["TR", "Пример ничего не доказывает: сказано только, что Чедвик написал доклад, а не что он показал о профилактике."], ["CC", "Порядок сломан: пример стоит раньше объяснения, а объяснение ходит по кругу («good because it is good»)."], ["GRA", "Comma splice: «…it is expensive, I disagree with them». К тому же возражение просто отвергнуто, ответа на него нет."]] },
     live: ["Part 2 · Describe a time when someone persuaded you to change your mind.", "Part 3 · Do facts or stories persuade people more effectively? Why?", "Part 3 · Should governments spend money on problems that have not happened yet?"] },
+  C09: {
+    focus: 'Для каждого неверного вывода назови замер, который есть, и отдельно тот замер, который понадобился бы для выбранного ответа.',
+    peer: {
+      task: 'Write a short paragraph about the limits of feedback collected inside a canal visitor centre.',
+      sample: 'Everyone finds the canal centre easy to reach, because people inside the centre said so. The survey is useful. Therefore some users could not climb the stairs.',
+      issues: [
+        [
+          'TR',
+          'Ответ распространяет вывод на всех, хотя опросили только посетителей внутри. Пример должен показать, кого выборка могла пропустить.'
+        ],
+        [
+          'CC',
+          'Therefore обещает следствие, но отзывы посетителей внутри не доказывают, что кто-то не смог подняться. Свяжи предполагаемый пример с ограничением выборки.'
+        ]
+      ]
+    },
+    live: [
+      'How could a council find out why some people never reach its visitor centre?',
+      'When is an incomplete record still good enough to use?',
+      'Describe a situation in which a large survey could miss an important group.'
+    ]
+  },
+
   C12: { focus: "Для каждой ошибки в Listening: прозвучал ли поворот (used to be, instead, but now) и где ты его пропустил(а).",
     peer: { task: "From notes to two sentences: the way to the library and the bus stop.",
       sample: "Library: turn left clock tower, second building right opposite lake. Bus stop moved behind library on Mill Road.",
