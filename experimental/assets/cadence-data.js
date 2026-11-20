@@ -34,7 +34,7 @@ window.CADENCE = {
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
     RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences", COET: "Command of Evidence (textual)", CTC: "Cross-Text Connections",
-    "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
+    "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening", SPK: "IELTS Speaking: recognising clear delivery"
   }
 };
 
@@ -634,6 +634,81 @@ window.DECKS = {
         chk: 2
       }
     ]
+  },
+
+  C14: {
+    rules: [
+      [ 'Give the important word room.', 'Stress the detail that could change the listener’s decision.' ],
+      [ 'Pause at a thought boundary.', 'Separate an instruction from the clue that helps confirm it.' ],
+      [ 'Repair meaning when needed.', 'Restate the doubtful part with one specific detail.' ]
+    ],
+    mistake: 'Trying to sound fluent by rushing through every phrase at the same pace.',
+    story: [
+      [ 'A route in speech', 'A visitor can only act on what they understand as they hear it.' ],
+      [ 'One word changes the turn', 'If both paths go left, “second” carries the decision.' ],
+      [
+        'From detail to argument',
+        'In a discussion, explain why directions that work for regular users may confuse somebody new.'
+      ]
+    ],
+    bridge: [
+      'Extend the same skill to Part 3',
+      'A short answer can give a personal detail. A discussion also needs a reason that applies beyond that example.'
+    ],
+    ex: [
+      {
+        exam: 'IELTS',
+        label: 'Speaking · intelligibility',
+        text: 'A visitor knows to turn at a bridge but there are two bridges. One is for cars and one is for people on foot.',
+        stem: 'Which reply clearly identifies the crossing?',
+        opts: [
+          'Use the bridge near the RIVER.',
+          'Use the bridge NOW.',
+          'Use the FOOTbridge.',
+          'Use either BRIDGE.'
+        ],
+        key: 2,
+        steps: [
+          'Ask what the listener needs to distinguish.',
+          'Identify the bridge for people on foot.',
+          'Stress the word that supplies the distinction.'
+        ],
+        check: 'Could someone choose a bridge from the reply alone?',
+        why: [
+          'The river does not distinguish the bridges.',
+          'Time does not identify a bridge.',
+          'Correct: footbridge identifies the crossing.',
+          'Leaves the decision open.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Speaking · Part 3',
+        text: 'Question: Why might one public sign be easy to understand and another confusing?',
+        stem: 'Which answer offers a reason the speaker can develop?',
+        opts: [
+          'A clear sign shows the detail people need at the point where they must decide.',
+          'My town has a sign.',
+          'There are lots of different signs.',
+          'I once walked past the wrong sign.'
+        ],
+        key: 0,
+        steps: [
+          'Find a reason, rather than an isolated observation.',
+          'Look for a link to the moment of decision.',
+          'Add a concrete example if asked to develop the answer.'
+        ],
+        check: 'Can you explain how the sign affects what a reader does next?',
+        why: [
+          'Correct: connects information with a decision.',
+          'Only a location.',
+          'Only a broad observation.',
+          'Only a personal experience.'
+        ],
+        chk: 2
+      }
+    ]
   }
 };
 
@@ -777,6 +852,29 @@ window.OFFICE = {
       'Explain why two reliable clocks can disagree.',
       'When would a driver care more about a shared time than a very precise clock?',
       'What information would you add to a report when the connection fails?'
+    ]
+  },
+
+  C14: {
+    focus: 'Назови, какое слово в ответе нужно сделать слышнее. Произнеси фразу двумя способами и попроси партнёра пересказать, какой смысл он услышал.',
+    peer: {
+      task: 'Explain what helped a listener understand your directions, then rewrite a phrase that needs improvement.',
+      sample: 'My speaking was perfect. It was good and the word was good. Therefore I should speak at the same pace always.',
+      issues: [
+        [
+          'TR',
+          'Для саморазбора нужна точная фраза и один вариант правки. Общая оценка не показывает, что услышал слушатель.'
+        ],
+        [
+          'LR',
+          'Good и perfect звучат общо. Назови конкретное действие: stressed “second”, paused before the landmark.'
+        ]
+      ]
+    },
+    live: [
+      'What is one direction you can give using only a landmark and a turn?',
+      'How would you correct yourself if a listener started to follow the wrong route?',
+      'What changes when you explain the same route to a first-time visitor?'
     ]
   }
 };

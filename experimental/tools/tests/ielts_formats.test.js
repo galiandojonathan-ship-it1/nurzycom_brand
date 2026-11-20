@@ -2,7 +2,7 @@ const SHOTS = process.env.SHOTS || require('os').tmpdir();
 const { chromium } = require('playwright');
 const base = 'http://127.0.0.1:8791/course/';
 (async () => {
-  const b = await chromium.launch(); let fails = 0; const bad = m => { fails++; console.log('FAIL', m); };
+  const b = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] }); let fails = 0; const bad = m => { fails++; console.log('FAIL', m); };
   for (const vp of [{ width: 360, height: 760 }, { width: 1280, height: 860 }]) {
     const p = await b.newPage({ viewport: vp }); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(base + 'lesson.html?id=C01'); await p.evaluate(() => localStorage.clear()); await p.reload();
@@ -90,6 +90,24 @@ const base = 'http://127.0.0.1:8791/course/';
       return window.__said.map(t => t.split('|')[0]).join(' ') === expected;
     });
     if (!transcriptAligned) bad('C13 speech differs from the transcript');
+    await p.context().grantPermissions(['microphone']);
+    await p.goto(base + 'lesson.html?id=C14');
+    await p.locator('.steps a[data-step="speak"]').click();
+    const speak = p.locator('#speak');
+    if (await speak.locator('.speaking-prompts').count() !== 3) bad('C14 speaking parts');
+    await speak.getByRole('button', { name: /Записать ответ/ }).click();
+    await speak.getByRole('button', { name: /Остановить запись/ }).waitFor();
+    await p.waitForTimeout(400);
+    await speak.getByRole('button', { name: /Остановить запись/ }).click();
+    const download = speak.getByRole('link', { name: 'Скачать запись' });
+    await download.waitFor();
+    if (!(await download.getAttribute('href')).startsWith('blob:')) bad('C14 local audio');
+    const event = p.waitForEvent('download');
+    await download.click();
+    if (!/^C14-speaking\./.test((await event).suggestedFilename())) bad('C14 download');
+    await speak.getByRole('button', { name: 'Отметить все три части' }).click();
+    await p.reload();
+    if (!(await p.locator('.steps a[data-step="speak"]').getAttribute('class')).includes('done')) bad('C14 completion persistence');
     const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C13');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }

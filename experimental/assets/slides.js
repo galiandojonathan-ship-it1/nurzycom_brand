@@ -41,7 +41,7 @@
 
   var wg = el("div", { class: "sl-words" });
   L.words.forEach(function (w) { wg.appendChild(el("div", {}, [el("b", { text: w.w }), el("i", { text: " " + w.pos }), el("p", { text: (w.ex || [w.ielts])[w.ex ? 1 : 0] })])); });
-  add("words", "Words", [lab("Part 01 · Today's words"), h("Eight words, two exams"), wg]);
+  add("words", "Words", [lab("Part 01 · Today's words"), h(ieltsOnly ? "Eight words for IELTS" : "Eight words, two exams"), wg]);
 
   D.story.forEach(function (s, i) {
     add("story", "Story", [lab("Part 02 · The story · " + (i + 1) + " of " + D.story.length), h(s[0]), el("p", { class: "sl-big", text: s[1] })], i === D.story.length - 1 ? "mist" : "");
@@ -74,7 +74,7 @@
   }
   example(D.ex[0], 1, "Part 03");
 
-  add("bridge", "Bridge", [lab("Part 04 · Same skill, other exam"), h(D.bridge[0]), el("p", { class: "sl-big", text: D.bridge[1] })], "mist");
+  add("bridge", "Bridge", [lab(ieltsOnly ? "Part 04 · Apply the skill" : "Part 04 · Same skill, other exam"), h(D.bridge[0]), el("p", { class: "sl-big", text: D.bridge[1] })], "mist");
   example(D.ex[1], 2, "Part 04");
 
   var sp = part("speak");
@@ -86,14 +86,14 @@
   var wr = part("write");
   if (wr) {
     var wl = el("ol", { class: "sl-list" }); wr.prompts.forEach(function (t) { wl.appendChild(el("li", { text: t })); });
-    add("write", "Writing", [lab("Part 06 · Writing micro-task"), h(wr.title), wl,
+    add("write", "Writing", [lab("Part 06 · " + wr.label), h(wr.title), wl,
       el("p", { class: "sl-p", text: "Start in class. Finish it on the website, then bring it to office hours for peer feedback." })]);
   }
 
   var cad = el("ol", { class: "sl-cad" });
   window.CADENCE.steps.forEach(function (s) {
     cad.appendChild(el("li", { class: s.id === "slides" ? "now" : "" }, [el("span", { class: "hex", text: "0" + s.n }), el("b", { text: s.name }),
-      el("span", { text: { slides: "Today, in class.", homework: "Words, questions, speaking and writing, on the website.", office: "Your SAT mistakes, peer feedback on your writing, live speaking.", progress: "Retry what you missed. Your skills, in numbers." }[s.id] })]));
+      el("span", { text: { slides: "Today, in class.", homework: "Words, questions, speaking and writing, on the website.", office: "Review your answers, get feedback on writing, and speak live.", progress: "Retry what you missed. Your skills, in numbers." }[s.id] })]));
   });
   add("cadence", "Next", [lab("After class"), h("Three more steps"), cad]);
 

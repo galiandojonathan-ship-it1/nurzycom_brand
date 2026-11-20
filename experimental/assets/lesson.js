@@ -278,13 +278,20 @@
       el("h2", { text: p.title }),
       el("p", { class: "ru", text: p.ru })
     ]);
-    var ul = el("ul", { lang: "en" }); p.prompts.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
+    var sections = p.sections || [{ title: "Questions", prompts: p.prompts }];
+    var prompts = sections.map(function (part) {
+      return el("div", { class: "speaking-prompts", lang: "en" }, [
+        el("h3", { text: part.title }),
+        el("ul", {}, part.prompts.map(function (t) { return el("li", { text: t }); }))
+      ]);
+    });
     var time = el("span", { class: "timer", "aria-live": "off", text: fmt(p.talk) });
-    var status = el("p", { class: "small", "aria-live": "polite", text: "Подготовка " + p.prep + " с, затем ответ " + p.talk + " с." });
-    var start = el("button", { class: "btn", type: "button", text: "Начать" });
+    var status = el("p", { class: "small", "aria-live": "polite", text: (p.sections ? "Таймер Part 2. " : "") + "Подготовка " + p.prep + " с, затем ответ " + p.talk + " с." });
+    var start = el("button", { class: "btn", type: "button", text: p.sections ? "Таймер Part 2" : "Начать" });
     var recBtn = el("button", { class: "btn ghost", type: "button", text: "● Записать ответ" });
-    var player = el("audio", { controls: "", hidden: "" });
-    var tick = null, rec = null, chunks = [];
+    var player = el("audio", { controls: "", hidden: "", "aria-label": "Запись ответа" });
+    var download = p.sections ? el("a", { class: "btn ghost", hidden: "", text: "Скачать запись" }) : null;
+    var tick = null, rec = null;
     function fmt(s) { return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
     function run(sec0, label, next) {
       var s = sec0; clearInterval(tick); status.textContent = label; time.textContent = fmt(s);
@@ -294,30 +301,59 @@
       start.disabled = true;
       run(p.prep, "Подготовка: продумай ответ.", function () {
         run(p.talk, "Говори вслух.", function () {
-          status.textContent = "Время вышло. Сравни свой ответ с образцом ниже.";
-          start.disabled = false; stopRec(); markDone(p.id);
+          status.textContent = p.sections ? "Part 2 завершена. Переходи к вопросам Part 3." : "Время вышло. Сравни свой ответ с образцом ниже.";
+          start.disabled = false;
+          if (!p.sections) { stopRec(); markDone(p.id); }
         });
       });
     });
     function stopRec() { if (rec && rec.state !== "inactive") rec.stop(); }
     recBtn.addEventListener("click", function () {
-      if (rec && rec.state === "recording") { stopRec(); return; }
+      if (rec && rec.state === "recording") { recBtn.disabled = true; stopRec(); return; }
       if (!navigator.mediaDevices || !window.MediaRecorder) { status.textContent = "Запись в этом браузере недоступна. Запиши ответ на диктофон телефона."; return; }
+      recBtn.disabled = true;
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-        chunks = []; rec = new MediaRecorder(stream);
-        rec.ondataavailable = function (e) { chunks.push(e.data); };
-        rec.onstop = function () {
-          stream.getTracks().forEach(function (t) { t.stop(); });
-          player.src = URL.createObjectURL(new Blob(chunks, { type: rec.mimeType })); player.hidden = false;
-          recBtn.textContent = "● Записать ещё раз"; status.textContent = "Запись готова. Она хранится только в этой вкладке и никуда не отправляется.";
-        };
-        rec.start(); recBtn.textContent = "■ Остановить запись"; status.textContent = "Идёт запись.";
-      }).catch(function () { status.textContent = "Нет доступа к микрофону. Разреши его в настройках браузера или запиши ответ на диктофон."; });
+        var release = function () { stream.getTracks().forEach(function (t) { t.stop(); }); };
+        try {
+          var chunks = [];
+          var recording = rec = new MediaRecorder(stream);
+          recording.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+          recording.onstop = function () {
+            release();
+            recBtn.disabled = false;
+            recBtn.textContent = "● Записать ещё раз";
+            if (!chunks.length) {
+              status.textContent = "Запись не сохранилась. Проверь микрофон и попробуй ещё раз.";
+              return;
+            }
+            var blob = new Blob(chunks, { type: recording.mimeType });
+            if (player.src) URL.revokeObjectURL(player.src);
+            player.src = URL.createObjectURL(blob);
+            player.hidden = false;
+            if (download) {
+              download.href = player.src;
+              var extension = (blob.type.split("/")[1] || "webm").split(";")[0];
+              download.download = L.id + "-speaking." + (extension === "mp4" ? "m4a" : extension);
+              download.hidden = false;
+            }
+            status.textContent = "Запись готова. Она хранится только в этой вкладке и никуда не отправляется.";
+          };
+          recording.start();
+          recBtn.textContent = "■ Остановить запись";
+          status.textContent = "Идёт запись.";
+        } catch (e) { release(); status.textContent = "Не удалось начать запись. Можно записать ответ на диктофон."; }
+      }).catch(function () {
+        status.textContent = "Нет доступа к микрофону. Разреши его в настройках браузера или запиши ответ на диктофон.";
+      }).finally(function () { recBtn.disabled = false; });
     });
-    sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: "Questions" }), ul, time, status, el("div", { class: "row" }, [start, recBtn]), player]));
+    var complete = p.sections ? el("button", { class: "btn ghost", type: "button", text: "Отметить все три части", onclick: function () { markDone(p.id); status.textContent = "Практика отмечена."; } }) : null;
+    sec.appendChild(el("div", { class: "card" }, prompts.concat([
+      time, status, el("div", { class: "row" }, [start, recBtn, complete]), player, download
+    ])));
     var pl = el("ul"); p.pron.items.forEach(function (t) { pl.appendChild(el("li", { text: t })); });
     sec.appendChild(el("div", { class: "card" }, [el("span", { class: "label", text: p.pron.title }), el("p", { class: "ru", text: p.pron.ru }), pl]));
-    sec.appendChild(el("details", {}, [el("summary", { text: "Образец ответа (сначала ответь сам)" }), el("p", { lang: "en", text: p.model })]));
+    var models = [].concat(p.model).map(function (t) { return el("p", { lang: "en", text: t }); });
+    sec.appendChild(el("details", {}, [el("summary", { text: "Образец ответа (сначала ответь сам)" })].concat(models)));
     return sec;
   }
 

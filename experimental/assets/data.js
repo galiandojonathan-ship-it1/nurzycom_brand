@@ -44,7 +44,7 @@ window.COURSE = {
       shared: "—", sat: "—", ielts: "Listening: directions on a map, predicting the answer type", speak: "Give directions aloud", write: "Notes from audio" },
     { id: "C13", code: "LIS", block: "D", status: "live", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
       shared: "—", sat: "—", ielts: "Listening: lectures and signposting", speak: "Part 2 · retell the lecture", write: "Summary in three sentences" },
-    { id: "C14", code: "SPK", block: "D", status: "planned", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
+    { id: "C14", code: "SPK", block: "D", status: "live", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
       shared: "—", sat: "—", ielts: "Speaking: all three parts + pronunciation", speak: "Full recorded answer", write: "Self-review of the recording" },
     { id: "C15", code: "WRT", block: "D", status: "planned", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
       shared: "—", sat: "—", ielts: "Writing Task 2 from the bricks (inside the course only)", speak: "Part 3", write: "Timed essay" },
@@ -3003,5 +3003,219 @@ window.LESSONS.C13 = {
   handoff: {
     text: 'You heard how signposts organise a lecture. Next, use stress and pauses to organise a reply of your own.',
     next: 'C14'
+  }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C14 = {
+  id: 'C14',
+  title: 'Say It Clearly',
+  thread: 'Stress and pauses are the punctuation of speech.',
+  intro: 'В C13 паузы и ударение помогали услышать переход к новой мысли. Теперь запиши собственные ответы на три части IELTS Speaking. Общая тема — как человек находит нужную дорогу и как организация помогает ему ориентироваться.',
+  wordsTitle: 'Eight words for clear speech',
+  wordsRu: 'Произнеси отмеченные ключевые слова и послушай, как меняется смысл.',
+  wordLabels: [ 'Speech', 'Self-review' ],
+  words: [
+    {
+      w: 'pace',
+      pos: 'n.',
+      ru: 'темп речи',
+      ex: [
+        'Slow the pace just before an important direction.',
+        'My pace made the final sentence difficult to follow.'
+      ]
+    },
+    {
+      w: 'pause',
+      pos: 'n./v.',
+      ru: 'пауза, делать паузу',
+      ex: [
+        'Leave a brief pause before the new instruction.',
+        'I heard a pause between the reason and the example.'
+      ]
+    },
+    {
+      w: 'stress',
+      pos: 'n./v.',
+      ru: 'ударение, произносить с ударением',
+      ex: [
+        'Stress the name that identifies the right station.',
+        'The stress on “second” makes the direction clear.'
+      ]
+    },
+    {
+      w: 'emphasis',
+      pos: 'n.',
+      ru: 'выделение, смысловой акцент',
+      ex: [
+        'Put emphasis on the feature the listener could confuse.',
+        'I moved the emphasis to the street name.'
+      ]
+    },
+    {
+      w: 'intelligible',
+      pos: 'adj.',
+      ru: 'понятный на слух',
+      ex: [ 'A clear ending makes the address intelligible.', 'My two versions were equally intelligible.' ]
+    },
+    {
+      w: 'hesitation',
+      pos: 'n.',
+      ru: 'заминка, колебание',
+      ex: [
+        'A moment of hesitation can occur when you look for a word.',
+        'I noticed one hesitation before the street name.'
+      ]
+    },
+    {
+      w: 'restate',
+      pos: 'v.',
+      ru: 'сформулировать ещё раз',
+      ex: [
+        'Restate the instruction if the listener looks puzzled.',
+        'I restated the turn in a shorter sentence.'
+      ]
+    },
+    {
+      w: 'clarify',
+      pos: 'v.',
+      ru: 'прояснять, уточнять',
+      ex: [
+        'Clarify which bridge the visitor should use.',
+        'The detail about the river clarified the route.'
+      ]
+    }
+  ],
+  parts: [
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking',
+      title: 'Record all three parts',
+      ru: 'Ответь на части по порядку в одной записи. Таймер относится только к карточке Part 2. Запись можно прослушать или скачать из этой вкладки. После записи выбери два места, где голос помог или помешал понять маршрут.',
+      sections: [
+        {
+          title: 'Part 1 · Familiar questions',
+          prompts: [
+            'Do you usually look at a map before going somewhere new?',
+            'What kind of signs do you notice first when you arrive at a station?'
+          ]
+        },
+        {
+          title: 'Part 2 · Long turn',
+          prompts: [
+            'Describe a time when someone helped you find your way in an unfamiliar place.',
+            'You should say: where you were trying to go',
+            'who gave you directions',
+            'what made the directions easy or difficult to follow',
+            'and explain what you learned from the experience.'
+          ]
+        },
+        {
+          title: 'Part 3 · Discussion',
+          prompts: [
+            'Why are some public places easier to navigate than others?',
+            'Should a city design its signs mainly for people who visit regularly or for first-time visitors?'
+          ]
+        }
+      ],
+      prompts: [
+        'Describe a time when someone helped you find your way.',
+        'You should say where you were going, who helped and how clear the directions were.',
+        'Explain what you learned from the experience.'
+      ],
+      prep: 60,
+      talk: 120,
+      pron: {
+        title: 'Give each thought a clear centre',
+        ru: 'В каждой короткой группе выдели одно значение. Пауза помогает услышать границу. Если запнулся, уточни смысл фразой “I mean …” и продолжай.',
+        items: [
+          'Take the SECOND left.',
+          'Take the second LEFT.',
+          'After the bridge | follow the BLUE signs.',
+          'I mean | the entrance by the RIVER.'
+        ]
+      },
+      model: [
+        'Part 1. I usually check a map if I’m going to a new part of town, mostly so I know which exit to use. At a station I look for signs with a street name or a familiar landmark, because exit numbers on their own are hard for me to remember.',
+        'Part 2. A college student once showed me how to get to a public lecture. I had arrived at the north entrance, but the invitation showed a photograph of the south entrance, so I thought I was at the wrong site. She pointed across the courtyard and said I should take the second path, towards the bridge. I heard the emphasis on “second”, which mattered because the first path looked wider and much more inviting. After a brief pause she restated the instruction. She said I would see a blue sign just before the bridge. That last detail clarified the turn and let me check the route for myself. I learned that you can give quite a short instruction if you include one thing the other person can recognise without asking you again.',
+        'Part 3. Signs have to answer the questions that people have at the moment they see them. A regular visitor may remember a platform number, whereas a new visitor needs to know which hallway leads to it. I would design the main signs for first-time visitors and add short direct labels at familiar points, so regular visitors can still move quickly.'
+      ]
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Recording self-review',
+      title: 'Review two moments from your recording',
+      ru: 'Назови конкретную фразу или место записи. Объясни, какое слово было трудно понять, и запиши более чёткий вариант. Письменный разбор оценивает наблюдение и действие, без автоматического балла за речь.',
+      prompts: [
+        'Identify one place where stress or a pause helped the listener.',
+        'Identify one place you would restate and write the revised line.'
+      ],
+      minWords: 55,
+      checklist: [
+        'Я привёл(а) две конкретные фразы.',
+        'Я объяснил(а) эффект ударения, паузы или темпа.',
+        'Я написал(а) улучшенную фразу и произнёс(ла) её вслух.'
+      ],
+      model: [
+        'My pace slowed before “the SECOND path”, so the stress made the choice intelligible. The hesitation after “go over there” left the turn unclear, because I had not yet named a landmark. I would restate it as “At the bridge, follow the BLUE signs”. The pause after “bridge” and the emphasis on “blue” clarify which sign to follow.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Check the listener’s clue',
+      ru: 'В примерах заглавные буквы показывают ударение, вертикальная черта показывает паузу.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'Two paths turn left. A visitor asks whether to take the first or the second.',
+          stem: 'Which instruction makes the difference clearest?',
+          opts: [
+            'Take the second LEFT.',
+            'Take the SECOND left.',
+            'TAKE the second left.',
+            'Take the second left, over THERE.'
+          ],
+          key: 1,
+          ru: 'B. Выбор идёт между первым и вторым поворотом, поэтому важно выделить SECOND. В A выделено направление, которое в обоих случаях одинаково.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A listener asks which bridge you mean.',
+          stem: 'Which repair gives the clearest new information?',
+          opts: [
+            'As I said, use the bridge.',
+            'It is definitely a bridge.',
+            'I mean the footbridge next to the station.',
+            'I have directions for you.'
+          ],
+          key: 2,
+          ru: 'C. Footbridge next to the station даёт проверяемый ориентир. A и B повторяют исходное слово, D ничего не уточняет.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'The question is whether public signs should prioritise first-time visitors.',
+          stem: 'Which reply gives a general reason for its position?',
+          opts: [
+            'Yes. I once missed a bus.',
+            'I go to my station every day.',
+            'No, I don’t really like signs.',
+            'Yes. Regular visitors are more likely to know the route, while first-time visitors may need the sign to choose the correct exit.'
+          ],
+          key: 3,
+          ru: 'D. Ответ выражает позицию и сравнивает потребности групп. A остаётся на уровне одного случая. B и C не объясняют приоритет.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'A listener needs a clear route through an answer. In the next lesson you will build that route on the page.',
+    next: 'C15'
   }
 };

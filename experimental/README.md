@@ -68,6 +68,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 ## Key checks
 
+- 2026-11-20 · C14: three exit questions and two slide examples independently solved. Exit 3 tightened to ask for a general reason.
+
 - 2026-11-20 · C13: 12 homework questions and two worked examples independently solved. “Noon” and “local noon” both occur in the recording and are accepted.
 
 - 2026-11-20 · C11 and K3: 19 homework questions, two slide examples and nine check-in items independently solved. Re-solved revised C11 SAT 1 and 3, Reading 1, 5, 8 and 12, and K3 SAT 1–2.
@@ -165,7 +167,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C10 · Command of Evidence (textual), 20 Nov: 653 words, grade 12.6, 20.4 words per sentence. Matching headings, summary with a word box and multiple choice. Homework, slides and office hours.
 - [x] C11 and K3 (20 Nov) · Cross-Text Connections and Block C check-in. C11 Reading: 737 words, grade 11.2, 20.5 words per sentence. Matching features, sentence completion and multiple choice. K3: nine short scored questions.
 - [x] C13 · Listening lecture (20 Nov): 482 spoken words, 36 utterances, 10 ordered Part 4 note-completion items, two exit items and two slide examples. Homework, slides and office hours.
-- [ ] C14 · Speaking.
+- [x] C14 · Speaking (20 Nov): all three parts, local playback and download, Russian self-review, 3 exit items and 2 slide examples. Homework, slides and office hours.
 - [ ] C15 · Writing assembly.
 - [ ] C16 and KF · Mixed review and final check.
 - [ ] QA · Recheck new keys, sources, measurements, course navigation and the three browser suites.
@@ -173,6 +175,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 **Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Diagram label completion (C09), using an original SVG and typed labels. Listening notes: C13, in addition to C12 forms, plans and multiple choice.
 
 ## Loop log
+
+- 2026-11-20 · C14: added three Speaking sections and a local recording download tested with a simulated microphone. The optional timer runs Part 2 and does not stop the combined recording. Progress stores completion only.
 
 - 2026-11-20 · C13: full-length Part 4 question count, one fictional railway lecture, notes and a check that the speech engine receives the same text as the transcript. The timing example illustrates [NIST’s distinction between transmission delay and clock instability](https://tf.nist.gov/general/pdf/1799.pdf). The Reading measuring tool skips lessons that have no Reading passage.
 
@@ -187,6 +191,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
 
 ## Calls after QA (to confirm with Nurassyl)
+
+- C14 lets learners export a recording themselves. Keep pronunciation and fluency judgments with a person. The recorded audio is not part of course progress or automatically shared.
 
 - C13 has the official number of Part 4 items. Browser speech is a practice aid. Use a human recording and a phone playback check before presenting it as exam simulation.
 
