@@ -13,6 +13,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
   let sealedSet = null, displayedSet = null, receivedAt = 0;
+  let hideCorrect = false;
 
   async function api(action, body, id = round) {
     const params = new URLSearchParams({ action });
@@ -148,9 +149,9 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
 
   function scoreboard() {
     const table = document.createElement("table");
-    table.createCaption().textContent = "Ответы группы";
+    table.setAttribute("aria-label", "Ответы группы по вопросам");
     const header = table.createTHead().insertRow();
-    ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(i + 1)), "Верно"].forEach((label) => {
+    ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(i + 1)), ...(hideCorrect ? [] : ["Верно"])].forEach((label) => {
       const cell = document.createElement("th");
       cell.scope = "col";
       cell.textContent = label;
@@ -165,12 +166,73 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       for (let number = 1; number <= (state.total || 10); number++) {
         const answer = answers.get(number);
         const cell = row.insertCell();
+        if (hideCorrect && answer?.correct) {
+          cell.textContent = "—";
+          cell.setAttribute("aria-label", "Ответ скрыт");
+          continue;
+        }
         cell.textContent = answer ? answer.answer + (answer.correct ? " ✓" : " ✗") : "—";
         if (answer) cell.classList.add(answer.correct ? "answer-correct" : "answer-incorrect");
       }
-      row.insertCell().textContent = String([...answers.values()].filter((answer) => answer.correct).length);
+      if (!hideCorrect) row.insertCell().textContent = String([...answers.values()].filter((answer) => answer.correct).length);
     }
     return table;
+  }
+
+  function updateScoreboard(results) {
+    const signature = JSON.stringify([hideCorrect, state.students, state.answers]);
+    if (results.dataset.signature !== signature) {
+      results.replaceChildren(scoreboard());
+      results.dataset.signature = signature;
+    }
+  }
+
+  function reviewView(questions) {
+    const review = document.createElement("div");
+    review.dataset.review = "";
+    const nav = document.createElement("div");
+    nav.className = "live-review-nav";
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", "Перейти к вопросу");
+    questions.forEach((_, i) => select.add(new Option("Вопрос " + (i + 1), i)));
+    const card = document.createElement("article");
+    card.className = "live-host-question";
+    const title = heading("");
+    title.setAttribute("aria-live", "polite");
+    const body = document.createElement("div");
+    card.append(title, body);
+    function step(label, offset) {
+      const control = document.createElement("button");
+      control.type = "button";
+      control.className = "btn ghost";
+      control.textContent = label;
+      control.onclick = () => show(select.selectedIndex + offset);
+      return control;
+    }
+    const prev = step("← Назад", -1), next = step("Далее →", 1);
+    function show(index) {
+      if (!questions[index]) return;
+      select.selectedIndex = index;
+      title.textContent = `Вопрос ${index + 1} из ${questions.length}`;
+      if (index === 0 && document.activeElement === prev ||
+          index === questions.length - 1 && document.activeElement === next) select.focus();
+      prev.disabled = index === 0;
+      next.disabled = index === questions.length - 1;
+      const key = document.createElement("details");
+      key.className = "live-review-key";
+      const summary = document.createElement("summary");
+      summary.textContent = "Правильный ответ";
+      const value = document.createElement("p");
+      const grading = state.keys[index];
+      value.textContent = typeof grading === "string" ? grading : grading.accepted.join("; ");
+      key.append(summary, value);
+      body.replaceChildren(questionView(questions[index]), key);
+    }
+    select.onchange = () => show(select.selectedIndex);
+    nav.append(prev, select, next);
+    review.append(heading("Разбор вопросов"), nav, card);
+    show(0);
+    return review;
   }
 
   function render(set) {
@@ -206,15 +268,24 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         results.dataset.results = "";
         results.tabIndex = 0;
         results.setAttribute("role", "region");
-        results.setAttribute("aria-label", "Ответы группы");
-        const workspace = document.createElement("div");
-        workspace.className = "live-host-workspace";
+        results.setAttribute("aria-label", "Таблица ответов группы");
+        const answers = document.createElement("details");
+        answers.className = "live-group-answers";
+        answers.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = "Ответы группы";
+        const filter = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = hideCorrect;
+        checkbox.onchange = () => { hideCorrect = checkbox.checked; updateScoreboard(results); };
+        filter.append(checkbox, " Скрыть верные ответы учеников");
+        answers.append(summary, filter, results);
         const currentQuestion = document.createElement("article");
         currentQuestion.className = "live-host-question qhtml";
         currentQuestion.dataset.currentQuestion = "";
         currentQuestion.hidden = true;
-        workspace.append(currentQuestion, results);
-        content.append(heading(state.title), link, copy, launch, next, close, workspace);
+        content.append(heading(state.title), link, copy, launch, next, close, currentQuestion, answers);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
@@ -224,31 +295,14 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       const currentQuestion = content.querySelector("[data-current-question]");
       const showQuestion = !!number && !ended;
       currentQuestion.hidden = !showQuestion;
-      currentQuestion.parentElement.classList.toggle("has-live-question", showQuestion);
       if (showQuestion && currentQuestion.dataset.number !== String(number)) {
         currentQuestion.replaceChildren(heading("Вопрос " + number), questionView(set.q[number - 1]));
         currentQuestion.dataset.number = String(number);
       }
-      const signature = JSON.stringify([state.students, state.answers]);
-      if (results.dataset.signature !== signature) {
-        results.replaceChildren(scoreboard());
-        results.dataset.signature = signature;
-      }
+      updateScoreboard(results);
       message.textContent = ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total} · ${timing} · ${strict ? "строго" : "без строгого лимита"}` : `В комнате: ${state.students.length} · ${state.seconds || 45} с на вопрос · ${strict ? "строго" : "без строгого лимита"}`;
       if (state.finished && !content.querySelector("[data-review]")) {
-        const review = document.createElement("div");
-        review.dataset.review = "";
-        review.append(heading("Разбор вопросов"));
-        set.q.slice(0, state.total || 10).forEach((question, index) => {
-          const detail = document.createElement("details"), summary = document.createElement("summary");
-          summary.textContent = "Вопрос " + (index + 1);
-          const key = document.createElement("p");
-          const grading = state.keys[index];
-          key.textContent = "Правильный ответ: " + (typeof grading === "string" ? grading : grading.accepted.join("; "));
-          detail.append(summary, questionView(question), key);
-          review.append(detail);
-        });
-        content.append(review);
+        results.parentElement.before(reviewView(set.q.slice(0, state.total || 10)));
       }
       return;
     }

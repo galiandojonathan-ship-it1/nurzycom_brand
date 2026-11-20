@@ -127,6 +127,7 @@
   const css = `
 .ls-bar{position:fixed;z-index:60;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
   max-width:calc(100vw - 16px);background:var(--ink);color:var(--paper);padding:8px 10px;border-radius:var(--panel-radius);box-shadow:0 6px 24px rgba(15,15,15,.28);font:500 13px/1.2 var(--sans)}
+.ls-fixed-bar > .foot{padding-bottom:calc(var(--ls-h,56px) + 42px)}
 .ls-bar button{font:500 13px/1 var(--sans);color:#F5F3EE;background:transparent;border:1px solid rgba(245,243,238,.32);border-radius:var(--control-radius);padding:8px 12px;cursor:pointer}
 .ls-bar button:hover,.ls-bar button:focus-visible{background:#F5F3EE;color:#0F0F0F}
 .ls-bar button.ls-time-low{background:#A63328;color:#fff;border-color:#A63328}
@@ -158,6 +159,9 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
   document.head.appendChild(Object.assign(document.createElement("style"), { textContent: css }));
 
   let bar = null, pop = null, wordBtn = null, toastEl = null;
+  // On a live-round page the bar belongs in the page flow above the footer.
+  const footer = document.querySelector("body > footer.foot");
+  const inlineBar = footer && document.getElementById("p-start") && new URLSearchParams(location.search).get("live");
   function closePop() { if (pop) { pop.remove(); pop = null; } }
   function toast(msg, undo) {
     if (toastEl) toastEl.remove(); clearTimeout(undoTimer);
@@ -199,10 +203,20 @@ html.ls-pick body,html.ls-pick body *{cursor:crosshair !important}html.ls-pick .
       if (b.dataset.c) return vote(b.dataset.c);
       ({ timerSettings: configureTimer, timer: toggleTimer, home: () => (location.href = "classroom.html"), start: askStart, mist: openMist, word: () => pick(!picking), flag: askFlag, note: askNote, end: askEnd, min: () => { LS.setItem("ls_min", bar.classList.toggle("ls-min") ? "1" : "0"); place(); } })[b.dataset.a]();
     });
-    document.body.appendChild(bar); if (S) { count(); voteSync(); } updateTimer(); place();
+    if (inlineBar) footer.before(bar);
+    else {
+      document.body.appendChild(bar);
+      if (footer) document.body.classList.add("ls-fixed-bar");
+    }
+    if (S) { count(); voteSync(); } updateTimer(); place();
   }
   // the page keeps room under its last line for the bar, and messages sit just above the bar
-  function place() { if (!bar) return; const h = bar.offsetHeight; document.documentElement.style.setProperty("--ls-h", h + "px"); document.body.style.paddingBottom = h + 24 + "px"; }
+  function place() {
+    if (!bar) return;
+    const h = bar.offsetHeight;
+    document.documentElement.style.setProperty("--ls-h", h + "px");
+    if (!footer) document.body.style.paddingBottom = h + 24 + "px";
+  }
   window.addEventListener("resize", place);
   function open(html) { closePop(); pop = el(`<div class="ls-pop" role="dialog" aria-modal="false">${html}</div>`); document.body.appendChild(pop); const f = pop.querySelector("input[type=text],button"); if (f) f.focus(); pop.addEventListener("keydown", (e) => { if (e.key === "Escape") closePop(); }); return pop; }
 
