@@ -80,7 +80,17 @@ const base = 'http://127.0.0.1:8791/course/';
     const said = await p.evaluate(() => window.__said);
     if (!said.length || said.some(x => /^(Narrator|Assistant|Tom|Dana): /.test(x))) bad('C12 speaker labels read aloud ' + said.slice(0, 2));
     if (new Set(said.map(x => x.split('|')[1])).size < 3) bad('C12 voices not varied');
-    const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C05');
+    await p.goto(base + 'lesson.html?id=C13');
+    await p.locator('.steps a[data-step="listen"]').click();
+    if (await p.locator('#listen .gap-in').count() !== 10) bad('C13 Part 4 notes');
+    await p.locator('#listen button', { hasText: 'Слушать' }).first().click();
+    const transcriptAligned = await p.evaluate(() => {
+      const part = window.LESSONS.C13.parts[0];
+      const expected = part.transcript.map(t => t.replace(/^\w+: /, '')).join(' ');
+      return window.__said.map(t => t.split('|')[0]).join(' ') === expected;
+    });
+    if (!transcriptAligned) bad('C13 speech differs from the transcript');
+    const ov = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); if (ov > 1) bad('overflow C13');
     if (errs.length) bad(errs.join(' | ')); await p.close();
   }
   await b.close(); console.log(fails ? fails + ' FAILS' : 'ALL OK');

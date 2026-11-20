@@ -565,6 +565,75 @@ window.DECKS = {
         check: "Try each type in the gap: only a time is grammatical before a.m.",
         why: ["A name does not go before a.m.", "Correct.", "“starts at the library a.m.” is not possible.", "A direction does not fit either."] }
     ]
+  },
+
+  C13: {
+    rules: [
+      [
+        'Predict the kind of word.',
+        'A device, a difference and a time reference are different kinds of answer.'
+      ],
+      [ 'Use signposts to locate the answer.', '“Finally” can move the lecture to a new question.' ],
+      [
+        'Keep listening after a familiar word.',
+        'An explanation or correction may follow the word you expected.'
+      ]
+    ],
+    mistake: 'Writing the first familiar term and missing what the speaker actually means.',
+    story: [
+      [ 'One place', 'A shadow can help an observer identify local noon.' ],
+      [ 'One network', 'Regular ticking and agreement with another clock solve different problems.' ],
+      [ 'A useful report', 'The last successful comparison tells a reader how recent the evidence is.' ]
+    ],
+    bridge: [
+      'From signposts to a summary',
+      'Use the same turns to decide which claims to include in a short written summary.'
+    ],
+    ex: [
+      {
+        exam: 'IELTS',
+        label: 'Listening · locating the correction',
+        text: 'The controller says: “I wrote drift in the log. Hang on, the difference never grew. It was a fixed error in setting the clock.”',
+        stem: 'What cause does the controller finally give?',
+        opts: [ 'Drift.', 'A failure to keep a log.', 'A fixed setting error.', 'A faster signal.' ],
+        key: 2,
+        steps: [ 'Hear the initial guess.', 'Notice “Hang on”.', 'Choose the explanation that comes after it.' ],
+        check: 'Repeat the final cause in three or four words.',
+        why: [
+          'The controller withdraws this.',
+          'A log exists.',
+          'Correct: this is the final account.',
+          'Signal speed is not discussed.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Listening · organisation',
+        text: '“We have covered how the signal moves. Another question is how to tell when the local display last matched the reference.”',
+        stem: 'What change of topic does the speaker signal?',
+        opts: [
+          'From signal delivery to checking agreement.',
+          'From clocks to a passenger survey.',
+          'From who sent the signal to how to create the network.',
+          'From checking agreement to the cost of replacing a platform.'
+        ],
+        key: 0,
+        steps: [
+          'Mark the completed topic: signal movement.',
+          'Mark the new question: when the display matched.',
+          'Choose the option that preserves both sides of the turn.'
+        ],
+        check: 'Could the answer explain both sentences?',
+        why: [
+          'Correct: it captures the direction of the turn.',
+          'No survey.',
+          'No construction question.',
+          'Both topics are misstated.'
+        ],
+        chk: 2
+      }
+    ]
   }
 };
 
@@ -686,7 +755,30 @@ window.OFFICE = {
     peer: { task: "From notes to two sentences: the way to the library and the bus stop.",
       sample: "Library: turn left clock tower, second building right opposite lake. Bus stop moved behind library on Mill Road.",
       issues: [["GRA", "Это всё ещё заметки: нет подлежащего и сказуемого, пропущены артикли и предлоги (at the clock tower, on the right)."], ["TR", "Не сказано, где остановка была раньше, а это важная часть заметки."], ["CC", "Две мысли не связаны: нет ни связки, ни порядка."]] },
-    live: ["Part 2 · Describe the way from your home to a place you often visit.", "Part 1 · Do you prefer asking for directions or using an app?", "Part 3 · How could your town be easier for visitors to find their way around?"] }
+    live: ["Part 2 · Describe the way from your home to a place you often visit.", "Part 1 · Do you prefer asking for directions or using an app?", "Part 3 · How could your town be easier for visitors to find their way around?"] },
+
+  C13: {
+    focus: 'Назови, где прозвучал указатель нового пункта и в какой фразе нашёлся ответ. Отдельно отметь слово, которое могло прозвучать как ловушка.',
+    peer: {
+      task: 'Summarise why a rail network needs a reference and a record of checks.',
+      sample: 'There is a good shadow. Moreover, it is two minutes. Therefore, the signal is perfect and a check is unnecessary.',
+      issues: [
+        [
+          'TR',
+          'Исчезло различие между общей настройкой и проверкой после настройки. Вывод о ненужности проверок противоречит лекции.'
+        ],
+        [
+          'CC',
+          'Связки заявляют причину и добавление, но предложения не поддерживают вывод. Собери ответ вокруг одной проблемы и одного ограничения.'
+        ]
+      ]
+    },
+    live: [
+      'Explain why two reliable clocks can disagree.',
+      'When would a driver care more about a shared time than a very precise clock?',
+      'What information would you add to a report when the connection fails?'
+    ]
+  }
 };
 
 /* ------------------------------------------------------------------

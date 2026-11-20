@@ -46,13 +46,21 @@ def measure(text, awl=None):
 
 def lesson_passage(lid):
     root = pathlib.Path(__file__).resolve().parents[1]
-    js = "global.window={};" + (root / "assets/data.js").read_text(encoding="utf-8") + \
-         ";const L=window.LESSONS[%s];const p=L.parts.find(x=>x.id==='ielts');" \
-         "console.log(JSON.stringify({title:p.passageTitle,paras:p.passage}));" % json.dumps(lid)
-    import tempfile
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
-        f.write(js)
-    data = json.loads(subprocess.run(["node", f.name], capture_output=True, text=True, check=True).stdout)
+    js = "global.window={};" + (root / "assets/data.js").read_text(encoding="utf-8") + f"""
+const lesson = window.LESSONS[{json.dumps(lid)}];
+const part = lesson?.parts.find(item => item.id === 'ielts' && item.passage);
+console.log(JSON.stringify({{
+    exists: Boolean(lesson),
+    title: part?.passageTitle,
+    paras: part?.passage
+}}));
+"""
+    result = subprocess.run(["node", "-"], input=js, capture_output=True, text=True, check=True)
+    data = json.loads(result.stdout)
+    if not data["exists"]:
+        raise SystemExit(f"Unknown lesson: {lid}")
+    if "paras" not in data:
+        return None
     return data["title"], "\n\n".join(re.sub(r"^[A-H]\s+", "", t) for t in data["paras"])
 
 def main(a):
@@ -60,7 +68,12 @@ def main(a):
     if "--awl" in a:
         i = a.index("--awl"); awl = {l.strip().lower() for l in open(a[i + 1], encoding="utf-8") if l.strip()}; del a[i:i + 2]
     if a and a[0] == "--lesson":
-        title, text = lesson_passage(a[1]); label = a[1] + " · " + title
+        passage = lesson_passage(a[1])
+        if passage is None:
+            print(f"{a[1]} · SKIP: this lesson has no IELTS Reading passage.")
+            return 0
+        title, text = passage
+        label = a[1] + " · " + title
     else:
         text = open(a[0], encoding="utf-8").read(); label = a[0]
     out, checks = measure(text, awl)

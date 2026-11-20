@@ -42,7 +42,7 @@ window.COURSE = {
       shared: "Two points of view", sat: "Cross-Text Connections", ielts: "Task 2: discuss both views", speak: "Part 3 · compare views", write: "Introduction for a two-view essay" },
     { id: "C12", code: "LIS", block: "D", status: "live", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
       shared: "—", sat: "—", ielts: "Listening: directions on a map, predicting the answer type", speak: "Give directions aloud", write: "Notes from audio" },
-    { id: "C13", code: "LIS", block: "D", status: "planned", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
+    { id: "C13", code: "LIS", block: "D", status: "live", title: "A Lecture on Time", thread: "Signposts tell you where the speaker is going.",
       shared: "—", sat: "—", ielts: "Listening: lectures and signposting", speak: "Part 2 · retell the lecture", write: "Summary in three sentences" },
     { id: "C14", code: "SPK", block: "D", status: "planned", title: "Say It Clearly", thread: "Stress and pauses are the punctuation of speech.",
       shared: "—", sat: "—", ielts: "Speaking: all three parts + pronunciation", speak: "Full recorded answer", write: "Self-review of the recording" },
@@ -2675,4 +2675,333 @@ window.LESSONS.C12 = {
       ] }
   ],
   handoff: { text: "You followed one voice across a map. Next, a longer voice: a lecture on time, and the signposts that tell you where the speaker is going.", next: "C13" }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C13 = {
+  id: 'C13',
+  title: 'A Lecture on Time',
+  thread: 'Signposts tell you where the speaker is going.',
+  intro: 'В C12 ты ориентировался по плану. Здесь ориентиры слышны в лекции: возврат к теме, переход к новому пункту и уточнение. Железнодорожная сеть и её проверка в лекции используются как вымышленная модель.',
+  wordsTitle: 'Eight words for a lecture on time',
+  wordsRu: 'Слова встречаются в лекции или в примерах ответов. Произнеси их, затем найди знакомую идею в записи.',
+  wordLabels: [ 'Lecture', 'Application' ],
+  words: [
+    {
+      w: 'reference',
+      pos: 'n.',
+      ru: 'эталон, точка отсчёта',
+      ex: [
+        'A reference gives separate clocks something to agree on.',
+        'Check the reading against an independent reference.'
+      ]
+    },
+    {
+      w: 'precise',
+      pos: 'adj.',
+      ru: 'точный по ходу',
+      ex: [
+        'The clock is precise even though it was set incorrectly.',
+        'A precise instrument can reproduce a result.'
+      ]
+    },
+    {
+      w: 'signal',
+      pos: 'n.',
+      ru: 'сигнал',
+      ex: [ 'Each station receives a signal.', 'We can compare the time a signal was sent and received.' ]
+    },
+    {
+      w: 'adjust',
+      pos: 'v.',
+      ru: 'настраивать, поправлять',
+      ex: [ 'Staff adjust their displays to match.', 'Adjust the clock after checking its reading.' ]
+    },
+    {
+      w: 'drift',
+      pos: 'n.',
+      ru: 'постепенное отклонение',
+      ex: [ 'A growing difference may be drift.', 'A second check shows how much drift has accumulated.' ]
+    },
+    {
+      w: 'receiver',
+      pos: 'n.',
+      ru: 'приёмник',
+      ex: [ 'A receiver processes the signal.', 'The receiver can fail while the clock keeps ticking.' ]
+    },
+    {
+      w: 'delay',
+      pos: 'n.',
+      ru: 'задержка',
+      ex: [
+        'One problem is delay in the signal.',
+        'A delay is the difference between sending and receiving.'
+      ]
+    },
+    {
+      w: 'confidence',
+      pos: 'n.',
+      ru: 'уверенность, степень доверия',
+      ex: [
+        'Recent checks give the reader more confidence.',
+        'The report helps people judge their confidence in a reading.'
+      ]
+    }
+  ],
+  parts: [
+    {
+      type: 'questions',
+      id: 'listen',
+      label: 'IELTS-style · Listening Part 4',
+      title: 'Listen for the turn in the lecture',
+      ru: 'Один голос и десять пропусков по порядку лекции. Прочитай заметки заранее. Для тренировки формата включи запись один раз, а текст открой после ответов.',
+      voices: {
+        Narrator: { pitch: 1, rate: 0.92, lang: 'en-GB' },
+        Lecturer: { pitch: 0.92, rate: 0.96, lang: 'en-GB' }
+      },
+      audio: [
+        'Narrator: You will hear part of a lecture about how a network of clocks keeps time.',
+        'Narrator: First, look at questions one to ten.',
+        'Lecturer: Right, let’s begin with an ordinary problem.',
+        'Lecturer: Imagine a railway with a clock at each station.',
+        'Lecturer: A passenger changes trains at the next stop, so knowing that the first clock works well is useful only if the second clock tells the same time.',
+        'Lecturer: Now, before I get to the railway, I want to go back to how you could set one clock in one place.',
+        'Lecturer: One traditional reference was the Sun.',
+        'Lecturer: If you watched a shadow on a clear day, the shadow reached its shortest length around local noon.',
+        'Lecturer: That gave an observer a reference even without a clock already set.',
+        'Lecturer: But two towns farther east and west would not necessarily reach that point together.',
+        'Lecturer: So a local observation can be useful locally without giving a network a single time.',
+        'Lecturer: That brings me back to the railway.',
+        'Lecturer: Let’s separate two ideas here.',
+        'Lecturer: First, a clock may be precise: it can tick at a regular rate.',
+        'Lecturer: A clock that runs exactly two minutes ahead could still be precise in this sense.',
+        'Lecturer: Second, it must agree with a common reference.',
+        'Lecturer: If you set one clock and overlook its neighbour, both can tick regularly and still disagree.',
+        'Lecturer: So in our imagined railway, the station staff receive a signal from one master clock and adjust their displays to match it.',
+        'Lecturer: Now, how would you know whether the displays stay together?',
+        'Lecturer: Well, make a record between adjustments.',
+        'Lecturer: Suppose an inspector checks a station clock in the morning and at the close of service.',
+        'Lecturer: If the difference gets larger, that may be drift.',
+        'Lecturer: An error that stays the same is a different thing.',
+        'Lecturer: It may come from setting the clock incorrectly in the first place.',
+        'Lecturer: Here’s another complication: the signal has to reach the clock.',
+        'Lecturer: Think of a signal carried through a network and processed by a receiver.',
+        'Lecturer: It takes time to arrive.',
+        'Lecturer: This may sound like a problem with precision, but for the moment I mean delay in the signal, rather than irregular ticking in the station clock.',
+        'Lecturer: To test for that, write down both the time sent and the time received.',
+        'Lecturer: In a prepared test, the comparison can help you estimate the delay.',
+        'Lecturer: Finally, consider what you would do if the connection failed.',
+        'Lecturer: The station clock could continue on its own, and the people on the platform might never notice the change.',
+        'Lecturer: But staff would no longer have a fresh comparison with the reference.',
+        'Lecturer: So the important thing to put in a report is the last successful check, rather than simply saying the clock is working.',
+        'Lecturer: That gives the reader a way to judge how much confidence to put in the current display.',
+        'Lecturer: We’ve moved from a local cue, a shadow, to a system that shows its own limitations as well as the time.'
+      ],
+      transcript: [
+        'Narrator: You will hear part of a lecture about how a network of clocks keeps time. First, look at questions one to ten.',
+        'Lecturer: Right, let’s begin with an ordinary problem. Imagine a railway with a clock at each station. A passenger changes trains at the next stop, so knowing that the first clock works well is useful only if the second clock tells the same time.',
+        'Lecturer: Now, before I get to the railway, I want to go back to how you could set one clock in one place. One traditional reference was the Sun. If you watched a shadow on a clear day, the shadow reached its shortest length around local noon. That gave an observer a reference even without a clock already set. But two towns farther east and west would not necessarily reach that point together. So a local observation can be useful locally without giving a network a single time.',
+        'Lecturer: That brings me back to the railway. Let’s separate two ideas here. First, a clock may be precise: it can tick at a regular rate. A clock that runs exactly two minutes ahead could still be precise in this sense. Second, it must agree with a common reference. If you set one clock and overlook its neighbour, both can tick regularly and still disagree. So in our imagined railway, the station staff receive a signal from one master clock and adjust their displays to match it.',
+        'Lecturer: Now, how would you know whether the displays stay together? Well, make a record between adjustments. Suppose an inspector checks a station clock in the morning and at the close of service. If the difference gets larger, that may be drift. An error that stays the same is a different thing. It may come from setting the clock incorrectly in the first place.',
+        'Lecturer: Here’s another complication: the signal has to reach the clock. Think of a signal carried through a network and processed by a receiver. It takes time to arrive. This may sound like a problem with precision, but for the moment I mean delay in the signal, rather than irregular ticking in the station clock. To test for that, write down both the time sent and the time received. In a prepared test, the comparison can help you estimate the delay.',
+        'Lecturer: Finally, consider what you would do if the connection failed. The station clock could continue on its own, and the people on the platform might never notice the change. But staff would no longer have a fresh comparison with the reference. So the important thing to put in a report is the last successful check, rather than simply saying the clock is working. That gives the reader a way to judge how much confidence to put in the current display. We’ve moved from a local cue, a shadow, to a system that shows its own limitations as well as the time.'
+      ],
+      items: [
+        {
+          group: {
+            title: 'Questions 1–10',
+            task: 'Complete the notes below. Write NO MORE THAN TWO WORDS from the recording for each answer.',
+            ru: 'Следи за указателями first, that brings me back, another complication, finally. Вписывай слова, которые услышал(а).',
+            table: {
+              caption: 'Lecture notes · Clocks across a railway',
+              head: [ 'Topic', 'Notes' ],
+              rows: [
+                [ 'Local time', 'Reference: the (1) ______\nShortest shadow: around (2) ______' ],
+                [
+                  'Agreement',
+                  'A precise clock ticks at a (3) ______\nSource shared by stations: one (4) ______'
+                ],
+                [
+                  'Between checks',
+                  'A growing difference may be (5) ______\n' +
+                    'An unchanged difference may follow from (6) ______ the clock incorrectly'
+                ],
+                [
+                  'Signal delivery',
+                  'Device that processes it: a (7) ______\nTime required for it to arrive: (8) ______'
+                ],
+                [
+                  'Loss of connection',
+                  'The clock can continue on its (9) ______\nReport the last successful (10) ______'
+                ]
+              ]
+            }
+          },
+          kind: 'gap',
+          limit: 2,
+          stem: '1 · Traditional reference used to set a clock in one place: the ______.',
+          accept: [ 'Sun' ],
+          ru: 'После «go back to how you could set one clock» лектор называет Sun. Railway — тема всей лекции, а не точка отсчёта.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '2 · At what point is the shadow shortest? Around ______.',
+          accept: [ 'local noon', 'noon' ],
+          ru: 'Лектор говорит around local noon. Допустимо noon, потому что local лишь уточняет, чьё это время. East и west относятся к сравнению городов.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '3 · A precise clock ticks at a ______.',
+          accept: [ 'regular rate' ],
+          ru: 'После «First» звучит regular rate. Common reference относится ко второму условию, совпадению времени.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '4 · Stations adjust their displays using a signal from one ______.',
+          accept: [ 'master clock' ],
+          ru: 'После «So in our imagined railway» источник назван master clock. Signal — то, что посылают, а не источник.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '5 · A growing difference between the readings may be ______.',
+          accept: [ 'drift' ],
+          ru: 'If the difference gets larger, that may be drift. Постоянная ошибка обсуждается дальше.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '6 · A difference that stays the same can come from ______ the clock incorrectly.',
+          accept: [ 'setting' ],
+          ru: '«It may come from setting the clock incorrectly in the first place». Adjustments относятся к проверкам, а дальше названо исходное действие.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '7 · In the network example the signal is processed by a ______.',
+          accept: [ 'receiver' ],
+          ru: 'Processed by a receiver. Network — путь сигнала, receiver — устройство.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '8 · The time a signal takes to arrive is called ______.',
+          accept: [ 'delay' ],
+          ru: '«I mean delay in the signal». Лектор упоминает precision, затем уточняет, что речь о задержке.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '9 · If the connection fails, the clock could continue on its ______.',
+          accept: [ 'own' ],
+          ru: '«Continue on its own» показывает, что часы сохраняют ход без свежего сигнала.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '10 · A useful report gives the last successful ______.',
+          accept: [ 'check' ],
+          ru: '«The last successful check». Сказать только, что часы работают, недостаточно: тогда неизвестно, когда их сверяли.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 2',
+      title: 'Retell the problem with two signposts',
+      ru: 'Кратко перескажи лекцию своими словами. Голосом отметь переход от местных часов к системе. Пример записи можно сохранить на этом устройстве.',
+      prompts: [
+        'Describe a problem that can arise when different people have to use the same time.',
+        'You should say: where it could happen',
+        'how the clocks might disagree',
+        'what a common reference changes',
+        'and explain why checking the clocks is still useful.'
+      ],
+      prep: 60,
+      talk: 120,
+      pron: {
+        title: 'Pause before a change of topic',
+        ru: 'Перед новой частью сделай паузу. Смысловое слово в следующей части выдели голосом.',
+        items: [
+          'Let’s begin with the PROBLEM.',
+          'That brings me back to the RAILway.',
+          'Here is another compliCAtion.',
+          'FINally, check the time.'
+        ]
+      },
+      model: 'Imagine two stations with their own clocks and a passenger who has to change trains. To begin with, each clock can be precise on its own, yet the displays might disagree. That brings me to the reference. A signal from one master clock lets staff adjust both displays. Finally, a report should tell us when the last check succeeded, because an old check gives us less confidence if the receiver stops working. A clock can keep ticking without keeping in step with the others.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Writing micro-task',
+      title: 'Summarise a lecture in three sentences',
+      ru: 'Напиши три предложения. Назови проблему, опиши решение и укажи, какое ограничение осталось. Вместо деталей о тени и платформе возьми главную связь между точностью и согласованием.',
+      prompts: [ 'Summarise why a railway needs a shared time reference and why it checks the signal.' ],
+      minWords: 45,
+      checklist: [
+        'Есть различие между ровным ходом и совпадением.',
+        'Назван общий источник сигнала.',
+        'Я объяснил(а), почему нужна проверка даже при работающих часах.'
+      ],
+      model: [
+        'Separate clocks may tick regularly and still disagree, so an imagined railway uses a common reference to set the station displays. Checking a signal’s sending and receiving times helps identify delay, while repeated comparisons can reveal drift. If the connection fails, the last successful check gives staff a better reason for confidence than seeing that a display is still working.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Follow the signpost',
+      ru: 'В этих двух вопросах фрагменты напечатаны. Определи, что обещает указатель и что лектор сказал после уточнения.',
+      items: [
+        {
+          kind: 'mcq',
+          text: '“I have explained why two clocks can disagree. Now let’s look at what happens when a signal reaches a station late.”',
+          stem: 'What will the speaker discuss next?',
+          opts: [
+            'The history of clockmaking.',
+            'The number of station clocks.',
+            'The location of the clock factory.',
+            'The delay in a signal reaching the station.'
+          ],
+          key: 3,
+          ru: 'D. Now let’s look переносит внимание на позднее поступление сигнала. Первая фраза завершает предыдущий пункт.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: '“You might think this is drift. In this case the difference stayed exactly the same, so the likely problem was the way the clock was set.”',
+          stem: 'What explanation does the speaker favour?',
+          opts: [
+            'An error in the original setting.',
+            'A difference that grew over time.',
+            'A signal that arrived earlier every day.',
+            'A station that had no clock.'
+          ],
+          key: 0,
+          ru: 'A. В словах после in this case лектор называет исходную настройку. Drift звучит первым как возможная, но отвергнутая версия.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'You heard how signposts organise a lecture. Next, use stress and pauses to organise a reply of your own.',
+    next: 'C14'
+  }
 };
