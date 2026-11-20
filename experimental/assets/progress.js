@@ -95,7 +95,9 @@
       el("thead", {}, [el("tr", {}, [el("th", { scope: "col", text: "Навык" }), el("th", { scope: "col", text: "Диагностика" }), el("th", { scope: "col", text: "Check-in A" }), el("th", { scope: "col", text: "Рост" })])]), cmp])]),
     lessonComparison("K2", ["C05", "C06", "C07", "C08"], "Check-in B", "Check-in B · The paragraph"),
     CAD.checkins.some(function (c) { return c.id === "K3" && c.status === "live"; })
-      ? lessonComparison("K3", ["C09", "C10", "C11"], "Check-in C", "Check-in C · The argument") : null]));
+      ? lessonComparison("K3", ["C09", "C10", "C11"], "Check-in C", "Check-in C · The argument") : null,
+    CAD.checkins.some(function (c) { return c.id === "KF" && c.status === "live"; })
+      ? lessonComparison("KF", live.map(function (l) { return l.id; }), "Final check", "Final check · Your next practice") : null]));
 
   /* 3. skills from homework */
   var agg = {};

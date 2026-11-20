@@ -29,7 +29,7 @@ window.CADENCE = {
     { id: "K1", title: "Check-in A · The sentence", after: "C04", ru: "После C04", status: "live" },
     { id: "K2", title: "Check-in B · The paragraph", after: "C08", ru: "После C08", status: "live" },
     { id: "K3", title: "Check-in C · The argument", after: "C11", ru: "После C11", status: "live" },
-    { id: "KF", title: "Final check", after: "C16", ru: "В конце курса", status: "planned" }
+    { id: "KF", title: "Final check", after: "C16", ru: "В конце курса", status: "live" }
   ],
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
@@ -796,6 +796,82 @@ window.DECKS = {
         chk: 2
       }
     ]
+  },
+
+  C16: {
+    rules: [
+      [
+        'Identify the decision you need to make.',
+        'A transition, a supported conclusion and a missing detail call for different checks.'
+      ],
+      [
+        'Find the evidence that changes the decision.',
+        'Mark the phrase, observation or spoken correction that distinguishes the options.'
+      ],
+      [ 'Write a repeatable check for one error.', 'Name the cue you will look for in a new item.' ]
+    ],
+    mistake: 'Writing “read more carefully” without naming the missed cue.',
+    story: [
+      [ 'The visitor’s map', 'A route guide can leave out rooms to make each choice of direction easier.' ],
+      [
+        'The designer’s map',
+        'A trial records where people hesitate and what information was missing when they did.'
+      ],
+      [ 'Your map', 'Keep the actual choice, the cue you missed and one check you can use again.' ]
+    ],
+    bridge: [
+      'Transfer the check',
+      'A reader and a listener can both miss a correction or a limit. Choose the cue that would change the answer in each medium.'
+    ],
+    ex: [
+      {
+        exam: 'SAT',
+        label: 'Inference and scope',
+        text: 'Only visitors who entered through the courtyard tried the guide. None of the volunteers recorded what happened at the side entrance.',
+        stem: 'Which conclusion is supported?',
+        opts: [
+          'The guide was tested from the courtyard.',
+          'It works at every entrance.',
+          'Visitors at the side entrance preferred it.',
+          'The courtyard is the only entrance.'
+        ],
+        key: 0,
+        steps: [
+          'Locate where the observations were made.',
+          'Separate the observed entrance from the other entrance.',
+          'Choose the conclusion that keeps that scope.'
+        ],
+        check: 'Name the place that the text actually observes.',
+        why: [
+          'Correct: that is the trial’s scope.',
+          'Generalises to untested places.',
+          'No side-entrance result.',
+          'The side entrance is mentioned.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Listening · a revised decision',
+        text: '“We had planned to meet at the lift. The lift area will be crowded, so wait by the information desk instead.”',
+        stem: 'Where should the group meet?',
+        opts: [ 'by the lift', 'in the courtyard', 'by the information desk', 'at the entrance gate' ],
+        key: 2,
+        steps: [
+          'Keep track of the original suggestion.',
+          'Listen for the change and its reason.',
+          'Use the final confirmed location.'
+        ],
+        check: 'Point to the word that replaces the first plan.',
+        why: [
+          'Original plan only.',
+          'Not mentioned.',
+          'Correct: “instead” marks the final choice.',
+          'Not mentioned.'
+        ],
+        chk: 2
+      }
+    ]
   }
 };
 
@@ -989,6 +1065,26 @@ window.OFFICE = {
       'When is uniform information more valuable than local flexibility?',
       'What example would make a case for letting operators keep a local section?',
       'How would you state a final position that respects both concerns?'
+    ]
+  },
+
+  C16: {
+    focus: 'Разбери две разные ошибки. Для каждой назови свой выбор, опорную фразу или сигнал и проверку для новой задачи.',
+    peer: {
+      task: 'Describe two errors and propose a repeatable check for each.',
+      sample: 'I lost some marks because the text was difficult. I should work harder. The first answer was wrong, therefore I will choose a different option.',
+      issues: [
+        [ 'TR', 'Не названы ошибки, опорные слова и новая проверка. Нужны два конкретных случая.' ],
+        [
+          'CC',
+          'Therefore связывает неверный ответ с произвольной заменой. Покажи, какой признак должен изменить решение.'
+        ]
+      ]
+    },
+    live: [
+      'Which information on a map is worth keeping if a visitor only needs to make one turn?',
+      'What listening signal helped you change an answer?',
+      'Describe one check you can use again on a different passage.'
     ]
   }
 };
@@ -1367,4 +1463,294 @@ window.LESSONS.K3 = {
     text: 'You have tested three ways of reading an argument. Next, listen for the information that moves a story forward.',
     next: 'C12'
   }
+};
+
+/* Final check · Your next practice */
+window.LESSONS.KF = {
+  id: 'KF',
+  checkin: true,
+  title: 'Final check · Your next practice',
+  thread: 'Use the checks you can repeat.',
+  intro: 'Короткая итоговая проверка по материалу курса. Здесь 8 заданий SAT, 4 Reading и 4 Listening. Все тексты и ситуации новые. В «Прогрессе» виден результат по заданиям и навыкам. Письмо и устную запись оценивай по качественной обратной связи.',
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Eight decisions in new texts',
+      ru: 'Выбери один ответ. Сначала определи, какой признак в тексте решает задачу. Все ситуации вымышлены.',
+      items: [
+        {
+          skill: 'WIC',
+          kind: 'mcq',
+          text: 'The guide was deliberately selective. It showed only the crossings relevant to visitors walking from the station and left out roads that led away from the centre.',
+          stem: 'As used in the text, what does “selective” most nearly mean?',
+          opts: [
+            'Made up of carefully chosen details',
+            'Available only at certain times',
+            'Liked by nearly all visitors',
+            'Based on uncertain measurements'
+          ],
+          key: 0,
+          ru: 'A. Only и left out показывают отбор деталей. B ограничивает время, C говорит об оценке, D — о точности, которой текст не касается.',
+          chk: 2
+        },
+        {
+          skill: 'BND',
+          kind: 'mcq',
+          text: 'The sign lists the opening ______ the panel below it shows how to reach the entrance.',
+          stem: 'Which choice completes the text so that it conforms to the conventions of Standard English?',
+          opts: [ 'hours,', 'hours and,', 'hours;', 'hours' ],
+          key: 2,
+          ru: 'C. Точка с запятой соединяет два самостоятельных предложения. A — только запятая, B — запятая после союза, D — нет знака или союза.',
+          chk: 2
+        },
+        {
+          skill: 'FSS',
+          kind: 'mcq',
+          text: 'The labels on the collection box, unlike the small sign by the entrance, ______ visible from the back of the queue.',
+          stem: 'Which choice completes the text so that it conforms to the conventions of Standard English?',
+          opts: [ 'is', 'are', 'has been', 'was' ],
+          key: 1,
+          ru: 'B. Подлежащее labels во множественном числе. Sign стоит в сравнительном обороте и не определяет форму глагола.',
+          chk: 2
+        },
+        {
+          skill: 'TRN',
+          kind: 'mcq',
+          text: 'A paper guide can be used without a connection. ______ visitors may prefer a phone guide when they need a route that reflects a last-minute closure.',
+          stem: 'Which choice completes the text with the most logical transition?',
+          opts: [ 'For instance,', 'Consequently,', 'In other words,', 'Nevertheless,' ],
+          key: 3,
+          ru: 'D. У бумаги есть преимущество, однако новая потребность даёт преимущество телефону. A вводит пример, B — следствие, C — перефразирование предыдущей мысли.',
+          chk: 2
+        },
+        {
+          skill: 'RS',
+          kind: 'mcq',
+          text: 'While researching a topic, a student has taken the following notes:\n' +
+            '• Oak Hall has two entrances.\n' +
+            '• The west entrance has steps.\n' +
+            '• The east entrance has a ramp.\n' +
+            '• Both entrances lead to the same lobby.',
+          stem: 'The student wants to tell a visitor using a wheelchair which entrance to try. Which choice most effectively uses relevant information from the notes?',
+          opts: [
+            'Oak Hall has two entrances, one on each side of the building.',
+            'Both entrances lead to the same lobby.',
+            'The east entrance has a ramp.',
+            'The west entrance is one of Oak Hall’s two entrances.'
+          ],
+          key: 2,
+          ru: 'C. В заметках только восточный вход описан как имеющий пандус. Остальные варианты не указывают, как избежать ступеней.',
+          chk: 2
+        },
+        {
+          skill: 'CTC',
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'The first page of a visitor guide should show the fastest route to the meeting room.\n' +
+            '\n' +
+            'Text 2\n' +
+            'A first page should help visitors act quickly. A route that looks faster on paper is less useful if visitors cannot recognise its entrances.',
+          stem: 'How would the author of Text 2 most likely qualify the recommendation in Text 1?',
+          opts: [
+            'By arguing that a quick route also needs entrances that are easy to identify.',
+            'By denying that visitors want to act quickly.',
+            'By asking guides to hide all of the entrances.',
+            'By claiming that the first page should give only historical information.'
+          ],
+          key: 0,
+          ru: 'A. Автор 2 сохраняет цель скорости, но указывает, что входы на таком пути должны быть узнаваемыми. Остальные ответы отрицают согласие или добавляют тему.',
+          chk: 2
+        },
+        {
+          skill: 'INF',
+          kind: 'mcq',
+          text: 'A team recorded problems people had when following a guide on paper. The team planned to test the phone version later, with a separate group.',
+          stem: 'Which conclusion follows most reasonably from the description?',
+          opts: [
+            'The team had already found fewer problems in the phone version.',
+            'The first group’s results alone cannot establish how the phone version performs.',
+            'The phone version depends on the paper guide to work.',
+            'A separate group has already tested every route.'
+          ],
+          key: 1,
+          ru: 'B. Данные пока только о бумажной версии, телефонная проверка запланирована. A и D делают будущий тест состоявшимся. C приписывает связь без опоры.',
+          chk: 2
+        },
+        {
+          skill: 'COEQ',
+          kind: 'mcq',
+          text: 'At a fictional exhibition, visitors followed either the old or the new entrance sign. Old sign: 30 visitors, 12 took a wrong turn. New sign: 60 visitors, 12 took a wrong turn. A student claims that a smaller share of visitors took a wrong turn with the new sign.',
+          stem: 'Which choice most effectively uses the data to support the claim?',
+          opts: [
+            'Twelve visitors took a wrong turn with each sign.',
+            'More people took part in the trial with the new sign.',
+            'The first sign was used by 30 visitors.',
+            'The share fell from 12 out of 30, or 40 percent, to 12 out of 60, or 20 percent.'
+          ],
+          key: 3,
+          ru: 'D. Число ошибок прежнее, но знаменатель удвоился. A берёт только число, B и C не сравнивают доли.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading practice',
+      title: 'A short passage about a collection',
+      ru: 'Прочитай короткий текст. Это выборка заданий на чтение по источнику.',
+      lettered: true,
+      passageTitle: 'A Label for Two Readers',
+      passage: [
+        'At the fictional Belwick archive, each drawer has a number used by staff when they return documents to storage. Researchers needed a different kind of information. A drawer number was precise, yet a visitor could not tell from it which drawer contained early photographs. The archive kept the numbers and added a short subject label to help researchers begin.',
+        'The staff first tried the new subject labels in one room. A visitor looking for photographs could read the subject labels and then write down the drawer number for a request form. Staff did not change the storage order. On trial days an observer recorded whether a visitor could choose a drawer without asking for help, but did not record how long the visit lasted.',
+        'Some drawers contained material about more than one subject. The archive added a separate index for these cases, so that the label on the drawer could stay short. In the next trial, the staff planned to check whether a reader could use the index without learning the archive’s filing system first.'
+      ],
+      items: [
+        {
+          skill: 'R-MC',
+          kind: 'mcq',
+          stem: 'Why did the archive add short labels?',
+          opts: [
+            'To record the condition of each photograph.',
+            'To help visitors choose a drawer by subject.',
+            'To replace the numbers on request forms.',
+            'To move older documents out of storage.'
+          ],
+          key: 1,
+          ru: 'B. В A посетитель не может по номеру определить тему, поэтому добавлена короткая подпись. A и D не названы, C противоречит тому, что номера сохранили.',
+          group: {
+            title: 'Questions 1–2',
+            task: 'Choose the correct letter, A, B, C or D.',
+            ru: 'Найди действие и его цель.'
+          },
+          chk: 2
+        },
+        {
+          skill: 'R-MC',
+          kind: 'mcq',
+          stem: 'What was the main purpose of the separate index?',
+          opts: [
+            'To give information about the age of every visitor.',
+            'To show staff a new storage order.',
+            'To record the length of each visit.',
+            'To help readers locate material that covered several subjects.'
+          ],
+          key: 3,
+          ru: 'D. В C индекс решает проблему материала на несколько тем. B противоречит B текста, C не измеряли, A вне текста.',
+          chk: 2
+        },
+        {
+          skill: 'R-GAP',
+          kind: 'gap',
+          limit: 2,
+          stem: '3 · For a request, visitors wrote the drawer number on a ______.',
+          accept: [ 'request form', 'form' ],
+          ru: 'B. Drawer number остаётся в заявке. Вписываем название бланка request form или form.',
+          group: {
+            title: 'Question 3',
+            task: 'Complete the sentence. Choose NO MORE THAN TWO WORDS from the passage.',
+            ru: 'Впиши слова из текста.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          skill: 'R-TFNG',
+          stem: 'Staff recorded the length of each visit in the first trial.',
+          key: 'F',
+          ru: 'FALSE. В B прямо сказано, что длительность посещения не записывали. Фиксировали, удалось ли выбрать ящик самостоятельно.',
+          group: {
+            title: 'Question 4',
+            task: 'Choose TRUE, FALSE or NOT GIVEN.',
+            ru: 'Сверь утверждение с текстом.'
+          },
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'listen',
+      label: 'IELTS-style · Listening practice',
+      title: 'A short visit announcement',
+      ru: 'Четыре пропуска по порядку. Слушай, какую информацию говорящий уточняет.',
+      voices: {
+        Narrator: { pitch: 1, rate: 0.93, lang: 'en-GB' },
+        Guide: { pitch: 1.13, rate: 0.96, lang: 'en-GB' }
+      },
+      audio: [
+        'Narrator: You will hear an announcement about a visit to an exhibition.',
+        'Narrator: Look at questions one to four.',
+        'Guide: Hello everyone.',
+        'Guide: Tomorrow’s visit is still going ahead.',
+        'Guide: We’d planned to meet at the south entrance, but there’s work on that door.',
+        'Guide: Come to the east entrance instead.',
+        'Guide: It’s next to the fountain, and I’ll be waiting outside.',
+        'Guide: Let’s meet at nine fifteen.',
+        'Guide: Sorry, that’s the time I need to arrive to collect the tickets.',
+        'Guide: You should be there at nine thirty.',
+        'Guide: The group will go in together, so please find me before you go through the door.',
+        'Guide: You can leave heavy bags downstairs.',
+        'Guide: I said last week that you might need a coin for the locker, but the lockers now take a token.',
+        'Guide: Ask for one at the reception desk.',
+        'Guide: We’ll finish the visit on the top floor.',
+        'Guide: The stairs are beside the exhibition room, but anyone who needs the lift should follow the signs marked Terrace.',
+        'Guide: The lift is just before the doors that lead outside.'
+      ],
+      transcript: [
+        'Narrator: You will hear an announcement about a visit to an exhibition. Look at questions one to four.',
+        'Guide: Hello everyone. Tomorrow’s visit is still going ahead. We’d planned to meet at the south entrance, but there’s work on that door. Come to the east entrance instead. It’s next to the fountain, and I’ll be waiting outside.',
+        'Guide: Let’s meet at nine fifteen. Sorry, that’s the time I need to arrive to collect the tickets. You should be there at nine thirty. The group will go in together, so please find me before you go through the door.',
+        'Guide: You can leave heavy bags downstairs. I said last week that you might need a coin for the locker, but the lockers now take a token. Ask for one at the reception desk.',
+        'Guide: We’ll finish the visit on the top floor. The stairs are beside the exhibition room, but anyone who needs the lift should follow the signs marked Terrace. The lift is just before the doors that lead outside.'
+      ],
+      items: [
+        {
+          skill: 'LIS',
+          kind: 'gap',
+          limit: 2,
+          stem: '1 · Meet at the ______ entrance.',
+          accept: [ 'east' ],
+          ru: 'Гид заменяет южный вход восточным из-за работ.',
+          group: {
+            title: 'Questions 1–4',
+            task: 'Complete the notes. Write NO MORE THAN TWO WORDS AND/OR A NUMBER from the recording for each answer.',
+            ru: 'Если услышал(а) поправку, впиши уточнённый вариант.'
+          },
+          chk: 2
+        },
+        {
+          skill: 'LIS',
+          kind: 'gap',
+          limit: 2,
+          stem: '2 · Time for visitors to meet: ______.',
+          accept: [ '9:30', '9.30', 'nine thirty', '09:30', '09.30' ],
+          ru: 'Nine fifteen — время для гида. Nine thirty — время встречи группы.',
+          chk: 2
+        },
+        {
+          skill: 'LIS',
+          kind: 'gap',
+          limit: 2,
+          stem: '3 · Ask reception for a ______ to use a locker.',
+          accept: [ 'token' ],
+          ru: 'Coin устарело. Сейчас для шкафчика нужен token.',
+          chk: 2
+        },
+        {
+          skill: 'LIS',
+          kind: 'gap',
+          limit: 2,
+          stem: '4 · Sign to follow for the lift: ______.',
+          accept: [ 'Terrace' ],
+          ru: 'На указателях для лифта написано Terrace. Stairs описывают другой путь.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: { text: 'Review the answers by skill and choose your next two checks.', next: 'C16' }
 };

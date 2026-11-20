@@ -18,7 +18,7 @@
   var part = function (pid) { return L.parts.filter(function (p) { return p.id === pid; })[0]; };
   var order = window.COURSE.lessons.filter(function (x) { return x.status === "live"; }).map(function (x) { return x.id; });
   var prevId = order[order.indexOf(id) - 1], prev = prevId && window.LESSONS[prevId];
-  var next = NZ.meta(L.handoff.next);
+  var next = NZ.meta(L.handoff.next) || window.CADENCE.checkins.find(function (c) { return c.id === L.handoff.next; });
 
   var S = [];  /* each slide: { kind, label, build: () => node } */
   var add = function (kind, label, kids, cls) { S.push({ kind: kind, label: label, kids: kids, cls: cls || "" }); };

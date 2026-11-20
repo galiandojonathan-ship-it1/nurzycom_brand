@@ -48,8 +48,8 @@ window.COURSE = {
       shared: "—", sat: "—", ielts: "Speaking: all three parts + pronunciation", speak: "Full recorded answer", write: "Self-review of the recording" },
     { id: "C15", code: "WRT", block: "D", status: "live", title: "Building the Essay", thread: "Every brick from lessons 2–11, in one piece.",
       shared: "—", sat: "—", ielts: "Writing Task 2 from the bricks (inside the course only)", speak: "Part 3", write: "Full Task 2 essay" },
-    { id: "C16", code: "MIX", block: "E", status: "planned", title: "Your Own Map", thread: "Draw the map of your errors. Decide what to leave out.",
-      shared: "Mixed review", sat: "Mixed review + range", ielts: "Reading and Listening timing + range", speak: "Final recorded answer", write: "Personal error list" }
+    { id: "C16", code: "MIX", block: "E", status: "live", title: "Your Own Map", thread: "Draw the map of your errors. Decide what to leave out.",
+      shared: "Mixed review", sat: "Mixed review + range", ielts: "Reading and Listening · mixed practice", speak: "Final recorded answer", write: "Personal error list" }
   ],
 
   /* Honest transfer map: D = directly, P = partly, N = not at all */
@@ -3407,4 +3407,547 @@ window.LESSONS.C15 = {
     text: 'You built a complete argument from a clear route through the evidence. Now map the skills you want to carry into independent practice.',
     next: 'C16'
   }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C16 = {
+  id: 'C16',
+  title: 'Your Own Map',
+  thread: 'Draw the map of your errors. Decide what to leave out.',
+  intro: 'В начале курса карта помогала выбрать нужные детали. Теперь у тебя две карты: навигация для посетителя и список навыков для следующей попытки. Материалы про общественные здания вымышлены.',
+  words: [
+    {
+      w: 'prioritise',
+      pos: 'v.',
+      ru: 'отдавать приоритет',
+      sat: 'The editor prioritised the detail a visitor needs at a turn.',
+      ielts: 'A route map may prioritise the first action a visitor must take.'
+    },
+    {
+      w: 'sequence',
+      pos: 'n.',
+      ru: 'последовательность',
+      sat: 'The signs show the sequence of turns.',
+      ielts: 'A different sequence can change which detail a visitor sees first.'
+    },
+    {
+      w: 'constraint',
+      pos: 'n.',
+      ru: 'ограничение',
+      sat: 'The size of a phone screen is a practical constraint.',
+      ielts: 'An access constraint changes what should appear on a route map.'
+    },
+    {
+      w: 'orient',
+      pos: 'v.',
+      ru: 'помогать сориентироваться',
+      sat: 'The clock tower orients new visitors.',
+      ielts: 'The entrance sign helps people orient themselves.'
+    },
+    {
+      w: 'interpret',
+      pos: 'v.',
+      ru: 'истолковывать, понимать',
+      sat: 'The staff interpreted the question as a request for a different route.',
+      ielts: 'Two visitors can interpret the same line differently.'
+    },
+    {
+      w: 'revise',
+      pos: 'v.',
+      ru: 'пересматривать, исправлять',
+      sat: 'The team revised the map after the first trial.',
+      ielts: 'A new observation gives the designer a reason to revise a guide.'
+    },
+    {
+      w: 'transfer',
+      pos: 'v.',
+      ru: 'переносить, применять в другом случае',
+      sat: 'The team tested whether the result could transfer to another entrance.',
+      ielts: 'An improvement may transfer to signs with the same purpose.'
+    },
+    {
+      w: 'reliable',
+      pos: 'adj.',
+      ru: 'надёжный',
+      sat: 'A repeated result offers a more reliable guide to the change.',
+      ielts: 'The report distinguishes a reliable conclusion from a first impression.'
+    }
+  ],
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Choose the skill before the answer',
+      ru: 'Четыре вопроса из разных областей SAT. Каждый пример про то, как человек читает знак или карту.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'The diagram is deliberately sparse: at each junction it shows the next decision and the landmark that confirms it, leaving most of the surrounding buildings unmarked.',
+          stem: 'As used in the text, what does “sparse” most nearly mean?',
+          opts: [
+            'Difficult to copy',
+            'Containing few details',
+            'Drawn with uncertain distances',
+            'Widely available'
+          ],
+          key: 1,
+          ru: 'B. В тексте оставили только решение и ориентир, а большинство зданий опустили. A, C и D не объясняют это ограничение.',
+          skill: 'WIC',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'The original map served only visitors arriving at the main entrance. ______ the side entrance reopened, and a second version became necessary.',
+          stem: 'Which choice completes the text with the most logical transition?',
+          opts: [ 'For example,', 'Similarly,', 'In other words,', 'Later,' ],
+          key: 3,
+          ru: 'D. Открытие бокового входа — более позднее событие. A обещает пример той же версии, B — параллель, C — перефразирование.',
+          skill: 'TRN',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'After every trial, the researcher asks the visitor how they interpreted one sign. The interview takes place only after the visitor has reached the destination.',
+          stem: 'What can most reasonably be inferred about the researcher’s procedure?',
+          opts: [
+            'The interview can reveal how the sign was understood without directing the visitor’s original route.',
+            'The researcher uses the interview to direct visitors to the destination.',
+            'Only visitors who misunderstood the sign are interviewed.',
+            'Every visitor follows the same sequence of turns.'
+          ],
+          key: 0,
+          ru: 'A. После прибытия обсуждение уже не может направить первоначальный маршрут. B ставит интервью слишком рано. C и D добавляют условия, которых в тексте нет.',
+          skill: 'INF',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'The diagram shows the lift beside the ______ the detailed access guide names the entrance at which that lift can be reached without steps.',
+          stem: 'Which choice completes the text so that it conforms to the conventions of Standard English?',
+          opts: [ 'stairs,', 'stairs', 'stairs, and', 'stairs and,' ],
+          key: 2,
+          ru: 'C. Перед пропуском и после него по самостоятельному предложению. Запятая с and соединяет их. A оставляет comma splice, B сливает два предложения, D ставит запятую после and.',
+          skill: 'BND',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading',
+      title: 'How a guide changes after a trial',
+      ru: 'Ответь на 13 вопросов. Следи, какой выигрыш доказан наблюдением и на какие маршруты его можно перенести.',
+      lettered: true,
+      passageTitle: 'A Map for the Next Visit',
+      passage: [
+        'When a person asks for a map of a building, it is easy to assume the request is for a miniature version of the floor plan, even though the needs of a person looking for the exit differ from those of the architect who decided where the walls should stand. A visitor has to interpret a drawing while walking, carrying belongings and noticing signs that were made for other purposes. In the following fictional example, a public building has both a detailed plan and a separate route guide, an arrangement that illustrates why omission can be an important design decision.',
+        'The original route guide contained almost every room, since the designers expected that this completeness would help visitors orient themselves and that a familiar feature could be found wherever they happened to look. An observer stationed near the entrance noticed a different problem. People arriving for a public workshop often recognised the entrance on the map, yet they struggled to work out which of several thin lines represented a route they could actually take. Finding their position had therefore failed to determine their next action, an observation that gave the designers a reason to prioritise the sequence of choices at doors and corners.',
+        'For a second version, the designers redrew the page around the journey from the entrance to the main workshop. They kept a broad line for the recommended route and moved room names away from the places where visitors had to turn, adding a landmark immediately afterwards so that a visitor could check whether it was the intended one. A familiar notice board was consequently worth including even though its location mattered little to someone interested in the building as a whole. The purpose of this feature was confirmation after a decision, rather than identification before leaving the entrance.',
+        'A separate issue emerged when the team tried that version with people who could not use stairs, because the broad line provided no indication of an alternative route via a lift. Space on a small screen was a genuine constraint, yet removing the alternative would make the guide useless to some visitors. The designers therefore put an access tab next to the main diagram rather than attaching separate notes to every room. The lift and the entrance that served it appeared together on a screen that users could open directly when they needed the accessible route.',
+        'A trial of a design needs a question that the observations can answer. In this case a volunteer waited at the entrance and asked unfamiliar visitors to find the workshop. When they reached it, the volunteer recorded which turn had caused the first hesitation, if there had been one. The team did not use a general question about whether the building was welcoming, because that answer might depend on many things that the route guide could not change. Recording a particular pause gave the designers a reason to revise a particular passage of the route rather than simply conclude that people liked one version.',
+        'Even a clearly recorded result can be difficult to transfer to another setting. A person who finds the public workshop on a quiet day may have trouble following the same line when an event blocks part of the hallway. It would be premature to call the new guide reliable in all conditions on the basis of one visit or one group. A further trial could use another entrance or take place during a busy event, and a description of both the route and the conditions would enable later readers to decide whether another test is genuinely different from the first.',
+        'The team now has two useful kinds of map. One is for the visitor, and it describes a possible way through the building without presenting every room at once. The other is for the designers, and it describes what people actually found difficult rather than everything the designers imagined might go wrong. Neither has to cover the entire building to be useful. What matters is that the two documents make clear which decisions they support, and that the authors leave enough evidence for somebody else to try the route or improve it.'
+      ],
+      items: [
+        {
+          group: {
+            title: 'Questions 1–5',
+            task: 'Which paragraph, A–G, contains the following information? You may use any letter more than once.',
+            ru: 'Укажи абзац с конкретной информацией.',
+            paras: 7
+          },
+          kind: 'match',
+          stem: 'a limitation of the trial when the building is used under different conditions',
+          key: 5,
+          ru: 'F. В тихий день проверяется не та же ситуация, что при мероприятии, перекрывшем проход.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'an example of an object that helps travellers check a choice they have already made',
+          key: 2,
+          ru: 'C. Доска объявлений появляется после поворота и подтверждает выбор. В A говорится о роли карты в целом.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'a difference between understanding one’s location and knowing what to do next',
+          key: 1,
+          ru: 'B. Посетители нашли вход на плане, но не поняли, по какой линии идти.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'a reason for the team to reject a broad question in the trial',
+          key: 4,
+          ru: 'E. Впечатление о здании зависит от факторов, на которые путеводитель не влияет.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'a way to open a route designed for people with a different access requirement',
+          key: 3,
+          ru: 'D. Отдельная вкладка напрямую открывает подъём через лифт.',
+          chk: 2
+        },
+        {
+          group: {
+            title: 'Questions 6–9',
+            task: 'Complete the sentences below. Choose NO MORE THAN TWO WORDS from the passage for each answer.',
+            ru: 'Возьми слова из текста и проверь грамматику.'
+          },
+          kind: 'gap',
+          limit: 2,
+          stem: '6 · In the redesigned guide the suggested journey was marked with a ______.',
+          accept: [ 'broad line', 'line' ],
+          ru: 'C. Маршрут выделен линией. Broad уточняет внешний вид.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '7 · From the main drawing, users can select a separate ______ to find the route without stairs.',
+          accept: [ 'access tab', 'tab' ],
+          ru: 'D. Вкладка вынесена рядом со схемой. Lift находится уже на доступном маршруте, а не открывает его на экране.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '8 · The volunteer noted the turn at which a visitor’s first ______ occurred.',
+          accept: [ 'hesitation' ],
+          ru: 'E. Наблюдатель записывал first hesitation, если посетитель замешкался.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '9 · The author suggests testing the route while a ______ is taking place.',
+          accept: [ 'busy event', 'event' ],
+          ru: 'F. Автор предлагает busy event. Это меняет условия, а не только время записи.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What does the writer use the architect to illustrate in paragraph A?',
+          opts: [
+            'The needs of different users of a plan may differ.',
+            'People usually ask architects for help finding exits.',
+            'The number of walls determines whether a visitor gets lost.',
+            'A visitor should always be given an architect’s full plan.'
+          ],
+          key: 0,
+          ru: 'A. Архитектору и человеку у выхода нужна разная информация. B–D не объясняют этот пример.',
+          group: {
+            title: 'Questions 10–13',
+            task: 'Choose the correct letter, A, B, C or D.',
+            ru: 'Для каждого вопроса найди опору в тексте.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Why did the designers initially include so many rooms?',
+          opts: [
+            'They needed the plan to double as a record of attendance.',
+            'They thought people could use familiar features to work out where they were.',
+            'They wanted visitors to remember the names of every room.',
+            'They expected to shorten the route by adding more stops.'
+          ],
+          key: 1,
+          ru: 'B. Первоначальная идея — показать знакомый предмет рядом с любой точкой. A, C и D приписывают дизайнерам другие цели.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Why did the second version need an access tab?',
+          opts: [
+            'Visitors all had to start their journey in the lift.',
+            'The workshop was difficult to locate on a large screen only.',
+            'People who could not use stairs needed a visible alternative route.',
+            'The volunteer wanted a place to record how long visitors took.'
+          ],
+          key: 2,
+          ru: 'C. D объясняет, что основная линия скрыла путь через лифт. A обобщает, B заменяет препятствие экраном, D относится к наблюдениям.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What is the main point about the two maps in paragraph G?',
+          opts: [
+            'Both maps should eventually show every room.',
+            'A map for designers should show only the fastest visitor.',
+            'The visitor guide is more reliable than the trial notes.',
+            'Each document is useful when it serves a defined decision and preserves the relevant evidence.'
+          ],
+          key: 3,
+          ru: 'D. Последнее предложение G связывает документ с задачей и доказательствами для повторной проверки. A противоречит G, B и C не названы.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'listen',
+      label: 'IELTS-style · Listening Part 3',
+      title: 'Listen to a trial being planned',
+      ru: 'Два студента обсуждают учебный проект с преподавателем. В первой группе выясни, кто предложил действие. Во второй слушай, что осталось в плане после поправок.',
+      voices: {
+        Narrator: { pitch: 1, rate: 0.93, lang: 'en-GB' },
+        Iris: { pitch: 1.17, rate: 0.97, lang: 'en-GB' },
+        Owen: { pitch: 0.86, rate: 0.95, lang: 'en-AU' },
+        Tutor: { pitch: 1.03, rate: 0.9, lang: 'en-GB' }
+      },
+      audio: [
+        'Narrator: You will hear two students and their tutor discussing a trial of a public map.',
+        'Narrator: Look at questions one to five.',
+        'Iris: We’re nearly ready to try out the new map of the arts centre.',
+        'Iris: Owen, I was going to meet visitors at the ticket desk, but it would be better to wait in the courtyard.',
+        'Iris: I can see every group arrive there without interrupting the ticket queue.',
+        'Owen: Fine.',
+        'Owen: I’ll ask people to find the upstairs gallery.',
+        'Owen: We should watch where they first hesitate, rather than ask which design they like.',
+        'Owen: We could put a small mark on our own copy of the map each time somebody stops to look around.',
+        'Tutor: And remember that visitors who already know the building will probably walk straight there.',
+        'Tutor: For this trial, ask each visitor whether this is their first visit before you hand over a map.',
+        'Tutor: That will help you judge which results are about the design.',
+        'Iris: We could give everyone the same map on paper and then on a phone.',
+        'Iris: Actually, that means they would already know the route on their second trip.',
+        'Iris: I’d rather give each visitor just one version.',
+        'Owen: For the report, I wanted a table of total times.',
+        'Owen: It might be more useful to draw a diagram showing the places where people hesitate.',
+        'Owen: We can keep the times in our notes if we need them.',
+        'Narrator: Now look at questions six to ten.',
+        'Tutor: Good.',
+        'Tutor: Next, decide what to point out without giving away the route.',
+        'Tutor: Which landmark can visitors use to start?',
+        'Iris: I thought of the café, but it’s closed during the trial.',
+        'Iris: The coloured mosaic by the door is visible from the courtyard, so let’s use that.',
+        'Iris: We can ask visitors to start there.',
+        'Tutor: Suppose somebody asks you for help halfway through.',
+        'Tutor: What will you write down?',
+        'Owen: I was going to time how long it takes to answer.',
+        'Owen: But what might tell us more is the question itself.',
+        'Owen: If they ask how to reach the lift and that word is missing from the map, we have a clue about what to change.',
+        'Iris: Right.',
+        'Iris: We should also check that our route can be used without stairs.',
+        'Iris: I’d assumed the main lift goes to the gallery, but the building manager says you can only reach it using the lift near the studio.',
+        'Iris: Can we test that route ourselves before we ask people to try it?',
+        'Tutor: Yes.',
+        'Tutor: As for your results, one person might stop simply to greet a friend.',
+        'Tutor: Do not draw a conclusion about a place on the first observation alone.',
+        'Tutor: Start looking for spots where that hesitation is repeated by different visitors.',
+        'Owen: And we should make it clear who used the maps.',
+        'Owen: We were thinking of calling it a guide for every visitor, but our task only takes people to the upstairs gallery.',
+        'Owen: I’ll name that destination in the title of the report, so people can see exactly what we tested.'
+      ],
+      transcript: [
+        'Narrator: You will hear two students and their tutor discussing a trial of a public map. Look at questions one to five.',
+        'Iris: We’re nearly ready to try out the new map of the arts centre. Owen, I was going to meet visitors at the ticket desk, but it would be better to wait in the courtyard. I can see every group arrive there without interrupting the ticket queue.',
+        'Owen: Fine. I’ll ask people to find the upstairs gallery. We should watch where they first hesitate, rather than ask which design they like. We could put a small mark on our own copy of the map each time somebody stops to look around.',
+        'Tutor: And remember that visitors who already know the building will probably walk straight there. For this trial, ask each visitor whether this is their first visit before you hand over a map. That will help you judge which results are about the design.',
+        'Iris: We could give everyone the same map on paper and then on a phone. Actually, that means they would already know the route on their second trip. I’d rather give each visitor just one version.',
+        'Owen: For the report, I wanted a table of total times. It might be more useful to draw a diagram showing the places where people hesitate. We can keep the times in our notes if we need them.',
+        'Narrator: Now look at questions six to ten.',
+        'Tutor: Good. Next, decide what to point out without giving away the route. Which landmark can visitors use to start?',
+        'Iris: I thought of the café, but it’s closed during the trial. The coloured mosaic by the door is visible from the courtyard, so let’s use that. We can ask visitors to start there.',
+        'Tutor: Suppose somebody asks you for help halfway through. What will you write down?',
+        'Owen: I was going to time how long it takes to answer. But what might tell us more is the question itself. If they ask how to reach the lift and that word is missing from the map, we have a clue about what to change.',
+        'Iris: Right. We should also check that our route can be used without stairs. I’d assumed the main lift goes to the gallery, but the building manager says you can only reach it using the lift near the studio. Can we test that route ourselves before we ask people to try it?',
+        'Tutor: Yes. As for your results, one person might stop simply to greet a friend. Do not draw a conclusion about a place on the first observation alone. Start looking for spots where that hesitation is repeated by different visitors.',
+        'Owen: And we should make it clear who used the maps. We were thinking of calling it a guide for every visitor, but our task only takes people to the upstairs gallery. I’ll name that destination in the title of the report, so people can see exactly what we tested.'
+      ],
+      items: [
+        {
+          group: {
+            title: 'Questions 1–5',
+            task: 'Who suggests each action? Choose the correct letter, A, B or C. You may use any letter more than once.',
+            ru: 'Сопоставь действия с участниками разговора.',
+            labels: 'letters',
+            listTitle: 'Speakers',
+            headings: [ 'Iris', 'Owen', 'Tutor' ]
+          },
+          kind: 'match',
+          stem: 'Wait outside the building to watch participants arrive.',
+          key: 0,
+          ru: 'A, Iris. Сначала она думает о кассе, затем выбирает двор, чтобы видеть входящих.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Mark where a person first stops and looks for the route.',
+          key: 1,
+          ru: 'B, Owen. Вместо вопроса о вкусе он предлагает отметить место остановки.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Ask about earlier visits before issuing a map.',
+          key: 2,
+          ru: 'C, Tutor. Его условие — выяснить, первый ли это визит.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Let each person try only one format.',
+          key: 0,
+          ru: 'A, Iris. Она поправляет идею двух форматов: при второй попытке маршрут уже знаком.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'Show problem spots in a drawing in the report.',
+          key: 1,
+          ru: 'B, Owen. От таблицы времени он переходит к рисунку с местами заминки.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Which starting landmark do the group settle on?',
+          opts: [ 'the café', 'the ticket desk', 'the mosaic' ],
+          key: 2,
+          ru: 'C. Кафе закрыто. Iris выбирает мозаику у двери, которую видно со двора.',
+          group: {
+            title: 'Questions 6–10',
+            task: 'Choose the correct letter, A, B or C.',
+            ru: 'Вопросы идут по ходу записи. Учитывай варианты, которые говорящие затем отклоняют.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What will Owen note if someone asks for help?',
+          opts: [ 'the words of the question', 'the time it takes to answer', 'the colour of the map' ],
+          key: 0,
+          ru: 'A. После But what might tell us more он предлагает записать сам вопрос. Время звучит до поправки.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Which route does Iris want the group to test?',
+          opts: [
+            'the stairs beside the gallery',
+            'the route using the lift near the studio',
+            'the route using the main lift'
+          ],
+          key: 1,
+          ru: 'B. Управляющий уточняет, что к галерее ведёт только лифт у студии. C — исходное предположение Iris.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What should count as evidence of a confusing point?',
+          opts: [
+            'Any one person stopping there.',
+            'The researchers taking a long time to walk there.',
+            'Several different visitors hesitating there.'
+          ],
+          key: 2,
+          ru: 'C. Tutor просит дождаться повторения у разных посетителей. Один человек мог встретить знакомого.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What detail will the report title give?',
+          opts: [
+            'the destination used in the trial',
+            'the number of visitors expected',
+            'the name of each researcher'
+          ],
+          key: 0,
+          ru: 'A. Owen ограничивает заголовок верхней галереей — той точкой, которую проверяли. B и C не названы.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 2',
+      title: 'Explain which detail you would keep',
+      ru: 'Запиши рассказ о путеводителе или карте. Назови решение, которому помогает одна деталь, и объясни, какую информацию можно вынести отдельно.',
+      prompts: [
+        'Describe a map, sign or guide that helped you find your way.',
+        'You should say: where you used it',
+        'which detail helped most',
+        'what information you would change',
+        'and explain why that change would help the next visitor.'
+      ],
+      prep: 60,
+      talk: 120,
+      pron: {
+        title: 'Mark the change of direction',
+        ru: 'Выдели ориентир и сделай паузу перед новым выводом.',
+        items: [
+          'At the MOsaic | turn left.',
+          'The NEXT step is clear.',
+          'My main conSTRAINT was the screen.',
+          'I would reVISE the entrance label.'
+        ]
+      },
+      model: 'I once used a diagram at a workshop centre. It helped me orient myself because the entrance had a recognisable floor pattern, and the drawing showed it next to the start of the route. The sequence after that point was easy to interpret. However, the guide tried to show every room on one screen, and I would revise that choice. The main diagram could prioritise the next turn, while a separate panel could show rooms off the main route. That change might transfer to other buildings with the same screen constraint, but I would test it first.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Personal review',
+      title: 'Map two errors and your next checks',
+      ru: 'Возьми две разные ошибки из своих попыток. Опиши выбранный ответ, пропущенный признак и способ проверить себя в новом примере. Подойдут также ошибки в собственной записи или эссе.',
+      prompts: [
+        'Choose one reading or SAT decision and one listening or speaking decision to review.',
+        'For each, write the cue you missed and one test you can repeat with new material.'
+      ],
+      minWords: 65,
+      checklist: [
+        'Я взял(а) два конкретных случая.',
+        'В каждом назван признак, который меняет ответ.',
+        'Для новой попытки есть проверка с понятным результатом.'
+      ],
+      model: [
+        'On a map question I took the first entrance mentioned as the final answer. I will listen to the sentence after “actually” and check which location the speaker keeps. In the reading, I chose a broad statement although the report named only one room. I will underline the place and conditions before choosing an inference. A second practice passage will tell me whether that check is a reliable habit.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Make the next check specific',
+      ru: 'Выбери проверку, которая относится к названной ошибке.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'A student chose a word that appeared near a gap but failed to notice the printed noun immediately after the gap.',
+          stem: 'Which check is most relevant on a new item?',
+          opts: [
+            'Read the completed sentence to see if the inserted word fits the printed noun.',
+            'Choose the longest answer that fits the limit.',
+            'Skip the sentence and read only the answer word.',
+            'Type both the answer and the printed noun.'
+          ],
+          key: 0,
+          ru: 'A. Пропуск проверяется вместе с окружающими словами. B и C игнорируют конструкцию, D может повторить уже напечатанное слово.',
+          skill: 'R-GAP',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'A student took the first proposed location, then missed the speaker’s change of plan.',
+          stem: 'Which check would address that error?',
+          opts: [
+            'Ignore all place names until the end.',
+            'Assume the first place is always wrong.',
+            'Listen for a correction and keep the location the speaker finally confirms.',
+            'Replace the place with the one that sounds familiar.'
+          ],
+          key: 2,
+          ru: 'C. После сигнала уточнения проверь, какой вариант подтверждён. A и B вводят правило без опоры на запись, D опирается на знакомость слова.',
+          skill: 'LIS',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: { text: 'Take the final check, then carry two useful checks into a new set of questions.', next: 'KF' }
 };
