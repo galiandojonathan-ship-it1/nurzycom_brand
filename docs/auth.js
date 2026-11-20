@@ -180,7 +180,12 @@
     let li = 0, ci = 0;
     const step = () => {
       const l = lines[li]; if (!l) return;
-      if (ci < l.dataset.t.length) { l.textContent = l.dataset.t.slice(0, ++ci); l.append(caret); setTimeout(step, 90 + Math.random() * 110); }
+      if (ci < l.dataset.t.length) {
+        l.textContent = l.dataset.t.slice(0, ++ci);
+        l.append(caret);
+        if (li === lines.length - 1 && ci === l.dataset.t.length) caret.classList.add("is-ready");
+        else setTimeout(step, 90 + Math.random() * 110);
+      }
       else if (li < lines.length - 1) { li++; ci = 0; lines[li].append(caret); setTimeout(step, 380); }
     };
     setTimeout(step, 450);
