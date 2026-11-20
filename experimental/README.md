@@ -38,7 +38,7 @@ Every lesson runs the same four steps, and each step feeds the next:
 | 3 · Office hours | `office.html` | Live, group or one-to-one, three things only: analysis of the student's own SAT (or Listening) mistakes, each tagged by trap type; peer feedback on IELTS writing by the four criteria, practised first on a sample with planted problems, then on each other's homework texts; live speaking on prompts from the same subject | A summary the student sends before the session; tags and peer accuracy for step 4 |
 | 4 · Progress | `progress.html` | Retry of every missed question after office hours (counted separately; closes step 4); skills by first attempt; diagnostic vs check-in by skill; writing and speaking counted | Measurable growth per skill and per block |
 
-Block level of step 4: the diagnostic `D0` before C01 and check-in `K1` after C04 share one blueprint (2 × Words in Context, 2 × Boundaries, 2 × Form, Structure, and Sense, 2 × Transitions, 3 × IELTS True / False / Not Given) with new texts, so the change per skill is the growth of Block A. K2 (after C08, built 15 Nov) uses its own blueprint for Block B: 2 × Rhetorical Synthesis, 2 × Command of Evidence (quantitative), 2 × Central Ideas and Details, 2 × Text Structure and Purpose, 3 × IELTS matching information. D0 does not measure these skills, so the progress page sets K2 beside first-attempt homework in C05–C08 on the same skills (shares, not counts). K3 (after C11) and the final check (C16) are planned.
+Block level of step 4: the diagnostic `D0` before C01 and check-in `K1` after C04 share one blueprint (2 × Words in Context, 2 × Boundaries, 2 × Form, Structure, and Sense, 2 × Transitions, 3 × IELTS True / False / Not Given) with new texts, so the change per skill is the growth of Block A. K2 (after C08, built 15 Nov) uses its own blueprint for Block B: 2 × Rhetorical Synthesis, 2 × Command of Evidence (quantitative), 2 × Central Ideas and Details, 2 × Text Structure and Purpose, 3 × IELTS matching information. D0 does not measure these skills, so the progress page sets K2 beside first-attempt homework in C05–C08 on the same skills (shares, not counts). K3 after C11 compares first attempts with two Inferences, two Command of Evidence (textual), two Cross-Text Connections and three IELTS True / False / Not Given items. The final check after C16 is planned.
 
 **Presentation template** (`DECKS.Cnn`): `rules: [[rule, how and why] × 3]`, `mistake`, `story: [[heading, text] × 3]`, `bridge: [heading, text]`, `ex: [SAT example, IELTS example]`. Each example: `exam, label, text or passage, stem, opts + key` (or `tf: true` and `key: "T" | "F" | "NG"`), `steps` (3), `check`, `why` (one line per option, in option order), `chk`. Worked examples are always new items, never homework questions. Slide order follows the SAT course decks: recall → Part 01 today's words → Part 02 story → Part 03 rules, example, solution → Part 04 bridge, example, solution → Part 05 speaking → Part 06 writing → the next steps → hand-off.
 
@@ -67,6 +67,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 - No lesson timings, tutor guides or step-by-step teaching procedure in this folder (the method stays private; this repository is public).
 
 ## Key checks
+
+- 2026-11-20 · C11 and K3: 19 homework questions, two slide examples and nine check-in items independently solved. Re-solved revised C11 SAT 1 and 3, Reading 1, 5, 8 and 12, and K3 SAT 1–2.
 
 - 2026-11-20 · C10: 19 homework questions and two slide examples independently solved. Re-solved the revised SAT 1–2, Reading 10–11 and Exit 2 after tightening the evidence and its scope.
 
@@ -159,7 +161,7 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] QA pass (20 Nov): 118 scored items independently solved. C04–C08 passed reading size, grade and sentence checks. See the QA report for measurements, corrections and the limits of source and device verification.
 - [x] C09 · Inferences and diagram label completion (20 Nov): 692 words, grade 11.3, 23.1 words per sentence. Yes / No / Not Given, diagram labels, multiple choice. Homework, slides and office hours.
 - [x] C10 · Command of Evidence (textual), 20 Nov: 653 words, grade 12.6, 20.4 words per sentence. Matching headings, summary with a word box and multiple choice. Homework, slides and office hours.
-- [ ] C11 and K3 · Cross-Text Connections and Block C check-in.
+- [x] C11 and K3 (20 Nov) · Cross-Text Connections and Block C check-in. C11 Reading: 737 words, grade 11.2, 20.5 words per sentence. Matching features, sentence completion and multiple choice. K3: nine short scored questions.
 - [ ] C13 · Listening lecture.
 - [ ] C14 · Speaking.
 - [ ] C15 · Writing assembly.
@@ -170,6 +172,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 
 ## Loop log
 
+- 2026-11-20 · C11 and K3: taught where two views diverge, linked the check-in from C11 and added same-skill comparisons to Progress. The market debate is fictional. The history of the metre was checked with the [BIPM](https://www.bipm.org/en/history-si/metre).
+
 - 2026-11-20 · C10: compared medical claims with the results that would support them. Dates and structure of the historical comparison checked against the [James Lind Library](https://www.jameslindlibrary.org/semmelweis-i-1861/) and a [historical review](https://pmc.ncbi.nlm.nih.gov/articles/PMC3807776/).
 
 - 2026-11-20 · C09: lesson, deck and office hours added. Browser test checks an accessible SVG and typed diagram labels.
@@ -179,6 +183,8 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
 
 ## Calls after QA (to confirm with Nurassyl)
+
+- K3 shows skill results beside C09–C11 first attempts. The short sets have different item counts and difficulty, so treat each comparison as practice feedback.
 
 - C10 uses the title “What Changed in the Ward”. The earlier “The Doctor Nobody Believed” overstated what the historical evidence supports.
 

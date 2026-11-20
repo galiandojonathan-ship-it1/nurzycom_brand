@@ -380,6 +380,7 @@
     }
     res.appendChild(el("p", { class: "ru", text: answered < total ? "Отвечено " + answered + " из " + total + ". Счёт идёт по первой попытке." : "Это счёт одного урока, а не прогноз балла на экзамене. Реалистичный диапазон даёт только диагностика." }));
     var next = (window.COURSE.lessons || []).filter(function (x) { return x.id === L.handoff.next; })[0];
+    var check = window.CADENCE.checkins.find(function (c) { return c.after === L.id && c.status === "live"; });
     res.appendChild(el("div", { class: "handoff" }, [
       el("span", { class: "label", text: "Next steps" }),
       el("p", { class: "ru", style: "font:400 16px/1.5 var(--sans);margin:6px 0 4px", text: "Шаг 3: подготовь office hours по этому уроку. Шаг 4: после встречи исправь ошибки на странице «Прогресс»." }),
@@ -390,7 +391,8 @@
       el("span", { class: "label", text: "The thread continues" }),
       el("p", { lang: "en", text: L.handoff.text }),
       el("div", { class: "row" }, [
-        el("a", { class: "btn", href: "lesson.html?id=" + L.handoff.next, text: (next ? next.id + " · " + next.title + (next.status === "live" ? "" : " (в плане)") : "Next") + " →" }),
+        check ? el("a", { class: "btn", href: "lesson.html?id=" + check.id, text: check.id + " · " + check.title + " →" }) : null,
+        next ? el("a", { class: check ? "btn ghost" : "btn", href: "lesson.html?id=" + next.id, text: next.id + " · " + next.title + (next.status === "live" ? "" : " (в плане)") + " →" }) : null,
         el("a", { class: "btn ghost", style: "color:#F5F3EE;border-color:#F5F3EE", href: "index.html#map", text: "Карта курса" })
       ])
     ]));

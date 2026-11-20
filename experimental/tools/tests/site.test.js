@@ -2,7 +2,7 @@ const SHOTS = process.env.SHOTS || require('os').tmpdir();
 const { chromium } = require('playwright');
 const { answerAll } = require('./answer_all.js');
 const base = 'http://127.0.0.1:8791/';
-const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C12'];
+const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12'];
 (async () => {
   const b = await chromium.launch(); let fails = 0; const bad = m => { fails++; console.log('FAIL', m); };
   const keyLabels = async (p, id) => p.evaluate(id => { const o = []; window.LESSONS[id].parts.forEach(pt => { if (pt.type === 'questions') pt.items.forEach(q => o.push(q.kind === 'tfng' ? ({ T: 'TRUE', F: 'FALSE', NG: 'NOT GIVEN' })[q.key] : q.opts[q.key])); }); return o; }, id);
@@ -11,7 +11,7 @@ const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C12']
     const ctx = await b.newContext({ viewport: vp }); const p = await ctx.newPage();
     const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/fonts\.g|ERR_|Failed to load resource/.test(m.text())) errs.push(m.text()); });
     const pages = ['index.html', 'ru/index.html', 'course/index.html', 'course/progress.html'];
-    for (const id of LIVE.concat(['D0', 'K1', 'K2'])) pages.push('course/lesson.html?id=' + id);
+    for (const id of LIVE.concat(['D0', 'K1', 'K2', 'K3'])) pages.push('course/lesson.html?id=' + id);
     for (const id of LIVE) { pages.push('course/slides.html?id=' + id); pages.push('course/office.html?id=' + id); }
     for (const u of pages) {
       await p.goto(base + u, { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(120);
@@ -28,7 +28,7 @@ const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C12']
       }
     }
     if (name === 'w1280') {
-      for (const id of LIVE.concat(['D0', 'K1', 'K2'])) {
+      for (const id of LIVE.concat(['D0', 'K1', 'K2', 'K3'])) {
         await p.goto(base + 'course/lesson.html?id=' + id); const n = await answerAll(p);
         const sc = (await p.locator('.score').textContent()).trim(); if (sc !== `${n} / ${n}`) bad(id + ' ' + sc); else console.log(id, sc);
       }
@@ -65,6 +65,8 @@ const LIVE = ['C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C12']
       await p.screenshot({ path: require('path').join(SHOTS, 'progress.png'), fullPage: true });
       const k2rows = await p.locator('#k2-table tbody tr').allTextContents();
       if (k2rows.length !== 5 || !k2rows.every(r => /\(100%\)$/.test(r.trim()))) bad('K2 table ' + k2rows.join(' | '));
+      const k3rows = await p.locator('#k3-table tbody tr').allTextContents();
+      if (k3rows.length !== 4 || !k3rows.every(r => /\(100%\)$/.test(r.trim()))) bad('K3 table ' + k3rows.join(' | '));
       await p.goto(base + 'course/office.html?id=C05'); await p.screenshot({ path: require('path').join(SHOTS, 'office.png'), fullPage: true });
       await p.goto(base + 'course/index.html'); await p.waitForTimeout(200); await p.screenshot({ path: require('path').join(SHOTS, 'light_course.png'), fullPage: true }); await p.goto(base + 'course/progress.html'); await p.screenshot({ path: require('path').join(SHOTS, 'light_progress.png'), fullPage: true });
     }

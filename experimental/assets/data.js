@@ -38,7 +38,7 @@ window.COURSE = {
       shared: "Inference", sat: "Inferences", ielts: "Reading: diagram labels · Yes / No / Not Given", speak: "Part 3 · explain a cause", write: "Claim + reason + example" },
     { id: "C10", code: "COET", block: "C", status: "live", title: "What Changed in the Ward", thread: "A claim needs support that others accept.",
       shared: "Claim and support", sat: "Command of Evidence (textual)", ielts: "Writing Task 2: Task Response", speak: "Part 3 · point + example", write: "Support one claim" },
-    { id: "C11", code: "CTC", block: "C", status: "planned", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
+    { id: "C11", code: "CTC", block: "C", status: "live", title: "One Metre, Two Opinions", thread: "Standards help everyone and annoy someone.",
       shared: "Two points of view", sat: "Cross-Text Connections", ielts: "Task 2: discuss both views", speak: "Part 3 · compare views", write: "Introduction for a two-view essay" },
     { id: "C12", code: "LIS", block: "D", status: "live", title: "Follow the Voice", thread: "Back to the map: now you only hear it.",
       shared: "—", sat: "—", ielts: "Listening: directions on a map, predicting the answer type", speak: "Give directions aloud", write: "Notes from audio" },
@@ -2157,6 +2157,391 @@ window.LESSONS.C10 = {
   handoff: {
     text: 'The evidence helped readers decide how much of a claim to accept. Next, two writers look at the same standard and reach different judgments.',
     next: 'C11'
+  }
+};
+
+/* ------------------------------------------------------------------ */
+window.LESSONS.C11 = {
+  id: 'C11',
+  title: 'One Metre, Two Opinions',
+  thread: 'Standards help everyone and annoy someone.',
+  intro: 'В C10 один результат допускал обсуждение причины. Здесь два автора согласны с фактами, но применяют разные критерии к одному правилу. Город и его спор вымышлены.',
+  words: [
+    {
+      w: 'standardise',
+      pos: 'v.',
+      ru: 'приводить к общему стандарту',
+      sat: 'The council voted to standardise its public signs.',
+      ielts: 'To standardise a unit is to give different users the same reference.'
+    },
+    {
+      w: 'uniform',
+      pos: 'adj.',
+      ru: 'единообразный',
+      sat: 'Uniform labels made the receipts easier to compare.',
+      ielts: 'A uniform rule can simplify a transaction.'
+    },
+    {
+      w: 'calibrate',
+      pos: 'v.',
+      ru: 'настраивать по эталону',
+      sat: 'The inspector calibrated the scale before comparing its readings.',
+      ielts: 'Sellers can calibrate their rulers against a common reference.'
+    },
+    {
+      w: 'concession',
+      pos: 'n.',
+      ru: 'уступка, признание довода другой стороны',
+      sat: 'The author’s concession concerns the initial cost.',
+      ielts: 'A concession shows which part of another view one accepts.'
+    },
+    {
+      w: 'adopt',
+      pos: 'v.',
+      ru: 'принимать, вводить в употребление',
+      sat: 'Both stores decided to adopt the same format.',
+      ielts: 'The shops can adopt the unit on different dates.'
+    },
+    {
+      w: 'transition',
+      pos: 'n.',
+      ru: 'переход',
+      sat: 'The transition changed how old orders were recorded.',
+      ielts: 'A clear transition reduces confusion for regular customers.'
+    },
+    {
+      w: 'equivalent',
+      pos: 'adj.',
+      ru: 'равноценный, эквивалентный',
+      sat: 'The old mark and the new mark are not exactly equivalent.',
+      ielts: 'Two labels can give equivalent measurements in different units.'
+    },
+    {
+      w: 'retain',
+      pos: 'v.',
+      ru: 'сохранять, оставлять',
+      sat: 'The shop retained its handwritten order books.',
+      ielts: 'Sellers might retain both labels while customers learn the system.'
+    }
+  ],
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Compare what two writers value',
+      ru: 'Сопоставь позиции двух авторов. Ищи точку согласия и то условие, из-за которого их выводы расходятся.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'A uniform unit for measuring cloth would let buyers compare prices in different shops. The council should require all shops to use the unit from the same date.\n' +
+            '\n' +
+            'Text 2\n' +
+            'A uniform unit would make prices easier to compare. However, small shops need a transition period to use up old labels and help customers recognise the new amounts.',
+          stem: 'How would the author of Text 2 most likely respond to the recommendation in Text 1?',
+          opts: [
+            'By accepting the benefit to buyers but calling for a transition period.',
+            'By agreeing that every old label should disappear on the same date.',
+            'By denying that a shared unit would help people compare prices.',
+            'By proposing that each shop should set a different new unit.'
+          ],
+          key: 0,
+          ru: 'A. Оба автора поддерживают сравнимость цен. Автор 2 спорит со сроком из-за старых этикеток и привычек клиентов. B переворачивает его вывод, C и D отрицают согласие об общей единице.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'If rulers disagree at the market, inspectors should calibrate them against a reference that any seller may consult. This will make disagreements easier to resolve.\n' +
+            '\n' +
+            'Text 2\n' +
+            'Inspectors should make the comparison openly. Still, a public reference will help only if visitors know where to find it and how to read the marks.',
+          stem: 'On what point would both authors most likely agree?',
+          opts: [
+            'A ruler from a single ordinary shop should serve as the official standard.',
+            'Visitors already know how to read every mark in the market.',
+            'A reference available to sellers can play a role in resolving measurement disputes.',
+            'Showing the reference privately is the best way to avoid disagreements.'
+          ],
+          key: 2,
+          ru: 'C. У первого автора эталон доступен продавцам. Второй одобряет открытое сравнение и добавляет условие понятности. A, B и D не выражают общую позицию.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'For a limited period, a label should show both the old and the new unit. Shoppers can see the translation without asking an assistant.\n' +
+            '\n' +
+            'Text 2\n' +
+            'Whenever two units appear in the same line of print, some shoppers compare the wrong figures. Keep the new unit on the label and offer the conversion on a separate card.',
+          stem: 'How would the author of Text 2 most likely respond to Text 1’s proposal?',
+          opts: [
+            'By refusing to give customers a conversion in any form.',
+            'By placing the conversion on a separate card.',
+            'By arguing that shoppers already understand both units equally well.',
+            'By suggesting that the old unit should replace the new one on all labels.'
+          ],
+          key: 1,
+          ru: 'B. Пересчёт сохраняется на отдельной карточке, чтобы две цифры не путали покупателя. A убирает пересчёт, C игнорирует риск путаницы, D меняет местами старую и новую единицы.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'A store that uses local units expresses part of its history. A small display could preserve the old ruler and describe what it meant.\n' +
+            '\n' +
+            'Text 2\n' +
+            'Changing the current unit need not erase the past. However, an original ruler belongs where people can see it in context, alongside old account books rather than among current price labels.',
+          stem: 'Which statement best captures the relationship between the two texts?',
+          opts: [
+            'Both authors want the traditional ruler to remain in daily use.',
+            'Text 2 challenges the idea that the old ruler has any historical value.',
+            'Text 1 gives a detailed argument against the kind of display in Text 2.',
+            'Both authors support preserving the old ruler, and Text 2 adds a suggestion about how to display it.'
+          ],
+          key: 3,
+          ru: 'D. Оба автора хотят сохранить предмет. Второй уточняет контекст показа. A смешивает сохранение с ежедневным применением, B и C приписывают спор там, где его нет.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading',
+      title: 'A standard with two sides',
+      ru: 'Различай автора довода и сам довод. Спор о бирках и его участники вымышлены.',
+      lettered: true,
+      passageTitle: 'A Ruler on Every Counter',
+      passage: [
+        'A unit of length seems, at first glance, a particularly unlikely subject for a public argument. A customer who buys a length of cloth has little reason to wonder why the unit on the label is the same as the one printed on a ruler. That agreement must nevertheless be arranged and maintained. The history of the metre includes a period when an international prototype made of platinum and iridium served as its definition, and a later period when a definition based on light replaced a physical object. Those changes concern the reference itself. Another question, less easily settled by a laboratory, is how a community should adopt a new rule for everyday trading.',
+        'Consider an invented town in which shops commonly sell cloth using a local unit. Its council proposes to standardise the length shown on every price label by requiring metres. The plan would let customers compare the price of an equivalent length in several shops without first converting the figures. It would also make it easier for an inspector to check a disputed measurement against a reference ruler maintained for public use. Nobody in the debate disputes the definition of a metre. The disagreement concerns how to introduce the unit in a place where sellers and customers have already built habits around another one.',
+        "Mara, who speaks for a buyers' association, wants a uniform change on a specified day. Her fear is that an indefinite transition will preserve the very inconvenience the council intends to remove. A customer may find prices expressed in different units on adjacent stalls and have to perform the old calculation even after the reform. To make the new rule practical, Mara also wants inspectors to publish the location of the reference ruler so that sellers know where to calibrate their own. She makes one concession to the sellers: the council should display a clear conversion notice at each market entrance while customers get used to seeing the new unit.",
+        'Ned, a trader, accepts that a single unit would simplify comparisons, yet he thinks Mara underestimates the work required before the change. A stallholder might have to replace handwritten labels, alter an order book and explain to a regular customer why the advertised number has changed. Even a seller who can do all the arithmetic correctly can run into a disagreement when an order was placed using one unit and checked using another. Ned therefore proposes that shops retain both units on their labels for a short period. He sees that temporary duplication as a way to preserve a trustworthy record, whereas Mara regards it as an avoidable burden on shoppers.',
+        'Iona, who has been asked to recommend a compromise, treats the problems as two separate matters. In her proposal the largest figure on a new label must give the price per metre from a common date, and a smaller conversion card may be placed by the payment desk. At first the council would supply the cards, so that traders did not have to prepare their own calculations. For an existing order, the shop would put a note in its ledger showing which unit the customer had agreed to use. This practice would keep a record of old transactions while ensuring that new prices could be compared directly.',
+        'In a demonstration arranged for the council, people were shown sample labels and asked to find the cheapest offer for a specified length. Some found the information more quickly on the label that gave just the new price, while others asked where to check an old figure. The demonstration was too small to show what most shoppers in the town would prefer, but it identified two jobs that a usable system should do. It should make new prices easy to compare and help somebody who needs to interpret a previous price without directing every customer through both procedures.',
+        'The debate is often presented as a choice between people who welcome new measures and people who resist them. The example suggests a better description. All three speakers recognise the usefulness of a shared unit and disagree about where the transitional work should fall. A uniform outcome can be consistent with several ways of reaching it, provided that the burden of translating old information is visible and has been assigned somewhere. That is why two people can sincerely support the same standard while continuing to argue about the label that should appear at the counter.'
+      ],
+      items: [
+        {
+          group: {
+            title: 'Questions 1–4',
+            task: 'Match each statement with the correct person, A, B or C. You may use any letter more than once.',
+            ru: 'Найди чьё предложение передано. Имена могут повторяться.',
+            labels: 'letters',
+            listTitle: 'People',
+            headings: [ 'Mara', 'Ned', 'Iona' ]
+          },
+          kind: 'match',
+          stem: 'A temporary conversion guide should be available where shoppers enter the market.',
+          key: 0,
+          ru: 'A, Mara. В C она предлагает объявления у входов. Iona размещает карточки у кассы.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'For a limited time, the price tag itself should show the two units.',
+          key: 1,
+          ru: 'B, Ned. В D он оставляет обе единицы на бирке. В предложении Iona пересчёт вынесен на отдельную карточку.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'The local authority should initially prepare the information used at the payment area.',
+          key: 2,
+          ru: 'C, Iona. В E council supplies the cards, а место — payment desk. Mara предлагает объявление в другой точке.',
+          chk: 2
+        },
+        {
+          kind: 'match',
+          stem: 'A change without a fixed end can leave buyers doing the same calculation as before.',
+          key: 0,
+          ru: 'A, Mara. В C indefinite transition сохраняет старую трудность. Ned предлагает ограниченный двойной период.',
+          chk: 2
+        },
+        {
+          group: {
+            title: 'Questions 5–9',
+            task: 'Complete the sentences below. Choose NO MORE THAN TWO WORDS from the passage for each answer.',
+            ru: 'Впиши слова из статьи. Ответы идут по порядку абзацев.'
+          },
+          kind: 'gap',
+          limit: 2,
+          stem: '5 · With a common unit, inspectors can check a contested length against a public ______.',
+          accept: [ 'reference ruler', 'ruler', 'reference' ],
+          ru: 'B. В B устойчивый эталон назван ruler; полное название предмета — reference ruler.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '6 · According to Mara, guidance for shoppers should be placed at every market ______.',
+          accept: [ 'entrance' ],
+          ru: 'C. У каждого входа будет conversion notice. Entrance обозначает место, а не саму подсказку.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '7 · Ned says a merchant might need to change a record in which requests for goods are entered, the ______.',
+          accept: [ 'order book' ],
+          ru: 'D. В тексте alter an order book. Handwritten labels — отдельная вещь, которую нужно заменить.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '8 · At the checkout, Iona would allow a smaller ______ to help users interpret an older figure.',
+          accept: [ 'conversion card', 'card' ],
+          ru: 'E. В E smaller conversion card стоит рядом с payment desk. Это не бирка с основным числом.',
+          chk: 2
+        },
+        {
+          kind: 'gap',
+          limit: 2,
+          stem: '9 · For a purchase already agreed, the retailer should record the unit in the ______.',
+          accept: [ 'ledger' ],
+          ru: 'E. Магазин вносит note in its ledger. Вопрос о старой сделке, а не о новом ценнике.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What distinction does the writer make in paragraph A?',
+          opts: [
+            'Between cheap units of length and costly ones.',
+            'Between defining a measure and getting people to start using it.',
+            'Between measurements made by traders and those made by inspectors.',
+            'Between an object that can be measured and one that cannot.'
+          ],
+          key: 1,
+          ru: 'B. История эталона — определение меры, а введение в повседневный оборот поставлено отдельным вопросом. A, C и D не выражают это различие.',
+          group: {
+            title: 'Questions 10–13',
+            task: 'Choose the correct letter, A, B, C or D.',
+            ru: 'Ищи, какую задачу решает каждый довод. Ответы идут по ходу текста.'
+          },
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'Why does Ned refer to orders made before the rules change?',
+          opts: [
+            'To show how a dispute can arise when the agreed unit and the checking unit differ.',
+            'To show that traders want to sell only to regular customers.',
+            'To argue that buyers are more accurate at arithmetic than traders.',
+            'To explain why orders always specify metres already.'
+          ],
+          key: 0,
+          ru: 'A. В D старый заказ проверяют по другой единице, откуда и спор. B, C и D подменяют проблему.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What did the council’s demonstration establish?',
+          opts: [
+            'Almost all customers wanted both units on each label.',
+            'One kind of label served every reader equally well.',
+            'The town should abolish its public reference ruler.',
+            'It identified two distinct needs that the labelling system should meet.'
+          ],
+          key: 3,
+          ru: 'D. В F одни быстро сравнивали текущие цены, другие искали помощь со старыми. Опыт мал, поэтому A нельзя вывести. B и C не описаны.',
+          chk: 2
+        },
+        {
+          kind: 'mcq',
+          stem: 'What is the writer’s main point in paragraph G?',
+          opts: [
+            'People who oppose a standard understand its purpose better.',
+            'Every reform should end with two sets of permanent price labels.',
+            'Support for a common measure can coexist with disagreement about how to introduce it.',
+            'The only useful way to settle a dispute is to explain the history of the metre.'
+          ],
+          key: 2,
+          ru: 'C. В G цель общая, а спор — о том, кто берёт на себя работу перехода. A неверно делит людей на сторонников и противников стандарта. B и D добавляют правила, которых нет.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'speaking',
+      id: 'speak',
+      label: 'IELTS-style · Speaking Part 3',
+      title: 'Compare two views on the same rule',
+      ru: 'Сначала коротко изложи обе позиции. Укажи, с чем согласны обе стороны, и назови критерий, по которому ты сделаешь выбор.',
+      prompts: [
+        'Should shops switch to the same unit on one day, or change gradually?',
+        'How could organisers help people who already use an older system?'
+      ],
+      prep: 30,
+      talk: 90,
+      pron: {
+        title: 'Use pauses to separate viewpoints',
+        ru: 'После первой позиции сделай паузу. Выдели слово, на котором расходятся стороны.',
+        items: [
+          'Both sides value CLARity.',
+          'One group wants a FIXED date.',
+          'The other wants a gradual tranSItion.',
+          'My main criterion is ACcess.'
+        ]
+      },
+      model: 'Both sides see an advantage in using equivalent units across shops. Buyers may favour a fixed date because they can compare prices as soon as the labels change. Sellers may prefer a transition, especially when they have to honour old orders. I would introduce the uniform label on one day and retain a conversion guide at the counter. That concession keeps comparison simple while giving customers a place to check an earlier order.'
+    },
+    {
+      type: 'writing',
+      id: 'write',
+      label: 'Writing micro-task',
+      title: 'Open a two-view essay',
+      ru: 'Напиши вступление из двух или трёх предложений. Назови обе позиции и свою позицию. Сравнение и аргументы оставь для основной части.',
+      prompts: [
+        'Some people believe that a new measurement standard should be introduced everywhere on a fixed date. Others think existing systems should be allowed to remain in use during a transition. Discuss both views and give your own opinion.'
+      ],
+      minWords: 45,
+      checklist: [ 'Две позиции различимы.', 'Моё мнение понятно.', 'Я пересказал(а) тему своими словами.' ],
+      model: [
+        'When authorities adopt a common unit of measurement, they can either require shops to change together or allow sellers to use familiar units for a limited period. I favour a single date for new price labels, accompanied by guidance for customers who still need to interpret the old system.'
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'exit',
+      label: 'Exit check',
+      title: 'Find the exact disagreement',
+      ru: 'Отдели общее согласие от спорной части.',
+      items: [
+        {
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'Every notice should state the same opening hours format, so residents can compare branches quickly.\n' +
+            '\n' +
+            'Text 2\n' +
+            'A single format will help residents, but it should include words as well as numbers for people unfamiliar with the display.',
+          stem: 'What would both writers most likely agree on?',
+          opts: [
+            'All branches have identical opening hours.',
+            'A shared display format could help readers.',
+            'The notice needs no text.',
+            'Numbers should be removed from notices.'
+          ],
+          key: 1,
+          ru: 'B. Согласие касается формата, а не самих часов работы. C и D не передают добавление автора 2. A добавляет лишний факт.',
+          chk: 2
+        },
+        {
+          kind: 'tfng',
+          text: 'Mara and Ned both support changing the unit. Mara prefers one date, while Ned proposes a temporary period of double labels.',
+          stem: 'Ned wants both units on the tags temporarily.',
+          key: 'T',
+          ru: 'TRUE. A temporary period of double labels означает, что обе единицы сохраняются ограниченное время. Спор о переходе, а не о цели.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'Two writers can share a goal and disagree about how to reach it. Now test the skills of this block before you follow a voice across the map.',
+    next: 'C12'
   }
 };
 

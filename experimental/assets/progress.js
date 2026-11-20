@@ -53,26 +53,49 @@
       el("td", { text: d0.done ? a.r + " / " + a.t : "—" }), el("td", { text: k1.done ? b.r + " / " + b.t : "—" }),
       el("td", { class: diff > 0 ? "up" : diff < 0 ? "down" : "", text: diff === null ? "—" : diff > 0 ? "+" + diff : String(diff) })]));
   });
-  /* K2 measures Block B skills, which D0 and K1 do not: set it beside first-attempt homework in C05–C08 on the same skills */
-  var k2 = ck("K2"), hw = {};
-  ["C05", "C06", "C07", "C08"].forEach(function (lid) { var st = NZ.lessonState(lid);
-    NZ.items(lid).forEach(function (x) { var a = st.ans[x.qid]; if (a === undefined) return; var g = hw[x.skill] = hw[x.skill] || { r: 0, n: 0 }; g.n += 1; if (NZ.ok(x.q, a)) g.r += 1; }); });
-  var cmpB = el("tbody");
-  ["RS", "COEQ", "CID", "TSP", "R-HEAD"].forEach(function (k) {
-    var h = hw[k], b = k2.by[k] || { r: 0, t: 0 };
-    cmpB.appendChild(el("tr", {}, [el("th", { scope: "row", lang: "en", text: SK[k] }),
-      el("td", { text: h ? h.r + " / " + h.n + " (" + pct(h.r, h.n) + "%)" : "—" }),
-      el("td", { text: k2.done ? b.r + " / " + b.t + " (" + pct(b.r, b.t) + "%)" : "—" })]));
-  });
+  /* Compare a check-in with first attempts on the same skills. */
+  function lessonComparison(cid, lids, label, heading) {
+    var checkin = ck(cid), hw = {}, rows = el("tbody");
+    lids.forEach(function (lid) {
+      var st = NZ.lessonState(lid);
+      NZ.items(lid).forEach(function (x) {
+        var a = st.ans[x.qid];
+        if (a === undefined) return;
+        var g = hw[x.skill] = hw[x.skill] || { r: 0, n: 0 };
+        g.n += 1;
+        if (NZ.ok(x.q, a)) g.r += 1;
+      });
+    });
+    function share(right, count) { return right + " / " + count + " (" + pct(right, count) + "%)"; }
+    Object.keys(checkin.by).forEach(function (k) {
+      var h = hw[k], b = checkin.by[k];
+      rows.appendChild(el("tr", {}, [el("th", { scope: "row", lang: "en", text: SK[k] || k }),
+        el("td", { text: h ? share(h.r, h.n) : "—" }),
+        el("td", { text: checkin.done ? share(b.r, b.t) : "—" })]));
+    });
+    var range = lids[0] + "–" + lids[lids.length - 1];
+    return el("div", {}, [
+      el("h3", { style: "margin-top:26px", lang: "en", text: heading }),
+      el("p", { class: "ru small", text: "Сравни доли верных ответов по тем же навыкам в первой попытке и в проверке. Количество и сложность вопросов могут различаться." }),
+      el("div", { class: "tw", tabindex: "0", role: "region", "aria-label": label + " и уроки " + range }, [
+        el("table", { id: cid.toLowerCase() + "-table" }, [
+          el("caption", { class: "sr-only", text: label + " и уроки " + range + " по навыкам" }),
+          el("thead", {}, [el("tr", {}, [
+            el("th", { scope: "col", text: "Навык" }),
+            el("th", { scope: "col", text: "Уроки " + range + ", первая попытка" }),
+            el("th", { scope: "col", lang: "en", text: label })
+          ])]), rows])
+      ])
+    ]);
+  }
   main.appendChild(el("section", { class: "part", id: "checkins" }, [el("span", { class: "label", text: "02 · Check-ins" }), el("h2", { text: "Start, then every block" }),
-    el("p", { class: "ru", text: "Диагностика и check-in A построены по одной схеме: те же навыки, по два-три вопроса на навык, новые тексты. Разница по каждому навыку и есть рост за блок. Вопросов мало, поэтому разница в один вопрос — сигнал, а не приговор." }),
+    el("p", { class: "ru", text: "Диагностика и check-in A построены по одной схеме: те же навыки, по два-три вопроса на навык, новые тексты. Разница по навыку показывает, что стоит повторить. Вопросов мало, поэтому один ответ может заметно изменить результат." }),
     cl,
     el("div", { class: "tw", style: "margin-top:22px" }, [el("table", {}, [el("caption", { class: "sr-only", text: "Диагностика и check-in A по навыкам" }),
       el("thead", {}, [el("tr", {}, [el("th", { scope: "col", text: "Навык" }), el("th", { scope: "col", text: "Диагностика" }), el("th", { scope: "col", text: "Check-in A" }), el("th", { scope: "col", text: "Рост" })])]), cmp])]),
-    el("h3", { style: "margin-top:26px", text: "Check-in B: the paragraph" }),
-    el("p", { class: "ru small", text: "Навыков блока B нет в диагностике, поэтому check-in B стоит рядом с твоей первой попыткой в уроках C05–C08 по тем же навыкам. Сравнивай доли, а не количество: вопросов в уроках больше." }),
-    el("div", { class: "tw" }, [el("table", { id: "k2-table" }, [el("caption", { class: "sr-only", text: "Check-in B и уроки C05–C08 по навыкам" }),
-      el("thead", {}, [el("tr", {}, [el("th", { scope: "col", text: "Навык" }), el("th", { scope: "col", text: "Уроки C05–C08, первая попытка" }), el("th", { scope: "col", text: "Check-in B" })])]), cmpB])])]));
+    lessonComparison("K2", ["C05", "C06", "C07", "C08"], "Check-in B", "Check-in B · The paragraph"),
+    CAD.checkins.some(function (c) { return c.id === "K3" && c.status === "live"; })
+      ? lessonComparison("K3", ["C09", "C10", "C11"], "Check-in C", "Check-in C · The argument") : null]));
 
   /* 3. skills from homework */
   var agg = {};

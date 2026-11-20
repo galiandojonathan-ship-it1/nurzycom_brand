@@ -28,12 +28,12 @@ window.CADENCE = {
     { id: "D0", title: "Diagnostic", after: null, ru: "До первого урока", status: "live" },
     { id: "K1", title: "Check-in A · The sentence", after: "C04", ru: "После C04", status: "live" },
     { id: "K2", title: "Check-in B · The paragraph", after: "C08", ru: "После C08", status: "live" },
-    { id: "K3", title: "Check-in C · The argument", after: "C11", ru: "После C11", status: "planned" },
+    { id: "K3", title: "Check-in C · The argument", after: "C11", ru: "После C11", status: "live" },
     { id: "KF", title: "Final check", after: "C16", ru: "В конце курса", status: "planned" }
   ],
   skills: {
     WIC: "Words in Context", BND: "Boundaries", FSS: "Form, Structure, and Sense", TRN: "Transitions",
-    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences", COET: "Command of Evidence (textual)",
+    RS: "Rhetorical Synthesis", COEQ: "Command of Evidence (quantitative)", CID: "Central Ideas and Details", TSP: "Text Structure and Purpose", INF: "Inferences", COET: "Command of Evidence (textual)", CTC: "Cross-Text Connections",
     "R-TFNG": "IELTS Reading: True / False / Not Given, Yes / No / Not Given", "R-HEAD": "IELTS Reading: matching headings and information", "R-GAP": "IELTS Reading: summary and sentence completion", "R-MC": "IELTS Reading: multiple choice", LIS: "IELTS Listening"
   }
 };
@@ -448,6 +448,94 @@ window.DECKS = {
     ]
   },
 
+  C11: {
+    rules: [
+      [
+        'Summarise each view independently.',
+        'Write what each author supports and what each author qualifies.'
+      ],
+      [ 'Find the point of contact.', 'Compare their responses to the same claim.' ],
+      [ 'Preserve the scope.', 'Agreement with a goal does not settle the method or the date.' ]
+    ],
+    mistake: 'Turning a difference about timing into a difference about the entire proposal.',
+    story: [
+      [
+        'Two marks on a ruler',
+        'A shared reference helps a buyer compare what each seller means by a length.'
+      ],
+      [
+        'One date or a gradual change',
+        'Buyers may value instant comparison. Traders also have to interpret orders already on the books.'
+      ],
+      [
+        'A point of agreement',
+        'A good response can preserve the shared goal and identify the exact point of disagreement.'
+      ]
+    ],
+    bridge: [
+      'Compare views in a Task 2 introduction',
+      'Restate the common topic, name both positions, then say where you stand. Save the detailed reasons for the body paragraphs.'
+    ],
+    ex: [
+      {
+        exam: 'SAT',
+        label: 'Cross-Text Connections',
+        text: 'Text 1\n' +
+          'Bus stops should use one style of route numbering so travellers can recognise it easily.\n' +
+          '\n' +
+          'Text 2\n' +
+          'A single numbering style will help travellers. Existing stop names should remain on the notices while people learn the new numbers.',
+        stem: 'On which point would both authors agree?',
+        opts: [
+          'Stop names should disappear immediately.',
+          'Travellers already know every route.',
+          'Bus stops should use a common numbering style.',
+          'Each stop needs a distinct numbering format.'
+        ],
+        key: 2,
+        steps: [
+          'Text 1 supports a shared numbering style.',
+          'Text 2 supports the style and adds a temporary aid.',
+          'Choose the common goal.'
+        ],
+        check: 'Both texts support the answer without needing the other’s qualification.',
+        why: [
+          'Text 2 wants names to stay for now.',
+          'No such claim.',
+          'Correct: both support the shared style.',
+          'This conflicts with the shared style.'
+        ],
+        chk: 2
+      },
+      {
+        exam: 'IELTS',
+        label: 'Task 2 opening',
+        text: 'Some people want one common format for public timetables. Others want each operator to keep its usual format.',
+        stem: 'Which opening states both views and a clear position?',
+        opts: [
+          'Public timetables are an important topic today.',
+          'Local operators deserve attention for many reasons.',
+          'Most timetables use numbers and names.',
+          'Some favour a shared design, while others value familiar local formats. I favour a shared design with clear local labels.'
+        ],
+        key: 3,
+        steps: [
+          'Name both positions.',
+          'Check whether the writer’s choice is explicit.',
+          'Look for a clear link to the format issue.'
+        ],
+        check: 'Underline where the writer chooses a view.',
+        why: [
+          'No views or position.',
+          'Only gestures towards one side.',
+          'Description without a position.',
+          'Correct: both views and a clear choice.'
+        ],
+        chk: 2
+      }
+    ]
+  },
+
   C12: {
     rules: [
       ["Before the audio, decide the answer type.", "A place, a direction, a number or a time. The words around the gap tell you which."],
@@ -568,6 +656,29 @@ window.OFFICE = {
       'What evidence would help you decide whether a sign is easy to follow?',
       'When might a single successful trial justify a limited change?',
       'Why do people sometimes disagree about the cause of a result they both accept?'
+    ]
+  },
+
+  C11: {
+    focus: 'Перескажи позицию каждого автора. Затем назови ровно тот пункт, на который они отвечают по-разному.',
+    peer: {
+      task: 'Introduce an essay about a single switch date versus a gradual change to a shared measurement unit.',
+      sample: 'There are two opinions about measuring. The first opinion is important. This issue has benefits, therefore I will discuss it.',
+      issues: [
+        [
+          'TR',
+          'Ни одна из двух позиций не названа, мнение автора отсутствует. Нужны конкретные варианты перехода.'
+        ],
+        [
+          'CC',
+          'Therefore не объясняет, почему одно следует из другого. Свяжи стороны общим вопросом о переходе.'
+        ]
+      ]
+    },
+    live: [
+      'When should a local habit survive the introduction of a shared standard?',
+      'Which information should stay on a public label during a transition?',
+      'Do you think a single opening date helps buyers more than it costs sellers?'
     ]
   },
 
@@ -787,4 +898,169 @@ window.LESSONS.K2 = {
           ru: "A: «demonstrated to the public on Pall Mall in London». Ловушка C: электрическое освещение — тоже новый способ, но место, где его показали людям, не названо." }
       ] }
   ]
+};
+
+/* Check-in C · The argument */
+window.LESSONS.K3 = {
+  id: 'K3',
+  checkin: true,
+  title: 'Check-in C · The argument',
+  thread: 'How far can the evidence take you?',
+  intro: 'Check-in после C11. Девять новых вопросов на вывод, доказательства, сопоставление позиций и чтение по тексту. В «Прогрессе» результат стоит рядом с первой попыткой в C09–C11 по тем же навыкам. Это тренировка, без пересчёта в экзаменационный балл.',
+  parts: [
+    {
+      type: 'questions',
+      id: 'sat',
+      label: 'SAT · Reading and Writing',
+      title: 'Six short arguments',
+      ru: 'Все примеры вымышлены. Выбери ответ, для которого достаточно текста.',
+      items: [
+        {
+          skill: 'INF',
+          kind: 'mcq',
+          text: 'A town asked visitors to rate its archive using a survey link printed on the exit door. The archive closes before many residents finish work. The town concerned about people who had no opportunity to respond should seek feedback from ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'visitors who scanned the exit link and submitted their rating.',
+            'residents who visited during opening hours and completed the questionnaire.',
+            'people who answered the survey after leaving the building.',
+            'people who could not visit during opening hours.'
+          ],
+          key: 3,
+          ru: 'D. Анкета доступна на выходе, поэтому люди, которые не смогли прийти, выпадают. В A, B и C описаны люди, которые уже смогли ответить.',
+          chk: 2
+        },
+        {
+          skill: 'INF',
+          kind: 'mcq',
+          text: 'A station’s enquiry desk recorded the number of questions asked in person each day. It also began accepting questions online, but it kept no count of those messages. The daily register shows fewer in-person questions in the second week than in the first. Based on the recorded counts, readers can tell that walk-in use declined, but cannot determine whether ______',
+          stem: 'Which choice most logically completes the text?',
+          opts: [
+            'the number of questions across both channels fell.',
+            'there were more in-person questions in the first week.',
+            'the second week had fewer recorded walk-in questions.',
+            'the count in the two weeks differed for in-person enquiries.'
+          ],
+          key: 0,
+          ru: 'A. Сумма включает ненаблюдаемые сообщения. B, C и D даны в тексте.',
+          chk: 2
+        },
+        {
+          skill: 'COET',
+          kind: 'mcq',
+          text: 'A librarian claims that putting a book-return slot beside the entrance reduces the number of borrowers who carry their books to the wrong counter.',
+          stem: 'Which finding, if true, would most directly support the claim?',
+          opts: [
+            'Staff fitted a new clock above the old counter.',
+            'A sign near the entrance names the library.',
+            'After the move, fewer borrowers went to the wrong counter, with the other signs unchanged.',
+            'The new slot is made of a different material.'
+          ],
+          key: 2,
+          ru: 'C. Измерено именно число ошибок у стойки при смене местоположения. A, B и D не содержат этого результата.',
+          chk: 2
+        },
+        {
+          skill: 'COET',
+          kind: 'mcq',
+          text: 'A planner argues that a printed landmark on a route card helps walkers find a turn. A designer suggests that the card merely became easier to read when the font size increased.',
+          stem: 'Which finding would best separate the two explanations?',
+          opts: [
+            'Walkers with the same font size missed fewer turns if their card included the landmark.',
+            'Most walkers could name a landmark in their own street.',
+            'The font used on both cards was available for free.',
+            'Walkers planning a shorter route carried fewer cards.'
+          ],
+          key: 0,
+          ru: 'A. Размер одинаков, наличие ориентира разное, а итог — нужный поворот. Остальные факты не различают причины.',
+          chk: 2
+        },
+        {
+          skill: 'CTC',
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'The town should put the same street number format on every public building. It will help visitors check the location quickly.\n' +
+            '\n' +
+            'Text 2\n' +
+            'A shared format can help visitors, but buildings should also show their familiar names while people learn to use the new numbers.',
+          stem: 'How would the author of Text 2 most likely respond to the position in Text 1?',
+          opts: [
+            'By disputing whether visitors ever use numbers.',
+            'By supporting the common format and suggesting an additional temporary aid.',
+            'By asking the town to give each building a different format.',
+            'By claiming that building names should be removed at once.'
+          ],
+          key: 1,
+          ru: 'B. Цель общая. Автор 2 добавляет знакомые названия на время перехода. A, C и D идут против этой позиции.',
+          chk: 2
+        },
+        {
+          skill: 'CTC',
+          kind: 'mcq',
+          text: 'Text 1\n' +
+            'A council should publish the evidence behind each decision in one full document, so readers can trace the argument.\n' +
+            '\n' +
+            'Text 2\n' +
+            'Access to the full evidence matters. Many readers also need a short guide to find the part they are looking for.',
+          stem: 'How would the author of Text 2 most likely respond to the position in Text 1?',
+          opts: [
+            'By suggesting the council should remove any evidence that is hard to read.',
+            'By insisting each decision should appear in a different type of document.',
+            'By agreeing about access and adding that readers need help navigating it.',
+            'By arguing that a short guide should replace all supporting evidence.'
+          ],
+          key: 2,
+          ru: 'C. Оба автора хотят сохранить доступ к полным данным. Автор 2 добавляет путеводитель. A и D убирают данные, B не следует из его текста.',
+          chk: 2
+        }
+      ]
+    },
+    {
+      type: 'questions',
+      id: 'ielts',
+      label: 'IELTS Academic · Reading practice',
+      title: 'A short reading check',
+      ru: 'Три вопроса на различие между подтверждением, противоречием и отсутствием сведений.',
+      passageTitle: 'The New Notice',
+      passage: [
+        'The fictional Bracken Library tried a new entrance notice during a period when its regular opening hours remained in force. The new notice put the hours above the events list. Staff also kept the old notice in the storage room in case they needed it again.',
+        'On the first day staff recorded each question about opening hours asked at the main desk. They recorded the total for the whole day, without noting the ages of the visitors who asked. No information was collected about questions sent by email.'
+      ],
+      items: [
+        {
+          skill: 'R-TFNG',
+          kind: 'tfng',
+          stem: 'The opening hours remained the same during the trial.',
+          key: 'T',
+          ru: 'TRUE. Regular opening hours remained in force. Поменяли порядок на табличке, а не режим.',
+          group: {
+            title: 'Questions 1–3',
+            task: 'Do the following statements agree with the information given in the passage? Choose TRUE, FALSE or NOT GIVEN.',
+            ru: 'Сверяй каждое утверждение с текстом.'
+          },
+          chk: 2
+        },
+        {
+          skill: 'R-TFNG',
+          kind: 'tfng',
+          stem: 'The new notice placed the events list above the opening hours.',
+          key: 'F',
+          ru: 'FALSE. В первом абзаце положение обратное: hours above the events list.',
+          chk: 2
+        },
+        {
+          skill: 'R-TFNG',
+          kind: 'tfng',
+          stem: 'More teenagers than adults asked about opening hours at the main desk.',
+          key: 'NG',
+          ru: 'NOT GIVEN. Возраст не записывали, поэтому сравнить группы нельзя. Общий итог этого не сообщает.',
+          chk: 2
+        }
+      ]
+    }
+  ],
+  handoff: {
+    text: 'You have tested three ways of reading an argument. Next, listen for the information that moves a story forward.',
+    next: 'C12'
+  }
 };
