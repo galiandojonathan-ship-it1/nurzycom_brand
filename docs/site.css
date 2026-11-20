@@ -589,10 +589,11 @@ main:focus{outline:none}
 .auth-art::after{display:none}
 .auth-type{margin:0;color:var(--paper);font:500 clamp(72px,11vw,168px)/1.02 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:-.02em}
 .auth-type span{display:block;min-height:1.02em}
-.auth-type .caret{display:inline-block;width:.55em;height:.9em;background:var(--oxide,#A63328);vertical-align:-.08em;margin-left:.06em;animation:caret-blink 1s steps(1) infinite}
+.auth-type .caret{display:inline-block;width:.048em;height:.69em;background:#b64231;vertical-align:-.06em;margin-left:.057em}
+.auth-type .caret.is-ready{animation:caret-blink 1s step-end .25s infinite}
 .auth-art .auth-cred{color:rgba(245,243,238,.6);font-size:12px}
-@keyframes caret-blink{50%{opacity:0}}
-@media(prefers-reduced-motion:reduce){.auth-type .caret{animation:none}}
+@keyframes caret-blink{62%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.auth-type .caret.is-ready{animation:none}}
 @media(max-width:899px){.auth-art{min-height:auto;padding:36px 24px}.auth-type{font-size:clamp(56px,18vw,96px)}.auth-box svg{display:block}}
 
 /* ===== distinct blocks on the homework start page (2026-11-14, Nurassyl: «fine lines do not separate the blocks; people get lost») =====
