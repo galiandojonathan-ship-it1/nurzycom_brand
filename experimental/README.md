@@ -68,6 +68,8 @@ What stays out of this public folder: lesson timings, tutor run-sheets for offic
 
 ## Key checks
 
+20 November audit: C04–C08, C12 and K2 (118 scored items) independently solved from redacted copies before the course files were edited. The QA report records the wording and acceptance fixes. The keyed options stayed in the same positions.
+
 | Lesson | Questions | First check | Second check (independent re-solve) |
 |---|---|---|---|
 | C01 | 19 (IELTS part rebuilt at exam size: 13 items) | 2026-11-12 | 2026-11-12 |
@@ -150,13 +152,29 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C07 IELTS part at exam size (15 Nov, run 1): about 750 words by the script, 7 paragraphs, 22.6 words per sentence, grade 11.5. "More Than a Lamp", a discursive passage with a clear writer's position (Nightingale as statistician; her diagram as an argument to read critically). Types: Yes / No / Not Given (new: `kind: "tfng", yn: true`, keys stay T / F / NG, labels YES / NO / NOT GIVEN on every page), matching sentence endings (A–G), summary completion (ONE WORD ONLY). Blind re-solve: 13 of 13; two Yes / No / Not Given items and two endings rewritten afterwards because a second answer or word-matching was possible.
 - [x] C12 Listening rebuilt (15 Nov, run 1): two sections in one recording, about 500 words. Section 1 (assistant and student, form completion as a `group.table`, ONE WORD AND/OR A NUMBER, 4 items), Section 2 (guide's tour, plan labelling with an inline SVG plan, `group.places: 8` and `group.plan`, 4 items; then multiple choice, 2 items). Corrections: course (History → Geography), the letter of offer dropped, sports-hall building turned into a lecture theatre, bus stop moved, café closed. No True / False / Not Given. Exit question 2 now tests a time correction. Blind re-solve from the transcript: 12 of 12; the Block item lost its correction afterwards so that not every answer is corrected.
 - [x] Lesson C08 "How a Report Persuades" (15 Nov, run 1): homework (8 words; 4 SAT Text Structure and Purpose; IELTS passage "A Report Built to Persuade" on Chadwick's 1842 report, about 860 words, grade 11.8, 22.3 words per sentence, with matching information (paragraph letters, any letter more than once), sentence completion and multiple choice; Speaking Part 2 for two full minutes; a Task 2 body paragraph of 90+ words; exit), deck `DECKS.C08`, office hours `OFFICE.C08`, check-in `K2` and its progress table. Blind re-solve: 30 of 30 plus both slide examples; afterwards one SAT text, one passage sentence, one K2 option and the K2 passage (now two sentences per paragraph, less word-matching) were reworded.
-- [ ] QA pass: blind re-solve every key added since the last QA, fact check, the three test suites, update this queue and write a short report.
+- [x] QA pass (20 Nov): 118 scored items independently solved. C04–C08 passed reading size, grade and sentence checks. See the QA report for measurements, corrections and the limits of source and device verification.
+- [ ] C09 · Inferences and diagram label completion.
+- [ ] C10 · Command of Evidence (textual).
+- [ ] C11 and K3 · Cross-Text Connections and Block C check-in.
+- [ ] C13 · Listening lecture.
+- [ ] C14 · Speaking.
+- [ ] C15 · Writing assembly.
+- [ ] C16 and KF · Mixed review and final check.
+- [ ] QA · Recheck new keys, sources, measurements, course navigation and the three browser suites.
 
-**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Still to use: diagram label completion (candidate: C08 or a later rebuild).
+**Type coverage so far** (aim: all 11 Reading types across C01–C08): matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Still to use: diagram label completion (queued in C09).
 
 ## Loop log
 
+- 2026-11-20: audited C04–C08, C12 and K2. Two blind solves recovered all 118 intended keys. Fixed ambiguities, source-word grading, a C12 recording-order problem, historical figures and mobile/keyboard issues. Reading measurements (words / Flesch–Kincaid grade / words per sentence): C04 987 / 12.2 / 25.3; C05 759 / 13.6 / 25.3; C06 814 / 11.6 / 23.3; C07 750 / 11.2 / 22.1; C08 721 / 12.0 / 23.3. Queued the remaining lessons and a final QA pass.
+
 - 2026-11-15, run 1 of 5: C04 and C05 IELTS parts at exam size; renderer: `group.table` and a table on writing parts. Calls: C04 says Harrison was "never formally awarded the prize itself" and leaves out sums paid; C05 says Denmark's register census dates from "the early 1980s" (not a year) and Han China's count "close to sixty million". The old C04 item "Harrison himself sailed to Jamaica" is gone with the old passage. Then C06 (flow chart; C06 keeps Snow's "roughly eight times", from 315 vs 37). The C06 passage is about a disease outbreak, which IELTS_SPEC.md says to avoid as a main subject; kept because the lesson is built on Snow, told neutrally as a story of method. `ielts_formats.test.js` now also checks the C04 table group, the C06 flow chart and the C05 writing table. Then C07 (Yes / No / Not Given; the skill R-TFNG now reads "True / False / Not Given, Yes / No / Not Given"). C07 leaves out the Statistical Society election, as the 11 Nov run did. Then C12 Listening (two voices now differ by pitch and, where the browser has several English voices, by voice; still nobody has listened on a real phone). Then C08 with K2. Calls: C08's SAT item 3 says the 1848 Act made local boards compulsory only where the death rate was especially high (no threshold given); the K2 notes keep only the 1807 Pall Mall demonstration and that lamps were lit by hand. The skill code TSP was added to `CADENCE.skills`. All Build-queue items except the QA pass are now ticked; run 2 should start with the QA item only if Nurassyl adds nothing to the queue, otherwise with any new item.
+
+## Calls after QA (to confirm with Nurassyl)
+
+- Keep C12 as clearly marked short practice. A real recording and playback on a phone are needed before using it as exam simulation.
+- Keep C08's history and teach persuasion through a selected reading route. In C06 use rates recalculated from Snow's original counts so the student can reproduce them.
+- Keep the demo labelled as such until the minimum entry level, start date, bridge use and teacher feedback load are confirmed. Treat check-ins as practice until a pilot provides item-level evidence.
 
 ## Calls made in the cadence run of 11 Nov 2026 (to confirm with Nurassyl)
 
@@ -219,3 +237,29 @@ Quality-check run, no new lessons. Only files inside `experimental/` were change
 1. Nurassyl: listen to C12 once on a phone, and decide about questions 4–6 (see 3).
 2. Nurassyl: read one lesson as a student (C01 is the shortest) and confirm the calls listed in the section above.
 3. Next build run: C05 and C06, so that C04's hand-off and C07's intro stop pointing at lessons that do not exist yet.
+
+## QA report, 20 November 2026
+
+Two blind solves of C04–C08, C12 and K2 recovered the intended answers for all 118 scored items (95 lesson questions, 12 in C12 and 11 in K2). A second solver received the wording, inputs and options only. Matching the intended answer was treated separately from whether the item is fair.
+
+| Area | Before fixes | Evidence |
+|---|---:|---|
+| Keys | 4/5 | C04 Exit 2: “The clock worked; consequently, the officials wanted more tests” describes a plausible consequence; “nevertheless” describes a plausible unexpected response. The revised stem explicitly asks for the unexpected response. C07 Reading 6 said “statisticians” and “nurses” where the passage refers to students and says “at least as much”. The revision preserves both groups and the qualifier. |
+| Exam fidelity | 3/5 | C12 Listening 9 (“What has happened to the building…”) was answered before 7 and 8. Also, 4 and 6 prompts are shorter practice sections than the official 10 per part. C05 Reading 5–6 correctly require NOT GIVEN even if the reader knows about Rickman or fines. C05 Reading 10 is now a standalone short-answer task; C06 Reading 8–10 uses text words and “as high as”. |
+| Facts | 3/5 | C06 SAT 2 compared 59, 37 and 315 as rounded rates. Recalculating Table IX gives about 55, 38 and 315 per 10,000 houses. C07 SAT 2 originally said “how many soldiers died”; the diagram requires comparing death rates. C08 Reading C–F now presents an explicitly selected route through the report. The source supports the evidence and policy proposals, while claims about the reactions of individual readers and precise original sequence were stronger than the sources checked. |
+| Cohesion | 4/5 | Each of the six lessons contains all eight targets in its texts, prompts or models, counting inflections and excluding vocabulary-card examples. For example, C06 moves from “contaminated water” in SAT 1 to comparing the same rates aloud and in writing. C08 Speaking Part 2 transfers structure to an everyday story, while its writing example returns to public sanitation. |
+| Russian feedback | 4/5 | C05 Reading 6 correctly points to confidentiality in F and explains why it cannot prove penalties. C06 Reading 8 previously said “смысл тот же”, licensing words absent from the source phrase. The new explanation names the exact textual cue. C08 SAT 2 now explains the two genuinely different recommendations-first and recommendations-last arrangements. |
+| Code and accessibility | 3/5 | At 320 px, the Russian landing page overflowed by 2 px. C05 SAT example overflowed its slide by 3 px at 1280 px. Enter on a gap answer moved keyboard focus to the document body. The heading wraps, the example is shorter and the answer stays focusable and read-only. Lesson tables can be scrolled with the keyboard. |
+| Product | 3/5 | C12 Listening practice needs an audible English voice, which the test Chromium did not provide. Teacher feedback is a student-shared summary; the app measures first attempts but has no cohort item evidence for calibrating distractors. A worked check-in reports skill shares without predicting a band. |
+
+Five priorities in order of impact:
+
+1. Protect the score from questionable judgments. Resolve double readings in C04 Exit 2 and C07 Reading 6, enforce source-word limits, and keep an item-by-item independent check for every new set.
+2. Use figures and units that survive a source check. C06 uses recalculated house-based rates, C07 distinguishes counts from rates, and C08 distinguishes its reading route from a claim about the printed order.
+3. Put Listening prompts in recorded order and label the short sections as practice. A human recording with distinct speakers and a phone playback check are still needed for a realistic simulation.
+4. Keep mobile navigation and keyboard feedback usable. The Russian landing, C05 slide and gap focus were repaired. A screen-reader and a real-device audio run remain open.
+5. Pilot the unit with students and a teacher. Observe where they get stuck and use item-level first-attempt evidence to revise distractors before treating a check-in as a benchmark.
+
+Sources for the corrected items and format: [Royal Museums Greenwich, Harrison's timekeepers](https://www.rmg.co.uk/stories/time/harrisons-clocks-longitude-problem), [ONS, story of the census](https://www.ons.gov.uk/visualisations/storyofthecensus/), [UCLA, Snow's Table IX](https://epi-snow.ph.ucla.edu/Stream3_GrandExperiment_d.html), [American Journal of Epidemiology, arithmetic correction](https://doi.org/10.1093/aje/kwh045), [Nightingale's diagram and supporting table](https://onepagepapers.com/nightingale-rose/read/), [National Army Museum, Scutari and the training school](https://www.nam.ac.uk/explore/florence-nightingale-lady-lamp), [Wellcome Collection, Chadwick's report](https://wellcomecollection.org/works/vgy8svyj), [UK Parliament, Public Health Act](https://www.parliament.uk/about/living-heritage/transformingsociety/towncountry/towns/tyne-and-wear-case-study/about-the-group/public-administration/the-1848-public-health-act/), [IELTS Reading format](https://www.ielts.org/take-a-test/test-types/ielts-academic-test/ielts-academic-format-reading), [IELTS Listening format](https://ielts.org/take-a-test/test-types/ielts-academic-test/ielts-academic-format-listening).
+
+The source review confirmed key dates and figures for the audited historical texts and documented the corrections above. The complete line-by-line source register for C01–C03, D0 and K1, the historical generalisations in the examples, and the AWL share remain open. The C12 transcript is fictional and was checked for internal consistency. The Reading measure has no passage to score for C12 or K2's abbreviated check-in.

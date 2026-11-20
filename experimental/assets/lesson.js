@@ -103,7 +103,7 @@
   var YN = { T: "YES", F: "NO", NG: "NOT GIVEN" }; /* writer's views: q.yn = true, keys stay T / F / NG */
   /* a data table (part table, writing table, or a table-completion group) */
   function tableBox(t) {
-    var tw = el("div", { class: "tw dtab", lang: "en" }), tb = el("table");
+    var tw = el("div", { class: "tw dtab", lang: "en", tabindex: "0", role: "region", "aria-label": t.caption }), tb = el("table");
     tb.appendChild(el("caption", { text: t.caption }));
     tb.appendChild(el("thead", {}, [el("tr", {}, t.head.map(function (h) { return el("th", { scope: "col", text: h }); }))]));
     var tbd = el("tbody");
@@ -199,13 +199,13 @@
     function gapBox(p, q, qid, i) {
       var box = el("div", { class: "q gapq", lang: "en" }, [el("span", { class: "qn", text: "Question " + (i + 1) + " of " + p.items.length })]);
       var parts = q.stem.split("______");
-      var inp = el("input", { type: "text", class: "gap-in", "aria-label": "Answer to question " + (i + 1), autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
+      var inp = el("input", { type: "text", class: "gap-in", "aria-label": q.stem.replace("______", "blank"), autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
       box.appendChild(el("p", { class: "stem gapline" }, [parts[0], inp, parts[1] || ""]));
       var exp = el("div", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var go = el("button", { class: "btn ghost small-btn", type: "button", text: "Ответить" });
       var reveal = function (val) {
         var right = isOk(q, val);
-        inp.value = val; inp.disabled = true; go.hidden = true;
+        inp.value = val; inp.readOnly = true; go.hidden = true;
         inp.classList.add(right ? "right" : "wrong");
         exp.hidden = false; exp.textContent = "";
         exp.appendChild(el("b", { text: right ? "Верно" : "Неверно" }));
@@ -215,7 +215,9 @@
       };
       var submit = function () {
         var v = inp.value.trim(); if (!v || state.ans[qid] !== undefined) return;
-        state.ans[qid] = v; save(); reveal(v);
+        state.ans[qid] = v; save();
+        if (document.activeElement === go) inp.focus();
+        reveal(v);
         if (p.items.every(function (_, j) { return state.ans[p.id + "." + j] !== undefined; })) markDone(p.id);
         renderResult();
       };

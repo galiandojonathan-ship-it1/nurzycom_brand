@@ -112,14 +112,14 @@
       if (q.text) qb.appendChild(el("p", { class: "txt", text: q.text }));
       qb.appendChild(el("p", { class: "stem", text: q.stem }));
       if (x.part === "ielts" || x.part === "listen") qb.appendChild(el("p", { class: "small", lang: "ru" }, ["Текст к вопросу: ", el("a", { href: "lesson.html?id=" + l.id + "#" + x.part, text: "открыть в уроке" })]));
-      var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : "") }), exp = el("p", { class: "exp", lang: "ru", hidden: "" });
+      var opts = el("div", { class: "opts" + (q.kind === "tfng" ? " tf" : "") }), exp = el("p", { class: "exp", lang: "ru", hidden: "", "aria-live": "polite" });
       var list = q.kind === "tfng" ? TF.map(function (t) { return { v: t[0], t: q.yn ? ({ T: "YES", F: "NO", NG: "NOT GIVEN" })[t[0]] : t[1] }; })
         : q.kind === "match" ? (x.heads || []).map(function (h, k) { return { v: k, t: NZ.isLetters(x.heads) ? h : (x.heads.letters ? "ABCDEFGHIJ"[k] : NZ.ROMAN[k]) + " · " + h }; })
         : q.kind === "gap" ? [] : q.opts.map(function (o, k) { return { v: k, t: "ABCD"[k] + ") " + o }; });
       var btns = [];
       var show = function (v) {
         btns.forEach(function (b) { b.n.setAttribute("aria-disabled", "true"); if (b.v === v) b.n.classList.add(NZ.ok(q, v) ? "right" : "wrong"); });
-        if (gin) { gin.value = v; gin.disabled = true; gin.classList.add(NZ.ok(q, v) ? "right" : "wrong"); }
+        if (gin) { gin.value = v; gin.readOnly = true; gin.classList.add(NZ.ok(q, v) ? "right" : "wrong"); }
         exp.hidden = false; exp.textContent = NZ.ok(q, v) ? "Исправлено. " + q.ru : "Пока неверно. Вернись к разбору на office hours.";
       };
       list.forEach(function (o) {
@@ -133,7 +133,7 @@
       });
       var gin = null;
       if (q.kind === "gap") {
-        gin = el("input", { type: "text", class: "gap-in", "aria-label": "Ответ", autocomplete: "off" });
+        gin = el("input", { type: "text", class: "gap-in", "aria-label": q.stem.replace("______", "blank"), autocomplete: "off" });
         var save1 = function () { var r = NZ.store.get("nz_exp_retry_" + l.id) || {}; if (r[x.qid] !== undefined || !gin.value.trim()) return; r[x.qid] = gin.value.trim(); NZ.store.set("nz_exp_retry_" + l.id, r); show(r[x.qid]); };
         gin.addEventListener("keydown", function (e) { if (e.key === "Enter") save1(); });
         opts.appendChild(gin); opts.appendChild(el("button", { class: "btn ghost", type: "button", text: "Ответить", onclick: save1 }));
