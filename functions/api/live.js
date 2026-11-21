@@ -9,13 +9,14 @@ const hash = async (value) => Array.from(new Uint8Array(await crypto.subtle.dige
 )), (byte) => byte.toString(16).padStart(2, "0")).join("");
 
 function numeric(raw) {
-  let s = String(raw).slice(0, 64).trim().replace(/[−–—]/g, "-");
-  if (/\s/.test(s)) return null;
-  if (/^-?\d*,\d+$/.test(s)) s = s.replace(",", ".");
+  const s = String(raw).normalize("NFKC").trim().replace(/[−–—]/g, "-").replace(/[⁄∕]/g, "/");
   let num, den;
-  if (/^-?\d+\/\d+$/.test(s)) { const [a, b] = s.split("/"); num = BigInt(a); den = BigInt(b); }
-  else if (/^-?(\d+\.?\d*|\.\d+)$/.test(s)) {
-    const neg = s.startsWith("-"); const t = neg ? s.slice(1) : s; const [i, f = ""] = t.split(".");
+  if (/^[+-]?\s*\d+\s*\/\s*[+-]?\s*\d+$/.test(s)) {
+    const [a, b] = s.replace(/\s/g, "").split("/");
+    num = BigInt(a); den = BigInt(b);
+  } else if (/^[+-]?\s*(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(s)) {
+    const neg = s.startsWith("-");
+    const [i, f = ""] = s.replace(/^[+-]?\s*/, "").split(/[.,]/);
     den = 10n ** BigInt(f.length); num = BigInt((i || "0") + f) * (neg ? -1n : 1n);
   } else return null;
   if (den === 0n) return null;
@@ -28,8 +29,12 @@ function numeric(raw) {
   return (sign < 0n ? "-" : "") + str.slice(0, -4) + "." + str.slice(-4);
 }
 
+// A display key can include a parenthetical note after its numeric value.
+const numericKey = (answer) => numeric(answer.replace(/\s*\([^()]*\)\s*$/, ""));
+
 function num(s) {
-  const t = String(s).trim().replace(/\s+/g, "").replace(/,/g, ".").replace(/^\+/, "").replace(/[−–]/g, "-");
+  const t = String(s).normalize("NFKC").trim().replace(/\s+/g, "").replace(/,/g, ".").replace(/^\+/, "")
+    .replace(/[−–—]/g, "-").replace(/[⁄∕]/g, "/");
   if (/^-?\d*\.?\d+$/.test(t)) return Number(t);
   const m = /^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/.exec(t); if (m && Number(m[2]) !== 0) return Number(m[1]) / Number(m[2]);
   return null;
@@ -49,7 +54,7 @@ export function isCorrect(key, value) {
   if (key.type === "mc") return key.accepted.includes(value);
   if (key.type === "custom") return key.accepted.some((answer) => customRight(answer, value));
   const actual = numeric(value);
-  return actual !== null && key.accepted.some((answer) => numeric(answer) === actual);
+  return actual !== null && key.accepted.some((answer) => numericKey(answer) === actual);
 }
 
 export async function onRequest({ env, request }) {
@@ -84,7 +89,9 @@ export async function onRequest({ env, request }) {
     const { set, title, keys, settings } = data;
     const configured = settings !== undefined;
     if (configured && (!settings || !Number.isInteger(settings.seconds) ||
-        settings.seconds < 5 || settings.seconds > 600 || typeof settings.strict !== "boolean")) {
+        settings.seconds < 5 || settings.seconds > 600 || typeof settings.strict !== "boolean" ||
+        ["selfPaced", "calculator"].some((flag) => settings[flag] !== undefined && typeof settings[flag] !== "boolean") ||
+        settings.strict && settings.selfPaced)) {
       return error(400, "Время на вопрос: от 5 до 600 секунд.");
     }
     const maximum = configured ? 100 : 10;
@@ -95,6 +102,9 @@ export async function onRequest({ env, request }) {
           !key.accepted.length || key.accepted.length > 20 ||
           key.accepted.some((answer) => typeof answer !== "string" || answer.length > 64))) {
       return error(400, "Выберите от 1 до 100 вопросов.");
+    }
+    if (keys.some((key) => key.type === "spr" && !key.accepted.some((answer) => numericKey(answer) !== null))) {
+      return error(400, "У одного из вопросов отсутствует числовой ключ.");
     }
     const round = token(), host = token();
     if (configured) {
@@ -118,7 +128,11 @@ export async function onRequest({ env, request }) {
       ]);
     }
     const questionTable = configured ? "live_round_items" : "live_questions";
-    const storedSet = configured ? JSON.stringify({ v: 2, source: set, seconds: settings.seconds, strict: settings.strict, current: 1, questionStartedAt: null }) : set;
+    const storedSet = configured ? JSON.stringify({
+      v: settings.selfPaced !== undefined || settings.calculator !== undefined ? 3 : 2,
+      source: set, seconds: settings.seconds, strict: settings.strict, selfPaced: settings.selfPaced,
+      calculator: settings.calculator, current: 1, questionStartedAt: null
+    }) : set;
     // Keep D1 bind counts and per-invocation query counts small on the Free plan.
     const questionInserts = [];
     for (let start = 0; start < keys.length; start += 30) {
@@ -144,6 +158,8 @@ export async function onRequest({ env, request }) {
   const answerTable = config ? "live_round_responses" : "live_answers";
   const seconds = config?.seconds || 45;
   const strict = config?.strict !== false;
+  const editable = config?.v === 3;
+  const selfPaced = editable && config.selfPaced === true;
   const secret = request.headers.get("x-live-token");
   const authenticated = validToken(secret) ? await hash(secret) : null;
   const host = authenticated === round.host_token_hash;
@@ -157,16 +173,18 @@ export async function onRequest({ env, request }) {
       .bind(now + 3000, id).run();
     return reply({ ok: true });
   }
-  if (action === "next" && host) {
+  if ((action === "next" || action === "previous") && host) {
     if (strict || started === null || now < started || finished || data.number !== config.current) {
       return error(409, "Обновите состояние раунда.");
     }
+    const target = config.current + (action === "previous" ? -1 : 1);
+    if (target < 1 || target > total && selfPaced) return error(409, "Вопрос недоступен.");
     let update;
-    if (config.current === total) {
+    if (target > total) {
       update = db.prepare("UPDATE live_rounds SET closed_at = ? WHERE id = ? AND set_id = ? AND closed_at IS NULL")
         .bind(now, id, round.set_id);
     } else {
-      const next = JSON.stringify({ ...config, current: config.current + 1, questionStartedAt: now });
+      const next = JSON.stringify({ ...config, current: target, questionStartedAt: now });
       update = db.prepare("UPDATE live_rounds SET set_id = ? WHERE id = ? AND set_id = ? AND closed_at IS NULL")
         .bind(next, id, round.set_id);
     }
@@ -199,26 +217,34 @@ export async function onRequest({ env, request }) {
     if (!Number.isInteger(data.number) || data.number < 1 || data.number > total || typeof data.answer !== "string" || !data.answer.trim() || data.answer.length > 64) return error(400, "Неверный ответ.");
     const question = await db.prepare(`SELECT grading_json FROM ${questionTable} WHERE round_id = ? AND number = ?`).bind(id, data.number).first();
     if (!question) return error(404, "Вопрос недоступен.");
-    const correct = isCorrect(JSON.parse(question.grading_json), data.answer);
+    const grading = JSON.parse(question.grading_json);
+    if ((typeof grading === "string" || grading.type === "mc") && !/^[A-D]$/.test(data.answer)) {
+      return error(400, "Выберите вариант ответа.");
+    }
+    if (grading.type === "spr" && numeric(data.answer) === null) return error(400, "Введите число или дробь, например −6/5.");
+    const correct = isCorrect(grading, data.answer);
     const timing = strict
       ? "AND ? >= r.starts_at + (q.number - 1) * ? AND ? < r.starts_at + q.number * ?"
-      : "AND ? >= r.starts_at AND q.number = json_extract(r.set_id, '$.current')";
+      : selfPaced ? "AND ? >= r.starts_at" : "AND ? >= r.starts_at AND q.number = json_extract(r.set_id, '$.current')";
     const timingArgs = strict ? [now, seconds * 1000, now, seconds * 1000] : [now];
+    const conflict = editable ? `(round_id, participant_id, question_number) DO UPDATE SET
+      answer = excluded.answer, correct = excluded.correct, submitted_at = excluded.submitted_at
+      WHERE excluded.submitted_at >= ${answerTable}.submitted_at` : "DO NOTHING";
     const insert = await db.prepare(`INSERT INTO ${answerTable}
       SELECT q.round_id, ?, q.number, ?, ?, ?
       FROM ${questionTable} q JOIN live_rounds r ON r.id = q.round_id
       WHERE q.round_id = ? AND q.number = ? AND r.closed_at IS NULL
       ${timing}
-      ON CONFLICT DO NOTHING`)
+      ON CONFLICT ${conflict}`)
       .bind(participant.id, data.answer, correct ? 1 : 0, now, id, data.number, ...timingArgs).run();
-    return insert.meta.changes ? reply({ ok: true }) : error(409, "Ответ уже принят или время вышло.");
+    return insert.meta.changes ? reply({ ok: true }) : error(409, editable ? "Время вышло или преподаватель переключил вопрос." : "Ответ уже принят или время вышло.");
   }
 
   if (action === "state" && (host || participant)) {
     const state = {
       title: round.title,
       set: url.searchParams.get("snapshot") === "0" ? undefined : (config?.source || round.set_id),
-      total, started, now, finished, seconds, strict,
+      total, started, now, finished, seconds, strict, editable, selfPaced, calculator: config?.calculator === true,
       current: config?.current || 1,
       questionStartedAt: config?.questionStartedAt || started
     };

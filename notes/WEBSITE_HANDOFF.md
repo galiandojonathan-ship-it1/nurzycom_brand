@@ -101,7 +101,11 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 {"version":1,"slides":[{"title":"Linear equations","paragraphs":["Solve for x.","Check the result using Desmos."]}]}
 ```
 
-`functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
+`functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (tests `t_live.js` and `t_live_sources.mjs`).
+New rounds allow students to update their answers while the question is open. «Каждый ученик решает в своём темпе» gives each student
+their own navigation until the teacher closes the round. In teacher-paced rounds, going back reopens the question for the class.
+In strict rounds, going back changes the teacher's view while the shared timer continues. Math lessons and the Desmos sets
+enable the student calculator by default. The same D1 tables store the latest answer per question and student.
 
 Presentation practice uses `/api/lesson-practice` and the same `LIVE_LESSONS` D1 binding. The first teacher room
 creates the additive `lp_*` tables in `lib/lesson-practice-schema.js`. A room is active for up to three hours, and

@@ -172,3 +172,58 @@ now += 3000 + 46000;
 assert.equal((await call("state",null,student,200)).started,legacyStart);
 await call("answer",{number:2,answer:"A"},student,200);
 console.log("PASS late joins in legacy, strict and flexible rounds; shared deadlines, missed questions and closed-round rejection");
+
+participant = null;
+await call("create", { ...setup, keys: [{ type: "spr", accepted: ["missing"] }],
+  settings: { seconds: 45, strict: false, selfPaced: true, calculator: true } }, "teacher", 400);
+({ round, host } = await call("create", { title: "Independent Math", set: "sealed:YWJj",
+  keys: ["A", { type: "spr", accepted: ["-6/5 (-1.2)"] }, "C"],
+  settings: { seconds: 45, strict: false, selfPaced: true, calculator: true } }, "teacher", 201));
+({ participant, student } = await call("join", { name: "Independent student" }, null, 201));
+await call("start", {}, host, 200);
+await call("answer", { number: 3, answer: "C" }, student, 409);
+now += 3000;
+await call("answer", { number: 3, answer: "C" }, student, 200);
+await call("answer", { number: 1, answer: "B" }, student, 200);
+now += 1;
+await call("answer", { number: 1, answer: "A" }, student, 200);
+now -= 1;
+await call("answer", { number: 1, answer: "B" }, student, 409);
+now += 1;
+for (const answer of ["-6/5", "−6 ⁄ 5", "-1,2", "6/-5", "-12/10"]) {
+  await call("answer", { number: 2, answer }, student, 200);
+  state = await call("state", null, host, 200);
+  assert.equal(state.answers.find((a) => a.question_number === 2).correct, 1, answer);
+}
+await call("answer", { number: 2, answer: "6/0" }, student, 400);
+await call("answer", { number: 2, answer: "-5/6" }, student, 200);
+state = await call("state", null, host, 200);
+assert.equal(state.answers.find((a) => a.question_number === 2).correct, 0);
+await call("answer", { number: 2, answer: "-6/5" }, student, 200);
+await call("next", { number: 1 }, host, 200);
+await call("previous", { number: 2 }, host, 200);
+await call("previous", { number: 1 }, host, 409);
+state = await call("state", null, student, 200);
+assert.equal(state.current, 1);
+assert.equal(state.editable, true);
+assert.equal(state.selfPaced, true);
+assert.equal(state.calculator, true);
+assert.equal(state.keys, undefined);
+assert.deepEqual(state.answers.map(({ question_number, answer, correct }) => [question_number, answer, correct]).sort((a,b) => a[0] - b[0]),
+  [[1, "A", undefined], [2, "-6/5", undefined], [3, "C", undefined]]);
+await call("close", {}, host, 200);
+await call("answer", { number: 2, answer: "0" }, student, 409);
+
+participant = null;
+({ round, host } = await call("create", { ...setup, keys: ["A", "B"],
+  settings: { seconds: 5, strict: true, selfPaced: false, calculator: false } }, "teacher", 201));
+({ participant, student } = await call("join", { name: "Timed student" }, null, 201));
+await call("start", {}, host, 200);
+now += 3000;
+await call("answer", { number: 1, answer: "B" }, student, 200);
+await call("answer", { number: 1, answer: "A" }, student, 200);
+await call("answer", { number: 2, answer: "B" }, student, 409);
+now += 5000;
+await call("answer", { number: 1, answer: "B" }, student, 409);
+await call("answer", { number: 2, answer: "B" }, student, 200);
+console.log("PASS independent navigation, latest-answer storage, Math fraction grading, editable strict round and preserved deadlines");

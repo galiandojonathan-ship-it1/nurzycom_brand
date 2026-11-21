@@ -7,13 +7,15 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const panel = document.createElement("section");
   panel.className = "live-practice";
   panel.hidden = true;
-  panel.innerHTML = '<h2>Живая практика</h2><p role="status"></p><div data-live-content></div>';
+  panel.innerHTML = '<h2>Живая практика</h2><p role="status"></p><p class="live-feedback" role="alert"></p><div data-live-content></div>';
   start.after(panel);
   const message = panel.querySelector("[role=status]");
+  const feedback = panel.querySelector("[role=alert]");
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
   let sealedSet = null, displayedSet = null, receivedAt = 0;
-  let hideCorrect = false;
+  let hideCorrect = false, studentNumber = 1, hostPreview = null, tools, studentNav;
+  const drafts = new Map();
 
   async function api(action, body, id = round) {
     const params = new URLSearchParams({ action });
@@ -39,8 +41,8 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       if (pending) return;
       pending = true;
       node.disabled = true;
-      message.textContent = "";
-      try { await action(); } catch (error) { message.textContent = error.message; }
+      feedback.textContent = "";
+      try { await action(); } catch (error) { feedback.textContent = error.message; }
       finally { pending = false; node.disabled = false; }
     };
     return node;
@@ -75,6 +77,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   }
   const storageKey = "live:" + round;
   try { credentials = JSON.parse(sessionStorage.getItem(storageKey)); } catch { /* no previous session */ }
+  const positionKey = storageKey + ":question";
+  try { studentNumber = Number(sessionStorage.getItem(positionKey)) || 1; } catch { /* optional */ }
+
+  function setMessage(value) {
+    if (message.textContent !== value) message.textContent = value;
+  }
 
   function heading(text) {
     const node = document.createElement("h3");
@@ -82,7 +90,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return node;
   }
 
-  function questionView(question, options) {
+  function questionView(question, controls) {
     const section = document.createElement("section");
     section.className = "live-bluebook qwrap";
     const passage = document.createElement("div");
@@ -113,25 +121,30 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     passage.hidden = !hasPassage;
     section.classList.toggle("no-passage", !hasPassage);
     ask.append(stem);
-    if (type !== "mc" && options) {
+    if (type !== "mc" && controls) {
       const label = document.createElement("label");
       label.textContent = "Ваш ответ";
       const input = document.createElement("input");
       input.type = "text";
       input.maxLength = 64;
       input.autocomplete = "off";
+      input.value = controls.draft ?? controls.answer ?? "";
+      input.oninput = () => controls.update(input.value);
       label.append(input);
-      ask.append(label, button("Отправить ответ", () => {
-        if (!input.value.trim()) throw Error("Введите ответ.");
-        return options(input.value.trim());
-      }));
+      const submit = button("Отправить ответ", async () => {
+        if (!input.value.trim()) { input.focus(); throw Error("Введите ответ."); }
+        await controls.submit(input.value.trim());
+      });
+      input.onkeydown = (event) => { if (event.key === "Enter") submit.click(); };
+      ask.append(label, submit);
     } else {
       choices.forEach((choice, index) => {
         const letter = "ABCD"[index];
         const row = document.createElement("div");
         row.className = "opt";
-        const option = options ? button(letter, () => options(letter)) : document.createElement("div");
-        option.className = options ? "ch btn" : "ch";
+        const option = controls ? button(letter, () => controls.submit(letter)) : document.createElement("div");
+        option.className = controls ? "ch btn" : "ch";
+        if (controls?.editable) option.dataset.liveChoice = letter;
         const badge = document.createElement("span");
         badge.className = "lt";
         badge.textContent = letter;
@@ -235,6 +248,100 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return review;
   }
 
+  function studentNavigation() {
+    const nav = document.createElement("nav");
+    nav.className = "live-review-nav";
+    nav.setAttribute("aria-label", "Вопросы раунда");
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", "Перейти к вопросу");
+    for (let i = 1; i <= state.total; i++) select.add(new Option("Вопрос " + i, i));
+    function go(number) {
+      if (number < 1 || number > state.total) return;
+      studentNumber = number;
+      try { sessionStorage.setItem(positionKey, String(number)); } catch { /* optional */ }
+      feedback.textContent = "";
+      render(displayedSet);
+    }
+    function step(label, offset) {
+      const control = document.createElement("button");
+      control.type = "button";
+      control.className = "btn ghost";
+      control.textContent = label;
+      control.onclick = () => go(studentNumber + offset);
+      return control;
+    }
+    const previous = step("← Назад", -1), next = step("Далее →", 1);
+    select.onchange = () => go(Number(select.value));
+    nav.append(previous, select, next);
+    panel.insertBefore(nav, content);
+    return { nav, select, previous, next };
+  }
+
+  function renderStudent(questions, classNumber, ended, timing) {
+    const independent = state.selfPaced && classNumber && !ended;
+    if (independent && !studentNav) studentNav = studentNavigation();
+    if (studentNav) studentNav.nav.hidden = !independent;
+    if (!Number.isInteger(studentNumber) || studentNumber < 1 || studentNumber > state.total) studentNumber = 1;
+    const number = independent ? studentNumber : classNumber;
+    if (independent) {
+      const { select, previous, next } = studentNav;
+      select.value = String(number);
+      if ((number === 1 && document.activeElement === previous) ||
+          (number === state.total && document.activeElement === next)) select.focus();
+      previous.disabled = number === 1;
+      next.disabled = number === state.total;
+    }
+    if (state.calculator && !tools) {
+      tools = document.createElement("div");
+      panel.insertBefore(tools, studentNav?.nav || content);
+      BBTools.mount(tools, { reference: false, label: "Desmos" });
+    }
+    if (tools) {
+      const visible = !!number && !ended;
+      if (tools.hidden === visible) {
+        tools.hidden = !visible;
+        BBTools.show(visible);
+      }
+    }
+    const answer = state.answers.find((item) => item.question_number === number)?.answer;
+    const view = ended ? "done" : state.editable ? String(number) : number + ":" + (answer || "");
+    setMessage(ended ? "Раунд завершён." : number
+      ? `Вопрос ${number} из ${state.total} · ${independent ? `Отвечено ${state.answers.length} из ${state.total}` : timing}`
+      : "Ждём начала раунда.");
+    if (view !== shown) {
+      shown = view;
+      content.replaceChildren();
+      if (ended || !number) return;
+      if (answer && !state.editable) {
+        content.append(heading("Ответ принят: " + answer));
+        return;
+      }
+      content.append(questionView(questions[number - 1], {
+        answer, editable: state.editable, draft: drafts.get(number),
+        update: (value) => drafts.set(number, value),
+        submit: async (value) => {
+          await api("answer", { number, answer: value });
+          if (drafts.get(number)?.trim() === value) drafts.delete(number);
+          await refresh();
+        }
+      }));
+      if (state.editable) {
+        const receipt = document.createElement("p");
+        receipt.className = "live-receipt";
+        receipt.setAttribute("aria-live", "polite");
+        content.append(receipt);
+      }
+    }
+    if (state.editable && !ended && number) {
+      const receipt = content.querySelector(".live-receipt");
+      const text = answer ? "Ответ принят: " + answer : "";
+      if (receipt.textContent !== text) receipt.textContent = text;
+      for (const choice of content.querySelectorAll("[data-live-choice]")) {
+        choice.setAttribute("aria-pressed", String(choice.dataset.liveChoice === answer));
+      }
+    }
+  }
+
   function render(set) {
     const now = state.now + Date.now() - receivedAt;
     const strict = state.strict !== false, duration = (state.seconds || 45) * 1000;
@@ -256,9 +363,25 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         copy.classList.add("ghost");
         const launch = button("Начать раунд", async () => { await api("start", {}); await refresh(); });
         launch.dataset.launch = "";
+        const previous = button("Предыдущий вопрос", async () => {
+          if (state.strict) {
+            hostPreview = Number(content.querySelector("[data-current-question]").dataset.number) - 1;
+            render(set);
+          } else {
+            await api("previous", { number: state.current });
+            await refresh();
+          }
+        });
+        previous.classList.add("ghost");
+        previous.dataset.back = "";
         const next = button("Следующий вопрос", async () => {
-          await api("next", { number: state.current });
-          await refresh();
+          if (state.strict) {
+            if (hostPreview !== null) hostPreview++;
+            render(set);
+          } else {
+            await api("next", { number: state.current });
+            await refresh();
+          }
         });
         next.dataset.advance = "";
         const close = button("Завершить раунд", async () => { await api("close", {}); await refresh(); });
@@ -285,40 +408,36 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         currentQuestion.className = "live-host-question qhtml";
         currentQuestion.dataset.currentQuestion = "";
         currentQuestion.hidden = true;
-        content.append(heading(state.title), link, copy, launch, next, close, currentQuestion, answers);
+        content.append(heading(state.title), link, copy, launch, previous, next, close, currentQuestion, answers);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
+      if (hostPreview !== null && hostPreview >= number) hostPreview = null;
+      const displayed = hostPreview ?? number;
+      const back = content.querySelector("[data-back]");
+      back.hidden = !number || ended || displayed <= 1 || (strict && !state.editable);
       const advance = content.querySelector("[data-advance]");
-      advance.hidden = strict || !number || ended;
-      advance.textContent = number === state.total ? "Завершить после этого вопроса" : "Следующий вопрос";
+      advance.hidden = !number || ended || (strict && hostPreview === null) || (state.selfPaced && number === state.total);
+      advance.textContent = !strict && !state.selfPaced && number === state.total ? "Завершить после этого вопроса" : "Следующий вопрос";
       const currentQuestion = content.querySelector("[data-current-question]");
       const showQuestion = !!number && !ended;
       currentQuestion.hidden = !showQuestion;
-      if (showQuestion && currentQuestion.dataset.number !== String(number)) {
-        currentQuestion.replaceChildren(heading("Вопрос " + number), questionView(set.q[number - 1]));
-        currentQuestion.dataset.number = String(number);
+      if (showQuestion && currentQuestion.dataset.number !== String(displayed)) {
+        currentQuestion.replaceChildren(heading("Вопрос " + displayed), questionView(set.q[displayed - 1]));
+        currentQuestion.dataset.number = String(displayed);
       }
       updateScoreboard(results);
-      message.textContent = ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total} · ${timing} · ${strict ? "строго" : "без строгого лимита"}` : `В комнате: ${state.students.length} · ${state.seconds || 45} с на вопрос · ${strict ? "строго" : "без строгого лимита"}`;
+      const mode = state.selfPaced ? "каждый в своём темпе"
+        : `${timing} · ${strict ? "строго" : "без строгого лимита"}${hostPreview === null ? "" : ` · просмотр вопроса ${hostPreview}`}`;
+      const waiting = state.selfPaced ? "каждый в своём темпе" : `${state.seconds} с на вопрос · ${strict ? "строго" : "без строгого лимита"}`;
+      setMessage(ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total} · ${mode}` : `В комнате: ${state.students.length} · ${waiting}`);
       if (state.finished && !content.querySelector("[data-review]")) {
         results.parentElement.before(reviewView(set.q.slice(0, state.total || 10)));
       }
       return;
     }
 
-    const answer = state.answers.find((item) => item.question_number === number);
-    const view = ended ? "done" : number + ":" + (answer?.answer || "");
-    message.textContent = ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total || 10} · ${timing}` : "Ждём начала раунда.";
-    if (view === shown) return;
-    shown = view;
-    content.replaceChildren();
-    if (ended || !number) return;
-    if (answer) content.append(heading("Ответ принят: " + answer.answer));
-    else content.append(questionView(set.q[number - 1], async (letter) => {
-      await api("answer", { number, answer: letter });
-      await refresh();
-    }));
+    renderStudent(set.q, number, ended, timing);
   }
 
   async function refresh() {

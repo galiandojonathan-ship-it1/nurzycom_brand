@@ -66,7 +66,7 @@
   function check() {
     LiveRound.mount("go", async () => {
       if (!state.set) throw Error("Выберите набор вопросов.");
-      return { title: state.set.title,
+      return { title: state.set.title, math: true,
         questions: LiveRound.workbook(await LiveRound.bundle(state.set.parts[0].b)) };
     });
     $("go").disabled = !($("student").value.trim().length >= 2 && state.set); }

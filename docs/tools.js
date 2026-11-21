@@ -44,9 +44,13 @@
   function toggleCalc(on) {
     const c = calculator(), f = c.querySelector("iframe");
     on = on ?? c.classList.contains("hidden");
+    const returnFocus = !on && c.contains(document.activeElement);
     if (on && f.src === "about:blank") f.src = DESMOS;   // load once and keep the work between questions
     c.classList.toggle("hidden", !on);
-    if (bar) bar.querySelector(".bb-t-calc").setAttribute("aria-pressed", String(on));
+    const trigger = bar?.querySelector(".bb-t-calc");
+    trigger?.setAttribute("aria-pressed", String(on));
+    if (on) c.querySelector(".bb-x").focus({ preventScroll: true });
+    else if (returnFocus) trigger?.focus({ preventScroll: true });
   }
 
   const FIG = {
@@ -75,15 +79,22 @@
     return ref;
   }
   function toggleRef(on) { const r = reference(); on = on ?? r.classList.contains("hidden"); r.classList.toggle("hidden", !on); }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (ref) toggleRef(false); } });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (ref && !ref.classList.contains("hidden")) toggleRef(false);
+    else if (calc && !calc.classList.contains("hidden")) toggleCalc(false);
+  });
 
   window.BBTools = {
     desmosURL: DESMOS,
-    mount(el) {
+    mount(el, { reference = true, label = "Калькулятор" } = {}) {
       bar = el; el.classList.add("bb-tools");
-      el.innerHTML = '<button type="button" class="chip bb-t-calc" aria-pressed="false">Калькулятор</button><button type="button" class="chip bb-t-ref">Справочник</button>';
-      el.querySelector(".bb-t-calc").onclick = () => toggleCalc();
-      el.querySelector(".bb-t-ref").onclick = () => toggleRef(true);
+      el.innerHTML = '<button type="button" class="chip bb-t-calc" aria-pressed="false"></button>' +
+        (reference ? '<button type="button" class="chip bb-t-ref">Справочник</button>' : "");
+      const trigger = el.querySelector(".bb-t-calc");
+      trigger.textContent = label;
+      trigger.onclick = () => toggleCalc();
+      if (reference) el.querySelector(".bb-t-ref").onclick = () => toggleRef(true);
     },
     show(on) { if (bar) bar.classList.toggle("hidden", !on); if (!on) { if (calc) toggleCalc(false); if (ref) toggleRef(false); } },
     close() { if (calc) toggleCalc(false); if (ref) toggleRef(false); },
