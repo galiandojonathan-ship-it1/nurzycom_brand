@@ -12,9 +12,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611211540">
-<link rel="stylesheet" href="teacher.css?v=202611211540">
-<script src="auth.js?v=202611211540"></script>
+<link rel="stylesheet" href="site.css?v=202611211145">
+<link rel="stylesheet" href="teacher.css?v=202611211145">
+<script src="auth.js?v=202611211145"></script>
 <style>
 main{max-width:1240px;padding-top:24px}
 .cabinet-header .top-in{max-width:1240px;justify-content:flex-start}
@@ -292,6 +292,27 @@ em.late{font-style:normal;color:var(--oxide)}
 .ct-res thead th{font:11px var(--mono);letter-spacing:.06em;color:var(--stone);border-bottom:1px solid var(--ink)}
 .ct-res td.ok{background:#E3EFE1;color:#2B6E2F;font-weight:500}.ct-res td.no{background:#F6E2EB;color:#9E2456}
 .ct-res tfoot th,.ct-res tfoot td{font:12px var(--mono);color:#5E5A54}.ct-res tfoot td.low{color:var(--oxide);font-weight:600}
+/* «Разбор ошибок» in a test's results (cted.js mistHTML) */
+.ct-stu{font:inherit;font-weight:500;text-align:left}
+.ct-mist{margin-top:28px;border-top:1px solid var(--ink);padding-top:18px}
+.ct-mist h3{margin:0 0 12px}
+.ct-mtools{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end}.ct-mtools .f{min-width:260px;max-width:420px;flex:1}
+.ct-only{display:flex;gap:8px;align-items:center;margin-bottom:14px;font-size:14px}
+.ct-mq{background:var(--white);border:1px solid var(--studio);border-radius:12px;margin:10px 0;padding:0}
+.ct-mq summary{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:12px 16px;cursor:pointer}
+.ct-mq summary .ok{color:#2B6E2F}.ct-mq summary .no{color:#9E2456;font-weight:500}.ct-mq summary small{color:#5E5A54;font-size:12.5px}
+.ct-mb{padding:0 16px 14px;font-size:15px;line-height:1.5}
+.ct-mb .passage{border-left:3px solid var(--studio);padding:2px 0 2px 12px;margin:0 0 10px;color:#2A2825}
+.ct-mo{list-style:none;margin:10px 0;padding:0}
+.ct-mo li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:baseline;border:1px solid var(--studio);border-radius:10px;padding:8px 12px;margin:6px 0}
+.ct-mo .lt{font:500 13px var(--mono)}.ct-mo .cnt{font-size:13px;color:#5E5A54;text-align:right}
+.ct-mo li.ok{border-color:#2B6E2F;background:#E3EFE1}.ct-mo li.no{border-color:#9E2456;background:#F6E2EB}.ct-mo li.trap .cnt{color:#9E2456;font-weight:500}
+.ct-mo em{font-style:normal;font:11px var(--mono);letter-spacing:.06em;margin-left:10px;text-transform:uppercase}.ct-mo .t-ok{color:#2B6E2F}.ct-mo .t-no{color:#9E2456}
+.ct-key b,.ct-mine b{font-family:var(--mono)}.ct-mine.ok{color:#2B6E2F}.ct-mine.no{color:#9E2456}
+.ct-given{list-style:none;margin:8px 0;padding:0}.ct-given li{display:flex;gap:12px;padding:6px 10px;border-radius:8px;margin:4px 0}.ct-given li.ok{background:#E3EFE1}.ct-given li.no{background:#F6E2EB}.ct-given span{color:#5E5A54;font-size:13px}
+.ct-blank{font-size:13px;color:#5E5A54}
+.ct-x{background:var(--mist,#ECE9E2);border-radius:10px;padding:10px 14px;margin-top:10px}.ct-x b{display:block;font:11px var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+@media(max-width:600px){.ct-mo li{grid-template-columns:24px 1fr}.ct-mo .cnt{grid-column:2;text-align:left}}
 @media(max-width:860px){.ct-qb{grid-template-columns:1fr}.ct-3{grid-template-columns:1fr !important}.ct-pbox{position:static}}
 
 @media(max-width:860px){
@@ -472,16 +493,16 @@ em.late{font-style:normal;color:var(--oxide)}
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611211540"></script>
-<script src="formkit.js?v=202611211540"></script>
-<script src="scale.js?v=202611211540"></script>
-<script src="planlogic.js?v=202611211540"></script>
-<script src="ctlogic.js?v=202611211540"></script>
-<script src="cblesson.js?v=202611211540"></script>
-<script src="cted.js?v=202611211540"></script>
-<script src="verbal-lesson.js?v=202611211540"></script>
-<script src="teacher.js?v=202611211540"></script>
-<script src="cabinet.js?v=202611211540"></script>
-<script src="dict.js?v=202611211540" data-selection-scope=".qhtml"></script>
+<script src="config.js?v=202611211145"></script>
+<script src="formkit.js?v=202611211145"></script>
+<script src="scale.js?v=202611211145"></script>
+<script src="planlogic.js?v=202611211145"></script>
+<script src="ctlogic.js?v=202611211145"></script>
+<script src="cblesson.js?v=202611211145"></script>
+<script src="cted.js?v=202611211145"></script>
+<script src="verbal-lesson.js?v=202611211145"></script>
+<script src="teacher.js?v=202611211145"></script>
+<script src="cabinet.js?v=202611211145"></script>
+<script src="dict.js?v=202611211145" data-selection-scope=".qhtml"></script>
 </body>
 </html>

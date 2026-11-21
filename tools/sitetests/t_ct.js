@@ -96,8 +96,26 @@ const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); cons
   console.log("cells:", cells.join(" "));
   ok(cells.filter((c) => /^ok:/.test(c)).length === 2 && cells.some((c) => /^no:—/.test(c)), "per-question cells: 2 right, a blank");
   await axe(pg, "results");
+  // «Разбор ошибок» (2026-11-21): group mode lists only the questions with mistakes, hardest first, with who chose what
+  const cards = () => pg.$$eval("#ct-mist details.ct-mq", (a) => a.map((d) => ({ open: d.open, sum: d.querySelector("summary").textContent.replace(/\s+/g, " "), html: d.innerHTML, txt: d.textContent.replace(/\s+/g, " ") })));
+  let mc = await cards(); console.log("mist:", mc.map((c) => c.sum).join(" | "));
+  ok(mc.length === 2 && mc.every((c) => /ошиблись 1 из 1/.test(c.sum)), "group mistakes: 2 questions (wrong + blank), «ошиблись 1 из 1»");
+  const q3c = mc.find((c) => /Rivers carry sediment/.test(c.txt)), q4c = mc.find((c) => /3 \+ 4/.test(c.txt));
+  ok(q3c && q3c.open && /<li class="ok"><b class="lt">A<\/b>/.test(q3c.html) && /<li class="trap"><b class="lt">C<\/b>[\s\S]*?1 · Ayana Seitkali/.test(q3c.html) && /plain descriptive option/.test(q3c.txt), "wrong question: key A in green, C chosen by Ayana, explanation shown");
+  ok(q4c && /Верный ответ: 7/.test(q4c.txt) && /Без ответа: 1 · Ayana Seitkali/.test(q4c.txt), "typed question left blank: key 7 and «Без ответа: Ayana»");
+  await pg.uncheck("#ct-only"); await pg.waitForTimeout(150); mc = await cards();
+  ok(mc.length === 4 && /ошиблись 0 из 1/.test(mc[3].sum), "«только вопросы с ошибками» off: all 4 questions, right ones last");
+  await pg.check("#ct-only"); await pg.waitForTimeout(150);
+  await pg.click('.ct-res [data-ctstu]'); await pg.waitForTimeout(150); mc = await cards();
+  ok(mc.length === 2 && mc.some((c) => /ответ C/.test(c.sum)) && mc.some((c) => /без ответа/.test(c.sum)) && /<li class="no"><b class="lt">C<\/b>[\s\S]*?ответ ученика/.test(mc.find((c) => /ответ C/.test(c.sum)).html), "student mode (click on the name): only Ayana's 2 mistakes, her answer C marked");
+  ok(/Ayana Seitkali · 2\/4 · ошибок и пропусков: 2/.test(await pg.textContent("#ct-mist .hint")), "student mode header: name, score, mistakes");
+  await axe(pg, "mistakes review");
+  await pg.screenshot({ path: __dirname + "/../ct-mistakes.png", fullPage: true });
   await pg.click("[data-ctclose]"); await pg.click('.scard:has(.sc-nm:text-is("Ayana Seitkali")) .sc-open'); await pg.click('[data-tab="res"]');
   ok(/Тест · Transitions · проверка/.test(await pg.textContent(".cb-body")), "the student's «Результаты» tab names the test");
+  await pg.click(".cb-body [data-ctrev]"); await pg.waitForSelector("#ct-mist"); 
+  ok((await pg.$eval("#ct-stu", (s) => s.options[s.selectedIndex].text)).startsWith("Ayana Seitkali") && (await pg.$$eval("#ct-mist details.ct-mq", (a) => a.length)) === 2, "«Разбор →» in the student card opens the test's mistakes for that student");
+  await pg.click("[data-ctclose]"); await pg.click('.scard:has(.sc-nm:text-is("Ayana Seitkali")) .sc-open');
   await pg.click('[data-tab="tasks"]'); const tk = await pg.textContent(".cb-body"); ok(/Мой тест · Transitions · проверка/.test(tk), "the task is listed (and ticks itself): " + tk.replace(/\s+/g, " ").slice(0, 160));
   // unsaved edits: leaving asks first (dialog accepted), Escape returns to the list
   await pg.click("[data-ct]"); await pg.click("[data-ctedit]"); await pg.fill("#ct-title", "Transitions · v2"); await pg.keyboard.press("Escape"); await pg.waitForTimeout(200);
@@ -107,6 +125,10 @@ const axe = async (pg, label) => { await pg.addScriptTag({ content: AXE }); cons
   await tp.click("[data-ct]"); await tp.click("[data-ctedit]"); await tp.waitForSelector("#ct-form"); await tp.click("details.ct-q:nth-of-type(1) summary");
   ok((await tp.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone 390px: the editor has no sideways scroll");
   await tp.screenshot({ path: __dirname + "/../ct-editor-phone.png", fullPage: true });
+  await tp.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await tp.waitForSelector(".scard", { timeout: 20000 });
+  await tp.click("[data-ct]"); await tp.click("[data-ctres]"); await tp.waitForSelector("#ct-mist details.ct-mq");
+  ok((await tp.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone 390px: the mistakes review has no sideways scroll");
+  await tp.screenshot({ path: __dirname + "/../ct-mistakes-phone.png", fullPage: true });
   await pg.click("[data-ctedit]"); await pg.click("details.ct-q:nth-of-type(1) summary"); await pg.screenshot({ path: __dirname + "/../ct-editor.png", fullPage: true });
   await pg.click("[data-ctlist]"); await pg.click("[data-ctres]"); await pg.screenshot({ path: __dirname + "/../ct-results.png", fullPage: true });
   await st.goto(B + "mytest.html?t=" + (await pg.evaluate(() => JSON.parse(localStorage.getItem("cb_ct")).tests[0].id)), { waitUntil: "load" }); await st.waitForSelector("#go");

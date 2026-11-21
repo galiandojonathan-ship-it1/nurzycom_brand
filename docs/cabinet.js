@@ -340,7 +340,7 @@
   function results(u, I) {
     return `<p class="hint cb-lead">«Сбросить» убирает результат и счётчик попыток, и ученик решает эту работу заново как в первый раз. Ответы, уже отправленные в Google Form, остаются там.</p>
       ${I.R.length ? `<ul class="cb-rows cb-res">${I.R.map((r) => `<li><span>${esc(r.label)}<small>${esc(r.t ? new Date(r.t).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "")}</small></span>
-          <b>${esc(r.score)}</b><button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}`;
+          <b>${esc(r.score)}</b>${/^ct_last_.+_C[a-z0-9]{8}$/.test(r.key) ? `<button class="chip" type="button" data-ctrev="${esc(r.key.slice(-9))}">Разбор →</button>` : ""}<button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}`;
   }
   function tasks(u, I) {
     return `<div class="cb-bar">${archived(u) ? "" : '<button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>'}
@@ -686,6 +686,7 @@
       on("[data-stage]", (b) => { const st = I.P.S.find((x) => x.no === b.dataset.stage), ids = st.items.flatMap((g) => g.list).filter((it) => !it.ok).map((it) => it.id);
         if (!ids.length) { toast("Здесь уже всё отмечено"); return; }
         act(u, (B, set, get) => { let M = []; try { M = JSON.parse(get(`plan_done_${nm}`) || "[]"); } catch (e) { M = []; } set(`plan_done_${nm}`, JSON.stringify([...new Set([...M, ...ids])])); }, `${st.cap}: отмечено ${ids.length}`); });
+      on("[data-ctrev]", (b) => { if (!window.CTED) return; CTED.openRes(b.dataset.ctrev, u.id); openView("tests", true); });
       on("[data-reset]", (b) => { const r = I.R.find((x) => x.key === b.dataset.reset); if (!r || !confirm(`Сбросить «${r.label}» (${r.score}) у ${u.name}? Ученик решит эту работу заново.`)) return;
         act(u, (B, set) => PLAN.resetKeys(nm, r.kind, r.rest).forEach((k) => set(k, null)), `Сброшено: ${r.label}`); });
       on("[data-new]", () => openAssign([u.id]));

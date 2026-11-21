@@ -7,7 +7,7 @@
   "use strict";
   const { esc, rich } = CTL;
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);
-  const E = { view: "list", tests: [], at: 0, d: null, dirty: false, open: new Set(), imp: false, impText: "", impMsg: "", resId: "", msg: "", loaded: false };
+  const E = { view: "list", tests: [], at: 0, d: null, dirty: false, open: new Set(), imp: false, impText: "", impMsg: "", resId: "", msg: "", loaded: false, stu: "", onlyWrong: true, pending: null };
   let api = null;
   const qn = (n) => `${n} ${pl(n, "вопрос", "вопроса", "вопросов")}`;
   const when = (t) => (t ? new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—");
@@ -38,7 +38,11 @@
     const rows = [], waiting = [];
     for (const u of api.users()) {
       const c = api.copy(u); if (!c) continue;
-      const K = CTL.keys(c.nm, t.id), last = c.get(K.last);
+      let K = CTL.keys(c.nm, t.id), last = c.get(K.last);
+        if (!last) {   // the result was saved under another spelling of the name (hw_student on that device): find it by the test id
+          const k = Object.keys(c.meta || {}).find((x) => x.startsWith("ct_last_") && x.endsWith("_" + t.id) && c.get(x));
+          if (k) { K = CTL.keys(k.slice(8, -(t.id.length + 1)), t.id); last = c.get(K.last); }
+        }
       if (last) rows.push({ u, last, att: Number(c.get(K.att) || 1), A: CTL.parseAns(c.get(K.ans)), t: c.meta[K.last] || 0 });
       else if (c.tasks.some((x) => x.rk && x.rk[1] === t.id && !x.done)) waiting.push(u);
     }
@@ -110,10 +114,61 @@
       <p class="hint">${qn(n)} · сдали ${R.rows.length}${mean != null ? ` · в среднем ${mean}%` : ""}${R.waiting.length ? ` · ещё не сдали: ${R.waiting.map((u) => esc(u.name)).join(", ")}` : ""}. Результаты приходят, когда ученик сдал тест в своём аккаунте; нажмите «Обновить», чтобы подтянуть новые.</p>
       <div class="row"><button class="btn" type="button" data-ctgive="${esc(t.id)}">Задать <span class="arr">+</span></button><button class="btn ghost" type="button" data-ctedit="${esc(t.id)}">Изменить тест</button></div>
       ${R.rows.length ? `<div class="tw ct-tw"><table class="dt ct-res"><thead><tr><th scope="col">Ученик</th><th scope="col">Балл</th><th scope="col">Попыток</th><th scope="col">Сдал(а)</th>${t.q.map((q, i) => `<th scope="col" title="${esc(q.skill || "")}">${i + 1}</th>`).join("")}</tr></thead><tbody>
-        ${R.rows.map((r) => `<tr><th scope="row">${esc(r.u.name)}</th><td><b>${esc(r.last)}</b></td><td>${r.att}</td><td>${when(r.t)}${r.A.sec ? ` · ${Math.round(r.A.sec / 60)} мин` : ""}</td>${t.q.map((q) => { const a = r.A[q.id], blank = a == null || a === "-", ok = !blank && CTL.isRight(q, a);
+        ${R.rows.map((r) => `<tr><th scope="row"><button class="tlink ct-stu" type="button" data-ctstu="${esc(r.u.id)}" title="Открыть ошибки ученика">${esc(r.u.name)}</button></th><td><b>${esc(r.last)}</b></td><td>${r.att}</td><td>${when(r.t)}${r.A.sec ? ` · ${Math.round(r.A.sec / 60)} мин` : ""}</td>${t.q.map((q) => { const a = r.A[q.id], blank = a == null || a === "-", ok = !blank && CTL.isRight(q, a);
           return `<td class="${ok ? "ok" : "no"}" title="${ok ? "верно" : blank ? "без ответа" : `ответ ${esc(a)}, верный ${esc(CTL.answerText(q))}`}">${blank ? "—" : esc(String(a).slice(0, 6))}</td>`; }).join("")}</tr>`).join("")}</tbody>
         <tfoot><tr><th scope="row">Верно, %</th><td></td><td></td><td></td>${per.map((p) => `<td class="${p != null && p < 50 ? "low" : ""}">${p == null ? "—" : p}</td>`).join("")}</tr><tr><th scope="row">Верный ответ</th><td></td><td></td><td></td>${t.q.map((q) => `<td title="${esc(CTL.answerText(q))}">${esc((q.type === "spr" ? CTL.accepted(q.a)[0] || "" : q.a).slice(0, 8))}</td>`).join("")}</tr></tfoot></table></div>`
-        : '<p class="td-sub">Пока никто не сдал этот тест.</p>'}</div>`;
+        : '<p class="td-sub">Пока никто не сдал этот тест.</p>'}${mistHTML(t, R)}</div>`;
+  }
+  // ---- «Разбор ошибок» (2026-11-21, Nurassyl: «why can't I see the mistakes of my students on my own created tests»):
+  // the questions with the class's answers (who chose what, the key, the explanation), hardest first; or one student's own mistakes
+  const blankOf = (a) => a == null || a === "-" || String(a).trim() === "";
+  const rightOf = (q, a) => !blankOf(a) && CTL.isRight(q, a);
+  const names = (rows) => rows.map((r) => esc(r.u.name)).join(", ");
+  function optsHTML(q, rows, mine) {
+    if (q.type === "spr") {
+      const groups = new Map();
+      for (const r of rows) { const a = r.A[q.id]; if (blankOf(a)) continue; const k = String(a).trim(); groups.set(k, [...(groups.get(k) || []), r]); }
+      const given = [...groups.entries()].sort((x, y) => y[1].length - x[1].length);
+      return `<p class="ct-key">Верный ответ: <b>${esc(CTL.answerText(q) || "—")}</b></p>
+        ${mine !== undefined ? `<p class="ct-mine ${rightOf(q, mine) ? "ok" : "no"}">Ответ ученика: <b>${blankOf(mine) ? "без ответа" : esc(mine)}</b></p>` : ""}
+        ${rows.length && mine === undefined ? `<ul class="ct-given">${given.map(([a, rs]) => `<li class="${CTL.isRight(q, a) ? "ok" : "no"}"><b>${esc(a)}</b><span>${rs.length} · ${names(rs)}</span></li>`).join("")}</ul>` : ""}`;
+    }
+    return `<ol class="ct-mo">${q.o.map((o, k) => {
+      const L = "ABCD"[k], who = rows.filter((r) => String(r.A[q.id] || "").toUpperCase() === L), key = q.a === L, picked = mine !== undefined && String(mine).toUpperCase() === L;
+      const cls = key ? "ok" : picked ? "no" : who.length ? "trap" : "";
+      const tag = key ? '<em class="t-ok">верный</em>' : picked ? '<em class="t-no">ответ ученика</em>' : "";
+      return `<li class="${cls}"><b class="lt">${L}</b><span class="ot">${CTL.inline(o)}${tag}</span>${mine === undefined ? `<span class="cnt">${who.length ? `${who.length} · ${names(who)}` : "0"}</span>` : ""}</li>`; }).join("")}</ol>`;
+  }
+  function qcard(q, i, o) {
+    const meta = [q.skill, CTL.LEVELS[q.level]].filter(Boolean).map(esc).join(" · ");
+    const head = o.mine !== undefined
+      ? `<span class="${rightOf(q, o.mine) ? "ok" : "no"}">${blankOf(o.mine) ? "без ответа" : rightOf(q, o.mine) ? "верно" : `ответ ${esc(String(o.mine).slice(0, 12))}`}</span>`
+      : `<span class="${o.wrong ? "no" : "ok"}">ошиблись ${o.wrong} из ${o.rows.length}${o.rows.length ? ` · ${Math.round((100 * o.wrong) / o.rows.length)}%` : ""}</span>`;
+    const blanks = o.mine === undefined ? o.rows.filter((r) => blankOf(r.A[q.id])) : [];
+    return `<details class="ct-mq"${o.open ? " open" : ""}><summary><b>Вопрос ${i + 1}</b>${head}${meta ? `<small>${meta}</small>` : ""}</summary>
+      <div class="ct-mb">${q.passage ? `<div class="passage">${rich(q.passage)}</div>` : ""}<div class="stem">${rich(q.stem)}</div>
+        ${optsHTML(q, o.rows || [], o.mine)}${blanks.length ? `<p class="ct-blank">Без ответа: ${blanks.length} · ${names(blanks)}</p>` : ""}
+        ${q.x ? `<div class="ct-x"><b>Разбор</b>${rich(q.x)}</div>` : ""}</div></details>`;
+  }
+  function mistHTML(t, R) {
+    if (!R.rows.length) return "";
+    const me = E.stu ? R.rows.find((r) => r.u.id === E.stu) : null; if (!me) E.stu = "";
+    const tools = `<div class="ct-mtools"><label class="f"><span>Чьи ошибки</span><select id="ct-stu"><option value="">Вся группа · сдали ${R.rows.length}</option>${R.rows.map((r) => `<option value="${esc(r.u.id)}"${r.u.id === E.stu ? " selected" : ""}>${esc(r.u.name)} · ${esc(r.last)}</option>`).join("")}</select></label>
+      <label class="ct-only"><input type="checkbox" id="ct-only"${E.onlyWrong ? " checked" : ""}> только вопросы с ошибками</label></div>`;
+    let body, lead;
+    if (me) {
+      const all = t.q.map((q, i) => ({ q, i, a: me.A[q.id] })).filter((x) => x.a !== undefined), bad = all.filter((x) => !rightOf(x.q, x.a));
+      const show = E.onlyWrong ? bad : all;
+      lead = `${esc(me.u.name)} · ${esc(me.last)} · ошибок и пропусков: ${bad.length}${me.att > 1 ? ` · попыток ${me.att}, показана последняя` : ""}`;
+      body = show.length ? show.map((x) => qcard(x.q, x.i, { mine: x.a, open: true })).join("") : `<p class="td-sub">${all.length ? "Ошибок нет: все ответы верные." : "В этой попытке нет ответов на нынешние вопросы теста."}</p>`;
+    } else {
+      const st = t.q.map((q, i) => { const rows = R.rows.filter((r) => r.A[q.id] !== undefined); return { q, i, rows, wrong: rows.filter((r) => !rightOf(q, r.A[q.id])).length }; })
+        .filter((x) => x.rows.length && (!E.onlyWrong || x.wrong));
+      st.sort((a, b) => b.wrong / b.rows.length - a.wrong / a.rows.length || a.i - b.i);
+      lead = "Сначала самые трудные вопросы. Под каждым вариантом: сколько учеников его выбрали и кто.";
+      body = st.length ? st.map((x, k) => qcard(x.q, x.i, { rows: x.rows, wrong: x.wrong, open: k < 3 })).join("") : '<p class="td-sub">Ошибок нет: все ответили верно.</p>';
+    }
+    return `<section class="ct-mist" id="ct-mist"><h3 tabindex="-1">Разбор ошибок</h3>${tools}<p class="hint">${lead}</p>${body}</section>`;
   }
   const html = () => (!E.loaded ? '<p class="cb-wait">Загружаю тесты…</p>' : E.view === "edit" && E.d ? editHTML() : E.view === "res" ? resHTML() : listHTML());
 
@@ -150,7 +205,10 @@
     on("[data-ctlist]", () => { if (!leave()) return; E.view = "list"; api.focus(".ct h2"); api.render(); });
     on("[data-ctnew]", () => { openEdit(CTL.newTest()); api.render(); });
     on("[data-ctedit]", (b) => { const t = E.tests.find((x) => x.id === b.dataset.ctedit); if (t) { openEdit(t); api.render(); } });
-    on("[data-ctres]", (b) => { E.resId = b.dataset.ctres; E.view = "res"; api.focus(".ct h2"); api.render(); });
+    on("[data-ctres]", (b) => { E.resId = b.dataset.ctres; E.stu = ""; E.view = "res"; api.focus(".ct h2"); api.render(); });
+    on("[data-ctstu]", (b) => { E.stu = b.dataset.ctstu; api.focus("#ct-mist h3"); api.render(); });
+    const stu = document.getElementById("ct-stu"); if (stu) stu.onchange = (e) => { E.stu = e.target.value; api.focus("#ct-stu"); api.render(); };
+    const only = document.getElementById("ct-only"); if (only) only.onchange = (e) => { E.onlyWrong = e.target.checked; api.focus("#ct-only"); api.render(); };
     on("[data-ctgive]", (b) => { if (!leave()) return; api.give(b.dataset.ctgive); });
     on("[data-ctcopy]", (b) => { const t = E.tests.find((x) => x.id === b.dataset.ctcopy); if (!t) return; const c = clone(t); c.id = CTL.newTest().id; c.title = `${t.title} (копия)`; c.open = false; c.at = Date.now(); E.tests.unshift(c); save(`Создана копия «${t.title}»`); api.render(); });
     on("[data-ctdel]", (b) => { const t = E.tests.find((x) => x.id === b.dataset.ctdel); if (!t || !confirm(`Удалить тест «${t.title}»? Ученики больше не смогут его открыть; их результаты останутся в кабинете.`)) return; E.tests = E.tests.filter((x) => x.id !== t.id); save(`Тест «${t.title}» удалён`); api.render(); });
@@ -192,5 +250,7 @@
     if (E.view !== "list") { if (!leave()) return true; E.view = "list"; api.render(); return true; }
     return false;
   }
-  window.CTED = { init: (a) => (api = a), load, html, bind, items, escape, leave, open: () => { E.view = "list"; }, get loaded() { return E.loaded; } };
+  window.CTED = { init: (a) => (api = a), load, html, bind, items, escape, leave,
+    open: () => { if (E.pending && E.tests.some((t) => t.id === E.pending.id)) { E.view = "res"; E.resId = E.pending.id; E.stu = E.pending.uid || ""; } else E.view = "list"; E.pending = null; },
+    openRes: (id, uid) => { E.pending = { id, uid }; }, get loaded() { return E.loaded; } };
 })();
