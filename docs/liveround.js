@@ -8,13 +8,16 @@
     return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));
   }
   function workbook(items) {
-    return items.map((q) => ({
-      prompt: (q.stim || "") + q.stem,
-      passageLength: (q.stim || "").length,
-      options: q.t === "mc" ? q.opts : [],
-      type: q.t === "mc" ? "mc" : "spr",
-      accepted: q.t === "mc" ? [q.ans] : [].concat(q.acc || q.ans).map(String)
-    }));
+    return items.map((q) => {
+      const numericKeys = [].concat(q.acc).filter((value) => value != null && String(value).trim());
+      return {
+        prompt: (q.stim || "") + q.stem,
+        passageLength: (q.stim || "").length,
+        options: q.t === "mc" ? q.opts : [],
+        type: q.t === "mc" ? "mc" : "spr",
+        accepted: q.t === "mc" ? [q.ans] : (numericKeys.length ? numericKeys : [].concat(q.ans)).filter((value) => value != null).map(String)
+      };
+    });
   }
   async function create(set, settings, questions) {
     if (!set?.questions?.length) throw Error("Сначала выберите набор вопросов.");
@@ -41,9 +44,11 @@
       <h2 id="live-settings-title">Настроить живую практику</h2><p data-title></p>
       <label>Начать с вопроса<input name="first" type="number" min="1" step="1" value="1" required></label>
       <label>Количество вопросов<input name="count" type="number" min="1" step="1" required></label>
-      <label>Секунд на вопрос<input name="seconds" type="number" min="5" max="600" step="1" required></label>
       <label class="live-setting-check"><input name="strict" type="checkbox"> Строго по времени</label>
+      <label class="live-setting-check" data-self-paced><input name="selfPaced" type="checkbox"> Каждый ученик решает в своём темпе</label>
+      <label data-seconds>Секунд на вопрос<input name="seconds" type="number" min="5" max="600" step="1" required></label>
       <p class="hint" data-mode></p>
+      <label class="live-setting-check"><input name="calculator" type="checkbox"> Калькулятор Desmos</label>
       <label class="live-setting-check"><input name="shuffle" type="checkbox"> Перемешать выбранные вопросы</label>
       <p class="hint" data-duration></p><p class="hint" role="status"></p>
       <div class="row"><button class="btn" type="submit">Создать раунд</button><button class="btn ghost" type="button" data-cancel>Отмена</button></div>
@@ -51,20 +56,27 @@
     const form = dialog.querySelector("form"), fields = form.elements;
     const first = fields.namedItem("first"), count = fields.namedItem("count");
     const seconds = fields.namedItem("seconds"), strict = fields.namedItem("strict");
+    const selfPaced = fields.namedItem("selfPaced"), calculator = fields.namedItem("calculator");
     const shuffle = fields.namedItem("shuffle");
     dialog.querySelector("[data-title]").textContent = set.title;
     first.max = String(set.questions.length);
     count.value = Math.min(Number(saved.count) || 10, set.questions.length, 100);
     seconds.value = Number(saved.seconds) || 45;
     strict.checked = saved.strict !== false;
+    selfPaced.checked = saved.selfPaced !== false;
+    calculator.checked = set.math === true;
     function update() {
       count.max = String(Math.min(100, Math.max(1, set.questions.length - Number(first.value) + 1)));
       if (Number(count.value) > Number(count.max)) count.value = count.max;
+      const independent = !strict.checked && selfPaced.checked;
+      dialog.querySelector("[data-self-paced]").hidden = strict.checked;
+      dialog.querySelector("[data-seconds]").hidden = seconds.disabled = independent;
       dialog.querySelector("[data-mode]").textContent = strict.checked
-        ? "Когда время выйдет, следующий вопрос откроется автоматически. Поздний ответ не принимается."
+        ? "Следующий вопрос открывается по таймеру. Ответ можно менять до конца времени на вопрос."
+        : independent ? "Ученики сами выбирают вопросы и меняют ответы до завершения раунда."
         : "После сигнала можно продолжать отвечать. Вы переводите весь класс дальше кнопкой «Следующий вопрос».";
       const duration = Number(count.value) * Number(seconds.value);
-      dialog.querySelector("[data-duration]").textContent = "По таймеру: " + Math.floor(duration / 60) + " мин " + duration % 60 + " с";
+      dialog.querySelector("[data-duration]").textContent = independent ? "" : "По таймеру: " + Math.floor(duration / 60) + " мин " + duration % 60 + " с";
     }
     form.oninput = update;
     dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
@@ -72,7 +84,9 @@
     form.onsubmit = async (event) => {
       event.preventDefault();
       if (!form.reportValidity()) return;
-      const preferences = { count: Number(count.value), seconds: Number(seconds.value), strict: strict.checked };
+      const limit = seconds.valueAsNumber;
+      const preferences = { count: Number(count.value), seconds: Number.isInteger(limit) && limit >= 5 && limit <= 600 ? limit : 45,
+        strict: strict.checked, selfPaced: selfPaced.checked };
       const questions = set.questions.slice(Number(first.value) - 1, Number(first.value) - 1 + preferences.count);
       if (shuffle.checked) {
         for (let index = questions.length - 1; index > 0; index--) {
@@ -84,7 +98,8 @@
       submit.disabled = true;
       try {
         try { localStorage.setItem("live_round_settings", JSON.stringify(preferences)); } catch { /* The round can run without saved preferences. */ }
-        await create(set, { seconds: preferences.seconds, strict: preferences.strict }, questions);
+        await create(set, { seconds: preferences.seconds, strict: preferences.strict,
+          selfPaced: !strict.checked && selfPaced.checked, calculator: calculator.checked }, questions);
       } catch (error) {
         dialog.querySelector('[role="status"]').textContent = error.message;
         submit.disabled = false;

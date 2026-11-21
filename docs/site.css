@@ -696,6 +696,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-round-page .ls-bar{position:relative;left:auto;bottom:auto;transform:none;width:fit-content;margin:16px auto}
 
 .live-settings{width:min(540px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:1px solid var(--stone);border-radius:var(--panel-radius);background:var(--paper);color:var(--ink)}
+.live-settings [hidden]{display:none!important}
 .live-settings::backdrop{background:rgba(15,15,15,.55)}
 .live-settings h2{margin:0 0 12px}
 .live-settings label{display:block;margin:14px 0;font-weight:500}
@@ -717,6 +718,12 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-bluebook .stem{margin:0 0 22px;font-weight:400}
 .live-practice .live-bluebook .opt .ch{margin:0;padding:10px 12px;width:100%;font:inherit;text-transform:none;letter-spacing:normal;background:#fffdf7}
 .live-bluebook .opt .lt{margin-top:1px}
+.live-practice .live-bluebook .opt .ch[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--mist)}
+.live-bluebook .ch[aria-pressed="true"] .lt{background:var(--ink);color:var(--white)}
+.live-practice .bb-tools{margin:0 0 14px}
+.live-practice .live-feedback{color:var(--oxide)}
+.live-receipt{margin:12px 0;font-weight:600}
+.live-feedback:empty,.live-receipt:empty,.live-settings [data-duration]:empty{display:none}
 .live-bluebook.no-passage{grid-template-columns:minmax(0,1fr)}
 .live-bluebook.no-passage>.ask{width:100%;max-width:760px;margin:0 auto}
 .live-host-question .live-bluebook.no-passage>.ask{max-width:none}
