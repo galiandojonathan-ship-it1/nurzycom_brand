@@ -29,10 +29,12 @@
 :where(.teacher-data) .heat th{font:11px var(--mono);color:var(--stone);text-align:left;padding:4px 8px 4px 0;white-space:nowrap;font-weight:400}
 :where(.teacher-data) .heat td{width:56px;height:34px;text-align:center;border-radius:4px;background:var(--mist);color:var(--stone)}
 :where(.teacher-data) .hbars{display:grid;gap:8px}
-:where(.teacher-data) .hb{display:grid;grid-template-columns:minmax(120px,240px) 1fr;gap:12px;align-items:center;font-size:14px}
+:where(.teacher-data) .hb{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr) max-content;gap:8px;align-items:center;font-size:14px}
+:where(.teacher-data) .hb>span:first-child{overflow-wrap:anywhere}
 :where(.teacher-data) .hb .hbar{position:relative;height:18px}
-:where(.teacher-data) .hb .hbar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0;min-width:2px}
-:where(.teacher-data) .hb .hbar span{position:absolute;top:0;font:12px/18px var(--mono);color:var(--ink);white-space:nowrap}
+:where(.teacher-data) .hb .hbar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0}
+:where(.teacher-data) .hb-value{font:12px/18px var(--mono);color:var(--ink);white-space:nowrap}
+@media(max-width:760px){:where(.teacher-data) .hb{grid-template-columns:minmax(0,1fr) minmax(44px,1fr) max-content}}
 :where(.teacher-data) .rv{border-bottom:1px solid var(--studio)}
 :where(.teacher-data) .rv summary{list-style:none;display:flex;gap:12px;align-items:flex-start;padding:12px 0;cursor:pointer}
 :where(.teacher-data) .rv summary::-webkit-details-marker{display:none}
@@ -90,3 +92,14 @@
 :where(.teacher-data) .rv-p{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;align-items:start;padding:8px 10px;border:1px solid var(--studio);background:var(--white,#fff);cursor:pointer}
 :where(.teacher-data) .rv-p input{margin:3px 0 0;width:18px;height:18px}:where(.teacher-data) .rv-p small{grid-column:2;color:#5E5A54;font-size:13px}:where(.teacher-data) .rv-p:has(input:checked){border-color:var(--ink)}
 :where(.teacher-data) .rv-all{margin:6px 0 12px;font-size:14px}:where(.teacher-data) .rv-all .tlink{font:inherit;background:none;border:0;padding:4px 0;text-decoration:underline;cursor:pointer;color:#5E5A54}
+:where(.teacher-data) .rv-summary,:where(.teacher-data) .rv-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}
+:where(.teacher-data) .rv-summary section{border:1px solid var(--studio);border-radius:var(--panel-radius);padding:14px;background:var(--paper);overflow-wrap:anywhere}
+:where(.teacher-data) .rv-summary b{display:block;font-size:28px;margin-top:4px}
+:where(.teacher-data) .rv-summary p{margin:6px 0 10px;font-size:14px}
+:where(.teacher-data) .rv-controls label{display:grid;gap:3px;min-width:0;font-size:14px}
+:where(.teacher-data) .rv-controls input,:where(.teacher-data) .rv-controls select{min-width:0;width:100%;height:44px;padding:8px;font:inherit;border:1px solid var(--studio);border-radius:var(--control-radius);background:var(--white);color:var(--ink)}
+:where(.teacher-data) .rv-preview{margin-top:12px}
+:where(.teacher-data) .rv-preview>summary{cursor:pointer}
+:where(.teacher-data) .rv-ai{margin:12px 0;padding:12px;border:1px solid var(--studio);border-radius:var(--panel-radius)}
+:where(.teacher-data) [data-rvai-output]{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){:where(.teacher-data) .rv-summary,:where(.teacher-data) .rv-controls{grid-template-columns:1fr}}
