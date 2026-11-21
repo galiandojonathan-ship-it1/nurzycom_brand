@@ -98,7 +98,7 @@
   }
   function hbars(el, data) {
     if (!data.length) { el.innerHTML = '<p class="hint">Пока мало данных.</p>'; return; }
-    el.innerHTML = `<div class="hbars">${data.map((d) => `<div class="hb"><span>${esc(d.label)}</span><div class="hbar"><i style="width:${Math.max(0.5, d.value) * 0.82}%"></i><span style="left:calc(${Math.max(0.5, d.value) * 0.82}% + 8px)">${pct(d.value)} · ${d.n}</span></div></div>`).join("")}</div>`;
+    el.innerHTML = `<div class="hbars">${data.map((d) => `<div class="hb"><span>${esc(d.label)}</span><div class="hbar" aria-hidden="true"><i style="width:${Math.min(100, Math.max(0, d.value))}%"></i></div><span class="hb-value">${pct(d.value)} · ${d.n}</span></div>`).join("")}</div>`;
   }
   function heat(rowsOf, lessons) {
     // rows: lessons; cells: their parts in order; value = best first-try % (tooltip names the part)
@@ -390,7 +390,7 @@
       } else {
         const P = partOf(r.lesson, r.pid); if (!P) continue;
         P.q.forEach((q) => { const k = String(q.n); if (!(k in pick) && !bad.has(k)) return;
-          const st = (Q[`${r.lesson}.${r.pid}.${k}`] = Q[`${r.lesson}.${r.pid}.${k}`] || { id: `${r.lesson}.${r.pid}.${k}`, part: `${r.lesson}.${r.pid}`, plabel: `${(lessonOf(r.lesson) || {}).title || r.lesson} · ${P.title}`, src: { b: P.b, n: q.n }, title: `${r.lesson} · ${P.title} · №${k}`, sec, sk: q.sk, d: "", work: WORK(r, P), n: 0, wrong: 0, picks: {}, who: new Set() });
+          const st = (Q[`${r.lesson}.${r.pid}.${k}`] = Q[`${r.lesson}.${r.pid}.${k}`] || { id: `${r.lesson}.${r.pid}.${k}`, part: `${r.lesson}.${r.pid}`, plabel: `${(lessonOf(r.lesson) || {}).title || r.lesson} · ${P.title}`, src: { b: P.b, n: q.n }, title: `${r.lesson} · ${P.title} · №${k}`, sec, sk: q.sk, d: DIFN[q.d] ? q.d : "", work: WORK(r, P), n: 0, wrong: 0, picks: {}, who: new Set() });
           st.n++; st.who.add(r.key); st.ts = Math.max(st.ts || 0, +r.ts || 0); if (o.keys) st.mine = TR[k] || []; if (bad.has(k)) { st.wrong++; const p = pick[k] || "—"; st.picks[p] = (st.picks[p] || 0) + 1; } });
       }
     }
@@ -427,16 +427,14 @@
       ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
     if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
-    if (top.length) html += `<div class="card" style="margin:0 0 18px"><b>Главное.</b> Больше всего ошибок: ${top.map((s) => `${esc(s.label)} (${pct(s.value)})`).join(", ")}.${traps.length ? ` Общих ловушек: ${traps.length} (вопросы, где большинство ошибившихся выбрали один и тот же неверный вариант).` : ""}</div>`;
-    html += `<h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p>
-      <div id="ga-rv"></div><div id="ga-hard">`;
+    html += `<div id="ga-rv"></div><h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
     html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
       return `<details class="rv tq ga-q" data-i="${all.indexOf(q)}"><summary><span class="mk${e >= 50 ? " no" : ""}">${i + 1}</span><span class="tq-s"><b>${esc(q.title)}</b><br><small>${esc(q.sk || "—")}${q.d ? " · " + DIFN[q.d] : ""} · ${esc(q.work)}${t ? ` · <span style="color:var(--oxide,#A63328)">общая ловушка ${t[0]}</span>` : ""}</small></span>
         <span class="rate">${pct(e)}<small>${q.wrong} из ${q.n}</small></span></summary><div class="rbody"><p class="hint">Загружаю…</p></div></details>`; }).join("") + (hard.length ? "" : '<p class="hint">Пока ни один вопрос не решили столько учеников. Выберите «от 2 учеников».</p>') + "</div>";
     html += `<h2>2. Где группа ошибается больше всего</h2><h3>По навыкам</h3><p class="hint">Доля ошибок с первой попытки · число ответов.</p><div id="ga-sk"></div>`;
     html += `<h3>По доменам</h3><div id="ga-dom"></div><h3>По типу работы</h3><div id="ga-work"></div><h3>По урокам и тестам</h3><p class="hint">Уроки и тесты, где ответов не меньше 10.</p><div id="ga-les"></div>`;
     const difs = agg((q) => (q.d ? `${q.sec === "rw" ? "Reading and Writing" : "Math"} · ${DIFN[q.d]}` : null));
-    if (difs.length) html += `<h3>По уровню (пробные тесты)</h3><div id="ga-dif"></div>`;
+    if (difs.length) html += `<h3>По указанному уровню сложности</h3><div id="ga-dif"></div>`;
     html += `<h3>Общие ловушки</h3><p class="hint">Вопросы, где 60% и больше ошибившихся выбрали один и тот же неверный вариант. Обычно за этим стоит одна и та же ошибка мышления: такие вопросы стоит разобрать на уроке.</p>` +
       (traps.length ? table(["Вопрос", "Навык", "Ловушка", "Выбрали"], traps.map((q) => { const t = trapOf(q); return { k: "", cells: [esc(q.title), esc(q.sk || "—"), `<b>${t[0]}</b>`, `${t[1]} из ${q.wrong}`] }; }), { num: [3] }) : '<p class="hint">Таких вопросов пока нет.</p>');
     box.innerHTML = html;
@@ -449,7 +447,7 @@
     hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
-    rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, hard, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
+    rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, ranked, top, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
       note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") });
     gaBind(box);
   }
@@ -458,39 +456,122 @@
   // (login «lesson», lesson.js → lsmist.js) as key «ls_m» of its synced copy: up to 8 reviews, newest first. A group review holds
   // counts and the wrong options chosen, no names; a one-student review holds that student's own tries and the name.
   D.rvSel = D.rvSel || {};
+  const rvFilters = new Map();
+  const errorShare = (x) => x.wrong / x.n;
+  const byShare = (a, b) => errorShare(b) - errorShare(a) || b.wrong - a.wrong;
+  const byWrong = (a, b) => b.wrong - a.wrong || byShare(a, b);
+  const difficulty = { H: 3, M: 2, E: 1 };
   const qOrder = (a, b) => String(a.id).localeCompare(String(b.id), "en", { numeric: true });
   function rvParts(all) {
-    const P = {}; all.forEach((q) => { if (!q.wrong) return; const p = (P[q.part] = P[q.part] || { k: q.part, label: q.plabel, ts: 0, nq: 0 }); p.nq++; p.ts = Math.max(p.ts, q.ts || 0); });
-    return Object.values(P).sort((a, b) => b.ts - a.ts || a.label.localeCompare(b.label, "ru", { numeric: true }));
+    const parts = new Map();
+    for (const q of all) {
+      if (!parts.has(q.part)) parts.set(q.part, { k: q.part, label: q.plabel, work: q.work, ts: 0, nq: 0, wrong: 0, n: 0, peak: 0 });
+      const p = parts.get(q.part);
+      p.n += q.n;
+      p.wrong += q.wrong;
+      p.nq += Number(q.wrong > 0);
+      p.peak = Math.max(p.peak, q.wrong);
+      if (q.wrong) p.ts = Math.max(p.ts, q.ts || 0);
+    }
+    return [...parts.values()].filter((p) => p.wrong).sort((a, b) => b.ts - a.ts || a.label.localeCompare(b.label, "ru", { numeric: true }));
   }
   function rvPick(c) {
     const sel = D.rvSel[c.key] || new Set(), wrong = c.all.filter((q) => q.wrong && (!sel.size || sel.has(q.part)));
-    if (c.mode === "group") return sel.size ? wrong.sort((a, b) => b.wrong / b.n - a.wrong / a.n || b.n - a.n).slice(0, 40) : c.hard;
+    const sort = rvFilters.get(c.key)?.questions;
+    const compare = sort === "wrong" ? byWrong : sort === "level" ? (a, b) => (difficulty[b.d] || 0) - (difficulty[a.d] || 0) || byShare(a, b) : byShare;
+    if (c.mode === "group") return (sel.size ? wrong : c.ranked.filter((q) => q.wrong)).sort((a, b) => compare(a, b) || qOrder(a, b)).slice(0, sel.size ? 40 : GA.top);
+    if (sort) return wrong.sort((a, b) => compare(a, b) || qOrder(a, b)).slice(0, 60);
     const ts = {}; rvParts(c.all).forEach((p) => (ts[p.k] = p.ts));
     return wrong.sort((a, b) => (ts[b.part] || 0) - (ts[a.part] || 0) || qOrder(a, b)).slice(0, 60);
+  }
+  function rvSummary(c) {
+    if (c.mode !== "group" || !c.ranked.length) return "";
+    const weak = rvParts(c.ranked).sort(byShare)[0];
+    const impact = c.ranked.filter((q) => q.wrong).sort(byWrong)[0];
+    if (!weak || !impact) return "";
+    const trap = trapOf(impact);
+    return `<div class="rv-summary">
+      <section><span class="label">Наибольшая доля ошибок в задании</span><b>${pct(100 * errorShare(weak))}</b><p>${esc(weak.label)} · ${weak.wrong} из ${weak.n} ответов</p><button class="chip" type="button" data-rvquick="${esc(weak.k)}">Выбрать для урока</button></section>
+      <section><span class="label">Больше всего учеников ошиблись</span><b>${impact.wrong} из ${impact.n}</b><p>${esc(impact.title)}</p><button class="chip" type="button" data-rvquick="${esc(impact.part)}">Выбрать это задание</button></section>
+      <section><span class="label">С чего начать разбор</span><p>${trap ? `На вопросе «${esc(impact.title)}» вариант ${esc(trap[0])} выбрали ${trap[1]} из ${impact.wrong} ошибившихся. Разберите, почему этот вариант кажется подходящим.` : `Начните с вопроса «${esc(impact.title)}» и попросите учеников объяснить, почему они выбрали свой вариант.`}</p>
+      ${c.top[0] ? `<p>Затем повторите ${esc(c.top[0].label)} · ${pct(c.top[0].value)} ошибок по ${c.top[0].n} ответам.</p>` : ""}</section>
+    </div>`;
   }
   function rvMount(box, c) {
     if (!box) return;
     c.key = `${c.mode}:${c.title}`; const sel = (D.rvSel[c.key] = D.rvSel[c.key] || new Set()), parts = rvParts(c.all), id = c.slot;
-    if (!parts.length && !(c.hard || []).length) { box.innerHTML = ""; return; }
+    if (!parts.length) { box.innerHTML = ""; return; }
+    const available = new Set(parts.map((p) => p.k));
+    for (const k of sel) if (!available.has(k)) sel.delete(k);
+    const filters = rvFilters.get(c.key) || { search: "", parts: "recent", questions: "" };
+    rvFilters.set(c.key, filters);
     const day = (ts) => (ts ? new Date(ts).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "");
-    box.innerHTML = `<div class="card rv-card"><p style="margin:0 0 6px"><b>${c.mode === "group" ? "Разобрать на уроке с группой." : "Разобрать на уроке с учеником."}</b> ${c.mode === "group"
-        ? "Отметьте уроки и тесты, вопросы с ошибками уйдут в аккаунт урока (логин lesson) без имён: сам вопрос, сколько ответили и ошиблись, какие неверные варианты выбрали. Ничего не отмечено — уйдут самые трудные вопросы из списка ниже."
-        : "Отметьте уроки и тесты, его ошибки (первая попытка) уйдут в аккаунт урока (логин lesson) с его ответами и именем. Ничего не отмечено — уйдут все его ошибки. Индивидуальный разбор сам исчезает из аккаунта урока через сутки."}
-      На уроке нажмите «Ошибки класса» на панели внизу сайта.</p>
-      <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора">${parts.map((pp) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(pp.k)}"${sel.has(pp.k) ? " checked" : ""}><span>${esc(pp.label)}</span><small>${pp.nq} ${pl(pp.nq, "вопрос", "вопроса", "вопросов")} с ошибками${pp.ts ? " · " + day(pp.ts) : ""}</small></label>`).join("") || '<p class="hint">Ошибок пока нет.</p>'}</div>
-      <p class="rv-all">${parts.length > 1 ? '<button type="button" class="tlink" data-rvall="1">Отметить все</button> · <button type="button" class="tlink" data-rvall="0">Снять все</button>' : ""}</p>
+    box.innerHTML = `<div class="card rv-card"><h2>Разбор на уроке</h2>
+      ${rvSummary(c)}
+      ${c.mode === "group" && SITE.adminKey() ? '<div class="rv-ai"><button class="btn ghost" type="button" data-rvai>План разбора с Gemini</button><p class="hint">Gemini получает коды заданий и сводные числа. Учитывается текущий выбор заданий.</p><div role="status" data-rvai-output></div></div>' : ""}
+      <h3>Выберите задания</h3>
+      <div class="rv-controls">
+        <label>Поиск задания<input type="search" data-rvsearch placeholder="Урок, тема или код"></label>
+        <label>Сортировка заданий<select data-rvparts><option value="recent">Сначала недавние</option><option value="share">По доле ошибок</option><option value="wrong">По числу ошибок</option><option value="peak">По максимуму ошибившихся на вопросе</option></select></label>
+        <label>Порядок вопросов<select data-rvquestions><option value="">${c.mode === "group" ? "По доле ошибившихся" : "По порядку заданий"}</option><option value="wrong">По числу ошибившихся</option><option value="level">По уровню сложности, если указан</option></select></label>
+      </div>
+      <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора"></div>
+      <p class="rv-all"><button type="button" class="tlink" data-rvall="1">Выбрать найденные</button> · <button type="button" class="tlink" data-rvall="0">Снять выбор</button></p>
+      <p class="hint" data-rvcount role="status"></p>
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
-      <p class="hint" style="margin:8px 0 0">«Подготовить урок» сам отмечает части, сданные после прошлого урока или прошлого разбора с ${c.mode === "group" ? "этой группой" : "этим учеником"} (если их не было: за 7 дней), и отправляет их ошибки.</p>
-      <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div></div>`;
-    const btn = $(`${id}-send`), label = () => { const n = rvPick(c).length, k = sel.size;
-      btn.innerHTML = n ? `Показать на уроке: ${n} ${pl(n, "вопрос", "вопроса", "вопросов")}${k ? ` из ${k} ${pl(k, "части", "частей", "частей")}` : c.mode === "group" ? ", самые трудные" : ", все ошибки"} <span class="arr">→</span>` : "Нет вопросов с ошибками";
-      btn.disabled = !n; };
-    box.querySelectorAll("[data-rvp]").forEach((x) => (x.onchange = () => { if (x.checked) sel.add(x.dataset.rvp); else sel.delete(x.dataset.rvp); label(); }));
-    box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { const on = x.dataset.rvall === "1"; sel.clear(); if (on) parts.forEach((pp) => sel.add(pp.k)); box.querySelectorAll("[data-rvp]").forEach((y) => (y.checked = on)); label(); }));
+      <p class="hint">«Подготовить урок» автоматически подбирает свежие ошибки. Отправленный разбор появится в «Ошибках класса».</p>
+      <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div>
+      <details class="rv-preview"><summary>Вопросы для отправки</summary><div data-rvpreview></div></details></div>`;
+    const btn = $(`${id}-send`), list = box.querySelector(".rv-parts"), preview = box.querySelector("[data-rvpreview]");
+    const count = box.querySelector("[data-rvcount]"), search = box.querySelector("[data-rvsearch]");
+    const partSort = box.querySelector("[data-rvparts]"), questionSort = box.querySelector("[data-rvquestions]");
+    search.value = filters.search;
+    partSort.value = filters.parts;
+    questionSort.value = filters.questions;
+    function label() {
+      const qs = rvPick(c);
+      count.textContent = sel.size ? `Выбрано заданий · ${sel.size}. К отправке · ${qs.length}.` : `Автоподбор · ${qs.length} ${pl(qs.length, "вопрос", "вопроса", "вопросов")}.`;
+      btn.textContent = qs.length ? "Показать на уроке →" : "Нет вопросов с ошибками";
+      btn.disabled = !qs.length;
+      preview.innerHTML = qs.map((q, i) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title)}</b><br><small>Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("") || '<p class="hint">Нет вопросов с ошибками.</p>';
+      preview.querySelectorAll("[data-rvq]").forEach((d) => d.addEventListener("toggle", () => { if (d.open) gaOpen(d, qs[+d.dataset.rvq]); }));
+    }
+    function visibleParts() {
+      const term = filters.search.trim().toLowerCase();
+      const matched = parts.filter((p) => `${p.label} ${p.k}`.toLowerCase().includes(term));
+      if (filters.parts === "share") matched.sort(byShare);
+      else if (filters.parts === "wrong") matched.sort(byWrong);
+      else if (filters.parts === "peak") matched.sort((a, b) => b.peak - a.peak || byWrong(a, b));
+      return matched;
+    }
+    function renderParts() {
+      list.innerHTML = visibleParts().map((p) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(p.k)}"${sel.has(p.k) ? " checked" : ""}><span>${esc(p.label)}</span><small>${pct(100 * errorShare(p))} ошибок · ${p.wrong} из ${p.n} ответов · до ${p.peak} ошибившихся на одном вопросе${p.ts ? " · " + day(p.ts) : ""}</small></label>`).join("") || '<p class="hint">По этому запросу заданий нет.</p>';
+    }
+    search.oninput = () => { filters.search = search.value; renderParts(); };
+    partSort.onchange = () => { filters.parts = partSort.value; renderParts(); };
+    questionSort.onchange = () => { filters.questions = questionSort.value; label(); };
+    list.onchange = ({ target }) => { if (!target.matches("[data-rvp]")) return; if (target.checked) sel.add(target.dataset.rvp); else sel.delete(target.dataset.rvp); label(); };
+    box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { if (x.dataset.rvall === "1") visibleParts().forEach((p) => sel.add(p.k)); else sel.clear(); renderParts(); label(); }));
+    box.querySelectorAll("[data-rvquick]").forEach((x) => (x.onclick = () => { sel.add(x.dataset.rvquick); search.value = filters.search = ""; renderParts(); label(); list.querySelectorAll("[data-rvp]").forEach((input) => { if (input.dataset.rvp === x.dataset.rvquick) input.focus(); }); }));
+    const ai = box.querySelector("[data-rvai]");
+    if (ai) ai.onclick = () => rvGemini(c, ai, box.querySelector("[data-rvai-output]"));
     btn.onclick = () => rvSend(c, btn, $(`${id}-send-st`));
     $(`${id}-prep`).onclick = () => rvPrepare(c, box);
-    label();
+    renderParts(); label();
+  }
+  async function rvGemini(c, button, output) {
+    const qs = rvPick(c).filter((q) => q.who.size >= Math.max(2, GA.min));
+    if (!qs.length) { output.textContent = "Для Gemini нужно больше ответов по выбранным вопросам."; return; }
+    const ids = new Set(qs.map((q) => q.part));
+    const parts = rvParts(c.ranked.filter((q) => ids.has(q.part))).sort(byWrong).slice(0, 8).map(({ k, n, wrong }) => ({ code: k, n, wrong }));
+    const questions = qs.slice(0, 12).map(({ id, n, wrong }) => ({ code: id, n, wrong }));
+    button.disabled = true;
+    output.textContent = "Gemini готовит план…";
+    try {
+      const r = await SITE.api("admin/review-advice", { method: "POST", body: JSON.stringify({ parts, questions }) });
+      output.textContent = r.ok && r.data?.advice ? r.data.advice : r.data?.error || "Gemini сейчас недоступен.";
+    } catch { output.textContent = "Не удалось связаться с Gemini. Попробуйте ещё раз."; }
+    finally { button.disabled = false; }
   }
   async function lessonIds() {
     const [r, access] = await Promise.all([SITE.api("admin/users"), SITE.access()]);

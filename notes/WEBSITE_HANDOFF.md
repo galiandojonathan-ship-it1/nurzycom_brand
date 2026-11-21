@@ -105,6 +105,11 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 
 KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 
+Group analysis exports a Gemini lesson plan on demand via `POST admin/review-advice`. Set the encrypted
+Cloudflare Pages secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy.
+The endpoint sends only assignment/question codes and aggregate response and error counts to Gemini.
+The local group analytics and recommendations also work without this secret.
+
 ## 5. Rules for every change
 
 - **After any change to `docs/*.js` or `docs/site.css`, run `python3 deploy/bump_version.py`.** It writes new `?v=` tags. Cloudflare keeps scripts for 4 hours, and

@@ -56,6 +56,39 @@ async function accountWrap(env, request, id) {
 }
 async function count(env) { let n = 0, cursor; do { const r = await env.USERS.list({ prefix: "u:", cursor }); n += r.keys.length; cursor = r.list_complete ? null : r.cursor; } while (cursor); return n; }
 
+async function reviewAdvice(request, env) {
+  if (!env.GEMINI_API_KEY) return fail(503, "Gemini ещё не настроен на сервере.");
+  const payload = await body(request);
+  const valid = (rows, max) => Array.isArray(rows) && rows.length <= max && rows.every((r) =>
+    r && typeof r.code === "string" && /^(?:[VMDUA]\d{2}|VA|MD|P[TR]\d{1,3})(?:\.[a-z0-9]{1,8}){1,4}$/.test(r.code) &&
+    Number.isInteger(r.n) && r.n >= 2 && r.n <= 1000000 &&
+    Number.isInteger(r.wrong) && r.wrong >= 1 && r.wrong <= r.n);
+  if (!payload || !valid(payload.parts, 8) || !valid(payload.questions, 12) || !payload.questions.length) {
+    return fail(400, "Недостаточно сводных данных для рекомендаций.");
+  }
+  const aggregate = (rows) => rows.map(({ code, n, wrong }) => ({ code, answers: n, errors: wrong }));
+  const stats = { assignments: aggregate(payload.parts), questions: aggregate(payload.questions) };
+  try {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: "Ты помогаешь преподавателю SAT выбрать порядок разбора. По сводным данным первых попыток предложи 3 коротких шага по-русски, обычным текстом. Ссылайся только на переданные коды и числа. Различай долю ошибок и число ошибок. Без текста заданий нельзя определить тему или причину ошибки, поэтому не делай таких выводов. Предложи конкретные действия, например разобрать вопрос или дать похожий вопрос для проверки." }] },
+        contents: [{ parts: [{ text: JSON.stringify(stats) }] }],
+        generationConfig: { maxOutputTokens: 700 }
+      })
+    });
+    if (response.status === 429) return fail(429, "Лимит Gemini исчерпан. Попробуйте позже.");
+    if (!response.ok) return fail(502, "Gemini не ответил. Проверьте настройки API в Cloudflare.");
+    const result = await response.json();
+    const advice = result.candidates?.[0]?.content?.parts?.filter((p) => !p.thought && typeof p.text === "string").map((p) => p.text).join("\n").trim();
+    return advice ? json({ advice: advice.slice(0, 3000) }) : fail(502, "Gemini не вернул рекомендации.");
+  } catch {
+    return fail(502, "Не удалось связаться с Gemini. Попробуйте ещё раз.");
+  }
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   if (!env.USERS) return fail(503, "storage not connected");
@@ -103,6 +136,7 @@ export async function onRequest(context) {
   }
   if (route.startsWith("admin/")) {
     if (!(await isAdmin(env, request))) return fail(403, "admin key needed");
+    if (route === "admin/review-advice" && m === "POST") return reviewAdvice(request, env);
     if (route === "admin/users" && m === "GET") {
       const out = []; let cursor;
       do { const r = await env.USERS.list({ prefix: "u:", cursor });
