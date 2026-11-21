@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F5F3EE">
+<title>Пульт урока · nurzycom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=IBM+Plex+Mono&family=Noto+Serif+Display:ital,wght@1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="site.css?v=202611211220">
+<style>
+/* «Пульт урока» (classroom.js): the lesson account's home page, only for login «lesson» */
+.cr-hero .sub{max-width:720px}
+.cr-now{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px}
+.cr-now .live{display:inline-flex;align-items:center;gap:9px;font:500 17px var(--sans);color:var(--paper)}
+.cr-now .live i{width:10px;height:10px;border-radius:50%;background:#A63328;box-shadow:0 0 0 4px rgba(166,51,40,.25)}
+.cr-chip{font:500 15px var(--sans);border:1.5px solid rgba(245,243,238,.45);background:transparent;color:var(--paper);border-radius:var(--control-radius);padding:10px 16px;cursor:pointer}
+.cr-chip:hover,.cr-chip:focus-visible{background:var(--paper);color:var(--ink)}
+.cr-chip.main{background:var(--oxide);color:var(--white);border-color:var(--oxide)}
+.cr-chip.main:hover{background:#81291e;border-color:#81291e}
+.cr-grid{display:grid;gap:18px;margin-top:28px}
+@media(min-width:1000px){.cr-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}.cr-wide{grid-column:1/-1}}
+.cr-card{background:#fff;border:1.5px solid var(--studio);border-radius:var(--panel-radius);padding:20px 22px;min-width:0}
+.cr-card h2{font:600 22px/1.25 var(--sans);margin:0 0 4px}.cr-card .cr-sub{color:#5E5A54;font-size:15px;margin:0 0 14px}
+.cr-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.cr-item{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--paper);border:1.5px solid transparent;border-radius:var(--panel-radius);padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
+.cr-item:hover,.cr-item:focus-visible{border-color:var(--ink)}
+.cr-item b{display:block;font:600 16px/1.3 var(--sans)}.cr-item small{color:#5E5A54;font-size:13px}.cr-item .r{text-align:right;font:600 18px var(--sans)}
+.cr-kind{display:block;font:500 12px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:#5E5A54;margin-bottom:2px}
+.cr-tabs{display:flex;gap:6px;margin:0 0 14px}
+.cr-tabs button{font:500 15px var(--sans);border:1.5px solid var(--studio);background:#fff;border-radius:var(--control-radius);padding:8px 14px;cursor:pointer;color:inherit}
+.cr-tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.cr-tile{display:flex;flex-direction:column;gap:6px;min-height:118px;text-align:left;background:var(--paper);border:1.5px solid transparent;border-radius:var(--panel-radius);padding:12px;cursor:pointer;font:inherit;color:inherit}
+.cr-tile:hover,.cr-tile:focus-visible,.cr-tile[aria-expanded="true"]{border-color:var(--ink)}
+.cr-tile .no{font:600 30px/1 var(--sans)}.cr-tile .nm{font-size:13px;line-height:1.3;color:#3d3a36}
+.cr-tile .st{margin-top:auto;font:500 12px var(--sans);color:#5E5A54}.cr-tile .st.ok{color:#1F5A33}
+.cr-panel{margin-top:14px;border-top:1.5px solid var(--ink);padding-top:14px}
+.cr-panel h3{font:600 19px/1.3 var(--sans);margin:0 0 10px}
+.cr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.cr-acts a,.cr-acts button{font:500 15px var(--sans);border:1.5px solid var(--ink);background:#fff;border-radius:var(--control-radius);padding:9px 15px;cursor:pointer;color:var(--ink);text-decoration:none}
+.cr-acts .cr-remove{color:var(--oxide);border-color:currentColor}
+.cr-acts .main{background:var(--oxide);border-color:var(--oxide);color:var(--white)}.cr-acts button:disabled{opacity:.45;cursor:default}
+.cr-note{color:#5E5A54;font-size:14px;margin:10px 0 0}
+.cr-import{align-items:center;margin:0 0 12px;color:#5E5A54;font-size:14px}
+#cr-zip-msg{white-space:pre-line;overflow-wrap:anywhere;margin:0 0 14px}
+#cr-zip-msg:empty{margin:0}
+.cr-words{display:grid;gap:8px}
+.cr-w{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:baseline;border-bottom:1px solid var(--studio);padding:8px 0}
+.cr-w b{font:600 16px var(--sans)}.cr-w span{color:#5E5A54;font-size:14px}.cr-w small{font:500 12px var(--sans);white-space:nowrap}
+.cr-w small.ok{color:#1F5A33}.cr-w small.wait{color:#8A5300}
+.cr-empty{color:#5E5A54;font-size:15px;margin:0}
+/* presentation viewer */
+.dk{position:fixed;inset:0;z-index:55;background:#241f19;color:var(--paper);display:flex;flex-direction:column}
+.dk-bar{background:var(--ink);display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.dk-bar b{font:600 16px var(--sans);margin-right:auto}
+.dk-bar button{font:500 14px var(--sans);border:1.5px solid rgba(245,243,238,.35);background:transparent;color:#F5F3EE;border-radius:var(--control-radius);padding:8px 13px;cursor:pointer}
+.dk-bar button:hover,.dk-bar button:focus-visible{background:var(--paper);color:var(--ink)}
+.dk-bar button[aria-pressed="true"]{background:var(--signal);border-color:var(--signal);color:var(--ink)}
+.dk-bar .dk-pos{font:500 14px var(--sans);color:rgba(245,243,238,.75);min-width:84px;text-align:center}
+.dk-workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:12px;padding:0 12px calc(var(--ls-h,56px) + 24px)}
+.dk.with-calc .dk-workspace{grid-template-columns:minmax(0,3fr) minmax(300px,2fr)}
+.dk:fullscreen .dk-workspace{padding-bottom:12px}
+.dk-stage{min-width:0;min-height:0;display:grid;place-items:center;container-type:size}
+.dk-frame{position:relative;width:min(100%,calc(100cqh * var(--ar)));aspect-ratio:var(--ar);container-type:inline-size}
+.dk-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;border-radius:var(--control-radius);user-select:none}
+.dk-text{position:absolute;inset:0;pointer-events:none}
+.dk-text-page,.dk-text-layer{position:absolute;top:0;left:0;transform-origin:0 0}
+.dk-text-page{overflow:hidden}
+.dk-text-layer{-webkit-text-size-adjust:none;text-size-adjust:none;forced-color-adjust:none}
+.dk-text-layer[data-main-rotation="90"]{transform:rotate(90deg) translateY(-100%)}
+.dk-text-layer[data-main-rotation="180"]{transform:rotate(180deg) translate(-100%,-100%)}
+.dk-text-layer[data-main-rotation="270"]{transform:rotate(270deg) translateX(-100%)}
+.dk-text-layer :is(span,br){position:absolute;white-space:pre;transform-origin:0 0;color:transparent;line-height:1;cursor:text;pointer-events:auto;user-select:text}
+.dk-text-layer ::selection{background:#faed658a;color:transparent}
+.dk-native{position:absolute;inset:0;overflow:auto;background:#fff;color:#0F0F0F;border-radius:var(--control-radius);padding:6cqw;overflow-wrap:anywhere}
+.dk-native h2{margin:0 0 .55em;font:600 clamp(16px,5cqw,64px)/1.1 var(--sans);letter-spacing:-.02em;white-space:pre-wrap}
+.dk-native p{margin:0 0 .6em;font:400 clamp(14px,3.1cqw,38px)/1.4 var(--sans);white-space:pre-wrap}
+.dk-native:not([hidden])~.dk-nav,.dk.drawing .dk-text{display:none}
+#dk-calc iframe{display:block;width:100%;height:100%;border:0;border-radius:var(--control-radius);background:#fff;min-height:0}
+@media(max-width:700px){.dk.with-calc .dk-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,2fr) minmax(0,3fr)}}
+.dk-draw{position:absolute;inset:0;display:none}.dk.drawing .dk-draw{display:block}
+.dk.drawing .dk-stage{padding-top:64px}.dk-draw .lb-tools{position:absolute;left:0;right:0;top:-58px;border-radius:var(--panel-radius)}.dk-draw .lb-c{position:absolute;inset:0}
+.dk-nav{position:absolute;top:0;bottom:0;width:18%;border:0;background:transparent;cursor:pointer;color:transparent}
+.dk-nav.prev{left:0}.dk-nav.next{right:0}.dk.drawing .dk-nav{display:none}
+.dk-nav:focus-visible{outline:2px solid #F5F3EE;outline-offset:-4px}
+</style>
+<script src="auth.js?v=202611211220"></script>
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержанию</a>
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" aria-label="NK nurzycom · SAT, главная">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg>
+    <span>nurzycom · SAT</span>
+  </a>
+  <nav class="nav"><a href="plan.html">План<span class="lg"> курса</span></a><a href="./"><span class="lg">Домашние </span>задания</a><a href="vocab.html">Словарь</a><a href="reading.html">Тексты</a><a href="practice.html"><span class="lg">Сложные </span>вопросы</a><a href="mock.html"><span class="lg">Пробные </span>тесты</a><a href="useful.html">Полезное</a></nav>
+  <a class="top-cta" href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a>
+</div></header>
+
+<main id="main" tabindex="-1">
+  <section>
+    <div class="hero cr-hero">
+      <span class="label">Режим урока · только для аккаунта урока</span>
+      <h1>Пульт урока</h1>
+      <p class="sub" id="cr-sub">Начните урок, откройте разбор ошибок или презентацию. Отметки на панели внизу сохраняются в этот урок.</p>
+      <div class="cr-now" id="cr-now"></div>
+    </div>
+    <div id="cr-body"><p class="cr-empty">Загружаю…</p></div>
+  </section>
+</main>
+<footer class="foot"><div class="foot-in">
+  <div class="foot-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l24.2 14v28L32 60 7.8 46V18z"/><text x="32" y="40.5" text-anchor="middle">NK</text></svg><div><b>Нурасыл Кунанбаев</b><span class="label">Преподаватель SAT · nurzycom</span></div></div>
+  <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
+  <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
+</div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
+<script src="lsboard.js?v=202611211220"></script>
+<script src="tools.js?v=202611211220"></script>
+<script src="vendor/fflate-0.8.3/fflate.min.js"></script>
+<script src="classroom.js?v=202611211220"></script>
+<script src="dict.js?v=202611211220" data-selection-scope=".qhtml,.dk-text,.dk-native"></script>
+</body>
+</html>

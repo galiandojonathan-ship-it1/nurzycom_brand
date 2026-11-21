@@ -1,0 +1,3 @@
+# The course site is for enrolled students only.
+User-agent: *
+Disallow: /
