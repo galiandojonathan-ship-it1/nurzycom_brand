@@ -80,6 +80,10 @@ export async function onRequest({ env, request }) {
     room.closed_at = now; room.current = null;
   }
 
+  // A presentation can refresh before loading the current state. An automatic action must not interrupt a cold start.
+  const keepSeries = "AND NOT EXISTS (SELECT 1 FROM lp_questions lp WHERE lp.room=r.id AND lp.number=r.current AND lp.ref GLOB '*:cold:[1-4]')";
+  const automatic = action === "show" && data.automatic === true;
+
   function insertQuestion(question, ref, series) {
     // Reserve room for the entire series before inserting each item. This also makes an identical retry safe.
     const capacity = series
@@ -87,7 +91,7 @@ export async function onRequest({ env, request }) {
       : "(SELECT COUNT(*) FROM lp_questions WHERE room=r.id) < 100";
     return sql(`INSERT INTO lp_questions (room,number,ref,snapshot,kind,accepted,skill)
       SELECT r.id,COALESCE((SELECT MAX(number) FROM lp_questions WHERE room=r.id),0)+1,?,?,?,?,?
-      FROM lp_rooms r WHERE r.id=? AND r.closed_at IS NULL AND ${capacity} ON CONFLICT DO NOTHING`,
+      FROM lp_rooms r WHERE r.id=? AND r.closed_at IS NULL AND ${capacity} ${automatic ? keepSeries : ""} ON CONFLICT DO NOTHING`,
     ref, question.snapshot, question.kind, JSON.stringify(question.accepted), skills.has(question.skill) ? question.skill : "SAT", id, ...(series || []));
   }
   if (action === "show" || action === "cold") {
@@ -107,10 +111,13 @@ export async function onRequest({ env, request }) {
           ELSE (SELECT number FROM lp_questions WHERE room=? AND ref=?) END
         WHERE id=? AND closed_at IS NULL AND
           (SELECT COUNT(*) FROM lp_questions WHERE room=? AND ref IN (?,?,?,?))=4`, id, ...refs, id, refs[0], id, id, ...refs)
-      : sql(`UPDATE lp_rooms SET current=(SELECT number FROM lp_questions WHERE room=? AND ref=?)
-        WHERE id=? AND closed_at IS NULL AND EXISTS (SELECT 1 FROM lp_questions WHERE room=? AND ref=?)`, id, refs[0], id, id, refs[0]);
+      : sql(`UPDATE lp_rooms AS r SET current=(SELECT number FROM lp_questions WHERE room=? AND ref=?)
+        WHERE r.id=? AND r.closed_at IS NULL AND EXISTS (SELECT 1 FROM lp_questions WHERE room=? AND ref=?) ${automatic ? keepSeries : ""}`, id, refs[0], id, id, refs[0]);
     const results = await db.batch([...writes, activate]);
-    return results.at(-1).meta.changes ? respond({ ok: true }) : fail(409, "Урок завершён или достигнут предел в 100 вопросов.");
+    if (results.at(-1).meta.changes) return respond({ ok: true });
+    if (automatic && await sql(`SELECT 1 AS active FROM lp_rooms r JOIN lp_questions q ON q.room=r.id AND q.number=r.current
+      WHERE r.id=? AND q.ref GLOB '*:cold:[1-4]'`, id).first()) return respond({ keptCold: true });
+    return fail(409, "Урок завершён или достигнут предел в 100 вопросов.");
   }
   if (action === "advance") {
     if (!Number.isInteger(data.number) || data.number !== room.current || room.closed_at) return fail(409, "Вопрос уже изменился. Обновите монитор.");
@@ -125,7 +132,7 @@ export async function onRequest({ env, request }) {
   }
   if (action === "pause" || action === "close") {
     if (action === "close") await sql("UPDATE lp_rooms SET closed_at=?,current=NULL WHERE id=? AND closed_at IS NULL", now, id).run();
-    else await sql("UPDATE lp_rooms SET current=NULL WHERE id=? AND closed_at IS NULL", id).run();
+    else await sql(`UPDATE lp_rooms AS r SET current=NULL WHERE r.id=? AND r.closed_at IS NULL ${keepSeries}`, id).run();
     return respond({ ok: true });
   }
   if (action === "host") {
