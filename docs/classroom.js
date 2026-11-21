@@ -402,12 +402,12 @@
     DK.board = window.LSBOARD ? LSBOARD.create(DK.box.querySelector(".dk-draw"), { clear: true }) : null;
     DK.box.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (!b) return; ({ prev: () => go(DK.i - 1), next: () => go(DK.i + 1), draw: toggleDraw, calc: toggleCalc, fs: fullscreen, x: closeDeck })[b.dataset.k](); });
     document.addEventListener("keydown", onKey);
-    DK.d = d; DK.uploaded = null; DK.slides = Array.from({ length: d.n });
+    DK.d = d; DK.uploaded = d.uploaded ? uploadedSlides(d.id) : null; DK.slides = Array.from({ length: d.n });
     const lesson = C.lessons.find((l) => l.tag === id);
+    const source = DK.uploaded;
     const readText = async (index) => {
-      if (!d.uploaded) return "";
-      DK.uploaded ||= uploadedSlides(d.id);
-      const entry = (await DK.uploaded)[index];
+      if (!source) return "";
+      const entry = (await source)[index];
       if (entry?.paragraphs) return [entry.title, ...entry.paragraphs].join("\n");
       return (entry?.text?.items || []).map((item) => (item.str || "") + (item.hasEOL ? "\n" : " ")).join("");
     };

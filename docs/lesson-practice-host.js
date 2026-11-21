@@ -11,7 +11,7 @@ window.LessonPracticeHost = (() => {
   ].find((s) => l.title.includes(s)) || "";
   let room = hostId || stored(storageKey), closed = false, panels, status, roster, monitorLink, studentLink;
   let signature = "", findings = new Map(), running = false, activeLesson = "", dispatchNumber = 0, dispatch = Promise.resolve(), sent = null;
-  let accounts, autoReport = false, cold = 0, activeNumber, advancing = false;
+  let accounts, creating, autoReport = false, cold = 0, activeNumber, advancing = false, preparingCold = false;
   let historyCurrent, historyRoom, attemptsByKey = new Map();
   const coldPart = (lesson) => lesson?.parts.find((p) => p.b && p.q?.length >= 4 && /холодн|cold[ -]+start/i.test(p.title));
   const deckUIs = new Map(), bundles = new Map(), coldDecks = new WeakMap();
@@ -71,12 +71,13 @@ window.LessonPracticeHost = (() => {
   }
   async function create(title) {
     if (room && !closed) return room;
-    const result = await api("create", { title: title.slice(0, 160) });
-    room = result.room; remember(room); closed = false; cold = 0; activeNumber = null; sent = null; findings = new Map(); autoReport = false; signature = "";
-    activeLesson = window.LESSON?.session()?.id || "";
-    links(); notify("Практика открыта. Скопируйте ссылку и покажите первый вопрос.");
-    for (const { deck, lesson, current } of deckUIs.values()) publish(deck, current(), lesson);
-    return room;
+    creating ||= api("create", { title: title.slice(0, 160) }).then(({ room: id }) => {
+      room = id; remember(room); closed = false; cold = 0; activeNumber = null; sent = null; findings = new Map(); autoReport = false; signature = "";
+      activeLesson = window.LESSON?.session()?.id || "";
+      links(); notify("Практика открыта. Скопируйте ссылку для учеников.");
+      return id;
+    }).finally(() => { creating = null; });
+    return creating;
   }
   function newRoom(title, after) {
     const dialog = el("dialog"); dialog.className = "lp-dialog";
@@ -147,13 +148,14 @@ window.LessonPracticeHost = (() => {
       refresh();
     } catch (error) { notify(error.message); }
   }
+  const answerStatus = (answer) => answer.correct == null ? "без ключа" : answer.correct ? "верно" : "ошибка";
   function answerDetails(name, question, answer, focusKey) {
     const dialog = el("dialog"); dialog.className = "lp-dialog";
     const title = el("h2", `${name} · вопрос ${question.number}`);
     dialog.append(title, el("p", `${question.ref.replace(/:cold:\d$/, "")} · ${question.skill}`));
     if (answer) {
       const hints = [answer.hints & 1 ? "словарь" : "", answer.hints & 2 ? "исключение вариантов" : ""].filter(Boolean);
-      dialog.append(el("p", `Ответ ${answer.answer} · ${answer.correct ? "верно" : "ошибка"}`),
+      dialog.append(el("p", `Ответ ${answer.answer} · ${answerStatus(answer)}`),
         el("p", `Время ${(answer.ms / 1000).toFixed(1)} с`),
         el("p", hints.length ? "Подсказки: " + hints.join(", ") : "Без подсказок"));
     } else dialog.append(el("p", "Ответ пока не отправлен."));
@@ -173,7 +175,7 @@ window.LessonPracticeHost = (() => {
     heading.className = "lp-matrix-status";
     roster.replaceChildren(heading);
     if (!state.members.length) { roster.append(el("p", "Пока никто не подключился.")); return; }
-    const legend = el("p", "✓ Верно · × Ошибка · — Нет ответа");
+    const legend = el("p", "✓ Верно · × Ошибка · ○ Без ключа · — Нет ответа");
     legend.className = "hint";
     const wrap = el("div"); wrap.className = "lp-matrix-wrap"; wrap.setAttribute("role", "region");
     wrap.setAttribute("aria-label", "Ответы по вопросам"); wrap.tabIndex = 0;
@@ -194,11 +196,11 @@ window.LessonPracticeHost = (() => {
       let hasAnswer = false;
       for (const q of state.questions) {
         const key = `${member.account}:${q.number}`, answer = attemptsByKey.get(key);
-        hasAnswer ||= !!answer;
-        const cell = el("td"), button = el("button", answer ? (answer.correct ? "✓" : "×") : "—");
-        button.type = "button"; button.className = "lp-answer " + (answer ? (answer.correct ? "lp-right" : "lp-wrong") : "lp-empty");
+        hasAnswer ||= answer?.correct != null;
+        const cell = el("td"), button = el("button", answer ? (answer.correct == null ? "○" : answer.correct ? "✓" : "×") : "—");
+        button.type = "button"; button.className = "lp-answer " + (answer ? (answer.correct == null ? "lp-ungraded" : answer.correct ? "lp-right" : "lp-wrong") : "lp-empty");
         button.dataset.lpFocus = key;
-        const verdict = answer ? `${answer.correct ? "верно" : "ошибка"}, ответ ${answer.answer}` : "нет ответа";
+        const verdict = answer ? `${answerStatus(answer)}, ответ ${answer.answer}` : "нет ответа";
         button.setAttribute("aria-label", `${name}, вопрос ${q.number}: ${verdict}`);
         if (answer && /^[A-D]$/.test(answer.answer)) button.prepend(document.createTextNode(answer.answer + " "));
         cell.classList.toggle("lp-current", q.number === state.current);
@@ -254,7 +256,7 @@ window.LessonPracticeHost = (() => {
       if (state.closed && autoReport) {
         // One request at a time keeps each report within the same quota as a short lesson generation call.
         autoReport = false;
-        const answered = new Set(state.attempts.map((a) => a.account));
+        const answered = new Set(state.attempts.filter((a) => a.correct != null).map((a) => a.account));
         (async () => {
           for (const m of state.members) if (answered.has(m.account) && !m.report) await report(m.account, roomId);
           if (roomId === room) notify("Анализ завершён. Откройте отчёты в строках учеников.");
@@ -309,7 +311,9 @@ window.LessonPracticeHost = (() => {
     return bundles.get(part.b);
   }
   async function questionPayload(question, part, lesson) {
-    const [workbook] = LiveRound.workbook([question]), { accepted, ...visible } = workbook;
+    const [workbook] = LiveRound.workbook([question]), { accepted: keys, ...visible } = workbook;
+    const accepted = part.id === "slide" ? keys.filter(Boolean) : keys;
+    if (!accepted.length) visible.graded = false;
     return { ref: `${lesson.tag}.${part.id}.${question.n}`, snapshot: await SITE.sealBlob(visible),
       kind: workbook.type, accepted, skill: skill(question, lesson) };
   }
@@ -321,15 +325,15 @@ window.LessonPracticeHost = (() => {
   }
   async function publish(deck, index, lesson, choice) {
     if (cold && !choice) return;
-    const revision = ++dispatchNumber, id = room;
-    if (!id || closed || !lesson) return;
     const map = choice || mapping(deck)[index];
+    if (!map || !room || closed || !lesson) return;
+    const revision = ++dispatchNumber, id = room;
     dispatch = dispatch.catch(() => {}).then(async () => {
       if (revision !== dispatchNumber || id !== room || closed) return;
       const part = map && lesson.parts.find((p) => p.id === map.part);
       const ref = part ? `${lesson.tag}.${part.id}.${map.number}` : "";
       if (ref === sent && !choice) return;
-      if (!ref) { await api("pause", {}); sent = ""; return; }
+      if (!ref || !part.b) throw new Error("Вопрос исчез из задания. Привяжите другой вопрос.");
       const q = (await readPart(part)).find((x) => x.n === map.number);
       if (!q) throw new Error("Вопрос исчез из задания. Привяжите другой вопрос.");
       const payload = await questionPayload(q, part, lesson);
@@ -354,22 +358,24 @@ window.LessonPracticeHost = (() => {
     return input;
   }
   function slideItem(index, draft, answer) {
-    return { t: "mc", n: index + 1, stim: paragraphs(draft.prompt), stem: "", opts: draft.opts.map(safeText), ans: answer };
+    const { passage, stem } = SlidePracticeContent.splitPrompt(draft.prompt);
+    return { t: "mc", n: index + 1, stim: paragraphs(passage), stem: paragraphs(stem), opts: draft.opts.map(safeText), ans: answer };
   }
-  async function publishSlide(lesson, index, draft, answer) {
-    const send = async () => {
-      ++dispatchNumber;
-      await dispatch;
-      const result = await api("show", await questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson));
-      if (result.ok) {
-        cold = 0; sent = null; links(); await refresh();
-        notify(`Вопрос со слайда ${index + 1} открыт у учеников.`);
-      }
-    };
-    if (!room || closed) { newRoom(lesson.title, () => send().catch((error) => notify(error.message))); return; }
-    return send();
+  async function publishSlide(lesson, index, draft, answer, visible = () => true) {
+    const payload = await questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson);
+    if (!visible()) return;
+    const id = await create(lesson.title);
+    const revision = ++dispatchNumber;
+    const send = dispatch.catch(() => {}).then(async () => {
+      if (revision !== dispatchNumber || id !== room || !visible()) return;
+      await api("show", payload);
+      cold = 0; sent = null; links(); await refresh();
+      notify(`Вопрос со слайда ${index + 1} открыт у учеников.${answer ? "" : " Ключ не найден. Ответы сохраняются без оценки."}`);
+    });
+    dispatch = send;
+    return send;
   }
-  function picker(box, deck, index, lesson, readText, why = "", preferSlide = false) {
+  function picker(box, deck, index, lesson, readText) {
     const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker";
     const form = el("form"), title = el("h2", `Вопрос для слайда ${index + 1}`);
     const source = el("select"), part = el("select"), number = el("select");
@@ -379,7 +385,6 @@ window.LessonPracticeHost = (() => {
     const supported = lesson.parts.filter((p) => p.b && p.q?.length);
     if (supported.length) source.append(new Option("Рабочая тетрадь", "workbook"));
     source.append(new Option("Вопрос со слайда", "slide"));
-    if (preferSlide) source.value = "slide";
     const selected = saved?.part || supported.find((p) => /практи/i.test(p.title))?.id;
     for (const item of supported) part.append(new Option(item.title, item.id, false, item.id === selected));
 
@@ -427,7 +432,6 @@ window.LessonPracticeHost = (() => {
     }
     source.onchange = update; part.onchange = loadOptions; number.onchange = loadQuestion;
     form.append(title);
-    if (why) form.append(el("p", why));
     form.append(label("Источник вопроса", source), workbook, slideForm, message, primary);
     const buttons = el("div"); buttons.className = "lp-control";
     if (saved) buttons.append(action("Снять привязку", () => { saveMapping(deck, index, null); dialog.close(); }));
@@ -465,6 +469,7 @@ window.LessonPracticeHost = (() => {
         options.forEach(({ input }, i) => { if (!input.value) input.value = draft.opts[i]; });
       }
       const slot = SlidePracticeContent.coldNumber(text);
+      if (!answer.value) answer.value = SlidePracticeContent.answerKey(text) || "";
       if (slot) {
         const { keys } = await readColdDeck(deck, readText);
         if (dialog.open && !answer.value) answer.value = keys?.[slot - 1] || "";
@@ -473,31 +478,45 @@ window.LessonPracticeHost = (() => {
   }
   async function questionCandidates(lesson) {
     const parts = lesson.parts.filter((p) => p.b && p.q?.length);
-    return (await Promise.all(parts.map(async (p) => (await readPart(p)).map((question) => ({ part: p.id, question }))))).flat();
+    const loaded = await Promise.allSettled(parts.map(async (p) => (await readPart(p)).map((question) => ({ part: p.id, question }))));
+    return loaded.flatMap((part) => part.status === "fulfilled" ? part.value : []);
   }
-  async function recognize(box, deck, lesson, current, readText) {
+  async function recognize(box, deck, lesson, current, readText, button) {
     const index = current();
-    const show = (choice) => {
-      const send = () => { saveMapping(deck, index, choice); publish(deck, index, lesson, choice); };
-      if (!room || closed) newRoom(lesson.title, send); else send();
-    };
-    const saved = mapping(deck)[index];
-    if (saved) return show(saved);
+    const visible = () => box.isConnected && index === current();
+    button.disabled = true;
     notify("Ищу вопрос по тексту слайда…");
     try {
       const text = await readText(index);
-      if (!text.trim()) {
-        if (box.isConnected && index === current()) picker(box, deck, index, lesson, readText, "У слайда нет текстового слоя. Выберите вопрос из тетради или введите его вручную.");
+      if (!visible()) return;
+      const draft = SlidePracticeContent.parse(text);
+      if (!draft) {
+        const saved = mapping(deck)[index];
+        if (saved && !SlidePracticeContent.isSolution(text)) {
+          await create(lesson.title);
+          if (visible()) await publish(deck, index, lesson, saved);
+        } else {
+          notify(text.trim() ? "На этом слайде не найден вопрос с четырьмя вариантами." : "У этого слайда нет текстового слоя.");
+        }
         return;
       }
-      const candidates = await questionCandidates(lesson);
-      if (!box.isConnected || index !== current()) return;
-      const match = SlideQuestionMatch.match(text, candidates);
-      if (!match) { picker(box, deck, index, lesson, readText, "Совпадения в тетради нет. Проверьте вопрос со слайда или выберите другой источник.", !!SlidePracticeContent.parse(text)); return; }
-      return show(match);
-    } catch {
-      if (box.isConnected && index === current()) picker(box, deck, index, lesson, readText, "Не удалось прочитать слайд или тетрадь. Можно ввести вопрос вручную.");
-    }
+      let answer = SlidePracticeContent.answerKey(text);
+      const slot = SlidePracticeContent.coldNumber(text);
+      if (!answer && slot) {
+        const recap = await readColdDeck(deck, readText).catch(() => null);
+        answer = recap?.keys?.[slot - 1];
+      }
+      if (!answer && index + 1 < deck.n) {
+        const next = await readText(index + 1).catch(() => "");
+        answer = SlidePracticeContent.nextKey(text, next);
+        if (!answer && index + 2 < deck.n) {
+          answer = SlidePracticeContent.nextKey(text, next, await readText(index + 2).catch(() => ""));
+        }
+      }
+      if (!answer) answer = SlideQuestionMatch.exactSlide(draft, await questionCandidates(lesson))?.question.ans;
+      await publishSlide(lesson, index, draft, answer, visible);
+    } catch (error) { if (visible()) notify(error.message); }
+    finally { button.disabled = false; }
   }
   async function readColdDeck(deck, readText) {
     if (!deck || !readText) return { slides: new Map(), keys: null };
@@ -523,8 +542,9 @@ window.LessonPracticeHost = (() => {
       const candidates = keys && [...slides.values()].every(({ draft }) => draft) ? []
         : await questionCandidates(lesson).catch(() => []);
       return [1, 2, 3, 4].map((number) => {
-        const slide = slides.get(number), answer = keys?.[number - 1];
+        const slide = slides.get(number), answer = SlidePracticeContent.answerKey(slide.text) || keys?.[number - 1];
         if (slide.draft && answer) return { ...slide, answer };
+        if (slide.draft) return { ...slide, answer: SlideQuestionMatch.exactSlide(slide.draft, candidates)?.question.ans };
         const match = SlideQuestionMatch.match(slide.text, candidates);
         if (match) return { part: lesson.parts.find((p) => p.id === match.part),
           question: candidates.find((q) => q.part === match.part && q.question.n === match.number)?.question };
@@ -535,59 +555,35 @@ window.LessonPracticeHost = (() => {
     const items = await readPart(part);
     return part.q.slice(0, 4).map(({ n }) => ({ part, question: items.find((q) => q.n === n) }));
   }
-  function completeKeys(selected, start) {
-    const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker";
-    const form = el("form");
-    form.append(el("h2", "Ключи холодного старта"),
-      el("p", "Укажите ответы для вопросов, у которых нет ключа в презентации или тетради."));
-    const fields = [];
-    selected.forEach((entry, i) => {
-      if (!entry.draft || entry.answer) return;
-      const label = el("label", `Вопрос ${i + 1} · слайд ${entry.index + 1}`), answer = keySelect(`Ответ на вопрос ${i + 1}`);
-      label.append(answer);
-      const preview = el("div"); preview.className = "lp-question-preview"; preview.lang = "en";
-      preview.append(el("p", entry.draft.prompt), ...entry.draft.opts.map((option, j) => el("p", answerLetters[j] + ". " + option)));
-      form.append(label, preview); fields.push({ entry, answer });
-    });
-    const go = el("button", "Запустить холодный старт"); go.className = "btn"; go.type = "submit";
-    form.append(go, action("Закрыть", () => dialog.close()));
-    form.onsubmit = (event) => {
-      event.preventDefault();
-      for (const { entry, answer } of fields) entry.answer = answer.value;
-      dialog.close(); start();
-    };
-    dialog.append(form); (document.fullscreenElement || document.body).append(dialog);
-    dialog.addEventListener("close", () => dialog.remove(), { once: true }); dialog.showModal();
-  }
   async function startCold(lesson, deck, readText) {
-    if (!lesson) return;
+    if (!lesson || preparingCold) return;
+    preparingCold = true;
     try {
       notify("Готовлю четыре вопроса холодного старта…");
       const selected = await coldQuestions(lesson, coldPart(lesson), deck, readText);
       if (selected.length !== 4) throw new Error("В этой презентации нет четырёх пронумерованных вопросов холодного старта. Проверьте рабочую тетрадь или загрузите PDF с текстом.");
       const missing = selected.filter((item) => !item.question && !item.draft).map((item) => item.index === undefined ? "" : item.index + 1).filter(Boolean);
       if (selected.some((item) => !item.question && !item.draft)) {
-        throw new Error(missing.length ? `Не удалось прочитать вопрос на слайде ${missing.join(", ")}. Откройте его и нажмите «Выбрать вручную».`
+        throw new Error(missing.length ? `Не удалось прочитать вопрос холодного старта на слайде ${missing.join(", ")}.`
           : "Один из вопросов холодного старта не загрузился из тетради.");
       }
-      const start = async () => {
-        try {
-          const questions = await Promise.all(selected.map(({ question, part, draft, answer, index }) => question
-            ? questionPayload(question, part, lesson) : questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson)));
-          const send = async () => {
-            ++dispatchNumber; await dispatch;
-            await api("cold", { questions });
-            sent = null; cold = 1; activeNumber = null; links();
-            await refresh();
-            notify("Холодный старт открыт. Переключайте вопросы кнопкой «Следующий вопрос».");
-          };
-          if (!room || closed) newRoom(lesson.title, () => send().catch((error) => notify(error.message)));
-          else await send();
-        } catch (error) { notify(error.message); }
-      };
-      if (selected.some((item) => item.draft && !item.answer)) completeKeys(selected, start);
-      else await start();
+      const questions = await Promise.all(selected.map(({ question, part, draft, answer, index }) => question
+        ? questionPayload(question, part, lesson) : questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson)));
+      const id = await create(lesson.title);
+      const revision = ++dispatchNumber;
+      const send = dispatch.catch(() => {}).then(async () => {
+        if (revision !== dispatchNumber || id !== room) return;
+        await api("cold", { questions });
+        sent = null; cold = 1; activeNumber = null; links();
+        await refresh();
+        const ungraded = questions.some(({ accepted }) => !accepted.length);
+        notify("Холодный старт открыт. Переключайте вопросы кнопкой «Следующий вопрос»." +
+          (ungraded ? " Вопросы без ключа сохраняются без оценки." : ""));
+      });
+      dispatch = send;
+      await send;
     } catch (error) { notify(error.message); }
+    finally { preparingCold = false; }
   }
   async function advance() {
     if (!room || !activeNumber || !cold || advancing) return;
@@ -604,7 +600,8 @@ window.LessonPracticeHost = (() => {
   function attach(box, deck, lesson, current, readText) {
     if (!lesson || !SITE.adminKey()) return;
     const bar = el("div"); bar.className = "lp-control dk-bar";
-    const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText));
+    const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, pick));
+    pick.className = "lp-show-slide";
     const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
     const next = action("Следующий вопрос", advance);
     next.hidden = true;
@@ -612,9 +609,15 @@ window.LessonPracticeHost = (() => {
     const monitor = el("a", "Монитор преподавателя"); monitor.target = "_blank"; monitor.rel = "noopener";
     const status = el("small"); status.setAttribute("role", "status");
     bar.append(pick, manual);
-    if (coldPart(lesson) || deck.uploaded) bar.append(action("Холодный старт · 4 вопроса", () => startCold(lesson, deck, readText)));
+    if (coldPart(lesson) || deck.uploaded) {
+      const start = action("Холодный старт · 4 вопроса", async () => {
+        start.disabled = true;
+        try { await startCold(lesson, deck, readText); } finally { start.disabled = false; }
+      });
+      bar.append(start);
+    }
     bar.append(next, copy, monitor, status); box.querySelector(".dk-bar").after(bar);
-    deckUIs.set(box, { monitor, copy, status, deck, lesson, current, advance: next });
+    deckUIs.set(box, { monitor, copy, status, advance: next });
     links();
   }
   return { mount, attach, publish, startCold, coldPart, detach: (box) => deckUIs.delete(box) };

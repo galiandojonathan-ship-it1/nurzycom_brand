@@ -728,20 +728,51 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 }
 
 /* Presentation-synced practice. */
-.lp-student{max-width:960px;margin:0 auto;padding:24px 16px}
-.lp-student h1{margin:0 0 10px}
+.lp-student-main{max-width:1320px;padding:0}
+.lp-student{margin:0 auto;padding:24px clamp(12px,3vw,28px) 36px}
+.lp-session{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 20px;margin-bottom:18px}
+.lp-session h1{font-size:clamp(24px,4vw,34px);letter-spacing:-.03em;margin:0}
+.lp-session p{margin:0;color:var(--stone)}
 .lp-question,.lp-roster{overflow-wrap:anywhere}
 .lp-question[hidden],.lp-question [hidden],.lp-roster [hidden],.lp-control[hidden]{display:none!important}
-.lp-options{display:grid;gap:8px;margin:14px 0}
-.lp-choice{display:grid;grid-template-columns:auto 20px minmax(0,1fr);align-items:baseline;gap:9px;border:1px solid var(--studio);padding:12px;cursor:pointer;border-radius:var(--control-radius)}
-.lp-choice input{margin:0;min-height:auto;width:auto}
-.lp-choice .lp-eliminated-label{grid-column:3}
+.lp-question{border:1px solid var(--studio);border-radius:var(--panel-radius);background:var(--white)}
+.lp-question-head{padding:14px clamp(14px,3vw,28px);border-bottom:1px solid var(--studio)}
+.lp-question-head h2{font-size:18px;letter-spacing:0;margin:0}
+.lp-question :focus-visible,.lp-options input[type=text]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.lp-text{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.lp-passage,.lp-task{min-width:0;padding:clamp(15px,3vw,34px)}
+.lp-passage{background:var(--paper);border-radius:0 0 0 var(--panel-radius);border-right:1px solid var(--studio)}
+.lp-passage>:last-child,.lp-stem>:last-child,.lp-choice .qhtml>:last-child{margin-bottom:0}
+.lp-stem{margin-bottom:22px}
+.lp-fieldset{border:0;margin:0;padding:0;min-width:0}
+.lp-fieldset legend{font-size:14px;font-weight:600;padding:0;margin-bottom:8px}
+.lp-options{display:grid;gap:9px}
+.lp-choice{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr);align-items:start;gap:9px 12px;border:1px solid var(--studio);padding:10px 12px;cursor:pointer;border-radius:var(--control-radius);min-height:48px}
+.lp-choice input{position:absolute;width:1px;height:1px;min-height:0;opacity:0;padding:0;margin:0}
+.lp-letter{display:grid;place-items:center;border:1px solid currentColor;border-radius:50%;width:28px;height:28px;font-weight:600}
+.lp-choice:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--paper)}
+.lp-choice:has(input:checked) .lp-letter{background:var(--ink);color:var(--white)}
+.lp-choice:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:3px}
+.lp-choice:has(input:disabled){cursor:default}
+.lp-choice .lp-eliminated-label{grid-column:2}
 .lp-choice.lp-eliminated .qhtml{text-decoration:line-through}
-.lp-hints{gap:8px;flex-wrap:wrap}
+.lp-hints{gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.lp-submit{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;margin-top:18px}
+.lp-submit p{font-size:14px;margin:0}
+.lp-submit p:empty{display:none}
+.lp-no-passage .lp-text{grid-template-columns:minmax(0,1fr)}
+.lp-no-passage .lp-task{width:100%;max-width:790px;margin:0 auto}
+@media(max-width:760px){
+  .lp-text{grid-template-columns:minmax(0,1fr)}
+  .lp-passage{border-radius:0;border-right:0;border-bottom:1px solid var(--studio)}
+}
 .lp-roster{display:grid;gap:8px;margin:10px 0}
 .lp-roster article{border:1px solid var(--studio);border-radius:var(--control-radius);padding:12px}
 .lp-roster p{margin:5px 0;white-space:pre-wrap}
 .lp-control{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.dk .dk-bar .lp-show-slide{background:var(--paper);border-color:var(--paper);color:var(--ink);font-weight:680}
+.dk .dk-bar .lp-show-slide:disabled{opacity:.6;cursor:wait}
+.dk .dk-bar .lp-show-slide:focus-visible{outline-color:var(--paper)}
 .lp-dialog{max-width:min(580px,calc(100vw - 24px));border:1px solid var(--studio);border-radius:var(--panel-radius);padding:20px}
 .lp-dialog form,.lp-dialog label{display:grid;gap:6px}
 .lp-dialog form{gap:12px}
@@ -760,6 +791,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .lp-answer.lp-right{background:#e4f2e5;color:#24572e}
 .lp-answer.lp-wrong{background:#f9e5e4;color:#892c28}
 .lp-answer.lp-empty{background:var(--white,#fff);color:#61564b;border-color:#bfb2a5}
+.lp-answer.lp-ungraded{background:#f1ece4;color:#61564b}
 .lp-matrix button:focus-visible,.lp-matrix-wrap:focus-visible{outline:2px solid #1e4da1;outline-offset:-2px}
 .lp-matrix td:last-child{padding-inline:8px;min-width:132px}
 .lp-matrix td:last-child .btn{min-height:36px;padding:4px 8px;font-size:12px;margin:2px}
