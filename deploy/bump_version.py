@@ -7,7 +7,7 @@ V = time.strftime("%Y%m%d%H%M")
 n = 0
 for f in glob.glob(f"{D}/*.html"):
     t = open(f).read()
-    u = re.sub(r'(<script src="[a-z0-9_]+\.js)(?:\?v=[^"]*)?(")', rf'\g<1>?v={V}\2', t)
+    u = re.sub(r'(<script src="[a-z0-9_-]+\.js)(?:\?v=[^"]*)?(")', rf'\g<1>?v={V}\2', t)
     u = re.sub(r'(<link rel="stylesheet" href="(?:site|teacher)\.css)(?:\?v=[^"]*)?(")', rf'\g<1>?v={V}\2', u)
     if u != t: open(f, "w").write(u); n += 1
 print(f"version {V} in {n} pages")
