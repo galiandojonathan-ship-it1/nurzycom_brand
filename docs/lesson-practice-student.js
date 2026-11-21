@@ -72,7 +72,7 @@
     current = state.current; item = snapshot; opened = false; attempt = state.attempt;
     section.hidden = false;
     status.textContent = state.title;
-    heading.textContent = "Вопрос " + current;
+    heading.textContent = state.cold ? `Холодный старт · ${state.cold}/4` : "Вопрос " + current;
     text.innerHTML = item.prompt;
     received.textContent = "";
     options.replaceChildren();

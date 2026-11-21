@@ -34,7 +34,16 @@ async function review(env, rows) {
   } catch { return fail(502, "Не удалось связаться с Gemini."); }
 }
 
-const hostActions = new Set(["create", "show", "pause", "close", "host", "profile", "report"]);
+function validQuestion(data) {
+  const { ref, snapshot, kind, accepted } = data || {};
+  return /^([VM]\d{2}|VA|MD)\.[a-z0-9]{1,10}\.\d{1,3}$/.test(ref || "") && cipher(snapshot, 170000) &&
+    ["mc", "spr"].includes(kind) && Array.isArray(accepted) && accepted.length > 0 && accepted.length <= 20 &&
+    accepted.every((a) => typeof a === "string" && a.trim() && a.length <= 64) &&
+    (kind !== "mc" || (accepted.length === 1 && letters.includes(accepted[0])));
+}
+const coldStep = (ref) => /:cold:([1-4])$/.exec(ref || "")?.[1];
+
+const hostActions = new Set(["create", "show", "cold", "advance", "pause", "close", "host", "profile", "report"]);
 const getActions = new Set(["host", "state"]);
 export async function onRequest({ env, request }) {
   const db = env.LIVE_LESSONS;
@@ -47,7 +56,7 @@ export async function onRequest({ env, request }) {
   let data = {};
   if (request.method === "POST") {
     const raw = await request.text();
-    if (raw.length > 180000) return fail(413, "Слишком большой запрос.");
+    if (raw.length > (action === "cold" ? 700000 : 180000)) return fail(413, "Слишком большой запрос.");
     try { data = JSON.parse(raw); } catch { return fail(400, "Неверный запрос."); }
     if (!data || Array.isArray(data) || typeof data !== "object") return fail(400, "Неверный запрос.");
   }
@@ -71,24 +80,48 @@ export async function onRequest({ env, request }) {
     room.closed_at = now; room.current = null;
   }
 
-  if (action === "show") {
+  function insertQuestion(question, ref, series) {
+    // Reserve room for the entire series before inserting each item. This also makes an identical retry safe.
+    const capacity = series
+      ? "(SELECT COUNT(*) FROM lp_questions WHERE room=r.id) + (4-(SELECT COUNT(*) FROM lp_questions WHERE room=r.id AND ref IN (?,?,?,?))) <= 100"
+      : "(SELECT COUNT(*) FROM lp_questions WHERE room=r.id) < 100";
+    return sql(`INSERT INTO lp_questions (room,number,ref,snapshot,kind,accepted,skill)
+      SELECT r.id,COALESCE((SELECT MAX(number) FROM lp_questions WHERE room=r.id),0)+1,?,?,?,?,?
+      FROM lp_rooms r WHERE r.id=? AND r.closed_at IS NULL AND ${capacity} ON CONFLICT DO NOTHING`,
+    ref, question.snapshot, question.kind, JSON.stringify(question.accepted), skills.has(question.skill) ? question.skill : "SAT", id, ...(series || []));
+  }
+  if (action === "show" || action === "cold") {
     if (room.closed_at) return fail(409, "Урок уже завершён.");
-    const { ref, snapshot, kind, accepted } = data;
-    if (!/^([VM]\d{2}|VA|MD)\.[a-z0-9]{1,10}\.\d{1,3}$/.test(ref || "") || !cipher(snapshot, 170000) ||
-        !["mc", "spr"].includes(kind) || !Array.isArray(accepted) || !accepted.length || accepted.length > 20 ||
-        accepted.some((a) => typeof a !== "string" || !a.trim() || a.length > 64) ||
-        (kind === "mc" && (accepted.length !== 1 || !letters.includes(accepted[0])))) return fail(400, "Вопрос не удалось подготовить.");
-    const results = await db.batch([
-      sql(`INSERT INTO lp_questions (room,number,ref,snapshot,kind,accepted,skill)
-        SELECT r.id,COALESCE((SELECT MAX(number) FROM lp_questions WHERE room=r.id),0)+1,?,?,?,?,?
-        FROM lp_rooms r WHERE r.id=? AND r.closed_at IS NULL
-        AND (SELECT COUNT(*) FROM lp_questions WHERE room=r.id)<100 ON CONFLICT DO NOTHING`,
-      ref, snapshot, kind, JSON.stringify(accepted), skills.has(data.skill) ? data.skill : "SAT", id),
-      sql(`UPDATE lp_rooms SET current=(SELECT number FROM lp_questions WHERE room=? AND ref=?)
-        WHERE id=? AND closed_at IS NULL AND EXISTS (SELECT 1 FROM lp_questions WHERE room=? AND ref=?)`, id, ref, id, id, ref)
-    ]);
-    return results[1].meta.changes ? respond({ ok: true })
-      : fail(409, "Урок завершён или достигнут предел в 100 вопросов.");
+    const cold = action === "cold";
+    const questions = cold ? data.questions : [data];
+    if (!Array.isArray(questions) || questions.length !== (cold ? 4 : 1) ||
+        questions.some((q) => !validQuestion(q)) || new Set(questions.map((q) => q.ref)).size !== questions.length ||
+        (cold && new Set(questions.map((q) => q.ref.split(".")[0])).size !== 1)) {
+      return fail(400, cold ? "Для холодного старта нужны четыре вопроса этого урока." : "Вопрос не удалось подготовить.");
+    }
+    const refs = questions.map((q, i) => cold ? `${q.ref}:cold:${i + 1}` : q.ref);
+    const writes = questions.map((q, i) => insertQuestion(q, refs[i], cold ? refs : null));
+    const activate = cold
+      ? sql(`UPDATE lp_rooms SET current=CASE
+          WHEN current IN (SELECT number FROM lp_questions WHERE room=? AND ref IN (?,?,?,?)) THEN current
+          ELSE (SELECT number FROM lp_questions WHERE room=? AND ref=?) END
+        WHERE id=? AND closed_at IS NULL AND
+          (SELECT COUNT(*) FROM lp_questions WHERE room=? AND ref IN (?,?,?,?))=4`, id, ...refs, id, refs[0], id, id, ...refs)
+      : sql(`UPDATE lp_rooms SET current=(SELECT number FROM lp_questions WHERE room=? AND ref=?)
+        WHERE id=? AND closed_at IS NULL AND EXISTS (SELECT 1 FROM lp_questions WHERE room=? AND ref=?)`, id, refs[0], id, id, refs[0]);
+    const results = await db.batch([...writes, activate]);
+    return results.at(-1).meta.changes ? respond({ ok: true }) : fail(409, "Урок завершён или достигнут предел в 100 вопросов.");
+  }
+  if (action === "advance") {
+    if (!Number.isInteger(data.number) || data.number !== room.current || room.closed_at) return fail(409, "Вопрос уже изменился. Обновите монитор.");
+    const current = await sql("SELECT ref FROM lp_questions WHERE room=? AND number=?", id, data.number).first();
+    const step = Number(coldStep(current?.ref));
+    if (!step) return fail(409, "Холодный старт не запущен.");
+    const next = step < 4 ? await sql("SELECT number,ref FROM lp_questions WHERE room=? AND number=?", id, data.number + 1).first() : null;
+    const group = (ref) => ref.split(".")[0];
+    if (step < 4 && (Number(coldStep(next?.ref)) !== step + 1 || group(next.ref) !== group(current.ref))) return fail(409, "Серия вопросов неполная.");
+    const result = await sql("UPDATE lp_rooms SET current=? WHERE id=? AND current=? AND closed_at IS NULL", next?.number || null, id, data.number).run();
+    return result.meta.changes ? respond({ ok: true }) : fail(409, "Вопрос уже изменился. Обновите монитор.");
   }
   if (action === "pause" || action === "close") {
     if (action === "close") await sql("UPDATE lp_rooms SET closed_at=?,current=NULL WHERE id=? AND closed_at IS NULL", now, id).run();
@@ -98,15 +131,18 @@ export async function onRequest({ env, request }) {
   if (action === "host") {
     const all = url.searchParams.get("all") === "1" || !!room.closed_at;
     const scope = all ? [] : [room.current];
-    const [members, attempts] = await db.batch([
+    const [members, attempts, questions] = await db.batch([
       sql(`SELECT m.account,m.report,p.hints FROM lp_members m LEFT JOIN lp_profiles p ON p.account=m.account
         WHERE m.room=? ORDER BY m.joined_at`, id),
       sql(`SELECT a.account,a.number,a.answer,a.correct,a.submitted_at-a.opened_at AS ms,a.hints,q.ref,q.skill
         FROM lp_attempts a JOIN lp_questions q ON q.room=a.room AND q.number=a.number
         WHERE a.room=? AND a.submitted_at IS NOT NULL ${all ? "" : "AND a.number=?"} ORDER BY a.number`,
-      id, ...scope)
+      id, ...scope),
+      sql("SELECT number,ref,skill FROM lp_questions WHERE room=? ORDER BY number", id)
     ]);
-    return respond({ title: room.title, current: room.current, closed: !!room.closed_at, members: members.results, attempts: attempts.results });
+    return respond({ title: room.title, current: room.current, closed: !!room.closed_at, members: members.results,
+      attempts: attempts.results, questions: questions.results,
+      cold: Number(coldStep(questions.results.find((q) => q.number === room.current)?.ref)) || null });
   }
   if (action === "profile" || action === "report") {
     if (!accountId(data.account) || !await sql("SELECT account FROM lp_members WHERE room=? AND account=?", id, data.account).first()) return fail(404, "Ученик не найден в этом уроке.");
@@ -122,7 +158,8 @@ export async function onRequest({ env, request }) {
     if (old.report) return respond({ report: old.report });
     const { results } = await sql(`SELECT q.number,q.skill,a.correct,a.hints,a.submitted_at-a.opened_at AS ms
       FROM lp_questions q LEFT JOIN lp_attempts a ON a.room=q.room AND a.number=q.number AND a.account=?
-      WHERE q.room=? ORDER BY q.number`, data.account, id).all();
+      WHERE q.room=? AND EXISTS(SELECT 1 FROM lp_attempts seen WHERE seen.room=q.room AND seen.number=q.number)
+      ORDER BY q.number`, data.account, id).all();
     if (!results.some((r) => r.correct !== null)) return fail(422, "У ученика нет ответов на этом уроке.");
     const report = await review(env, results);
     if (typeof report !== "string") return report;
@@ -158,7 +195,7 @@ export async function onRequest({ env, request }) {
       const key = question || await sql("SELECT accepted FROM lp_questions WHERE room=? AND number=?", id, room.current).first();
       removed = letters.filter((l) => l !== JSON.parse(key.accepted)[0]).slice(0, 2);
     }
-    return respond({ title: room.title, current: room.current, closed: !!room.closed_at, snapshot: question?.snapshot, hints: student.hints, attempt, removed });
+    return respond({ title: room.title, current: room.current, closed: !!room.closed_at, snapshot: question?.snapshot, cold: Number(coldStep(question?.ref)) || undefined, hints: student.hints, attempt, removed });
   }
   if (room.closed_at || !question || data.number !== room.current) return fail(409, "Преподаватель уже переключил вопрос.");
   // Opening is acknowledged once. A resubmission or refresh keeps the original clock and first answer.

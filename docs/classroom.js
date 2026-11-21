@@ -108,6 +108,7 @@
         <button type="button" data-deck-upload="json"${C.deckBusy ? " disabled" : ""}>${d ? "Заменить из JSON" : "Загрузить JSON"}</button>
         ${d?.uploaded ? `<button type="button" data-deck-export="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Скачать текст в JSON</button>` : ""}` : '<a href="cabinet.html?view=accounts#reg">Настроить доступ к презентациям</a>'}
         ${d?.uploaded && SITE.adminKey() ? `<button type="button" class="cr-remove" data-deck-delete="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Удалить презентацию</button>` : ""}
+        ${SITE.adminKey() && (window.LessonPracticeHost?.coldPart(l) || d?.uploaded) ? '<button type="button" data-deck-cold>Холодный старт · 4 вопроса</button>' : ""}
         ${l.parts.map((p) => `<a href="./?l=${encodeURIComponent(l.tag)}&p=${encodeURIComponent(p.id)}">${esc(p.title)}</a>`).join("")}
         <a href="vocab.html?l=${encodeURIComponent(l.tag)}">${C.course === "V" ? "Слова урока" : "Термины урока"}</a></div>
       ${SITE.adminKey() ? '<p class="cr-note">Словарь открывается при выделении слов в PDF с текстовым слоем и на JSON-слайдах. Чтобы отредактировать текст, скачайте JSON, внесите правки и загрузите его обратно. JSON использует шаблон сайта.</p>' : ""}</div>`;
@@ -386,7 +387,7 @@
 
   // ---------- presentation viewer: PDF images with selectable text, editable slides and a drawing board
   const DK = { box: null, d: null, slides: [], i: 0, board: null, prev: null };
-  async function openDeck(id) {
+  async function openDeck(id, coldStart = false) {
     const d = deckFor(id); if (!d || DK.box) return;
     DK.prev = { lq: document.body.dataset.lq, lt: document.body.dataset.lt };
     DK.box = document.createElement("div"); DK.box.className = "dk"; DK.box.setAttribute("role", "dialog"); DK.box.setAttribute("aria-label", "Презентация");
@@ -402,8 +403,17 @@
     DK.box.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (!b) return; ({ prev: () => go(DK.i - 1), next: () => go(DK.i + 1), draw: toggleDraw, calc: toggleCalc, fs: fullscreen, x: closeDeck })[b.dataset.k](); });
     document.addEventListener("keydown", onKey);
     DK.d = d; DK.uploaded = null; DK.slides = Array.from({ length: d.n });
-    window.LessonPracticeHost?.attach(DK.box, d, C.lessons.find((l) => l.tag === id), () => DK.i);
+    const lesson = C.lessons.find((l) => l.tag === id);
+    const readText = async (index) => {
+      if (!d.uploaded) return "";
+      DK.uploaded ||= uploadedSlides(d.id);
+      const entry = (await DK.uploaded)[index];
+      if (entry?.paragraphs) return [entry.title, ...entry.paragraphs].join("\n");
+      return (entry?.text?.items || []).map((item) => (item.str || "") + (item.hasEOL ? "\n" : " ")).join("");
+    };
+    window.LessonPracticeHost?.attach(DK.box, d, lesson, () => DK.i, readText);
     go(Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)));
+    if (coldStart) window.LessonPracticeHost?.startCold(lesson, d, readText);
   }
   // one encrypted image per slide (tools/private/deckpack.mjs), fetched when shown; the next one is fetched ahead
   function slide(i) {
@@ -535,13 +545,18 @@
 
   // ---------- events and start
   document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-deck],[data-deck-upload],[data-deck-delete],[data-deck-export]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
+    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-deck],[data-deck-upload],[data-deck-delete],[data-deck-export],[data-deck-cold]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
     if (b.dataset.start) LESSON.begin(b.dataset.start, true);
     else if (b.dataset.ask) LESSON.ask();
     else if (b.dataset.end) LESSON.end();
     else if (b.dataset.rv) LESSON.openMist(b.dataset.rv);
     else if (b.dataset.course) { C.course = b.dataset.course; C.open = null; try { localStorage.setItem("cr_course", C.course); } catch (x) { /* blocked */ } document.querySelectorAll("[data-course]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.course === C.course))); tiles(); }
     else if (b.dataset.l) { C.open = C.open === b.dataset.l ? null : b.dataset.l; document.querySelectorAll(".cr-tile").forEach((x) => x.setAttribute("aria-expanded", String(x.dataset.l === C.open))); panel(); }
+    else if (b.hasAttribute("data-deck-cold")) {
+      const lesson = C.lessons.find((l) => l.tag === C.open);
+      if (window.LessonPracticeHost?.coldPart(lesson)) window.LessonPracticeHost.startCold(lesson);
+      else if (deckFor(C.open)?.uploaded) openDeck(C.open, true);
+    }
     else if (b.dataset.deck) openDeck(b.dataset.deck);
     else if (b.dataset.deckUpload) {
       const input = $("cr-deck-file");
