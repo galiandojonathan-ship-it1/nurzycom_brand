@@ -723,6 +723,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-practice .bb-tools{margin:0 0 14px}
 .live-practice .live-feedback{color:var(--oxide)}
 .live-receipt{margin:12px 0;font-weight:600}
+.live-bluebook [data-live-submit][aria-disabled="true"]{opacity:.6;cursor:wait}
 .live-feedback:empty,.live-receipt:empty,.live-settings [data-duration]:empty{display:none}
 .live-bluebook.no-passage{grid-template-columns:minmax(0,1fr)}
 .live-bluebook.no-passage>.ask{width:100%;max-width:760px;margin:0 auto}

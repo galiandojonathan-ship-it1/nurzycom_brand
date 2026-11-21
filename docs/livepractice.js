@@ -16,6 +16,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   let sealedSet = null, displayedSet = null, receivedAt = 0;
   let hideCorrect = false, studentNumber = 1, hostPreview = null, tools, studentNav;
   const drafts = new Map();
+  const submissions = new Map();
 
   async function api(action, body, id = round) {
     const params = new URLSearchParams({ action });
@@ -37,6 +38,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     node.type = "button";
     node.className = "btn";
     node.textContent = label;
+    if (!action) return node;
     node.onclick = async () => {
       if (pending) return;
       pending = true;
@@ -131,10 +133,12 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       input.value = controls.draft ?? controls.answer ?? "";
       input.oninput = () => controls.update(input.value);
       label.append(input);
-      const submit = button("Отправить ответ", async () => {
-        if (!input.value.trim()) { input.focus(); throw Error("Введите ответ."); }
-        await controls.submit(input.value.trim());
-      });
+      const submit = button("Отправить ответ");
+      submit.dataset.liveSubmit = "";
+      submit.onclick = () => {
+        if (!input.value.trim()) input.focus();
+        controls.submit(input.value.trim());
+      };
       input.onkeydown = (event) => { if (event.key === "Enter") submit.click(); };
       ask.append(label, submit);
     } else {
@@ -142,9 +146,13 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         const letter = "ABCD"[index];
         const row = document.createElement("div");
         row.className = "opt";
-        const option = controls ? button(letter, () => controls.submit(letter)) : document.createElement("div");
+        const option = controls ? button(letter) : document.createElement("div");
         option.className = controls ? "ch btn" : "ch";
-        if (controls?.editable) option.dataset.liveChoice = letter;
+        if (controls) {
+          option.dataset.liveSubmit = "";
+          option.onclick = () => controls.submit(letter);
+          if (controls.editable) option.dataset.liveChoice = letter;
+        }
         const badge = document.createElement("span");
         badge.className = "lt";
         badge.textContent = letter;
@@ -277,6 +285,30 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return { nav, select, previous, next };
   }
 
+  async function saveAnswer(number, value) {
+    if (submissions.get(number)?.saving) return;
+    if (!value) {
+      submissions.set(number, { error: "Введите ответ." });
+      render(displayedSet);
+      return;
+    }
+    submissions.set(number, { saving: true });
+    render(displayedSet);
+    try {
+      await api("answer", { number, answer: value });
+    } catch (error) {
+      submissions.set(number, { error: error.message });
+      render(displayedSet);
+      return;
+    }
+    if (drafts.get(number)?.trim() === value) drafts.delete(number);
+    state.answers = state.answers.filter((item) => item.question_number !== number);
+    state.answers.push({ question_number: number, answer: value });
+    submissions.delete(number);
+    render(displayedSet);
+    await refresh();
+  }
+
   function renderStudent(questions, classNumber, ended, timing) {
     const independent = state.selfPaced && classNumber && !ended;
     if (independent && !studentNav) studentNav = studentNavigation();
@@ -305,8 +337,15 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     }
     const answer = state.answers.find((item) => item.question_number === number)?.answer;
     const view = ended ? "done" : state.editable ? String(number) : number + ":" + (answer || "");
+    let progress = `Отвечено ${state.answers.length} из ${state.total}`;
+    if (independent && submissions.size) {
+      const waiting = [...submissions].filter(([, entry]) => entry.saving).map(([question]) => question);
+      const failed = [...submissions].filter(([, entry]) => entry.error).map(([question]) => question);
+      if (waiting.length) progress += ` · Сохраняем №${waiting.join(", ")}`;
+      if (failed.length) progress += ` · Не сохранён выбор №${failed.join(", ")}`;
+    }
     setMessage(ended ? "Раунд завершён." : number
-      ? `Вопрос ${number} из ${state.total} · ${independent ? `Отвечено ${state.answers.length} из ${state.total}` : timing}`
+      ? `Вопрос ${number} из ${state.total} · ${independent ? progress : timing}`
       : "Ждём начала раунда.");
     if (view !== shown) {
       shown = view;
@@ -319,26 +358,22 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       content.append(questionView(questions[number - 1], {
         answer, editable: state.editable, draft: drafts.get(number),
         update: (value) => drafts.set(number, value),
-        submit: async (value) => {
-          await api("answer", { number, answer: value });
-          if (drafts.get(number)?.trim() === value) drafts.delete(number);
-          await refresh();
-        }
+        submit: (value) => saveAnswer(number, value)
       }));
-      if (state.editable) {
-        const receipt = document.createElement("p");
-        receipt.className = "live-receipt";
-        receipt.setAttribute("aria-live", "polite");
-        content.append(receipt);
-      }
+      const receipt = document.createElement("p");
+      receipt.className = "live-receipt";
+      receipt.setAttribute("aria-live", "polite");
+      content.append(receipt);
     }
-    if (state.editable && !ended && number) {
-      const receipt = content.querySelector(".live-receipt");
-      const text = answer ? "Ответ принят: " + answer : "";
-      if (receipt.textContent !== text) receipt.textContent = text;
-      for (const choice of content.querySelectorAll("[data-live-choice]")) {
-        choice.setAttribute("aria-pressed", String(choice.dataset.liveChoice === answer));
-      }
+    const receipt = content.querySelector(".live-receipt");
+    if (!receipt) return;
+    const submission = submissions.get(number);
+    const text = submission?.saving ? "Сохраняем ответ…" : submission?.error || (answer ? "Ответ принят: " + answer : "");
+    if (receipt.textContent !== text) receipt.textContent = text;
+    receipt.classList.toggle("live-feedback", !!submission?.error);
+    for (const control of content.querySelectorAll("[data-live-submit]")) {
+      control.setAttribute("aria-disabled", String(!!submission?.saving));
+      if (control.dataset.liveChoice) control.setAttribute("aria-pressed", String(control.dataset.liveChoice === answer));
     }
   }
 
