@@ -106,7 +106,10 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 Presentation practice uses `/api/lesson-practice` and the same `LIVE_LESSONS` D1 binding. The first teacher room
 creates the additive `lp_*` tables in `lib/lesson-practice-schema.js`. A room is active for up to three hours, and
 its results are kept for 14 days. In «Пульт урока», start a room, share its student link and bind a slide to a
-workbook question. Bindings are saved in that teacher browser for the presentation. Selected question and timing
+workbook question. «Показать с этого слайда» matches the visible PDF text layer or JSON slide to that lesson's
+question bank in the browser. It saves a mapping for a unique match and offers manual choice for ambiguous or
+image-only slides. The cold-start button queues four workbook questions under the same link, with the teacher
+advancing the whole group. The monitor keeps prior answers in a clickable matrix. Selected question and timing
 are server-side; only the teacher monitor sees the roster, grading and the saved encrypted notes. Hint permissions
 follow the student account to the next practice. Gemini receives only anonymous facts for one student at a time
 (question numbers, skills, correctness, times and hint flags) after closing the room. No audio is collected.

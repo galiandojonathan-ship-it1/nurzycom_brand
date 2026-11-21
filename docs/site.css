@@ -746,3 +746,21 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .lp-dialog form,.lp-dialog label{display:grid;gap:6px}
 .lp-dialog form{gap:12px}
 .lp-dialog label:has(input[type="checkbox"]){display:flex;align-items:center}
+
+
+/* Teacher practice monitor. Keep the page in place while the answer grid scrolls. */
+.lp-matrix-wrap{max-width:100%;overflow:auto;border:1px solid var(--studio);border-radius:var(--panel-radius)}
+.lp-matrix{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+.lp-matrix th,.lp-matrix td{padding:7px 5px;text-align:center;border-bottom:1px solid var(--studio)}
+.lp-matrix th:first-child{position:sticky;left:0;z-index:1;background:var(--white,#fff);text-align:left;min-width:105px;max-width:155px;padding-inline:10px}
+.lp-matrix thead th,.lp-matrix thead th:first-child{background:var(--mist,#eee9e0)}
+.lp-matrix tr:last-child td,.lp-matrix tbody tr:last-child th{border-bottom:0}
+.lp-matrix :where(td,th).lp-current{background:#f4e7d3}
+.lp-answer{padding:4px;min-width:44px;min-height:42px;border-radius:8px;border:1px solid currentColor;font:700 13px var(--sans);cursor:pointer;white-space:nowrap}
+.lp-answer.lp-right{background:#e4f2e5;color:#24572e}
+.lp-answer.lp-wrong{background:#f9e5e4;color:#892c28}
+.lp-answer.lp-empty{background:var(--white,#fff);color:#61564b;border-color:#bfb2a5}
+.lp-matrix button:focus-visible,.lp-matrix-wrap:focus-visible{outline:2px solid #1e4da1;outline-offset:-2px}
+.lp-matrix td:last-child{padding-inline:8px;min-width:132px}
+.lp-matrix td:last-child .btn{min-height:36px;padding:4px 8px;font-size:12px;margin:2px}
+.lp-matrix-status{font-weight:700}
