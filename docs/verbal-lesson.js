@@ -60,7 +60,9 @@ window.VerbalLesson = (() => {
         <p><b>Гипотеза.</b> ${escape(f.hypothesis)}</p><p><b>Что ещё возможно.</b> ${escape(f.alternative)}</p><p><b>Как различить.</b> ${escape(f.test)}</p>
       </section>`).join("")}</div>
       <ol class="vl-steps">${plan.steps.map((s, i) => `<li><h5>${phaseNames[i]} · ${phaseTimes[minutes][i]} мин</h5>
-        <p>${escape(s.teacher)}</p><p><b>Критерий.</b> ${escape(s.check)}</p><p><b>Если застряли.</b> ${escape(s.repair)}</p>
+        ${s.map((step, focus) => `<div class="vl-step-focus">
+          ${s.length > 1 ? `<p><b>${escape(targets[plan.focuses[focus].target])}</b></p>` : ""}
+          <p>${escape(step.teacher)}</p><p><b>Критерий.</b> ${escape(step.check)}</p><p><b>Если застряли.</b> ${escape(step.repair)}</p></div>`).join("")}
         ${questions[i].map((q) => q.id ? `<details class="vl-question" data-vl-original="${escape(q.id)}"><summary>Исходное задание · ${escape(q.title)}</summary><div class="rbody"></div></details>` : practice(q, i, ++number)).join("")}</li>`).join("")}</ol>
       <label class="vl-option"><input type="checkbox" data-vl-reviewed> Я проверил ключи и объяснения новых заданий</label>
       <button class="btn ghost" type="button" data-vl-send disabled>Отправить задания в «Пульт урока»</button>
@@ -82,6 +84,41 @@ window.VerbalLesson = (() => {
     }));
   }
 
+  function splitSources(sources) {
+    const firstSkill = sources[0].skill;
+    const otherSkills = firstSkill ? sources.filter((s) => s.skill && s.skill !== firstSkill) : [];
+    if (!otherSkills.length) return [sources.slice(0, Math.ceil(sources.length / 2)), sources.slice(Math.ceil(sources.length / 2))];
+    return [sources.filter((s) => !otherSkills.includes(s)), otherSkills];
+  }
+
+  async function requestFocus(payload, status, label) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      status.textContent = attempt ? `Повторяю запрос для фокуса «${label}»…` : `Gemini составляет и проверяет фокус «${label}»…`;
+      let response;
+      try {
+        response = await SITE.api("admin/verbal-lesson", { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        response = { status: 0 };
+      }
+      if (response.ok && response.data?.plan?.focuses?.length === 1) return response.data.plan;
+      const retryable = [0, 422, 502, 503, 504].includes(response.status) && response.data?.retryable !== false &&
+        !(response.status === 503 && response.data?.error);
+      if (retryable && attempt === 0) continue;
+      const fallback = response.status === 403 ? "Недостаточно прав. Проверьте ключ администратора в кабинете."
+        : response.status ? `Сервер вернул ошибку ${response.status}. Попробуйте ещё раз.` : "Связь с сервером прервалась. Попробуйте ещё раз.";
+      throw new Error(response.data?.error || fallback);
+    }
+  }
+
+  function combine(plans) {
+    return {
+      title: plans.length === 1 ? plans[0].title : plans.map((p) => targets[p.focuses[0].target]).join(" · "),
+      focuses: plans.map((p) => p.focuses[0]),
+      steps: phaseNames.map((_, i) => plans.map((p) => p.steps[i])),
+      questions: plans.flatMap((p, i) => p.questions.map((q) => ({ ...q, focus: i + 1 })))
+    };
+  }
+
   function mount(box, { select, readQuestion, previewOriginal, send }) {
     const root = box.querySelector("[data-vl]"); if (!root) return;
     root.innerHTML = `<h4>Урок SAT Verbal по ошибкам группы</h4>
@@ -96,18 +133,22 @@ window.VerbalLesson = (() => {
     button.onclick = async () => {
       const originals = select(), minutes = +duration.value;
       if (!originals.length) { status.textContent = "Нужны вопросы Reading and Writing, на которых ошибались ученики. Проверьте задания и фильтры."; return; }
-      output.replaceChildren();
       button.disabled = duration.disabled = share.disabled = true;
       status.textContent = "Gemini составляет урок и отдельно проверяет новые задания…";
       try {
         const sources = await Promise.all(originals.map((q) => source(q, readQuestion, share.checked)));
-        const response = await SITE.api("admin/verbal-lesson", { method: "POST", body: JSON.stringify({ minutes, sources }) });
-        if (!response.ok || !response.data?.plan) {
-          status.textContent = response.data?.error || "Не удалось получить урок. Попробуйте ещё раз.";
-          return;
+        const [primary, secondary] = splitSources(sources);
+        const plans = [await requestFocus({ minutes, sources: primary, paired: !!secondary.length }, status, "1")];
+        let partial = "";
+        if (secondary.length) {
+          try {
+            plans.push(await requestFocus({ minutes, sources: secondary, paired: true,
+              excludeTarget: plans[0].focuses[0].target }, status, "2"));
+          } catch (error) { partial = error.message; }
         }
-        const plan = response.data.plan;
-        status.textContent = "Черновик урока готов. Проверьте ключи перед отправкой.";
+        const plan = combine(plans);
+        status.textContent = partial ? "Готов урок с одним проверенным фокусом. Второй не удалось добавить. " + partial
+          : "Черновик урока готов. Проверьте ключи перед отправкой.";
         renderPlan(output, plan, minutes, originals, sources, previewOriginal);
         const reviewed = output.querySelector("[data-vl-reviewed]"), publish = output.querySelector("[data-vl-send]"), sendStatus = output.querySelector("[data-vl-send-status]");
         reviewed.onchange = () => { publish.disabled = !reviewed.checked; };
@@ -120,8 +161,8 @@ window.VerbalLesson = (() => {
           } catch (e) { sendStatus.textContent = e.message || "Не удалось отправить. Попробуйте ещё раз."; }
           finally { reviewed.disabled = false; publish.disabled = !reviewed.checked; }
         };
-      } catch {
-        status.textContent = "Не удалось связаться с Gemini. Попробуйте ещё раз.";
+      } catch (error) {
+        status.textContent = error.message || "Не удалось связаться с Gemini. Попробуйте ещё раз.";
       } finally { button.disabled = duration.disabled = share.disabled = false; }
     };
   }

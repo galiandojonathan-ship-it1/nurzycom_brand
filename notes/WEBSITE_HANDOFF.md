@@ -109,7 +109,8 @@ Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesso
 secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy. The endpoint uses aggregate
 first-attempt counts, including option counts of two or more, and course skill labels. The teacher can opt in to send
 the text of course-authored questions. Names, individual attempts and College Board text stay out of the request.
-A second model call checks the draft before it reaches the teacher. After reviewing the keys, the teacher can send
+Each HTTP request builds one focus, and a separate blind model call checks that focus before it reaches the teacher.
+The cabinet combines two validated focuses into a lesson and can present the first on its own if the second fails. After reviewing the keys, the teacher can send
 the question sequence to «Пульт урока» via the encrypted `ls_m` record. The coaching notes stay in the cabinet.
 Group analytics and the normal review queue also work without the secret.
 

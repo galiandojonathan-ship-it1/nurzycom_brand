@@ -114,6 +114,7 @@
 .vl-focus section,.vl-steps>li{background:var(--white);border:1px solid var(--studio);border-radius:var(--panel-radius);padding:12px;min-width:0}
 .vl-focus section p,.vl-steps p{margin:7px 0}
 .vl-steps{display:grid;gap:8px;padding-left:23px}
+.vl-step-focus+.vl-step-focus{border-top:1px solid var(--studio);margin-top:8px;padding-top:5px}
 .vl-question{margin-top:8px;border-top:1px solid var(--studio);padding-top:8px}
 .vl-question summary{cursor:pointer}
 [data-vl-status]:empty,[data-vl-send-status]:empty{margin:0}
