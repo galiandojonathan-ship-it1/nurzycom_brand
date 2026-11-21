@@ -36,10 +36,11 @@ async function review(env, rows) {
 
 function validQuestion(data) {
   const { ref, snapshot, kind, accepted } = data || {};
-  return /^([VM]\d{2}|VA|MD)\.[a-z0-9]{1,10}\.\d{1,3}$/.test(ref || "") && cipher(snapshot, 170000) &&
-    ["mc", "spr"].includes(kind) && Array.isArray(accepted) && accepted.length > 0 && accepted.length <= 20 &&
+  return typeof ref === "string" && /^([VM]\d{2}|VA|MD)\.[a-z0-9]{1,10}\.\d{1,3}$/.test(ref) && cipher(snapshot, 170000) &&
+    ["mc", "spr"].includes(kind) && Array.isArray(accepted) && accepted.length <= 20 &&
     accepted.every((a) => typeof a === "string" && a.trim() && a.length <= 64) &&
-    (kind !== "mc" || (accepted.length === 1 && letters.includes(accepted[0])));
+    (kind === "mc" ? (accepted.length === 1 && letters.includes(accepted[0])) ||
+      (accepted.length === 0 && ref.split(".")[1] === "slide") : accepted.length > 0);
 }
 const coldStep = (ref) => /:cold:([1-4])$/.exec(ref || "")?.[1];
 
@@ -165,9 +166,10 @@ export async function onRequest({ env, request }) {
     if (old.report) return respond({ report: old.report });
     const { results } = await sql(`SELECT q.number,q.skill,a.correct,a.hints,a.submitted_at-a.opened_at AS ms
       FROM lp_questions q LEFT JOIN lp_attempts a ON a.room=q.room AND a.number=q.number AND a.account=?
-      WHERE q.room=? AND EXISTS(SELECT 1 FROM lp_attempts seen WHERE seen.room=q.room AND seen.number=q.number)
+      WHERE q.room=? AND q.accepted<>'[]'
+      AND EXISTS(SELECT 1 FROM lp_attempts seen WHERE seen.room=q.room AND seen.number=q.number)
       ORDER BY q.number`, data.account, id).all();
-    if (!results.some((r) => r.correct !== null)) return fail(422, "У ученика нет ответов на этом уроке.");
+    if (!results.some((r) => r.correct !== null)) return fail(422, "У ученика нет проверенных ответов на этом уроке.");
     const report = await review(env, results);
     if (typeof report !== "string") return report;
     await sql("UPDATE lp_members SET report=? WHERE room=? AND account=?", report, id, data.account).run();
@@ -200,7 +202,8 @@ export async function onRequest({ env, request }) {
     let removed;
     if (attempt?.hints & 2) {
       const key = question || await sql("SELECT accepted FROM lp_questions WHERE room=? AND number=?", id, room.current).first();
-      removed = letters.filter((l) => l !== JSON.parse(key.accepted)[0]).slice(0, 2);
+      const [answer] = JSON.parse(key.accepted);
+      if (answer) removed = letters.filter((l) => l !== answer).slice(0, 2);
     }
     return respond({ title: room.title, current: room.current, closed: !!room.closed_at, snapshot: question?.snapshot, cold: Number(coldStep(question?.ref)) || undefined, hints: student.hints, attempt, removed });
   }
@@ -214,7 +217,8 @@ export async function onRequest({ env, request }) {
   }
   const accepted = JSON.parse(question.accepted);
   if (action === "hint") {
-    if (![1, 2].includes(data.hint) || !(student.hints & data.hint) || (data.hint === 2 && question.kind !== "mc")) return fail(403, "Подсказка недоступна.");
+    if (![1, 2].includes(data.hint) || !(student.hints & data.hint) ||
+        (data.hint === 2 && (question.kind !== "mc" || accepted.length !== 1))) return fail(403, "Подсказка недоступна.");
     const result = await sql(`UPDATE lp_attempts SET hints=hints|? WHERE room=? AND account=? AND number=? AND answer IS NULL
       AND EXISTS (SELECT 1 FROM lp_rooms WHERE id=? AND current=? AND closed_at IS NULL)`, data.hint, id, account, data.number, id, data.number).run();
     return result.meta.changes ? respond({ removed: data.hint === 2 ? letters.filter((l) => l !== accepted[0]).slice(0, 2) : undefined })
@@ -223,10 +227,10 @@ export async function onRequest({ env, request }) {
   if (action === "answer") {
     if (typeof data.answer !== "string" || !data.answer.trim() || data.answer.length > 64 ||
         (question.kind === "mc" && !letters.includes(data.answer))) return fail(400, "Введите ответ.");
-    const correct = isCorrect({ type: question.kind, accepted }, data.answer);
+    const correct = accepted.length ? Number(isCorrect({ type: question.kind, accepted }, data.answer)) : null;
     await sql(`UPDATE lp_attempts SET answer=?,correct=?,submitted_at=? WHERE room=? AND account=? AND number=? AND answer IS NULL
       AND EXISTS (SELECT 1 FROM lp_rooms WHERE id=? AND current=? AND closed_at IS NULL)`,
-    data.answer, Number(correct), now, id, account, data.number, id, data.number).run();
+    data.answer, correct, now, id, account, data.number, id, data.number).run();
     const saved = await sql("SELECT answer,submitted_at-opened_at AS ms FROM lp_attempts WHERE room=? AND account=? AND number=?", id, account, data.number).first();
     return saved?.answer ? respond(saved) : fail(409, "Ответ не принят. Вопрос уже изменился.");
   }

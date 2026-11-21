@@ -105,12 +105,13 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 
 Presentation practice uses `/api/lesson-practice` and the same `LIVE_LESSONS` D1 binding. The first teacher room
 creates the additive `lp_*` tables in `lib/lesson-practice-schema.js`. A room is active for up to three hours, and
-its results are kept for 14 days. In «Пульт урока», start a room, share its student link and bind a slide to a
-workbook question. «Показать с этого слайда» matches the visible PDF text layer or JSON slide to that lesson's
-question bank in the browser. It saves a mapping for a unique match and offers manual choice for ambiguous or
-image-only slides. The manual picker previews workbook questions or sends an editable question from a private slide.
-Cold Start can take four numbered slides and their key from the recap. If a key is unavailable, the teacher supplies it
-before a room is created. The question snapshot is encrypted as for workbook practice. The teacher advances the whole group
+its results are kept for 14 days. In «Пульт урока», «Показать с этого слайда» reads the current PDF text layer or JSON slide,
+opens the room if needed, and sends the question immediately. Share the resulting student link once. The student's screen
+puts the passage and question side by side on desktop and stacks them on mobile. For grading, the browser uses an explicit
+key on the slide, the matching solution or Cold Start recap, or an exact workbook match. Without a key, the teacher still
+sees the answer and elapsed time. The answer stays ungraded and the two-choice hint is unavailable. Image-only slides can
+still be mapped to a workbook question with the separate manual picker. Cold Start can open four numbered slides at once.
+The question snapshot is encrypted as for workbook practice. The teacher advances the whole group
 under the same link, and automatic presentation actions preserve an active Cold Start across refreshes. The monitor keeps prior answers in a clickable matrix. Selected question and timing
 are server-side; only the teacher monitor sees the roster, grading and the saved encrypted notes. Hint permissions
 follow the student account to the next practice. Gemini receives only anonymous facts for one student at a time

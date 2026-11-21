@@ -4,23 +4,34 @@
 
   const letters = ["A", "B", "C", "D"];
   const main = document.querySelector("main");
+  main.classList.add("lp-student-main");
   main.innerHTML = `<section class="wrap lp-student">
-    <h1>Практика урока</h1>
-    <p role="status" id="lp-status">Войдите под своим учебным аккаунтом.</p>
-    <section class="card lp-question" aria-labelledby="lp-number" hidden>
-      <h2 id="lp-number" tabindex="-1"></h2><div class="qhtml lp-text" lang="en"></div>
-      <div class="row lp-hints" hidden>
-        <button type="button" class="btn ghost" data-hint="1">Подсказка: словарь</button>
-        <button type="button" class="btn ghost" data-hint="2">Убрать два неверных варианта</button>
+    <header class="lp-session">
+      <h1>Практика урока</h1>
+      <p role="status" id="lp-status">Войдите под своим учебным аккаунтом.</p>
+    </header>
+    <section class="lp-question" aria-labelledby="lp-number" hidden>
+      <header class="lp-question-head"><h2 id="lp-number" tabindex="-1"></h2></header>
+      <div class="lp-text">
+        <div class="qhtml lp-passage" lang="en"></div>
+        <div class="lp-task">
+          <div class="qhtml lp-stem" lang="en"></div>
+          <div class="row lp-hints" hidden>
+            <button type="button" class="btn ghost" data-hint="1">Подсказка: словарь</button>
+            <button type="button" class="btn ghost" data-hint="2">Убрать два неверных варианта</button>
+          </div>
+          <p data-tip class="hint" role="status" hidden></p>
+          <form>
+            <fieldset class="lp-fieldset"><legend>Ваш ответ</legend><div class="lp-options"></div></fieldset>
+            <div class="lp-submit"><button class="btn" type="submit">Отправить ответ</button><p data-received role="status"></p></div>
+          </form>
+        </div>
       </div>
-      <p data-tip class="hint" role="status" hidden></p>
-      <form><div class="lp-options"></div><button class="btn" type="submit">Отправить ответ</button></form>
-      <p data-received role="status"></p>
     </section>
   </section>`;
 
   const status = main.querySelector("#lp-status"), section = main.querySelector(".lp-question");
-  const heading = section.querySelector("h2"), text = section.querySelector(".lp-text");
+  const heading = section.querySelector("h2"), passage = section.querySelector(".lp-passage"), stem = section.querySelector(".lp-stem");
   const form = section.querySelector("form"), options = section.querySelector(".lp-options");
   const hintRow = section.querySelector(".lp-hints"), hintButtons = [...hintRow.querySelectorAll("button")];
   const tip = section.querySelector("[data-tip]"), received = section.querySelector("[data-received]");
@@ -50,7 +61,7 @@
     if (!tip.textContent) tip.textContent = "Выделите незнакомое английское слово, чтобы открыть словарь.";
     hintButtons.forEach((button) => {
       const hint = Number(button.dataset.hint);
-      button.hidden = answered || !(allowed & hint) || (hint === 2 && item.type !== "mc");
+      button.hidden = answered || !(allowed & hint) || (hint === 2 && (item.type !== "mc" || item.graded === false));
       button.disabled = !opened || !!(used & hint) || pending;
     });
     hintRow.hidden = hintButtons.every((button) => button.hidden);
@@ -66,14 +77,22 @@
       if (flag) flag.hidden = !eliminated;
     });
     send.disabled = !opened || answered || submitting;
-    if (answered) received.textContent = `Ответ принят: ${attempt.answer} · ${Math.round(attempt.ms / 1000)} с`;
+    if (answered) {
+      const message = `Ответ принят · ${attempt.answer} · ${Math.round(attempt.ms / 1000)} с`;
+      if (received.textContent !== message) received.textContent = message;
+    }
   }
   function question(state, snapshot) {
     current = state.current; item = snapshot; opened = false; attempt = state.attempt;
     section.hidden = false;
     status.textContent = state.title;
     heading.textContent = state.cold ? `Холодный старт · ${state.cold}/4` : "Вопрос " + current;
-    text.innerHTML = item.prompt;
+    const boundary = item.passageLength;
+    const separated = Number.isInteger(boundary) && boundary >= 0 && boundary <= item.prompt.length;
+    passage.innerHTML = separated ? item.prompt.slice(0, boundary) : "";
+    stem.innerHTML = separated ? item.prompt.slice(boundary) : item.prompt;
+    passage.hidden = !passage.innerHTML.trim();
+    section.classList.toggle("lp-no-passage", passage.hidden);
     received.textContent = "";
     options.replaceChildren();
     if (item.type === "mc") {
@@ -82,17 +101,18 @@
         row.className = "lp-choice";
         const radio = document.createElement("input");
         Object.assign(radio, { type: "radio", name: "answer", required: true, value: letters[i] });
+        const badge = document.createElement("span"); badge.className = "lp-letter"; badge.textContent = letters[i];
         const caption = document.createElement("span"); caption.className = "qhtml"; caption.lang = "en";
         caption.innerHTML = content;
         const flag = document.createElement("small"); flag.className = "lp-eliminated-label"; flag.textContent = "Исключено"; flag.hidden = true;
-        row.append(radio, document.createTextNode(letters[i]), caption, flag);
+        row.append(radio, badge, caption, flag);
         options.append(row);
       });
     } else {
-      const label = document.createElement("label"); label.textContent = "Ваш ответ ";
       const input = document.createElement("input");
-      Object.assign(input, { name: "answer", required: true, maxLength: 64, inputMode: "decimal", autocomplete: "off" });
-      label.append(input); options.append(label);
+      Object.assign(input, { type: "text", name: "answer", required: true, maxLength: 64, inputMode: "decimal", autocomplete: "off" });
+      input.setAttribute("aria-label", "Ваш ответ");
+      options.append(input);
     }
     heading.focus();
   }
@@ -113,8 +133,8 @@
         if (snapshot.type === "mc" && snapshot.options.length !== letters.length) throw new Error("Неверные варианты ответа.");
         question(state, snapshot);
       }
-      status.textContent = state.title;
-      attempt = state.attempt;
+      if (status.textContent !== state.title) status.textContent = state.title;
+      if (!attempt?.answer) attempt = state.attempt;
       if (!attempt && !opened) {
         const number = current;
         await call("open", { number });

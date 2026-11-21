@@ -39,5 +39,15 @@ window.SlideQuestionMatch = (() => {
     const [first, second] = scored;
     return first?.evidence && first.score - (second?.score || 0) >= 0.8 ? { part: first.part, number: first.number } : null;
   }
-  return { match };
+  function exactSlide(draft, candidates) {
+    // In grammar questions, punctuation and capitalization can be the only differences between options.
+    const normalized = (text) => text.normalize("NFKC").replace(/\u00ad/g, "").replace(/\s+/g, " ").trim();
+    const prompt = normalized(draft.prompt), options = draft.opts.map(normalized);
+    const matches = candidates.filter(({ question }) => question.t === "mc" && /^[A-D]$/.test(question.ans) &&
+      normalized(textOf(question.stim) + " " + textOf(question.stem)) === prompt &&
+      question.opts?.length === options.length &&
+      question.opts.every((option, i) => normalized(textOf(option)) === options[i]));
+    return matches.length && matches.every(({ question }) => question.ans === matches[0].question.ans) ? matches[0] : null;
+  }
+  return { match, exactSlide };
 })();
