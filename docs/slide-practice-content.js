@@ -11,6 +11,35 @@ window.SlidePracticeContent = (() => {
   const questionHeading = /^(?:практика|ваша очередь|practice|try it|решите|вопрос(?:\s|$)|question\b|итоговый тест|разбор · официальный вопрос|пример\s+\d+\s+·)/iu;
   const isSolution = (text) => solution.test(sections(cleanLines(text)[0]).at(-1));
 
+  function pdfText(items) {
+    const labels = items.flatMap((item, index) => {
+      const letter = item.str?.trim();
+      return /^[A-D]$/.test(letter) && item.height > 0 ? [{ letter, index, x: item.transform[4], y: item.transform[5] }] : [];
+    });
+    const grid = new Set();
+    for (const a of labels.filter(({ letter }) => letter === "A").reverse()) {
+      const b = labels.find((p) => p.letter === "B" && p.index > a.index && p.x - a.x > 40 && Math.abs(p.y - a.y) < 8);
+      if (!b) continue;
+      const c = labels.find((p) => p.letter === "C" && p.index > b.index && Math.abs(p.x - a.x) < 8 && a.y - p.y > 18);
+      if (!c) continue;
+      const d = labels.find((p) => p.letter === "D" && p.index > c.index && Math.abs(p.x - b.x) < 8 && Math.abs(p.y - c.y) < 8);
+      if (!d) continue;
+      for (const { index } of [a, b, c, d]) grid.add(index);
+      break;
+    }
+    return items.map((item, index) => {
+      // In a two-column layout, PDF.js can emit two choices on one line.
+      if (grid.has(index)) return "\n" + item.str + "\n";
+      const next = items[index + 1];
+      const baseline = item.str?.trim() && next?.str?.trim() ? item.transform[5] - next.transform[5] : 0;
+      const endsLine = item.hasEOL || baseline > Math.max(item.height, next?.height || 0) * 0.8;
+      // Adjacent font runs can form one word or number. PDF.js represents actual spaces as separate items.
+      const touching = item.str?.trim() && next?.str?.trim() && Math.abs(baseline) < 1 &&
+        Math.abs(next.transform[4] - item.transform[4] - item.width) < 1;
+      return (item.str || "") + (endsLine ? "\n" : touching ? "" : " ");
+    }).join("");
+  }
+
   function optionPositions(lines, pattern) {
     const choices = new Map();
     for (const [i, line] of lines.entries()) {
@@ -30,7 +59,7 @@ window.SlidePracticeContent = (() => {
     let choices = optionPositions(lines, /^([A-D])(?:$|\s{2,}(.+)$)/);
     if (choices.size !== 4) choices = optionPositions(lines, /^([A-D])(?:$|[.)]\s+(.+)$|\s{2,}(.+)$)/);
     if (choices.size !== 4 || choices.get("A").i < 1) return null;
-    const start = coldHeading.test(heading) || questionHeading.test(heading) ||
+    const start = coldHeading.test(heading) || questionHeading.test(heading) || /^угадайте(?:\s|$)/i.test(heading) ||
       parts.slice(1).some((part) => /^(?:вопрос|пример|ещё|угадайте)/i.test(part)) ? 1 : 0;
     const prompt = lines.slice(start, choices.get("A").i).filter((line) => !keyLine.test(line)).join("\n");
     const opts = letters.map((letter, i) => {
@@ -43,17 +72,25 @@ window.SlidePracticeContent = (() => {
   }
   function splitPrompt(prompt) {
     const lines = cleanLines(prompt);
-    // Use the last SAT instruction followed by a question mark, including instructions wrapped in the PDF.
-    const start = lines.findLastIndex((line) => /^(?:which|what|how|according to|based on|as used in|the student wants)\b/i.test(line));
-    if (start <= 0 || !/\?\s*$/.test(lines.at(-1))) return { passage: "", stem: prompt };
-    const body = lines.slice(0, start), notes = /^while researching\b/i.test(body[0]);
-    const passage = body.reduce((result, line, i) => {
-      if (!i) return line;
-      const paragraph = /^text\s+\d+$/i.test(line) || /^[•●▪]\s/.test(line) ||
-        notes && /[.:!?]$/.test(body[i - 1]) && /^[A-Z]/.test(line);
-      return result + (paragraph ? "\n" : " ") + line;
-    }, "");
-    return { passage, stem: lines.slice(start).join(" ") };
+    const label = /^Text\s+([12])(?:$|\s*[:–—]\s*(.*)$)/i;
+    const paired = lines.some((line) => label.exec(line)?.[1] === "1") && lines.some((line) => label.exec(line)?.[1] === "2");
+    const start = lines.findLastIndex((line) => /^(?:which|what|how|according to|based on|as used in|the student wants)\b/i.test(line) ||
+      paired && /^both (?:authors|texts|passages)\b.*\b(?:agree|suggest|imply)\b/i.test(line));
+    if (start <= 0 || !paired && !/\?\s*$/.test(lines.at(-1))) return { passage: "", stem: prompt };
+    const body = lines.slice(0, start);
+    const notes = /^while researching\b/i.test(body[0]);
+    const blocks = [];
+    for (const [i, line] of body.entries()) {
+      const title = paired && label.exec(line);
+      if (title) {
+        blocks.push("Text " + title[1], title[2] || "");
+      } else if (!i || /^[•●▪]\s/.test(line) || notes && /[.:!?]$/.test(body[i - 1]) && /^[A-Z]/.test(line)) {
+        blocks.push(line);
+      } else {
+        blocks[blocks.length - 1] = [blocks.at(-1), line].filter(Boolean).join(" ");
+      }
+    }
+    return { passage: blocks.filter(Boolean).join("\n"), stem: lines.slice(start).join(" ") };
   }
   function answerKey(text) {
     const keys = new Set(cleanLines(text).map((line) => keyLine.exec(line)?.[1]?.toUpperCase()).filter(Boolean));
@@ -80,5 +117,5 @@ window.SlidePracticeContent = (() => {
     }
     return keys.size === 4 ? [1, 2, 3, 4].map((n) => keys.get(String(n))) : null;
   }
-  return { parse, splitPrompt, answerKey, nextKey, isSolution, coldNumber, recapKeys };
+  return { pdfText, parse, splitPrompt, answerKey, nextKey, isSolution, coldNumber, recapKeys };
 })();

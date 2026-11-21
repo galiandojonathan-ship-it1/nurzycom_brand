@@ -82,6 +82,28 @@
       if (received.textContent !== message) received.textContent = message;
     }
   }
+  function labelPassages() {
+    // Existing rooms can contain a plain-text label and its passage in the same paragraph.
+    const headers = [...passage.children].flatMap((node) => {
+      const match = node.localName === "p" && !node.childElementCount &&
+        /^Text\s+([12])(?:$|\s*:\s*|\s+)(.*)$/is.exec(node.textContent.trim());
+      return match ? [{ node, number: match[1], content: match[2] }] : [];
+    });
+    const second = headers.findIndex(({ number }) => number === "2");
+    const first = headers.slice(0, Math.max(0, second)).findLast(({ number }) => number === "1");
+    if (!first) return;
+    for (const { node, number, content } of [first, headers[second]]) {
+      const label = document.createElement("h3");
+      label.className = "lp-passage-label";
+      label.textContent = "Text " + number;
+      if (content) {
+        node.textContent = content;
+        node.before(label);
+      } else {
+        node.replaceWith(label);
+      }
+    }
+  }
   function question(state, snapshot) {
     current = state.current; item = snapshot; opened = false; attempt = state.attempt;
     section.hidden = false;
@@ -91,6 +113,7 @@
     const separated = Number.isInteger(boundary) && boundary >= 0 && boundary <= item.prompt.length;
     passage.innerHTML = separated ? item.prompt.slice(0, boundary) : "";
     stem.innerHTML = separated ? item.prompt.slice(boundary) : item.prompt;
+    labelPassages();
     passage.hidden = !passage.innerHTML.trim();
     section.classList.toggle("lp-no-passage", passage.hidden);
     received.textContent = "";

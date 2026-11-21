@@ -349,6 +349,14 @@ window.LessonPracticeHost = (() => {
   const plain = (html) => new DOMParser().parseFromString(html || "", "text/html").body.textContent;
   const safeText = (text) => String(text).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
   const paragraphs = (text) => text.trim().split(/\n+/).filter(Boolean).map((line) => `<p>${safeText(line)}</p>`).join("");
+  function passageHTML(passage) {
+    if (!passage) return "";
+    const [first, ...rest] = passage.split("\n");
+    if (rest.length && /^while researching\b/i.test(first)) {
+      return paragraphs(first) + "<ul>" + rest.map((line) => `<li>${safeText(line.replace(/^[•●▪]\s+/, ""))}</li>`).join("") + "</ul>";
+    }
+    return paragraphs(passage);
+  }
   const answerLetters = ["A", "B", "C", "D"];
   function keySelect(label, value = "") {
     const input = el("select");
@@ -359,7 +367,7 @@ window.LessonPracticeHost = (() => {
   }
   function slideItem(index, draft, answer) {
     const { passage, stem } = SlidePracticeContent.splitPrompt(draft.prompt);
-    return { t: "mc", n: index + 1, stim: paragraphs(passage), stem: paragraphs(stem), opts: draft.opts.map(safeText), ans: answer };
+    return { t: "mc", n: index + 1, stim: passageHTML(passage), stem: paragraphs(stem), opts: draft.opts.map(safeText), ans: answer };
   }
   async function publishSlide(lesson, index, draft, answer, visible = () => true) {
     const payload = await questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson);

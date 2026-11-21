@@ -409,7 +409,7 @@
       if (!source) return "";
       const entry = (await source)[index];
       if (entry?.paragraphs) return [entry.title, ...entry.paragraphs].join("\n");
-      return (entry?.text?.items || []).map((item) => (item.str || "") + (item.hasEOL ? "\n" : " ")).join("");
+      return SlidePracticeContent.pdfText(entry?.text?.items || []);
     };
     window.LessonPracticeHost?.attach(DK.box, d, lesson, () => DK.i, readText);
     go(Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)));
