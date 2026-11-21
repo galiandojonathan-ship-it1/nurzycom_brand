@@ -103,6 +103,14 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 
 `functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (test `t_live.js`).
 
+Presentation practice uses `/api/lesson-practice` and the same `LIVE_LESSONS` D1 binding. The first teacher room
+creates the additive `lp_*` tables in `lib/lesson-practice-schema.js`. A room is active for up to three hours, and
+its results are kept for 14 days. In «Пульт урока», start a room, share its student link and bind a slide to a
+workbook question. Bindings are saved in that teacher browser for the presentation. Selected question and timing
+are server-side; only the teacher monitor sees the roster, grading and the saved encrypted notes. Hint permissions
+follow the student account to the next practice. Gemini receives only anonymous facts for one student at a time
+(question numbers, skills, correctness, times and hint flags) after closing the room. No audio is collected.
+
 KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 
 Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesson`. Set the encrypted Cloudflare Pages

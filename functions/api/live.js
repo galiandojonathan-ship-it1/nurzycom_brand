@@ -44,7 +44,7 @@ function customRight(answer, value) {
   return clean(answer) === clean(value);
 }
 
-function isCorrect(key, value) {
+export function isCorrect(key, value) {
   if (typeof key === "string") return key === value; // Rounds created before sealed snapshots.
   if (key.type === "mc") return key.accepted.includes(value);
   if (key.type === "custom") return key.accepted.some((answer) => customRight(answer, value));

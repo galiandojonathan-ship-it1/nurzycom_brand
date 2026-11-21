@@ -401,7 +401,9 @@
     DK.board = window.LSBOARD ? LSBOARD.create(DK.box.querySelector(".dk-draw"), { clear: true }) : null;
     DK.box.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (!b) return; ({ prev: () => go(DK.i - 1), next: () => go(DK.i + 1), draw: toggleDraw, calc: toggleCalc, fs: fullscreen, x: closeDeck })[b.dataset.k](); });
     document.addEventListener("keydown", onKey);
-    DK.d = d; DK.uploaded = null; DK.slides = Array.from({ length: d.n }); go(Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)));
+    DK.d = d; DK.uploaded = null; DK.slides = Array.from({ length: d.n });
+    window.LessonPracticeHost?.attach(DK.box, d, C.lessons.find((l) => l.tag === id), () => DK.i);
+    go(Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)));
   }
   // one encrypted image per slide (tools/private/deckpack.mjs), fetched when shown; the next one is fetched ahead
   function slide(i) {
@@ -455,6 +457,7 @@
     document.body.dataset.lq = `DECK.${DK.d.id}.${i + 1}`; document.body.dataset.lt = `Презентация · ${DK.d.title}`;   // the lesson's timeline records the slides
     if (window.LESSON && LESSON.tick) LESSON.tick();   // at once, a quick flip through slides is recorded too
     if (DK.board) DK.board.show(`${DK.d.id}.${i}`);
+    window.LessonPracticeHost?.publish(DK.d, i, C.lessons.find((l) => l.tag === DK.d.id));
   }
   async function showDeckText({ text, viewport }, host, current) {
     const { TextLayer } = await pdfModule();
@@ -512,7 +515,7 @@
   }
   function fullscreen() { if (document.fullscreenElement) document.exitFullscreen(); else if (DK.box.requestFullscreen) DK.box.requestFullscreen().catch(() => {}); }
   function onKey(e) {
-    if (!DK.box || e.defaultPrevented || document.documentElement.classList.contains("ls-pick") || document.querySelector(".ls-pop")) return;
+    if (!DK.box || e.defaultPrevented || document.querySelector(".lp-dialog[open]") || document.documentElement.classList.contains("ls-pick") || document.querySelector(".ls-pop")) return;
     const drawing = DK.box.classList.contains("drawing");
     if (drawing && (e.ctrlKey || e.metaKey) && /^[zyя]$/i.test(e.key)) { e.preventDefault(); if (DK.board) (e.key.toLowerCase() === "y" || e.shiftKey) ? DK.board.redo() : DK.board.undo(); return; }
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -525,7 +528,7 @@
     if (!DK.box) return; if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     clearDeckText();
     DK.slides.forEach((p) => p && p.then(({ url }) => { if (url) URL.revokeObjectURL(url); }).catch(() => {})); DK.slides = [];
-    DK.box.remove(); DK.box = null; DK.d = null; DK.uploaded = null; DK.current = null; document.documentElement.style.overflow = ""; document.removeEventListener("keydown", onKey);
+    window.LessonPracticeHost?.detach(DK.box); DK.box.remove(); DK.box = null; DK.d = null; DK.uploaded = null; DK.current = null; document.documentElement.style.overflow = ""; document.removeEventListener("keydown", onKey);
     const p = DK.prev || {}; if (p.lq) document.body.dataset.lq = p.lq; else delete document.body.dataset.lq; if (p.lt) document.body.dataset.lt = p.lt; else delete document.body.dataset.lt;
     const t = document.querySelector(`.cr-acts [data-deck]`); if (t) t.focus();
   }
@@ -562,6 +565,7 @@
       C.lessons = ((L && (L.lessons || L)) || []).filter((l) => l && l.tag && Array.isArray(l.parts) && /^[VM]/.test(l.tag));
       const lesson = new URLSearchParams(location.search).get("lesson");
       if (C.lessons.some((l) => l.tag === lesson)) { C.open = lesson; C.course = lesson[0]; }
+      window.LessonPracticeHost?.mount($("lp-home"));
       C.vocab = V; C.decks = (D && D.decks) || [];
       C.uploaded = uploaded?.ok && Array.isArray(uploaded.data?.decks) ? uploaded.data.decks : [];
       render(); setInterval(now, 30000);

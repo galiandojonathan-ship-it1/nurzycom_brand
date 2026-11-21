@@ -124,8 +124,8 @@
     if (!tok) { tok = await syncToken(id, pw); put("site_sync", tok, !!(LS && LS.getItem("site_pw"))); }
     return { id, tok, raw: b64(key) };
   }
-  async function sync() {
-    if (busy) { again = true; return; }
+  async function sync(claim = false) {
+    if (busy) { again = true; return false; }
     busy = true; clearTimeout(timer); timer = 0;
     try {
       const a = await syncAuth(); if (!a) return;
@@ -135,7 +135,11 @@
       if (r.ok) { const j = await r.json(); if (j.data) remote = await unseal(a.raw, j.data); }
       else if (r.status !== 404) return;   // 403 (not this account's record) or offline: keep everything on this device
       const { out, push } = merge(remote);
-      if (push) await fetch(url, { method: "PUT", cache: "no-store", headers: Object.assign({ "content-type": "application/json" }, h), body: JSON.stringify({ data: await seal(a.raw, out) }) });
+      if (push || claim) {
+        const saved = await fetch(url, { method: "PUT", cache: "no-store", headers: Object.assign({ "content-type": "application/json" }, h), body: JSON.stringify({ data: await seal(a.raw, out) }) });
+        return saved.ok;
+      }
+      return true;
     } catch (e) { /* offline: try again with the next change or page */ }
     finally { busy = false; if (again) { again = false; later(); } }
   }
@@ -298,6 +302,8 @@
     // teacher's cabinet: a student's synced results ({ key: { v, t } }), encrypted with the master key like the student's own sync
     async unsealBlob(s) { return unseal(sessionRaw(), s); },
     async sealBlob(obj) { return seal(sessionRaw(), obj); },
+    async practiceIdentity() { const a = await syncAuth(); return a && { id: a.id, tok: a.tok }; },
+    claimPracticeIdentity() { return sync(true); },
     syncToken, SYNC,
     remember(pw) { const keep = (function () { try { return !!localStorage.getItem("site_pw"); } catch (e) { return false; } })(); drop(); put("site_pw", pw, keep); },
     logout() { drop(); location.reload(); },

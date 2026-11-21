@@ -1,6 +1,7 @@
 // Hard practice sets: one question at a time (as in Bluebook), graded by hashed keys; explanations open after submitting.
 (function () {
   "use strict";
+  if (new URLSearchParams(location.search).has("lessonRoom")) return;
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
   const $ = (id) => document.getElementById(id);
   const CFG = window.HW_CONFIG || {};
