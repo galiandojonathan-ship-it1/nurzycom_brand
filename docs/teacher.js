@@ -508,7 +508,6 @@
     const day = (ts) => (ts ? new Date(ts).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "");
     box.innerHTML = `<div class="card rv-card"><h2>Разбор на уроке</h2>
       ${rvSummary(c)}
-      ${c.mode === "group" && SITE.adminKey() ? '<div class="rv-ai"><button class="btn ghost" type="button" data-rvai>План разбора с Gemini</button><p class="hint">Gemini получает коды заданий и сводные числа. Учитывается текущий выбор заданий.</p><div role="status" data-rvai-output></div></div>' : ""}
       <h3>Выберите задания</h3>
       <div class="rv-controls">
         <label>Поиск задания<input type="search" data-rvsearch placeholder="Урок, тема или код"></label>
@@ -518,6 +517,7 @@
       <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора"></div>
       <p class="rv-all"><button type="button" class="tlink" data-rvall="1">Выбрать найденные</button> · <button type="button" class="tlink" data-rvall="0">Снять выбор</button></p>
       <p class="hint" data-rvcount role="status"></p>
+      ${c.mode === "group" && SITE.adminKey() && c.all.some((q) => q.sec === "rw") ? '<section class="rv-ai" data-vl></section>' : ""}
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
       <p class="hint">«Подготовить урок» автоматически подбирает свежие ошибки. Отправленный разбор появится в «Ошибках класса».</p>
       <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div>
@@ -553,25 +553,33 @@
     list.onchange = ({ target }) => { if (!target.matches("[data-rvp]")) return; if (target.checked) sel.add(target.dataset.rvp); else sel.delete(target.dataset.rvp); label(); };
     box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { if (x.dataset.rvall === "1") visibleParts().forEach((p) => sel.add(p.k)); else sel.clear(); renderParts(); label(); }));
     box.querySelectorAll("[data-rvquick]").forEach((x) => (x.onclick = () => { sel.add(x.dataset.rvquick); search.value = filters.search = ""; renderParts(); label(); list.querySelectorAll("[data-rvp]").forEach((input) => { if (input.dataset.rvp === x.dataset.rvquick) input.focus(); }); }));
-    const ai = box.querySelector("[data-rvai]");
-    if (ai) ai.onclick = () => rvGemini(c, ai, box.querySelector("[data-rvai-output]"));
+    if (window.VerbalLesson) VerbalLesson.mount(box, {
+      select: () => {
+        const candidates = c.ranked.filter((q) => q.sec === "rw" && q.wrong && (!sel.size || sel.has(q.part))).sort(byWrong);
+        // Give other skills a chance when many missed questions belong to the same assignment.
+        const varied = [], remainder = [], perSkill = new Map();
+        for (const q of candidates) {
+          const key = q.sk || q.part, count = perSkill.get(key) || 0;
+          (count < 2 ? varied : remainder).push(q);
+          perSkill.set(key, count + 1);
+        }
+        return [...varied, ...remainder].slice(0, 8).map(rvQuestion);
+      },
+      readQuestion: teacherReviewItem, previewOriginal: gaOpen,
+      send: (title, qs) => rvSaveSnapshot({ id: crypto.randomUUID(), v: 2, at: Date.now(), mode: "verbal",
+        group: c.title, title, parts: [...new Set(qs.filter((q) => q.plabel).map((q) => q.plabel))], qs })
+    });
     btn.onclick = () => rvSend(c, btn, $(`${id}-send-st`));
     $(`${id}-prep`).onclick = () => rvPrepare(c, box);
     renderParts(); label();
   }
-  async function rvGemini(c, button, output) {
-    const qs = rvPick(c).filter((q) => q.who.size >= Math.max(2, GA.min));
-    if (!qs.length) { output.textContent = "Для Gemini нужно больше ответов по выбранным вопросам."; return; }
-    const ids = new Set(qs.map((q) => q.part));
-    const parts = rvParts(c.ranked.filter((q) => ids.has(q.part))).sort(byWrong).slice(0, 8).map(({ k, n, wrong }) => ({ code: k, n, wrong }));
-    const questions = qs.slice(0, 12).map(({ id, n, wrong }) => ({ code: id, n, wrong }));
-    button.disabled = true;
-    output.textContent = "Gemini готовит план…";
-    try {
-      const r = await SITE.api("admin/review-advice", { method: "POST", body: JSON.stringify({ parts, questions }) });
-      output.textContent = r.ok && r.data?.advice ? r.data.advice : r.data?.error || "Gemini сейчас недоступен.";
-    } catch { output.textContent = "Не удалось связаться с Gemini. Попробуйте ещё раз."; }
-    finally { button.disabled = false; }
+  function rvQuestion(q) {
+    return { id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n,
+      wrong: q.wrong, picks: q.picks, src: q.src, plabel: q.plabel };
+  }
+  async function teacherReviewItem(q) {
+    const b = await bundleT(q.src.b);
+    return q.src.mod ? b.mods[q.src.mod][q.src.i] : b.find((x) => x.n === q.src.n);
   }
   async function lessonIds() {
     const [r, access] = await Promise.all([SITE.api("admin/users"), SITE.access()]);
@@ -630,28 +638,44 @@
     const qs = rvPick(c); if (!qs.length) return;
     btn.disabled = true; st.textContent = "Отправляю…";
     try {
-      const ids = await lessonIds();
       const sel = D.rvSel[c.key], solo = c.mode === "solo";
       const snap = { id: Date.now().toString(36), v: 2, at: Date.now(), mode: c.mode, group: c.title, note: c.note || "",
-        parts: [...new Set(qs.map((q) => q.plabel))], qs: qs.map((q) => Object.assign({ id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n, wrong: q.wrong, picks: solo ? {} : q.picks, src: q.src }, solo ? { mine: q.mine || [] } : {})) };
-      for (const id of ids) {
-        const url = "admin/progress?id=" + encodeURIComponent(id), g = await SITE.api(url); let B = {};
-        if (g.ok) B = await SITE.unsealBlob(g.data.data); else if (g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
-        let list = []; try { const old = B.ls_m && B.ls_m.v ? JSON.parse(B.ls_m.v) : null; list = old ? (Array.isArray(old.list) ? old.list : old.qs ? [old] : []) : []; } catch (e) { list = []; }
-        list = [snap, ...list.filter((x) => !(x.mode === snap.mode && x.group === snap.group))].slice(0, 8);   // a new review for the same group or student replaces the old one
-        B.ls_m = { v: JSON.stringify({ v: 2, list }), t: Date.now() };
-        const p = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(B) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
-      }
+        parts: [...new Set(qs.map((q) => q.plabel))], qs: qs.map((q) => solo ? { ...rvQuestion(q), picks: {}, mine: q.mine || [] } : rvQuestion(q)) };
+      await rvSaveSnapshot(snap);
       st.textContent = `Отправлено: ${qs.length} ${pl(qs.length, "вопрос", "вопроса", "вопросов")} («${c.title}»${sel && sel.size ? `, ${sel.size} ${pl(sel.size, "часть", "части", "частей")}` : ""}). В аккаунте урока нажмите «Ошибки класса».`;
     } catch (e) { st.textContent = e.message || "Не удалось отправить. Попробуйте ещё раз."; }
     finally { btn.disabled = false; }
+  }
+  async function rvSaveSnapshot(snap) {
+    const ids = await lessonIds();
+    let sent = 0;
+    try {
+      for (const id of ids) {
+        const url = "admin/progress?id=" + encodeURIComponent(id), g = await SITE.api(url);
+        if (!g.ok && g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
+        const data = g.ok ? await SITE.unsealBlob(g.data.data) : {};
+        let list = [];
+        try {
+          const old = JSON.parse(data.ls_m?.v || "null");
+          list = old ? (Array.isArray(old.list) ? old.list : old.qs ? [old] : []) : [];
+        } catch { /* malformed old snapshot */ }
+        list = [snap, ...list.filter((r) => !(r.mode === snap.mode && r.group === snap.group))].slice(0, 8);
+        data.ls_m = { v: JSON.stringify({ v: 2, list }), t: Date.now() };
+        const result = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(data) }) });
+        if (!result.ok) throw new Error(`Сервер ответил ${result.status}.`);
+        sent++;
+      }
+    } catch (e) {
+      if (!sent) throw e;
+      throw new Error(`Отправлено в ${sent} из ${ids.length} аккаунтов урока. Повторите отправку для остальных.`);
+    }
   }
   function gaBind(box) {
     [["ga-grp", "gid"], ["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
   }
   async function gaOpen(d, q) {
     const body = d.querySelector(".rbody"); if (body.dataset.done) return;
-    let item; try { const b = await bundleT(q.src.b); item = q.src.mod ? b.mods[q.src.mod][q.src.i] : b.find((x) => x.n === q.src.n); } catch (e) { body.innerHTML = '<p class="hint">Не удалось загрузить вопрос. Обновите страницу.</p>'; return; }
+    let item; try { item = await teacherReviewItem(q); } catch (e) { body.innerHTML = '<p class="hint">Не удалось загрузить вопрос. Обновите страницу.</p>'; return; }
     if (!item) { body.innerHTML = '<p class="hint">Вопрос не найден.</p>'; return; }
     const t = trapOf(q), acc = [].concat(item.acc || item.ans).filter(Boolean), ok = q.n - q.wrong;
     const opts = item.t === "mc" && item.opts && item.opts.length ? item.opts.map((o, k) => { const L = "ABCD"[k], c = L === item.ans ? ok : q.picks[L] || 0;

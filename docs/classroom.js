@@ -56,7 +56,7 @@
     const body = $("cr-body");
     body.innerHTML = `<div class="cr-grid">
       <div class="cr-card" id="cr-rv"><h2>Разбор ошибок</h2><p class="cr-sub">Разборы, подготовленные на странице преподавателя. Нажмите, чтобы открыть на весь экран.</p>
-        ${rv.length ? `<ul class="cr-list">${rv.map((r) => `<li><button type="button" class="cr-item" data-rv="${esc(r.id)}"><span><span class="cr-kind">${r.mode === "solo" ? "Индивидуальный разбор" : "Группа"}</span><b>${esc(shown(r))}</b>
+        ${rv.length ? `<ul class="cr-list">${rv.map((r) => `<li><button type="button" class="cr-item" data-rv="${esc(r.id)}"><span><span class="cr-kind">${r.mode === "verbal" ? "Урок SAT Verbal" : r.mode === "solo" ? "Индивидуальный разбор" : "Группа"}</span><b>${esc(r.mode === "verbal" ? r.title : shown(r))}</b>
           <small>${esc((r.parts || []).slice(0, 2).join(", "))}${(r.parts || []).length > 2 ? ` и ещё ${r.parts.length - 2}` : ""} · ${esc(day(r.at))}</small></span><span class="r">${r.qs.length}</span></button></li>`).join("")}</ul>`
           : '<p class="cr-empty">Пока пусто. На своём устройстве откройте страницу преподавателя: «Анализ группы» для группы или карточку ученика, затем «Подготовить урок».</p>'}</div>
       <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Слова, отмеченные на уроках. Раз в два дня они получают определение и перевод и подчёркиваются на сайте, как слова курса.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
