@@ -174,7 +174,11 @@
           var note = b.val === q.key ? "верный ответ" : b.val === chosen ? "твой ответ, неверно" : "";
           if (b.val === q.key) b.node.classList.add("right");
           else if (b.val === chosen) b.node.classList.add("wrong");
-          if (note && !b.node.querySelector(".sr-only")) b.node.appendChild(el("span", { class: "sr-only", lang: "ru", text: " (" + note + ")" }));
+          if (note && !b.node.hasAttribute("aria-describedby")) {
+            var noteId = p.id + "-" + i + "-answer-" + b.val;
+            b.node.setAttribute("aria-describedby", noteId);
+            box.appendChild(el("span", { id: noteId, hidden: "", lang: "ru", text: note }));
+          }
         });
         var ok = isOk(q, chosen);
         exp.hidden = false; exp.textContent = "";
@@ -258,11 +262,20 @@
         u.lang = "en-GB"; u.rate = 0.92;
         if (vo) {
           if (vo.lang) u.lang = vo.lang; if (vo.pitch) u.pitch = vo.pitch; if (vo.rate) u.rate = vo.rate;
-          var same = pool.filter(function (v) { return v.lang.replace("_", "-") === u.lang; }), list = same.length > 1 ? same : pool;
-          if (list.length) u.voice = list[names.indexOf(m[1]) % list.length];
+          var locale = u.lang.toLowerCase();
+          var matchingVoices = pool.filter(function (v) { return v.lang.replace(/_/g, "-").toLowerCase() === locale; });
+          var availableVoices = matchingVoices.length ? matchingVoices : pool;
+          if (availableVoices.length) u.voice = availableVoices[names.indexOf(m[1]) % availableVoices.length];
         }
         if (i === p.audio.length - 1) u.onend = function () { if (mine === run) status.textContent = "Запись закончилась."; };
-        u.onerror = function (e) { if (mine === run && e.error !== "canceled" && e.error !== "interrupted") status.textContent = "Браузер не смог прочитать запись. Открой текст записи ниже."; };
+        u.onerror = function (e) {
+          if (mine !== run) return;
+          run += 1;
+          synth.cancel();
+          status.textContent = e.error === "canceled" || e.error === "interrupted"
+            ? "Воспроизведение прервалось. Нажми «Слушать сначала»."
+            : "Браузер не смог прочитать запись. Открой текст записи ниже.";
+        };
         synth.speak(u);
       });
     });

@@ -118,7 +118,7 @@ Third pass, 2026-11-11 (quality-check run): all 68 questions solved again with t
 3. Minimum level for the combined course.
 4. Portrait and story text approved by Nurassyl.
 5. Phone playback, human listening recordings and pilot feedback before a public course launch.
-6. Academic Word List: membership of each word and terms of use. No word is labelled "AWL" until this is checked.
+6. Academic Word List: coverage is measured below. Permission would be needed before reproducing the University's protected material commercially.
 
 ## Lesson data format (for the next build run)
 
@@ -177,10 +177,13 @@ Each scheduled run takes the first unchecked items it can finish **to the full q
 - [x] C15 · Writing assembly (20 Nov): complete Task 2 discussion, 282-word original model, all four public criteria, three exit items and two worked examples. Homework, slides and office hours.
 - [x] C16 and KF (20 Nov) · Mixed review and final check. C16 Reading: 691 words, grade 12.7, 25.6 words per sentence. C16: 29 scored items across SAT, Reading, a ten-question Listening Part 3 dialogue and exit. KF: 16 scored items across SAT, Reading and Listening.
 - [x] QA (20 Nov) · Rechecked revised keys, dates and figures, all 12 Reading passages, mobile and keyboard paths, and the three browser suites. See End-of-course QA for measurements and the verification limits.
+- [x] Follow-up QA (21 Nov) · Measured AWL coverage and checked Orca and native Chromium speech. Added text positions to the C12 plan, exposed answer status to screen readers and fixed voice-locale and interrupted playback handling.
 
 **Type coverage across the demo.** Reading includes matching headings (C01), True / False / Not Given (C01, C05), summary completion (C01; with a word box C05), matching information (C02), sentence completion (C02), multiple choice (C02, C04), matching sentence endings (C03), note completion (C03), short-answer questions (C03, C05), matching features (C04), table completion (C04), flow-chart completion (C06), Yes / No / Not Given (C07). Diagram label completion (C09), using an original SVG and typed labels. Listening notes: C13 and KF. C16 adds matching actions to speakers in a Part 3 discussion. C12 uses forms, plans and multiple choice.
 
 ## Loop log
+
+- 2026-11-21 · Follow-up QA: measured exact AWL forms for the Reading passages and vocabulary cards. Checked three accessible lesson states with Orca and all four Listening scripts with Chromium's native speech backend. See the follow-up below for device coverage and the tests.
 
 - 2026-11-20 · Final QA: ran all three browser suites, tested contrast and accessible names at 320 and 360 px, remeasured all Reading passages and documented source corrections. The full demo contains 16 lessons and five checks.
 
@@ -356,3 +359,37 @@ The site, IELTS format and single-file browser suites returned `ALL OK`. The sit
 - D0 uses the standard Beaufort scale and FitzRoy's 1854 appointment and 1861 warnings. K1 separates Britain's change of calendar from England's change in the start of the legal year. K2 discusses early gas lighting and confines the manual-lighting claim to that context. [Met Office, Beaufort scale](https://weather.metoffice.gov.uk/guides/coast-and-sea/beaufort-scale), [FitzRoy](https://www.metoffice.gov.uk/research/library-and-archive/archive-hidden-treasures/robert-fitzroy), [Calendar (New Style) Act](https://www.legislation.gov.uk/apgb/Geo2/24/23/contents), [National Records of Scotland](https://www.nrscotland.gov.uk/learning-and-events/research-guides/change-in-calendar-dates-in-the-old-parish-registers/), [London Museum, gas street lighting](https://www.londonmuseum.org.uk/collections/london-stories/gas-lamps-illuminated-london/), [Westminster lighting plan](https://www.westminster.gov.uk/sites/default/files/media/documents/2024%20Westminster%20Lighting%20Master%20Plan.pdf).
 
 The fact review addressed dates, counts and directly assessed claims. Some background historical generalisations still lack an individual citation. Academic Word List coverage and calibration against licensed exam passages were not measured. No class pilot was available to establish distractor performance or teaching workload.
+
+
+## Follow-up QA, 21 November 2026
+
+### Academic Word List
+
+The check used all printed word-family forms in Averil Coxhead's list, downloaded from Victoria University of Wellington. `tools/ielts_measure.py --awl` matches case-insensitive spellings as printed, without stemming or sense disambiguation. The Reading percentage counts running words. The vocabulary column counts headwords that match one of the listed forms. A repeated card in two lessons counts twice. [AWL sublist families](https://www.wgtn.ac.nz/lals/resources/academicwordlist/sublists)
+
+| Lesson | AWL share of Reading | Vocabulary cards matching AWL |
+|---|---:|---:|
+| C01 | 8.9% | 3 / 8 |
+| C02 | 5.6% | 5 / 8 |
+| C03 | 4.7% | 3 / 8 |
+| C04 | 6.0% | 7 / 8 |
+| C05 | 8.0% | 7 / 8 |
+| C06 | 5.5% | 2 / 8 |
+| C07 | 5.3% | 3 / 8 |
+| C08 | 5.3% | 3 / 8 |
+| C09 | 3.8% | 2 / 8 |
+| C10 | 6.4% | 5 / 8 |
+| C11 | 8.0% | 4 / 8 |
+| C12 | — | 3 / 8 |
+| C13 | — | 2 / 8 |
+| C14 | — | 3 / 8 |
+| C15 | — | 3 / 8 |
+| C16 | 8.8% | 8 / 8 |
+
+Six of the 12 Reading passages are within the project's working band of 6–10% on the script's rounded percentages. Overall, 63 of 128 vocabulary cards match a listed form. The lowest is C09, whose technical instructions use several concrete instrument nouns. Word choice was kept for clarity and alignment with existing questions; future revisions can use these figures when considering vocabulary. The numerical band is a course-writing diagnostic. The source list stays out of the repository: the University's website terms require written permission for commercial reproduction. [University copyright terms](https://www.wgtn.ac.nz/site-info/copyright)
+
+### Screen reader and playback
+
+- Orca on Linux Chromium announced the C09 input label, result and answer explanation after Enter. It also announced both correct and incorrect status when focus returned to choices in C01, and read the new location description for all eight markers in the C12 plan. In some runs it repeated the short verdict in addition to reading the explanation.
+- With Chromium Web Speech, Speech Dispatcher and eSpeak NG, C12, C13, C16 and KF played to completion at a 360 px touch-enabled viewport (36, 36, 41 and 17 utterances). Stop and replay were exercised in C12. An interruption during the screen-reader run could previously leave the status saying playback was in progress. The page now reports the interruption and offers replay. Exact language matches are preferred even when the system provides a single voice for that locale.
+- The desktop run used a local audio sink. Sound on a physical phone, recordings by human speakers, a classroom pilot and calibration against licensed IELTS passages remain open.

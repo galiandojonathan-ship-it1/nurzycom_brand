@@ -23,6 +23,12 @@ const base = 'http://127.0.0.1:8791/course/';
     if (JSON.stringify(r) !== '[false,true,false,true,true]') bad('ok() ' + JSON.stringify(r));
     if (!(await qs.nth(9).locator('.exp').textContent()).includes('Answer: short walk')) bad('gap key shown');
     if (!(await qs.nth(0).locator('.opt.wrong').count())) bad('heading strike');
+    const descriptions = await qs.nth(0).locator('.opt.wrong, .opt.right').evaluateAll(buttons => buttons.map(button => {
+      const detail = document.getElementById(button.getAttribute('aria-describedby'));
+      return [button.getAttribute('aria-label'), detail?.textContent];
+    }));
+    if (!descriptions.some(([name, detail]) => name.startsWith('iii:') && detail === 'верный ответ') ||
+        !descriptions.some(([name, detail]) => name.startsWith('vii:') && detail === 'твой ответ, неверно')) bad('heading answer descriptions');
     if (vp.width === 360) await sec.screenshot({ path: require('path').join(SHOTS, 'c01_ielts_phone.png') });
     else await sec.screenshot({ path: require('path').join(SHOTS, 'c01_ielts_desk.png') });
     // office + retry show the new kinds
@@ -69,9 +75,25 @@ const base = 'http://127.0.0.1:8791/course/';
     await label.press('Enter');
     if (!(await label.evaluate(el => el.readOnly && el === document.activeElement)) || !(await label.getAttribute('class')).includes('right')) bad('C09 diagram grading or keyboard focus');
     // C12 listening: form (group table), plan labelling (places + SVG), speaker labels not read aloud
-    await p.addInitScript(() => { window.__said = []; window.speechSynthesis.speak = u => window.__said.push(u.text + '|' + u.pitch); window.speechSynthesis.getVoices = () => []; });
+    await p.addInitScript(() => {
+      window.__said = [];
+      window.__utterances = [];
+      window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+      window.speechSynthesis.speak = u => {
+        window.__said.push(u.text + '|' + u.pitch + '|' + u.voice?.name);
+        window.__utterances.push(u);
+      };
+      window.speechSynthesis.getVoices = () => [
+        { lang: 'en_AU', name: 'Australian' },
+        { lang: 'en-US', name: 'American' },
+        { lang: 'EN_gb', name: 'British' },
+        { lang: 'fr-FR', name: 'French' }
+      ];
+    });
     await p.goto(base + 'lesson.html?id=C12'); await p.evaluate(() => document.querySelectorAll('.part').forEach(x => x.hidden = false));
     if (await p.locator('#listen .plan svg').count() !== 1) bad('C12 plan svg');
+    const planDescription = await p.locator('#listen .plan svg').getAttribute('aria-label');
+    if ([...'ABCDEFGH'].some(label => !new RegExp('\\b' + label + '\\b').test(planDescription || ''))) bad('C12 map positions for screen readers');
     if (await p.locator('#listen .qgroup .dtab tbody tr').count() !== 5) bad('C12 form table');
     const pq = p.locator('#listen .q').nth(4); if (await pq.locator('.opt').count() !== 8) bad('C12 plan options');
     const lab12 = await p.evaluate(() => { const it = window.LESSONS.C12.parts[0].items; return window.NZ.keyLabel(it[4], window.NZ.items('C12')[4].heads); });
@@ -80,6 +102,16 @@ const base = 'http://127.0.0.1:8791/course/';
     const said = await p.evaluate(() => window.__said);
     if (!said.length || said.some(x => /^(Narrator|Assistant|Tom|Dana): /.test(x))) bad('C12 speaker labels read aloud ' + said.slice(0, 2));
     if (new Set(said.map(x => x.split('|')[1])).size < 3) bad('C12 voices not varied');
+    const voiceByPitch = new Map(said.map(line => line.split('|').slice(1)));
+    if (voiceByPitch.get('0.8') !== 'Australian' || voiceByPitch.get('1.2') !== 'British') bad('C12 exact locale voices');
+    await p.evaluate(() => {
+      window.__utterances[1].onerror({ error: 'interrupted' });
+      window.__utterances.at(-1).onend();
+    });
+    const listeningStatus = p.locator('#listen [aria-live="polite"]').first();
+    if (!(await listeningStatus.textContent()).includes('Воспроизведение прервалось')) bad('C12 interruption status');
+    await p.getByRole('button', { name: 'Стоп', exact: true }).click();
+    if ((await listeningStatus.textContent()) !== 'Остановлено.') bad('C12 stop status');
     await p.goto(base + 'lesson.html?id=C13');
     await p.locator('.steps a[data-step="listen"]').click();
     if (await p.locator('#listen .gap-in').count() !== 10) bad('C13 Part 4 notes');
