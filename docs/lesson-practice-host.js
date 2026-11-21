@@ -14,7 +14,7 @@ window.LessonPracticeHost = (() => {
   let accounts, autoReport = false, cold = 0, activeNumber, advancing = false;
   let historyCurrent, historyRoom, attemptsByKey = new Map();
   const coldPart = (lesson) => lesson?.parts.find((p) => p.b && p.q?.length >= 4 && /холодн|cold[ -]+start/i.test(p.title));
-  const deckUIs = new Map(), bundles = new Map();
+  const deckUIs = new Map(), bundles = new Map(), coldDecks = new WeakMap();
 
   const link = (page, key) => new URL(page + "?" + key + "=" + encodeURIComponent(room), location.href).href;
   async function api(action, body, all = false, roomId = room) {
@@ -328,49 +328,148 @@ window.LessonPracticeHost = (() => {
       if (revision !== dispatchNumber || id !== room || closed) return;
       const part = map && lesson.parts.find((p) => p.id === map.part);
       const ref = part ? `${lesson.tag}.${part.id}.${map.number}` : "";
-      if (ref === sent) return;
+      if (ref === sent && !choice) return;
       if (!ref) { await api("pause", {}); sent = ""; return; }
       const q = (await readPart(part)).find((x) => x.n === map.number);
       if (!q) throw new Error("Вопрос исчез из задания. Привяжите другой вопрос.");
       const payload = await questionPayload(q, part, lesson);
       if (revision !== dispatchNumber || id !== room || closed) return;
-      await api("show", payload);
+      const result = await api("show", { ...payload, automatic: !choice });
+      if (result.keptCold) return;
       cold = 0; links();
       sent = ref;
       notify(`Открыт вопрос №${map.number} из «${part.title}».`);
     }).catch((error) => notify(error.message));
     return dispatch;
   }
-  function picker(box, deck, index, lesson, why = "") {
-    if (!room || closed) { newRoom(lesson.title, () => picker(box, deck, index, lesson, why)); return; }
-    const dialog = el("dialog"); dialog.className = "lp-dialog";
+  const plain = (html) => new DOMParser().parseFromString(html || "", "text/html").body.textContent;
+  const safeText = (text) => String(text).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+  const paragraphs = (text) => text.trim().split(/\n+/).filter(Boolean).map((line) => `<p>${safeText(line)}</p>`).join("");
+  const answerLetters = ["A", "B", "C", "D"];
+  function keySelect(label, value = "") {
+    const input = el("select");
+    input.setAttribute("aria-label", label);
+    input.append(new Option("Выберите ответ", ""), ...answerLetters.map((letter) => new Option(letter, letter)));
+    input.value = value; input.required = true;
+    return input;
+  }
+  function slideItem(index, draft, answer) {
+    return { t: "mc", n: index + 1, stim: paragraphs(draft.prompt), stem: "", opts: draft.opts.map(safeText), ans: answer };
+  }
+  async function publishSlide(lesson, index, draft, answer) {
+    const send = async () => {
+      ++dispatchNumber;
+      await dispatch;
+      const result = await api("show", await questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson));
+      if (result.ok) {
+        cold = 0; sent = null; links(); await refresh();
+        notify(`Вопрос со слайда ${index + 1} открыт у учеников.`);
+      }
+    };
+    if (!room || closed) { newRoom(lesson.title, () => send().catch((error) => notify(error.message))); return; }
+    return send();
+  }
+  function picker(box, deck, index, lesson, readText, why = "", preferSlide = false) {
+    const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker";
     const form = el("form"), title = el("h2", `Вопрос для слайда ${index + 1}`);
-    const part = el("select"), number = el("select");
+    const source = el("select"), part = el("select"), number = el("select");
+    source.setAttribute("aria-label", "Источник вопроса");
     part.setAttribute("aria-label", "Часть урока"); number.setAttribute("aria-label", "Вопрос");
     const saved = mapping(deck)[index];
     const supported = lesson.parts.filter((p) => p.b && p.q?.length);
+    if (supported.length) source.append(new Option("Рабочая тетрадь", "workbook"));
+    source.append(new Option("Вопрос со слайда", "slide"));
+    if (preferSlide) source.value = "slide";
     const selected = saved?.part || supported.find((p) => /практи/i.test(p.title))?.id;
     for (const item of supported) part.append(new Option(item.title, item.id, false, item.id === selected));
-    const options = () => {
+
+    const workbook = el("div"), preview = el("div"), slideForm = el("div"), fields = el("div");
+    workbook.className = "lp-picker-fields"; slideForm.className = "lp-picker-fields";
+    preview.className = "lp-question-preview"; preview.lang = "en";
+    fields.className = "lp-picker-selects";
+    const label = (text, input) => { const row = el("label", text); row.append(input); return row; };
+    fields.append(label("Часть урока", part), label("Вопрос", number));
+    workbook.append(fields, preview);
+    const prompt = el("textarea"); prompt.rows = 6; prompt.required = true; prompt.maxLength = 12000; prompt.lang = "en";
+    const options = answerLetters.map((letter) => {
+      const input = el("input"); input.required = true; input.maxLength = 1600; input.lang = "en";
+      const controls = label(`Вариант ${letter}`, input); controls.className = "lp-option-input";
+      return { input, controls };
+    });
+    const answer = keySelect("Правильный ответ");
+    slideForm.append(label("Текст задания", prompt), ...options.map(({ controls }) => controls), label("Правильный ответ", answer));
+    const primary = el("button", "Привязать и показать"); primary.className = "btn"; primary.type = "submit";
+    const message = el("p"); message.setAttribute("role", "status");
+    let currentQuestion, request = 0, saving = false;
+    const update = () => {
+      const slide = source.value === "slide";
+      workbook.hidden = slide; slideForm.hidden = !slide;
+      [prompt, answer, ...options.map(({ input }) => input)].forEach((input) => { input.disabled = !slide; });
+      primary.textContent = slide ? "Показать ученикам" : "Привязать и показать";
+      primary.disabled = saving || (!slide && !currentQuestion);
+    };
+    async function loadQuestion() {
+      const wanted = ++request, found = supported.find((p) => p.id === part.value);
+      currentQuestion = null; preview.textContent = "Загружаю вопрос…"; update();
+      try {
+        const item = (await readPart(found)).find((q) => q.n === Number(number.value));
+        if (wanted !== request) return;
+        currentQuestion = item;
+        if (!item) { preview.textContent = "Вопрос не загрузился. Выберите другой или используйте слайд."; return; }
+        preview.replaceChildren(el("p", plain(item.stim)), el("p", plain(item.stem)), ...(item.opts || []).map((option, i) => el("p", answerLetters[i] + ". " + plain(option))));
+      } catch { if (wanted === request) preview.textContent = "Рабочая тетрадь недоступна. Можно использовать вопрос со слайда."; }
+      finally { if (wanted === request) update(); }
+    }
+    function loadOptions() {
       const found = supported.find((p) => p.id === part.value);
       number.replaceChildren(...(found?.q || []).map((q) => new Option("№" + q.n, String(q.n), false, q.n === saved?.number)));
-    };
-    part.onchange = options; options();
-    const partLabel = el("label", "Часть урока"), numberLabel = el("label", "Вопрос");
-    partLabel.append(part); numberLabel.append(number);
-    const primary = el("button", "Привязать и показать"); primary.className = "btn"; primary.type = "submit"; primary.disabled = !supported.length;
-    const persist = (value) => {
-      saveMapping(deck, index, value);
-      dialog.close(); publish(deck, index, lesson, value);
-    };
+      loadQuestion();
+    }
+    source.onchange = update; part.onchange = loadOptions; number.onchange = loadQuestion;
     form.append(title);
     if (why) form.append(el("p", why));
-    form.append(partLabel, numberLabel, primary);
-    if (saved) form.append(action("Снять привязку", () => persist(null)));
-    form.append(action("Закрыть", () => dialog.close())); dialog.append(form);
-    box.append(dialog); dialog.addEventListener("close", () => dialog.remove(), { once: true });
-    form.onsubmit = (event) => { event.preventDefault(); if (part.value && number.value) persist({ part: part.value, number: Number(number.value) }); };
+    form.append(label("Источник вопроса", source), workbook, slideForm, message, primary);
+    const buttons = el("div"); buttons.className = "lp-control";
+    if (saved) buttons.append(action("Снять привязку", () => { saveMapping(deck, index, null); dialog.close(); }));
+    buttons.append(action("Закрыть", () => dialog.close()));
+    form.append(buttons); dialog.append(form); box.append(dialog);
+    dialog.addEventListener("close", () => dialog.remove(), { once: true });
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      if (saving) return;
+      saving = true; update();
+      try {
+        if (source.value === "slide") {
+          const draft = { prompt: prompt.value.trim(), opts: options.map(({ input }) => input.value.trim()) };
+          if (!draft.prompt || draft.opts.some((value) => !value) || !answer.value) throw new Error("Укажите текст, четыре варианта и правильный ответ.");
+          await publishSlide(lesson, index, draft, answer.value);
+          saveMapping(deck, index, null);
+          dialog.close();
+        } else if (currentQuestion) {
+          const choice = { part: part.value, number: currentQuestion.n };
+          const show = () => { saveMapping(deck, index, choice); publish(deck, index, lesson, choice); };
+          dialog.close();
+          if (!room || closed) newRoom(lesson.title, show);
+          else show();
+        }
+      } catch (error) { message.textContent = error.message; }
+      finally { saving = false; update(); }
+    };
+    if (supported.length) loadOptions(); else update();
     dialog.showModal();
+    readText?.(index).then(async (text) => {
+      const draft = SlidePracticeContent.parse(text);
+      if (!dialog.open) return;
+      if (draft) {
+        if (!prompt.value) prompt.value = draft.prompt;
+        options.forEach(({ input }, i) => { if (!input.value) input.value = draft.opts[i]; });
+      }
+      const slot = SlidePracticeContent.coldNumber(text);
+      if (slot) {
+        const { keys } = await readColdDeck(deck, readText);
+        if (dialog.open && !answer.value) answer.value = keys?.[slot - 1] || "";
+      }
+    }).catch(() => { /* the teacher can enter text manually */ });
   }
   async function questionCandidates(lesson) {
     const parts = lesson.parts.filter((p) => p.b && p.q?.length);
@@ -378,65 +477,116 @@ window.LessonPracticeHost = (() => {
   }
   async function recognize(box, deck, lesson, current, readText) {
     const index = current();
-    if (!room || closed) { newRoom(lesson.title, () => recognize(box, deck, lesson, current, readText)); return; }
+    const show = (choice) => {
+      const send = () => { saveMapping(deck, index, choice); publish(deck, index, lesson, choice); };
+      if (!room || closed) newRoom(lesson.title, send); else send();
+    };
     const saved = mapping(deck)[index];
-    if (saved) return publish(deck, index, lesson, saved);
+    if (saved) return show(saved);
     notify("Ищу вопрос по тексту слайда…");
     try {
       const text = await readText(index);
       if (!text.trim()) {
-        if (box.isConnected && index === current()) picker(box, deck, index, lesson, "У слайда нет текстового слоя. Выберите вопрос вручную.");
+        if (box.isConnected && index === current()) picker(box, deck, index, lesson, readText, "У слайда нет текстового слоя. Выберите вопрос из тетради или введите его вручную.");
         return;
       }
       const candidates = await questionCandidates(lesson);
       if (!box.isConnected || index !== current()) return;
       const match = SlideQuestionMatch.match(text, candidates);
-      if (!match) { picker(box, deck, index, lesson, "Однозначного совпадения не нашлось. Выберите вопрос вручную."); return; }
-      saveMapping(deck, index, match);
-      return publish(deck, index, lesson, match);
+      if (!match) { picker(box, deck, index, lesson, readText, "Совпадения в тетради нет. Проверьте вопрос со слайда или выберите другой источник.", !!SlidePracticeContent.parse(text)); return; }
+      return show(match);
     } catch {
-      if (box.isConnected && index === current()) picker(box, deck, index, lesson, "Не удалось прочитать слайд или рабочую тетрадь. Можно выбрать вопрос вручную.");
+      if (box.isConnected && index === current()) picker(box, deck, index, lesson, readText, "Не удалось прочитать слайд или тетрадь. Можно ввести вопрос вручную.");
     }
   }
+  async function readColdDeck(deck, readText) {
+    if (!deck || !readText) return { slides: new Map(), keys: null };
+    if (!coldDecks.has(deck)) {
+      const reading = (async () => {
+        const slides = new Map();
+        let keys = null;
+        for (let i = 0; i < deck.n; i++) {
+          const text = await readText(i), number = SlidePracticeContent.coldNumber(text);
+          if (number && !slides.has(number)) slides.set(number, { index: i, text, draft: SlidePracticeContent.parse(text) });
+          keys ||= SlidePracticeContent.recapKeys(text);
+          if (slides.size === 4 && keys) break;
+        }
+        return { slides, keys };
+      })().catch((error) => { coldDecks.delete(deck); throw error; });
+      coldDecks.set(deck, reading);
+    }
+    return coldDecks.get(deck);
+  }
   async function coldQuestions(lesson, part, deck, readText) {
-    if (part) {
-      const items = await readPart(part);
-      return part.q.slice(0, 4).map(({ n }) => ({ part, question: items.find((q) => q.n === n) }));
+    const { slides, keys } = await readColdDeck(deck, readText).catch(() => ({ slides: new Map(), keys: null }));
+    if (slides.size === 4) {
+      const candidates = keys && [...slides.values()].every(({ draft }) => draft) ? []
+        : await questionCandidates(lesson).catch(() => []);
+      return [1, 2, 3, 4].map((number) => {
+        const slide = slides.get(number), answer = keys?.[number - 1];
+        if (slide.draft && answer) return { ...slide, answer };
+        const match = SlideQuestionMatch.match(slide.text, candidates);
+        if (match) return { part: lesson.parts.find((p) => p.id === match.part),
+          question: candidates.find((q) => q.part === match.part && q.question.n === match.number)?.question };
+        return slide;
+      });
     }
-    if (!deck || !readText) return [];
-    const slides = new Map();
-    for (let i = 0; i < deck.n && slides.size < 4; i++) {
-      const text = await readText(i);
-      const number = /(?:холодный\s+старт|cold\s+start)\s*[·:—–-]?\s*(?:вопрос|question)\s*([1-4])\s*(?:из|of|\/)\s*4/i.exec(text)?.[1];
-      if (number && !slides.has(number)) slides.set(number, text);
-    }
-    if (slides.size !== 4) return [];
-    const candidates = await questionCandidates(lesson);
-    return ["1", "2", "3", "4"].map((number) => {
-      const match = SlideQuestionMatch.match(slides.get(number), candidates);
-      return { part: lesson.parts.find((p) => p.id === match?.part),
-        question: candidates.find((q) => q.part === match?.part && q.question.n === match.number)?.question };
+    if (!part) return [];
+    const items = await readPart(part);
+    return part.q.slice(0, 4).map(({ n }) => ({ part, question: items.find((q) => q.n === n) }));
+  }
+  function completeKeys(selected, start) {
+    const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker";
+    const form = el("form");
+    form.append(el("h2", "Ключи холодного старта"),
+      el("p", "Укажите ответы для вопросов, у которых нет ключа в презентации или тетради."));
+    const fields = [];
+    selected.forEach((entry, i) => {
+      if (!entry.draft || entry.answer) return;
+      const label = el("label", `Вопрос ${i + 1} · слайд ${entry.index + 1}`), answer = keySelect(`Ответ на вопрос ${i + 1}`);
+      label.append(answer);
+      const preview = el("div"); preview.className = "lp-question-preview"; preview.lang = "en";
+      preview.append(el("p", entry.draft.prompt), ...entry.draft.opts.map((option, j) => el("p", answerLetters[j] + ". " + option)));
+      form.append(label, preview); fields.push({ entry, answer });
     });
+    const go = el("button", "Запустить холодный старт"); go.className = "btn"; go.type = "submit";
+    form.append(go, action("Закрыть", () => dialog.close()));
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      for (const { entry, answer } of fields) entry.answer = answer.value;
+      dialog.close(); start();
+    };
+    dialog.append(form); (document.fullscreenElement || document.body).append(dialog);
+    dialog.addEventListener("close", () => dialog.remove(), { once: true }); dialog.showModal();
   }
   async function startCold(lesson, deck, readText) {
     if (!lesson) return;
-    const part = coldPart(lesson);
-    if (!room || closed) { newRoom(lesson.title, () => startCold(lesson, deck, readText)); return; }
-    const id = room;
-    ++dispatchNumber;
     try {
-      await dispatch;
       notify("Готовлю четыре вопроса холодного старта…");
-      const selected = await coldQuestions(lesson, part, deck, readText);
-      if (selected.length !== 4 || selected.some((q) => !q.part || !q.question)) {
-        throw new Error("Не удалось сопоставить все четыре вопроса холодного старта с рабочей тетрадью. Показать отдельный вопрос можно со слайда.");
+      const selected = await coldQuestions(lesson, coldPart(lesson), deck, readText);
+      if (selected.length !== 4) throw new Error("В этой презентации нет четырёх пронумерованных вопросов холодного старта. Проверьте рабочую тетрадь или загрузите PDF с текстом.");
+      const missing = selected.filter((item) => !item.question && !item.draft).map((item) => item.index === undefined ? "" : item.index + 1).filter(Boolean);
+      if (selected.some((item) => !item.question && !item.draft)) {
+        throw new Error(missing.length ? `Не удалось прочитать вопрос на слайде ${missing.join(", ")}. Откройте его и нажмите «Выбрать вручную».`
+          : "Один из вопросов холодного старта не загрузился из тетради.");
       }
-      const questions = await Promise.all(selected.map(({ part, question }) => questionPayload(question, part, lesson)));
-      if (id !== room || closed) return;
-      await api("cold", { questions });
-      sent = null; cold = 1; activeNumber = null; links();
-      await refresh();
-      notify("Холодный старт открыт. Переключайте вопросы кнопкой «Следующий вопрос».");
+      const start = async () => {
+        try {
+          const questions = await Promise.all(selected.map(({ question, part, draft, answer, index }) => question
+            ? questionPayload(question, part, lesson) : questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson)));
+          const send = async () => {
+            ++dispatchNumber; await dispatch;
+            await api("cold", { questions });
+            sent = null; cold = 1; activeNumber = null; links();
+            await refresh();
+            notify("Холодный старт открыт. Переключайте вопросы кнопкой «Следующий вопрос».");
+          };
+          if (!room || closed) newRoom(lesson.title, () => send().catch((error) => notify(error.message)));
+          else await send();
+        } catch (error) { notify(error.message); }
+      };
+      if (selected.some((item) => item.draft && !item.answer)) completeKeys(selected, start);
+      else await start();
     } catch (error) { notify(error.message); }
   }
   async function advance() {
@@ -455,7 +605,7 @@ window.LessonPracticeHost = (() => {
     if (!lesson || !SITE.adminKey()) return;
     const bar = el("div"); bar.className = "lp-control dk-bar";
     const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText));
-    const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson));
+    const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
     const next = action("Следующий вопрос", advance);
     next.hidden = true;
     const copy = action("Ссылка для учеников", copyLink);

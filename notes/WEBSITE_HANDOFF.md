@@ -108,8 +108,10 @@ creates the additive `lp_*` tables in `lib/lesson-practice-schema.js`. A room is
 its results are kept for 14 days. In «Пульт урока», start a room, share its student link and bind a slide to a
 workbook question. «Показать с этого слайда» matches the visible PDF text layer or JSON slide to that lesson's
 question bank in the browser. It saves a mapping for a unique match and offers manual choice for ambiguous or
-image-only slides. The cold-start button queues four workbook questions under the same link, with the teacher
-advancing the whole group. The monitor keeps prior answers in a clickable matrix. Selected question and timing
+image-only slides. The manual picker previews workbook questions or sends an editable question from a private slide.
+Cold Start can take four numbered slides and their key from the recap. If a key is unavailable, the teacher supplies it
+before a room is created. The question snapshot is encrypted as for workbook practice. The teacher advances the whole group
+under the same link, and automatic presentation actions preserve an active Cold Start across refreshes. The monitor keeps prior answers in a clickable matrix. Selected question and timing
 are server-side; only the teacher monitor sees the roster, grading and the saved encrypted notes. Hint permissions
 follow the student account to the next practice. Gemini receives only anonymous facts for one student at a time
 (question numbers, skills, correctness, times and hint flags) after closing the room. No audio is collected.
