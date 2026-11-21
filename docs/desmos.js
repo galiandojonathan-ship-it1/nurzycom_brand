@@ -123,11 +123,23 @@
   $("home").onclick = () => { renderSets(); show("s-start"); $("practice").scrollIntoView(); };
   $("review").onclick = () => HWSolve.open({ lesson: state.set, part: state.set.parts[0], items: state.items, review: state.review, student: store("hw_student"), sha, parseSpr, show, onClose: () => show("s-result"), onFinish: () => {} });
   $("open-calc").onclick = () => BBTools.calc(true);
+  $("reg-calc").onclick = () => BBTools.calc(true);
+  $("regression").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-reg-copy]");
+    if (!button) return;
+    const expression = button.previousElementSibling.textContent;
+    try {
+      await navigator.clipboard.writeText(button.dataset.regCopy || expression);
+      $("reg-status").textContent = "Скопировано: " + expression;
+    } catch {
+      $("reg-status").textContent = "Не удалось скопировать. Выделите выражение и скопируйте вручную.";
+    }
+  });
 
   Promise.all([SITE.json("desmos"), SITE.json("lessons")]).then(([g, l]) => {
     state.guide = g; state.lessons = l.lessons.filter((x) => /^D\d\d$/.test(x.tag));
     renderGuide(); renderSets();
     if (location.hash) { const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
-  }).catch(() => { $("start-msg").textContent = "Не удалось загрузить страницу. Обновите её."; });
+  }).catch(() => { $("start-msg").textContent = "Не удалось загрузить основной справочник и наборы задач. Обновите страницу, чтобы повторить загрузку."; });
   window.__dz = { parseSpr, state };   // for testing
 })();
