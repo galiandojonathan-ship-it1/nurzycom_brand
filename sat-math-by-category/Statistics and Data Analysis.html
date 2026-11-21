@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistics and Data Analysis</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Statistics and Data Analysis</h1>
+<p class="intro">Study design, standard deviation, medians, dot plots, histograms, frequency tables, tables of data and margin of error.</p>
+<div class="progress">Solved: <span id="count">0</span> of 10</div>
+<article class="card" id="STA-01">
+<header><span class="num">STA-01</span><span class="src">PDF 1 &middot; p. 2</span><label class="done"><input type="checkbox" data-id="STA-01"> Solved</label></header>
+<div class="stem">To investigate the effect of magnesium supplementation on the sleep quality of adults, a researcher selected 190 adults at random from a community center to participate in a study. The researcher first measured the sleep efficiency of each participant. Each participant was then randomly assigned to take a magnesium supplement or a placebo each day for 6 weeks. At the end of the 6 weeks, the researcher measured the sleep efficiency of all participants again and found that the magnesium supplement caused statistically significant improved sleep quality for the adults at the community center. What feature of this study allowed the researcher to conclude that the magnesium supplement caused the improved sleep quality?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">There were more than 100 participants in the study.</span></li><li><span class="letter">B</span><span class="ctext">The participants were selected at random from the community center.</span></li><li><span class="letter">C</span><span class="ctext">The sleep efficiency of each participant was measured again at the end of 6 weeks.</span></li><li><span class="letter">D</span><span class="ctext">Each participant was randomly assigned to take a magnesium supplement or a placebo.</span></li></ol></article>
+<article class="card" id="STA-02">
+<header><span class="num">STA-02</span><span class="src">PDF 1 &middot; p. 3</span><label class="done"><input type="checkbox" data-id="STA-02"> Solved</label></header>
+<div class="stem">Data set A: $8, 11, 12, 15, 21, 27$. Data set B: $9, 12, 13, 16, 22, h$. Data sets A and B each consist of 6 values as shown, where $h$ is a constant. If the standard deviation of data set A is greater than the standard deviation of data set B, which of the following could be the value of $h$? I. $23$ II. $28$ III. $29$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I only</span></li><li><span class="letter">B</span><span class="ctext">II only</span></li><li><span class="letter">C</span><span class="ctext">III only</span></li><li><span class="letter">D</span><span class="ctext">II or III</span></li></ol></article>
+<article class="card" id="STA-03">
+<header><span class="num">STA-03</span><span class="src">PDF 1 &middot; p. 13</span><label class="done"><input type="checkbox" data-id="STA-03"> Solved</label></header>
+<div class="stem">The dot plots represent the distributions of values in data sets A and B. Which of the following statements must be true? I. The median of data set A is equal to the median of data set B. II. The standard deviation of data set A is equal to the standard deviation of data set B.</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I and II</span></li><li><span class="letter">B</span><span class="ctext">I only</span></li><li><span class="letter">C</span><span class="ctext">II only</span></li><li><span class="letter">D</span><span class="ctext">Neither I nor II</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 1, page 13). It is not reproduced here.</p></article>
+<article class="card" id="STA-04">
+<header><span class="num">STA-04</span><span class="src">PDF 3 &middot; p. 16</span><label class="done"><input type="checkbox" data-id="STA-04"> Solved</label></header>
+<div class="stem">The weight of each object in two groups, $A$ and $B$, was recorded. The histograms represent the distributions of weight, in grams, for the objects in groups $A$ and $B$. The mean weight of the objects in group $A$ is equal to 2.9, and the mean weight of the objects in group $B$ is equal to 7.9. Which of the following statements about the standard deviations of weight for the objects in these two groups is true?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The standard deviation of weight for the objects in group $A$ is less than the standard deviation of weight for the objects in group $B$.</span></li><li><span class="letter">B</span><span class="ctext">The standard deviation of weight for the objects in group $A$ is equal to the standard deviation of weight for the objects in group $B$.</span></li><li><span class="letter">C</span><span class="ctext">The standard deviation of weight for the objects in group $A$ is greater than the standard deviation of weight for the objects in group $B$.</span></li><li><span class="letter">D</span><span class="ctext">There is not enough information to compare the standard deviations of weight for the objects in these two groups.</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 3, page 16). It is not reproduced here.</p></article>
+<article class="card" id="STA-05">
+<header><span class="num">STA-05</span><span class="src">PDF 3 &middot; p. 18</span><label class="done"><input type="checkbox" data-id="STA-05"> Solved</label></header>
+<div class="stem">A researcher is designing a study to investigate the average number of hours students at a high school spend reading per day. The researcher will report an estimated average number of hours students at the high school spend reading per day with an associated margin of error. The researcher is considering using a random sample of either 115 or 230 students from the high school. Which of the following would be the most likely effect of using the larger random sample compared to the smaller random sample?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The reported margin of error would be lower.</span></li><li><span class="letter">B</span><span class="ctext">The reported margin of error would be higher.</span></li><li><span class="letter">C</span><span class="ctext">The reported average number of hours would be lower.</span></li><li><span class="letter">D</span><span class="ctext">The reported average number of hours would be higher.</span></li></ol></article>
+<article class="card" id="STA-06">
+<header><span class="num">STA-06</span><span class="src">PDF 4 &middot; p. 16</span><label class="done"><input type="checkbox" data-id="STA-06"> Solved</label></header>
+<div class="stem">For data set A, the table summarizes the distribution of the number of pieces of mail received by a business each day during a period of 11 days. Pieces of mail (days): 0 (2), 4 (2), 5 (2), 6 (2), 7 (1), 8 (1), 17 (1). The data value 17 is removed from data set A to create data set B, which consists of the remaining 10 data values. Which statement best compares the median of data set A and the median of data set B?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The median of data set B is less than the median of data set A.</span></li><li><span class="letter">B</span><span class="ctext">The median of data set B is greater than the median of data set A.</span></li><li><span class="letter">C</span><span class="ctext">The median of data set B is equal to the median of data set A.</span></li><li><span class="letter">D</span><span class="ctext">There is not enough information to compare the medians of the two data sets.</span></li></ol></article>
+<article class="card" id="STA-07">
+<header><span class="num">STA-07</span><span class="src">PDF 4 &middot; p. 23</span><label class="done"><input type="checkbox" data-id="STA-07"> Solved</label></header>
+<div class="stem">The frequency tables represent data sets A and B, where $c$ is a negative integer constant. Data set A has value $c$ with frequency 12, value $2c$ with frequency 21, and value $3c$ with frequency 30. Data set B has value $c$ with frequency 30, value $2c$ with frequency 21, and value $3c$ with frequency 12. The mean of data set A is $r$ and the mean of data set B is $q$. What is the value of $\frac{r}{q}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-\frac{4}{3}$</span></li><li><span class="letter">B</span><span class="ctext">$1$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{4}{3}$</span></li><li><span class="letter">D</span><span class="ctext">There is not enough information to determine the value of $\frac{r}{q}$.</span></li></ol></article>
+<article class="card" id="STA-08">
+<header><span class="num">STA-08</span><span class="src">PDF 4 &middot; p. 29</span><label class="done"><input type="checkbox" data-id="STA-08"> Solved</label></header>
+<div class="stem">The dot plots represent the distributions of values in data sets A and B. Which of the following statements must be true? I. The median of data set A is equal to the median of data set B. II. The standard deviation of data set A is equal to the standard deviation of data set B.</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I and II</span></li><li><span class="letter">B</span><span class="ctext">I only</span></li><li><span class="letter">C</span><span class="ctext">II only</span></li><li><span class="letter">D</span><span class="ctext">Neither I nor II</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 29). It is not reproduced here.</p></article>
+<article class="card" id="STA-09">
+<header><span class="num">STA-09</span><span class="src">PDF 5 &middot; p. 13</span><label class="done"><input type="checkbox" data-id="STA-09"> Solved</label></header>
+<div class="stem">A science club from a certain high school in Ohio conducted an experiment to study the effects of smell on taste. A sample of 100 students was selected at random from the high school to participate in the experiment. First, the students tasted a pureed food sample while wearing covered goggles and nose plugs. Then, the students tasted the same pureed food sample without nose plugs. 35 students were able to correctly identify the pureed food sample while wearing nose plugs. Which of the following is the largest population to which the results of the experiment can be generalized?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">All students from the high school</span></li><li><span class="letter">B</span><span class="ctext">The 100 students who participated in the experiment</span></li><li><span class="letter">C</span><span class="ctext">The 35 students who were able to correctly identify the pureed food sample while wearing nose plugs</span></li><li><span class="letter">D</span><span class="ctext">All students from high schools in Ohio</span></li></ol></article>
+<article class="card" id="STA-10">
+<header><span class="num">STA-10</span><span class="src">PDF 5 &middot; p. 18</span><label class="done"><input type="checkbox" data-id="STA-10"> Solved</label></header>
+<div class="stem">At a nature preserve, a wildlife biologist counted ducks from an observation deck at the same time each day for 41 days. The table summarizes the resulting data set, data set A. Number of ducks (number of days): 0 (1), 1 (7), 2 (8), 3 (9), 4 (8), 5 (7), 13 (1). The data value 13 was recorded in error and is removed from data set A to create data set B, which consists of the remaining 40 data values. Which statement best compares the median of data set A and the median of data set B?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The median of data set B is greater than the median of data set A.</span></li><li><span class="letter">B</span><span class="ctext">There is not enough information to compare the medians of the two data sets.</span></li><li><span class="letter">C</span><span class="ctext">The median of data set B is equal to the median of data set A.</span></li><li><span class="letter">D</span><span class="ctext">The median of data set B is less than the median of data set A.</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "STA";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

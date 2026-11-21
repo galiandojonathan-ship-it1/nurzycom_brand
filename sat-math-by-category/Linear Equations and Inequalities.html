@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear Equations and Inequalities</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Linear Equations and Inequalities</h1>
+<p class="intro">Solving linear equations and inequalities, including equations with unknown constants and word problems built on linear relationships.</p>
+<div class="progress">Solved: <span id="count">0</span> of 8</div>
+<article class="card" id="LIN-01">
+<header><span class="num">LIN-01</span><span class="src">PDF 1 &middot; p. 8</span><label class="done"><input type="checkbox" data-id="LIN-01"> Solved</label></header>
+<div class="stem">One gallon of paint will cover $310$ square feet of a surface. A room has a total wall area of $w$ square feet. Which equation represents the total amount of paint $P$, in gallons, needed to paint the walls of the room twice?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$P=\frac{w}{155}$</span></li><li><span class="letter">B</span><span class="ctext">$P=620w$</span></li><li><span class="letter">C</span><span class="ctext">$P=\frac{w}{310}$</span></li><li><span class="letter">D</span><span class="ctext">$P=310w$</span></li></ol></article>
+<article class="card" id="LIN-02">
+<header><span class="num">LIN-02</span><span class="src">PDF 2 &middot; p. 1</span><label class="done"><input type="checkbox" data-id="LIN-02"> Solved</label></header>
+<div class="stem">A school is ordering tablet computers for its students. The tablets cost \$164 each, and 6% tax is added to the total cost of the order. If the school can spend no more than \$44,800 on the tablets, including tax, what is the maximum number of tablets that the school can order?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="LIN-03">
+<header><span class="num">LIN-03</span><span class="src">PDF 2 &middot; p. 13</span><label class="done"><input type="checkbox" data-id="LIN-03"> Solved</label></header>
+<div class="stem">$\frac{x}{7}+\frac{y}{9}=\frac{41}{63}$. An engineer connects resistors in series, where the resistors in the series have a total resistance of $\frac{41}{63}$ ohms. In this series, there are $x$ resistors of type A, which each have a resistance of $a$ ohms, and $y$ resistors of type B, which each have a resistance of $b$ ohms. The given equation represents this situation. According to this equation, what is the positive difference between the value of $a$ and the value of $b$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$41$</span></li><li><span class="letter">B</span><span class="ctext">$2$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{41}{63}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{2}{63}$</span></li></ol></article>
+<article class="card" id="LIN-04">
+<header><span class="num">LIN-04</span><span class="src">PDF 2 &middot; p. 15</span><label class="done"><input type="checkbox" data-id="LIN-04"> Solved</label></header>
+<div class="stem">A beekeeper's initial observation of the population of a certain bee colony was 1,800 bees. The beekeeper set a goal to increase the population to 3,300 bees. The beekeeper uses a model that predicts the population of this bee colony begins at 1,800 and increases by 120 bees per week in the first two weeks after the initial observation, and then increases by 180 bees per week until the beekeeper's goal is reached. According to this model, at the end of week $w$ after the initial observation, where $w&gt;2$, which of the following functions gives the predicted number of bees still needed to reach the beekeeper's goal?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$p(w)=3{,}300-180w$</span></li><li><span class="letter">B</span><span class="ctext">$p(w)=3{,}180+180w$</span></li><li><span class="letter">C</span><span class="ctext">$p(w)=1{,}620-180w$</span></li><li><span class="letter">D</span><span class="ctext">$p(w)=-120+180w$</span></li></ol></article>
+<article class="card" id="LIN-05">
+<header><span class="num">LIN-05</span><span class="src">PDF 3 &middot; p. 4</span><label class="done"><input type="checkbox" data-id="LIN-05"> Solved</label></header>
+<div class="stem">Hannah and Wyatt are saving money to purchase a car. Hannah saves $\frac{1}{5}$ of her salary each month, and Wyatt saves $\frac{2}{7}$ of his salary each month. Together, they save a total of \$3,270 from their monthly salaries each month. If $h$ and $w$ represent Hannah's and Wyatt's monthly salaries, in dollars, respectively, which equation shows the relationship between $h$ and $w$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$h+w=3{,}270$</span></li><li><span class="letter">B</span><span class="ctext">$h+2w=3{,}270$</span></li><li><span class="letter">C</span><span class="ctext">$10h+7w=114{,}450$</span></li><li><span class="letter">D</span><span class="ctext">$7h+10w=114{,}450$</span></li></ol></article>
+<article class="card" id="LIN-06">
+<header><span class="num">LIN-06</span><span class="src">PDF 4 &middot; p. 1</span><label class="done"><input type="checkbox" data-id="LIN-06"> Solved</label></header>
+<div class="stem">For the given equation $5(kx-n)=-\frac{65}{14}x-\frac{85}{18}$, $k$ and $n$ are constants and $n&gt;1$. The equation has no solution. What is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="LIN-07">
+<header><span class="num">LIN-07</span><span class="src">PDF 4 &middot; p. 11</span><label class="done"><input type="checkbox" data-id="LIN-07"> Solved</label></header>
+<div class="stem">One gallon of sealant costs \$13 and will cover 300 square feet of a surface. A deck has a total surface area of $d$ square feet. Which equation represents the cost $c$, in dollars, of the sealant needed to cover the deck twice?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$c=\frac{300d}{13}$</span></li><li><span class="letter">B</span><span class="ctext">$c=\frac{600d}{13}$</span></li><li><span class="letter">C</span><span class="ctext">$c=13\left(\frac{d}{150}\right)$</span></li><li><span class="letter">D</span><span class="ctext">$c=13\left(\frac{d}{300}\right)$</span></li></ol></article>
+<article class="card" id="LIN-08">
+<header><span class="num">LIN-08</span><span class="src">PDF 4 &middot; p. 25</span><label class="done"><input type="checkbox" data-id="LIN-08"> Solved</label></header>
+<div class="stem">In the $xy$-plane, which of the following does NOT contain any points $(x,y)$ that are solutions to the inequality $-5x&lt;70y-75$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The region where $x&lt;0$ and $y&gt;0$</span></li><li><span class="letter">B</span><span class="ctext">The region where $x&lt;0$ and $y&lt;0$</span></li><li><span class="letter">C</span><span class="ctext">The region where $x&gt;0$ and $y&gt;0$</span></li><li><span class="letter">D</span><span class="ctext">The region where $x&gt;0$ and $y&lt;0$</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "LIN";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

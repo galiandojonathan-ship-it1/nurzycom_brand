@@ -1,0 +1,246 @@
+// Course site accounts (Cloudflare Pages Function, KV namespace bound as USERS).
+// Students sign up themselves with the class code; the server never sees the master key or a password.
+// Every account entry is the master key wrapped in the browser with the student's own password (PBKDF2 → AES-GCM),
+// plus the login and name encrypted with the master key. KV keys:
+//   u:<id>   one account (id = hash of the login, made in the browser)
+//   invite   { hash, salt, iter, wrap }: the class code's hash and the master key wrapped with the class code
+//   admin    hash of the teacher's admin key (claimed once from the teacher page)
+//   form     the Google Form answers and the teacher's name merges, encrypted in the browser; admin key only, students never read it
+//   groups   the cabinet's student groups (name, colour, kind, member ids), encrypted in the browser; admin key only
+//   custom   the teacher's own questions and tests («Мои тесты»), sealed in the browser with the master key; any visitor may
+//            read it (like the encrypted question files in docs/q, only a logged-in browser can open it), the admin key writes it
+//   p:<id>   the student's results and progress, encrypted in the browser with the master key; only the account owner can
+//            read or write it: the browser sends a token derived from the password (PBKDF2, never the password itself), the
+//            server keeps its hash and the account's wrap; after a password change the old record is dropped and claimed anew.
+//            The teacher's cabinet (admin key) may read and write it too, to tick plan steps, reset a result or assign homework;
+//            a record the teacher made before the student's first sync has no hash yet ("unclaimed") and is claimed by the
+//            student's first save. When the teacher sets a new password, the record moves to it (the teacher's browser derives
+//            the new sync token), so the student keeps the cloud copy.
+// Routes: GET user?id · GET custom · POST register · POST invite · GET/PUT progress?id (header X-Sync) · POST admin/claim · PUT admin/user?id · GET admin/users · DELETE admin/user?id
+//         GET/PUT admin/progress?id · GET/PUT admin/form · GET/PUT admin/groups · PUT admin/custom · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
+// The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
+// cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
+import { buildVerbalLesson } from "../../lib/verbal-lesson.js";
+
+const MAX_USERS = 300;
+const enc = new TextEncoder();
+const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+const fail = (status, error) => json({ error }, status);
+export async function sha(s) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join(""); }
+const norm = (s) => String(s || "").trim().toLowerCase();
+const deckId = (id) => /^(?:[VM]\d{2}|VA|MD)$/.test(id || "");
+const okId = (id) => typeof id === "string" && /^[A-Za-z0-9+/=]{16,64}$/.test(id);
+const okB64 = (s, max) => typeof s === "string" && s.length > 0 && s.length <= max && /^[A-Za-z0-9+/=]+$/.test(s);
+const okEntry = (e) => e && okB64(e.salt, 64) && okB64(e.wrap, 200) && okB64(e.n, 1200) && Number.isInteger(e.iter) && e.iter >= 100000 && e.iter <= 2000000;
+async function body(request) { try { return await request.json(); } catch (e) { return null; } }
+export async function isAdmin(env, request) {
+  const key = request.headers.get("x-admin-key"), stored = await env.USERS.get("admin");
+  return !!(key && stored && (await sha("bynurzy-admin:" + key)) === stored);
+}
+const LIMIT = 10, WINDOW = 900;
+async function misses(request, add) {   // wrong class codes from this IP in the last 15 minutes
+  try {
+    const key = new Request("https://throttle.invalid/" + (await sha("bynurzy-throttle:" + (request.headers.get("cf-connecting-ip") || "?"))));
+    const hit = await caches.default.match(key), n = hit ? Number(await hit.text()) || 0 : 0;
+    if (add) await caches.default.put(key, new Response(String(n + 1), { headers: { "cache-control": "max-age=" + WINDOW } }));
+    return n + (add ? 1 : 0);
+  } catch (e) { return 0; }   // no cache (local test): no limit
+}
+async function codeOk(request, inv, code) {
+  if ((await misses(request, false)) >= LIMIT) return "slow";
+  if ((await sha("bynurzy-invite:" + norm(code))) === inv.hash) return "ok";
+  await misses(request, true); return "wrong";
+}
+// the account's current wrap: self-made accounts in KV, teacher-made logins in access.json (served by the site itself)
+async function accountWrap(env, request, id) {
+  const e = await env.USERS.get("u:" + id, "json"); if (e) return e.wrap;
+  try { const r = await env.ASSETS.fetch(new URL("/access.json", request.url)); const u = ((await r.json()).users || {})[id]; return u ? u.wrap : null; } catch (x) { return null; }
+}
+export async function verifyProgressOwner(env, request, id, tok) {
+  if (!okId(id) || !okB64(tok, 64) || tok.length < 40) return 403;
+  const wrap = await accountWrap(env, request, id);
+  if (!wrap) return 403;
+  const record = await env.USERS.get("p:" + id, "json");
+  if (!record || record.w !== wrap || !record.h) return 428;
+  return record.h === await sha("bynurzy-sync:" + tok) ? 200 : 403;
+}
+async function count(env) { let n = 0, cursor; do { const r = await env.USERS.list({ prefix: "u:", cursor }); n += r.keys.length; cursor = r.list_complete ? null : r.cursor; } while (cursor); return n; }
+
+async function reviewAdvice(request, env) {
+  if (!env.GEMINI_API_KEY) return fail(503, "Gemini ещё не настроен на сервере.");
+  const payload = await body(request);
+  const valid = (rows, max) => Array.isArray(rows) && rows.length <= max && rows.every((r) =>
+    r && typeof r.code === "string" && /^(?:[VMDUA]\d{2}|VA|MD|P[TR]\d{1,3})(?:\.[a-z0-9]{1,8}){1,4}$/.test(r.code) &&
+    Number.isInteger(r.n) && r.n >= 2 && r.n <= 1000000 &&
+    Number.isInteger(r.wrong) && r.wrong >= 1 && r.wrong <= r.n);
+  if (!payload || !valid(payload.parts, 8) || !valid(payload.questions, 12) || !payload.questions.length) {
+    return fail(400, "Недостаточно сводных данных для рекомендаций.");
+  }
+  const aggregate = (rows) => rows.map(({ code, n, wrong }) => ({ code, answers: n, errors: wrong }));
+  const stats = { assignments: aggregate(payload.parts), questions: aggregate(payload.questions) };
+  try {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: "Ты помогаешь преподавателю SAT выбрать порядок разбора. По сводным данным первых попыток предложи 3 коротких шага по-русски, обычным текстом. Ссылайся только на переданные коды и числа. Различай долю ошибок и число ошибок. Без текста заданий нельзя определить тему или причину ошибки, поэтому не делай таких выводов. Предложи конкретные действия, например разобрать вопрос или дать похожий вопрос для проверки." }] },
+        contents: [{ parts: [{ text: JSON.stringify(stats) }] }],
+        generationConfig: { maxOutputTokens: 700 }
+      })
+    });
+    if (response.status === 429) return fail(429, "Лимит Gemini исчерпан. Попробуйте позже.");
+    if (!response.ok) return fail(502, "Gemini не ответил. Проверьте настройки API в Cloudflare.");
+    const result = await response.json();
+    const advice = result.candidates?.[0]?.content?.parts?.filter((p) => !p.thought && typeof p.text === "string").map((p) => p.text).join("\n").trim();
+    return advice ? json({ advice: advice.slice(0, 3000) }) : fail(502, "Gemini не вернул рекомендации.");
+  } catch {
+    return fail(502, "Не удалось связаться с Gemini. Попробуйте ещё раз.");
+  }
+}
+
+export async function onRequest(context) {
+  const { request, env, params } = context;
+  if (!env.USERS) return fail(503, "storage not connected");
+  const route = [].concat(params.route || []).join("/"), url = new URL(request.url), m = request.method;
+
+  if (route === "user" && m === "GET") {
+    const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
+    const e = await env.USERS.get("u:" + id, "json"); return e ? json(e) : fail(404, "no such login");
+  }
+  if (route === "custom" && m === "GET") { const c = await env.USERS.get("custom", "json"); return c ? json(c) : fail(404, "nothing saved"); }
+  if (route === "invite" && m === "POST") {
+    const b = await body(request); if (!b || typeof b.invite !== "string" || b.invite.length > 200) return fail(400, "bad request");
+    const inv = await env.USERS.get("invite", "json"); if (!inv) return fail(404, "sign-up closed");
+    const v = await codeOk(request, inv, b.invite);
+    if (v === "slow") return fail(429, "slow down"); if (v === "wrong") return fail(403, "wrong class code");
+    return json({ salt: inv.salt, iter: inv.iter, wrap: inv.wrap });
+  }
+  if (route === "register" && m === "POST") {
+    const b = await body(request); if (!b || !okId(b.id) || !okEntry(b.entry)) return fail(400, "bad request");
+    const inv = await env.USERS.get("invite", "json"); if (!inv) return fail(404, "sign-up closed");
+    if (typeof b.invite !== "string" || b.invite.length > 200) return fail(400, "bad request");
+    const v = await codeOk(request, inv, b.invite);
+    if (v === "slow") return fail(429, "slow down"); if (v === "wrong") return fail(403, "wrong class code");
+    if (await env.USERS.get("u:" + b.id)) return fail(409, "login taken");
+    if ((await count(env)) >= MAX_USERS) return fail(429, "too many accounts");
+    await env.USERS.put("u:" + b.id, JSON.stringify({ salt: b.entry.salt, iter: b.entry.iter, wrap: b.entry.wrap, n: b.entry.n, at: new Date().toISOString() }));
+    return json({ ok: true });
+  }
+  if (route === "progress" && (m === "GET" || m === "PUT")) {
+    const id = url.searchParams.get("id"), tok = request.headers.get("x-sync") || "";
+    if (!okId(id) || !okB64(tok, 64) || tok.length < 40) return fail(400, "bad request");
+    const w = await accountWrap(env, request, id); if (!w) return fail(404, "no such login");
+    const rec = await env.USERS.get("p:" + id, "json"), h = await sha("bynurzy-sync:" + tok);
+    const stale = rec && rec.w !== w, open = rec && !stale && !rec.h, mine = rec && !stale && (rec.h === h || open);   // stale: the password changed; open: made by the teacher, not claimed yet
+    if (m === "GET") { if (!rec || stale) return fail(404, "nothing saved"); if (!mine) return fail(403, "not yours"); return json({ data: rec.data, at: rec.at }); }
+    if (rec && !stale && !mine) return fail(403, "not yours");
+    const b = await body(request); if (!b || !okB64(b.data, 600000)) return fail(400, "bad data");
+    await env.USERS.put("p:" + id, JSON.stringify({ h, w, data: b.data, at: new Date().toISOString() }));
+    return json({ ok: true });
+  }
+  if (route === "admin/claim" && m === "POST") {
+    const b = await body(request); if (!b || typeof b.key !== "string" || b.key.length < 24) return fail(400, "bad key");
+    if (await env.USERS.get("admin")) return fail(409, "already claimed");
+    await env.USERS.put("admin", await sha("bynurzy-admin:" + b.key)); return json({ ok: true });
+  }
+  if (route.startsWith("admin/")) {
+    if (!(await isAdmin(env, request))) return fail(403, "admin key needed");
+    if (route === "admin/verbal-lesson" && m === "POST") {
+      const { status, ...result } = await buildVerbalLesson(request, env);
+      return json(result, status);
+    }
+    if (route === "admin/review-advice" && m === "POST") return reviewAdvice(request, env);
+    if (route === "admin/users" && m === "GET") {
+      const out = []; let cursor;
+      do { const r = await env.USERS.list({ prefix: "u:", cursor });
+        for (const k of r.keys) { const e = await env.USERS.get(k.name, "json"); if (e) out.push({ id: k.name.slice(2), n: e.n, at: e.at || null }); }
+        cursor = r.list_complete ? null : r.cursor; } while (cursor);
+      const inv = await env.USERS.get("invite", "json");
+      return json({ users: out, invite: !!inv });
+    }
+    if (route === "admin/user" && m === "PUT") {   // a login the teacher made on the teacher page: works at once, no GitHub step
+      const id = url.searchParams.get("id"), b = await body(request); if (!okId(id) || !b || !okEntry(b.entry)) return fail(400, "bad request");
+      if (!b.replace && (await env.USERS.get("u:" + id))) return fail(409, "login taken");
+      if (!b.replace && (await count(env)) >= MAX_USERS) return fail(429, "too many accounts");
+      const old = await env.USERS.get("u:" + id, "json");
+      await env.USERS.put("u:" + id, JSON.stringify({ salt: b.entry.salt, iter: b.entry.iter, wrap: b.entry.wrap, n: b.entry.n, at: (old && old.at) || new Date().toISOString(), by: (old && old.by) || "teacher" }));
+      if (b.replace && okB64(b.sync, 64) && b.sync.length >= 40) {   // a new password: the cloud copy of results moves to it
+        const rec = await env.USERS.get("p:" + id, "json");
+        if (rec) await env.USERS.put("p:" + id, JSON.stringify(Object.assign(rec, { h: await sha("bynurzy-sync:" + b.sync), w: b.entry.wrap })));
+      }
+      return json({ ok: true });
+    }
+    if (route === "admin/user" && m === "DELETE") {
+      const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
+      await env.USERS.delete("u:" + id); await env.USERS.delete("p:" + id); return json({ ok: true });
+    }
+    if (route === "admin/progress" && (m === "GET" || m === "PUT")) {   // the teacher's cabinet: a student's results, plan and tasks
+      const id = url.searchParams.get("id"); if (!okId(id)) return fail(400, "bad id");
+      const w = await accountWrap(env, request, id); if (!w) return fail(404, "no such login");
+      const rec = await env.USERS.get("p:" + id, "json");
+      if (m === "GET") return rec ? json({ data: rec.data, at: rec.at, claimed: !!rec.h && rec.w === w }) : fail(404, "nothing saved");
+      const b = await body(request); if (!b || !okB64(b.data, 600000)) return fail(400, "bad data");
+      const h = rec && rec.w === w ? rec.h || null : null;   // keep the owner's claim; after a password change the next login claims it
+      await env.USERS.put("p:" + id, JSON.stringify({ h, w, data: b.data, at: new Date().toISOString(), by: "teacher" }));
+      return json({ ok: true });
+    }
+    if (route === "admin/form" && m === "GET") { const f = await env.USERS.get("form", "json"); return f ? json(f) : fail(404, "nothing saved"); }
+    if (route === "admin/form" && m === "PUT") {
+      const b = await body(request); if (!b || !okB64(b.data, 8000000)) return fail(400, "bad data");
+      await env.USERS.put("form", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
+    }
+    if (route === "admin/groups" && m === "GET") { const g = await env.USERS.get("groups", "json"); return g ? json(g) : fail(404, "nothing saved"); }
+    if (route === "admin/groups" && m === "PUT") {   // the cabinet's groups (names, colours, members), encrypted in the browser
+      const b = await body(request); if (!b || !okB64(b.data, 200000)) return fail(400, "bad data");
+      await env.USERS.put("groups", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
+    }
+    if (route === "admin/decks" && m === "GET") {
+      const decks = [];
+      let cursor;
+      do {
+        const batch = await env.USERS.list({ prefix: "deck:", cursor });
+        for (const { name, metadata } of batch.keys) {
+          const id = name.slice(5);
+          if (deckId(id) && metadata) decks.push({ id, ...metadata });
+        }
+        cursor = batch.list_complete ? null : batch.cursor;
+      } while (cursor);
+      return json({ decks });
+    }
+    if (route === "admin/deck" && (m === "GET" || m === "PUT" || m === "DELETE")) {
+      const id = url.searchParams.get("id");
+      if (!deckId(id)) return fail(400, "invalid lesson");
+      const key = "deck:" + id;
+      if (m === "GET") {
+        const data = await env.USERS.get(key);
+        return data ? json({ data }) : fail(404, "presentation not found");
+      }
+      if (m === "DELETE") {
+        await env.USERS.delete(key);
+        return json({ ok: true });
+      }
+      const b = await body(request);
+      if (!b || !okB64(b.data, 14000000) ||
+          ![b.n, b.w, b.h].every(Number.isInteger) || b.n < 1 || b.n > 120 ||
+          b.w < 1 || b.w > 2560 || b.h < 1 || b.h > 2560) return fail(400, "invalid presentation");
+      if (request.headers.get("if-none-match") === "*" && await env.USERS.get(key) !== null) {
+        return fail(412, "presentation already exists");
+      }
+      const metadata = { n: b.n, w: b.w, h: b.h };
+      await env.USERS.put(key, b.data, { metadata });
+      return json({ deck: { id, ...metadata } });
+    }
+    if (route === "admin/custom" && m === "PUT") {   // the teacher's tests, sealed in the browser (up to about 3 MB)
+      const b = await body(request); if (!b || !okB64(b.data, 4000000)) return fail(400, "bad data");
+      await env.USERS.put("custom", JSON.stringify({ data: b.data, at: new Date().toISOString() })); return json({ ok: true });
+    }
+    if (route === "admin/invite" && m === "POST") {
+      const b = await body(request);
+      if (!b || !/^[0-9a-f]{64}$/.test(b.hash || "") || !okB64(b.salt, 64) || !okB64(b.wrap, 200) || !Number.isInteger(b.iter)) return fail(400, "bad invite");
+      await env.USERS.put("invite", JSON.stringify({ hash: b.hash, salt: b.salt, iter: b.iter, wrap: b.wrap })); return json({ ok: true });
+    }
+    if (route === "admin/invite" && m === "DELETE") { await env.USERS.delete("invite"); return json({ ok: true }); }
+  }
+  return fail(404, "not found");
+}

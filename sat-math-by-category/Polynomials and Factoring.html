@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polynomials and Factoring</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Polynomials and Factoring</h1>
+<p class="intro">Factoring and expanding polynomials, zeros, factor tests and coefficients of polynomial products.</p>
+<div class="progress">Solved: <span id="count">0</span> of 13</div>
+<article class="card" id="POL-01">
+<header><span class="num">POL-01</span><span class="src">PDF 1 &middot; p. 5</span><label class="done"><input type="checkbox" data-id="POL-01"> Solved</label></header>
+<div class="stem">One of the factors of $2x^3+44x^2+234x$ is $x+b$, where $b$ is a positive constant. What is the smallest possible value of $b$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="POL-02">
+<header><span class="num">POL-02</span><span class="src">PDF 2 &middot; p. 10</span><label class="done"><input type="checkbox" data-id="POL-02"> Solved</label></header>
+<div class="stem">Which expression is a factor of $y^2(x-9)-36(x-9)^3$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$y(x-9)$</span></li><li><span class="letter">B</span><span class="ctext">$(x-9)(x-6)$</span></li><li><span class="letter">C</span><span class="ctext">$y+x-9$</span></li><li><span class="letter">D</span><span class="ctext">$y+6x-54$</span></li></ol></article>
+<article class="card" id="POL-03">
+<header><span class="num">POL-03</span><span class="src">PDF 2 &middot; p. 14</span><label class="done"><input type="checkbox" data-id="POL-03"> Solved</label></header>
+<div class="stem">$r(x)=13(x-2)$ and $s(x)=x^3+nx^2+2nx+8$. For the given functions $r$ and $s$, $n$ is a constant. If $r(x)\cdot s(x)=13(x^4-16)$, what is the value of $n$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="POL-04">
+<header><span class="num">POL-04</span><span class="src">PDF 2 &middot; p. 17</span><label class="done"><input type="checkbox" data-id="POL-04"> Solved</label></header>
+<div class="stem">The function $g$ is defined by $g(x)=(x+13)(t-x)$, where $t$ is a constant. In the $xy$-plane, the graph of $y=g(x)$ passes through the point $(24,0)$. What is the value of $g(0)$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="POL-05">
+<header><span class="num">POL-05</span><span class="src">PDF 2 &middot; p. 26</span><label class="done"><input type="checkbox" data-id="POL-05"> Solved</label></header>
+<div class="stem">The functions $f$, $g$, and $h$ are defined as shown: $f(x)=2x+3$, $g(x)=7x-2$, $h(x)=5x+6$. If $f(x)\cdot g(x)-h(x)=ax^2+bx+c$, where $a$, $b$, and $c$ are constants, what is the value of $b$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-5$</span></li><li><span class="letter">B</span><span class="ctext">$12$</span></li><li><span class="letter">C</span><span class="ctext">$20$</span></li><li><span class="letter">D</span><span class="ctext">$22$</span></li></ol></article>
+<article class="card" id="POL-06">
+<header><span class="num">POL-06</span><span class="src">PDF 2 &middot; p. 29</span><label class="done"><input type="checkbox" data-id="POL-06"> Solved</label></header>
+<div class="stem">For all values of $x$, the expression $(4x+10)(2x+1)-(2x-14)$ is equivalent to which of the following? I. $8x^2+22x+24$ II. $8x^2+24x+10-2x-14$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I only</span></li><li><span class="letter">B</span><span class="ctext">II only</span></li><li><span class="letter">C</span><span class="ctext">I and II</span></li><li><span class="letter">D</span><span class="ctext">Neither I nor II</span></li></ol></article>
+<article class="card" id="POL-07">
+<header><span class="num">POL-07</span><span class="src">PDF 3 &middot; p. 5</span><label class="done"><input type="checkbox" data-id="POL-07"> Solved</label></header>
+<div class="stem">Which expression is a factor of $x^4+14ax^2+49a^2-64$, where $a$ is a positive constant?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$x^2+7a+8$</span></li><li><span class="letter">B</span><span class="ctext">$x^2-7a-8$</span></li><li><span class="letter">C</span><span class="ctext">$x^2+14a$</span></li><li><span class="letter">D</span><span class="ctext">$x^2-8a$</span></li></ol></article>
+<article class="card" id="POL-08">
+<header><span class="num">POL-08</span><span class="src">PDF 3 &middot; p. 10</span><label class="done"><input type="checkbox" data-id="POL-08"> Solved</label></header>
+<div class="stem">Which expression is a factor of $y^2(x-3)-25(x-3)^3$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$y(x-3)$</span></li><li><span class="letter">B</span><span class="ctext">$(x-5)(x-3)$</span></li><li><span class="letter">C</span><span class="ctext">$y+x-3$</span></li><li><span class="letter">D</span><span class="ctext">$y+5x-15$</span></li></ol></article>
+<article class="card" id="POL-09">
+<header><span class="num">POL-09</span><span class="src">PDF 3 &middot; p. 13</span><label class="done"><input type="checkbox" data-id="POL-09"> Solved</label></header>
+<div class="stem">$f(x)=11x^{10}+3x^8$ and $g(x)=-17x^7+9x^5$. The polynomial $p(x)$ is defined as the product of the given polynomials $f(x)$ and $g(x)$. What is the coefficient of $x^{15}$ in $p(x)$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$15$</span></li><li><span class="letter">B</span><span class="ctext">$48$</span></li><li><span class="letter">C</span><span class="ctext">$99$</span></li><li><span class="letter">D</span><span class="ctext">$150$</span></li></ol></article>
+<article class="card" id="POL-10">
+<header><span class="num">POL-10</span><span class="src">PDF 3 &middot; p. 15</span><label class="done"><input type="checkbox" data-id="POL-10"> Solved</label></header>
+<div class="stem">Which of the following is a factor of the expression $2x^2+(18r+5)x+45r$, where $r$ is a nonzero constant? I. $x+9r$ II. $2x+5r$</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">I only</span></li><li><span class="letter">B</span><span class="ctext">II only</span></li><li><span class="letter">C</span><span class="ctext">I and II</span></li><li><span class="letter">D</span><span class="ctext">Neither I nor II</span></li></ol></article>
+<article class="card" id="POL-11">
+<header><span class="num">POL-11</span><span class="src">PDF 3 &middot; p. 22</span><label class="done"><input type="checkbox" data-id="POL-11"> Solved</label></header>
+<div class="stem">One of the factors of $8x^4+50x^2+63$ is $ax^2+b$, where $a$ and $b$ are positive constants. Which of the following is a possible value of $ab$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$7$</span></li><li><span class="letter">B</span><span class="ctext">$14$</span></li><li><span class="letter">C</span><span class="ctext">$18$</span></li><li><span class="letter">D</span><span class="ctext">$36$</span></li></ol></article>
+<article class="card" id="POL-12">
+<header><span class="num">POL-12</span><span class="src">PDF 3 &middot; p. 29</span><label class="done"><input type="checkbox" data-id="POL-12"> Solved</label></header>
+<div class="stem">Which expression is a factor of $49p^{19}-121p^{17}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$7p+11$</span></li><li><span class="letter">B</span><span class="ctext">$49p^2+121$</span></li><li><span class="letter">C</span><span class="ctext">$11p-7$</span></li><li><span class="letter">D</span><span class="ctext">$-72p^{40}$</span></li></ol></article>
+<article class="card" id="POL-13">
+<header><span class="num">POL-13</span><span class="src">PDF 4 &middot; p. 2</span><label class="done"><input type="checkbox" data-id="POL-13"> Solved</label></header>
+<div class="stem">The function $g$ is defined by $g(x)=x^3+ax^2+bx+c$, where $a$, $b$, and $c$ are integer constants. The zeros of the function are $-2$, $-7$, and $6$. What is the value of $a$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$-84$</span></li><li><span class="letter">B</span><span class="ctext">$-3$</span></li><li><span class="letter">C</span><span class="ctext">$3$</span></li><li><span class="letter">D</span><span class="ctext">$84$</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "POL";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>
