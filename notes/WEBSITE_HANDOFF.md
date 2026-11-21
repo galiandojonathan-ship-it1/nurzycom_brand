@@ -105,10 +105,13 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 
 KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 
-Group analysis exports a Gemini lesson plan on demand via `POST admin/review-advice`. Set the encrypted
-Cloudflare Pages secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy.
-The endpoint sends only assignment/question codes and aggregate response and error counts to Gemini.
-The local group analytics and recommendations also work without this secret.
+Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesson`. Set the encrypted Cloudflare Pages
+secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy. The endpoint uses aggregate
+first-attempt counts, including option counts of two or more, and course skill labels. The teacher can opt in to send
+the text of course-authored questions. Names, individual attempts and College Board text stay out of the request.
+A second model call checks the draft before it reaches the teacher. After reviewing the keys, the teacher can send
+the question sequence to «Пульт урока» via the encrypted `ls_m` record. The coaching notes stay in the cabinet.
+Group analytics and the normal review queue also work without the secret.
 
 ## 5. Rules for every change
 

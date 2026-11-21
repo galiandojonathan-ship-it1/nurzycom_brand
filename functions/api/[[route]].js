@@ -20,6 +20,8 @@
 //         GET/PUT admin/progress?id · GET/PUT admin/form · GET/PUT admin/groups · PUT admin/custom · POST admin/invite · DELETE admin/invite        (admin routes need the header X-Admin-Key)
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
+import { buildVerbalLesson } from "../../lib/verbal-lesson.js";
+
 const MAX_USERS = 300;
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -136,6 +138,10 @@ export async function onRequest(context) {
   }
   if (route.startsWith("admin/")) {
     if (!(await isAdmin(env, request))) return fail(403, "admin key needed");
+    if (route === "admin/verbal-lesson" && m === "POST") {
+      const { status, ...result } = await buildVerbalLesson(request, env);
+      return json(result, status);
+    }
     if (route === "admin/review-advice" && m === "POST") return reviewAdvice(request, env);
     if (route === "admin/users" && m === "GET") {
       const out = []; let cursor;

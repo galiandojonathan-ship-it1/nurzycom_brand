@@ -114,7 +114,8 @@
   function head(label, title, sub) {
     return `<div class="lm-h"><div><span class="label">${esc(label)}</span><h2 tabindex="-1">${esc(title)}</h2><p>${sub}</p></div><button type="button" class="lm-x" data-lm="close">Закрыть ✕</button></div>`;
   }
-  const kindLabel = (r) => (r.mode === "solo" ? "Индивидуальный разбор" : "Разбор ошибок группы");
+  const kindLabel = (r) => ({ solo: "Индивидуальный разбор", verbal: "Урок SAT Verbal" }[r.mode] || "Разбор ошибок группы");
+  const reviewTitle = (r) => r.mode === "verbal" ? r.title : r.group;
   function leaveQuestion() { M.cur = -1; delete document.body.dataset.lq; delete document.body.dataset.lt; setTool(null); }
 
   // all reviews (when there is more than one): a one-student review shows only initials here, the screen may be a group's
@@ -125,7 +126,7 @@
       return focusH();
     }
     inner().innerHTML = head("Разбор ошибок", "Что разбираем", `${M.list.length} ${pl(M.list.length, "разбор", "разбора", "разборов")}, новые сверху`) +
-      `<ul class="lm-list">${M.list.map((r, i) => `<li class="lm-rev"><button type="button" class="lm-card" data-lm="rev" data-i="${i}"><span><span class="lm-kind">${kindLabel(r)}</span><b>${esc(r.mode === "solo" ? initials(r.group) : r.group)}</b>
+      `<ul class="lm-list">${M.list.map((r, i) => `<li class="lm-rev"><button type="button" class="lm-card" data-lm="rev" data-i="${i}"><span><span class="lm-kind">${kindLabel(r)}</span><b>${esc(r.mode === "solo" ? initials(r.group) : reviewTitle(r))}</b>
         <small>${esc((r.parts || []).slice(0, 3).join(", "))}${(r.parts || []).length > 3 ? ` и ещё ${r.parts.length - 3}` : ""}</small></span><span class="r">${r.qs.length}<small>${pl(r.qs.length, "вопрос", "вопроса", "вопросов")} · ${esc(day(r.at))}</small></span></button>
         <button type="button" class="lm-x" data-lm="del" data-i="${i}" aria-label="Удалить разбор">Удалить</button></li>`).join("")}</ul>`;
     focusH();
@@ -135,11 +136,11 @@
     const d = M.snap, back = M.list.length > 1 ? '<p style="margin:0 0 14px"><button type="button" class="lm-x" data-lm="reviews">← Все разборы</button></p>' : "";
     if (!d || !d.qs.length) return reviews();
     const parts = (d.parts || []).length ? ` · ${esc(d.parts.slice(0, 3).join(", "))}${d.parts.length > 3 ? ` и ещё ${d.parts.length - 3}` : ""}` : d.note ? ` · ${esc(d.note)}` : "";
-    inner().innerHTML = head(kindLabel(d), d.group, `обновлено ${esc(day(d.at))} · ${d.qs.length} ${pl(d.qs.length, "вопрос", "вопроса", "вопросов")}${parts}`) + back +
+    inner().innerHTML = head(kindLabel(d), reviewTitle(d), `обновлено ${esc(day(d.at))} · ${d.qs.length} ${pl(d.qs.length, "вопрос", "вопроса", "вопросов")}${parts}`) + back +
       `<ol class="lm-list">${d.qs.map((q, i) => { const t = trapOf(q), m = tries(q);
         return `<li><button type="button" class="lm-card" data-lm="q" data-i="${i}"><span class="n">${i + 1}</span>
           <span><b>${esc(q.title)}</b><small>${esc(q.sk || "—")}${q.d ? " · " + DIFN[q.d] : ""}${q.work ? " · " + esc(q.work) : ""}${t ? ` · <span class="lm-trap">общая ловушка ${t}</span>` : ""}</small></span>
-          ${solo() ? `<span class="r">${m.length ? esc(m.join(" → ")) : "—"}<small>ответ ученика</small></span>` : `<span class="r">${pct(q)}%<small>ошиблись ${q.wrong} из ${q.n}</small></span>`}</button></li>`; }).join("")}</ol>`;
+          ${q.authored ? '<span class="r"><small>Новое задание</small></span>' : solo() ? `<span class="r">${m.length ? esc(m.join(" → ")) : "—"}<small>ответ ученика</small></span>` : `<span class="r">${pct(q)}%<small>ошиблись ${q.wrong} из ${q.n}</small></span>`}</button></li>`; }).join("")}</ol>`;
     focusH();
   }
   const focusH = () => { const h = M.box && M.box.querySelector(".lm-in h2"); if (h) h.focus({ preventScroll: true }); if (M.box) M.box.scrollTop = 0; };
@@ -149,7 +150,13 @@
     if (!M.bundles[path]) M.bundles[path] = fetch(path, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("q " + r.status); return r.arrayBuffer(); }).then((b) => SITE.open(b)).then((u) => JSON.parse(new TextDecoder().decode(u)));
     return M.bundles[path];
   }
+  const escapeParagraphs = (s) => String(s).split(/\n+/).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join("");
   async function item(q) {
+    if (q.authored) {
+      const a = q.authored;
+      return { stim: escapeParagraphs(a.passage), stem: esc(a.prompt), opts: a.options.map(esc), ans: a.answer,
+        rat: escapeParagraphs(a.explanation) };
+    }
     const s = q.src || {}; if (!s.b) return null;
     const b = await bundle(s.b);
     if (s.mod) return ((b.mods || {})[s.mod] || [])[s.i] || null;
@@ -164,14 +171,19 @@
     const tools = `${M.math ? `<button type="button" class="lm-x" data-lm="desmos" aria-pressed="${M.tool === "desmos"}">Desmos</button>` : ""}<button type="button" class="lm-x" data-lm="board" aria-pressed="${M.tool === "board"}">Доска</button>`;
     const nav = `<div class="lm-nav"><button type="button" class="lm-x" data-lm="list">← Все вопросы</button><span class="lm-pos" id="ls-mq">Вопрос ${i + 1} из ${n}</span>
       <span>${tools}<button type="button" class="lm-x" data-lm="prev"${i ? "" : " disabled"}>← Назад</button><button type="button" class="lm-x" data-lm="next"${i < n - 1 ? "" : " disabled"}>Далее →</button></span></div>`;
-    inner().innerHTML = head(kindLabel(M.snap), M.snap.group, `${esc(q.title)} · ${esc(q.sk || "—")}`) + nav + '<p class="lm-empty">Загружаю вопрос…</p>';
+    inner().innerHTML = head(kindLabel(M.snap), reviewTitle(M.snap), `${esc(q.title)} · ${esc(q.sk || "—")}`) + nav + '<p class="lm-empty">Загружаю вопрос…</p>';
     let it = null; try { it = await item(q); } catch (e) { it = null; }
     if (M.cur !== i || !M.box) return;
     const body = inner().querySelector(".lm-empty");
     if (!it) { body.textContent = "Не удалось открыть этот вопрос. Обновите страницу или перейдите к следующему."; return; }
     const stim = String(it.stim || "").trim(), mc = !!(it.opts && it.opts.length), one = solo(), m = tries(q);
     let opts, sum = "";
-    if (one) {
+    if (q.authored) {
+      opts = it.opts.map((text, k) => {
+        const c = "ABCD"[k], right = M.show.ans && c === it.ans;
+        return `<div class="lm-o${right ? " right" : ""}"><span class="lt">${c}</span><span class="qhtml tx">${text}</span>${right ? '<span class="tag">верный ответ</span>' : ""}</div>`;
+      }).join("");
+    } else if (one) {
       const tag = (c) => { const k = m.indexOf(c); return k < 0 ? "" : m.length > 1 ? `${k + 1}-я попытка ученика` : "ответ ученика"; };
       opts = mc ? it.opts.map((o, k) => { const c = "ABCD"[k], t = M.show.picks ? tag(c) : "", ok = M.show.ans && c === it.ans;
           return `<div class="lm-o${ok ? " right" : ""}${t && !ok ? " mine" : ""}"><span class="lt">${c}</span><span class="qhtml tx">${o}</span>${t || ok ? `<span class="tag">${[ok ? "верный ответ" : "", t].filter(Boolean).join(" · ")}</span>` : ""}</div>`; }).join("")
@@ -187,8 +199,8 @@
     }
     const pick = one ? (M.show.picks ? "Скрыть ответ ученика" : "Показать ответ ученика") : M.show.picks ? "Скрыть выбор класса" : "Показать выбор класса";
     body.outerHTML = `<div class="lm-q${stim ? "" : " solo"}">${stim ? `<div class="lm-stim qhtml">${stim}</div>` : ""}<div><div class="lm-stem qhtml">${it.stem || ""}</div>${opts}${sum}
-      <div class="lm-btns"><button type="button" data-lm="picks" aria-pressed="${M.show.picks}">${pick}</button><button type="button" data-lm="ans" aria-pressed="${M.show.ans}">${M.show.ans ? "Скрыть ответ" : "Показать ответ"}</button></div>
-      ${M.show.ans && it.rat ? `<div class="lm-expl"><span class="label">${it.own ? "Объяснение nurzycom" : "Объяснение College Board"}</span><div class="qhtml">${it.rat}</div>${it.dz || ""}</div>` : ""}</div></div>`;
+      <div class="lm-btns">${q.authored ? "" : `<button type="button" data-lm="picks" aria-pressed="${M.show.picks}">${pick}</button>`}<button type="button" data-lm="ans" aria-pressed="${M.show.ans}">${M.show.ans ? "Скрыть ответ" : "Показать ответ"}</button></div>
+      ${M.show.ans && it.rat ? `<div class="lm-expl"><span class="label">${q.authored ? "Объяснение нового задания" : it.own ? "Объяснение nurzycom" : "Объяснение College Board"}</span><div class="qhtml">${it.rat}</div>${it.dz || ""}</div>` : ""}</div></div>`;
   }
   function onClick(e) {
     const b = e.target.closest("[data-lm]"); if (!b) return;
