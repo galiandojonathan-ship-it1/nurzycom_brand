@@ -98,6 +98,8 @@
     const r = sel.getRangeAt(0), host = r.commonAncestorContainer.nodeType === 1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement;
     if (!host || host.closest("input,textarea,nav,header,footer,.ls-bar,.ls-pop,.ls-toast,.gpop,.lb-tools,.cr-tiles")) return;
     if (selectionScope && !host.closest(selectionScope)) return;
+    const liveQuestion = host.closest(".lp-question");
+    if (liveQuestion && liveQuestion.dataset.dictionary !== "true") return;
     const key = text + "|" + Math.round(r.getBoundingClientRect().top); if (key === lastKey) return; lastKey = key;
     show(text, r.getBoundingClientRect(), () => lastKey === key && host.isConnected && sel.toString().replace(/\s+/g, " ").trim() === text);
   }

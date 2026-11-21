@@ -26,14 +26,14 @@ const MAX_USERS = 300;
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const fail = (status, error) => json({ error }, status);
-async function sha(s) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join(""); }
+export async function sha(s) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join(""); }
 const norm = (s) => String(s || "").trim().toLowerCase();
 const deckId = (id) => /^(?:[VM]\d{2}|VA|MD)$/.test(id || "");
 const okId = (id) => typeof id === "string" && /^[A-Za-z0-9+/=]{16,64}$/.test(id);
 const okB64 = (s, max) => typeof s === "string" && s.length > 0 && s.length <= max && /^[A-Za-z0-9+/=]+$/.test(s);
 const okEntry = (e) => e && okB64(e.salt, 64) && okB64(e.wrap, 200) && okB64(e.n, 1200) && Number.isInteger(e.iter) && e.iter >= 100000 && e.iter <= 2000000;
 async function body(request) { try { return await request.json(); } catch (e) { return null; } }
-async function isAdmin(env, request) {
+export async function isAdmin(env, request) {
   const key = request.headers.get("x-admin-key"), stored = await env.USERS.get("admin");
   return !!(key && stored && (await sha("bynurzy-admin:" + key)) === stored);
 }
@@ -55,6 +55,14 @@ async function codeOk(request, inv, code) {
 async function accountWrap(env, request, id) {
   const e = await env.USERS.get("u:" + id, "json"); if (e) return e.wrap;
   try { const r = await env.ASSETS.fetch(new URL("/access.json", request.url)); const u = ((await r.json()).users || {})[id]; return u ? u.wrap : null; } catch (x) { return null; }
+}
+export async function verifyProgressOwner(env, request, id, tok) {
+  if (!okId(id) || !okB64(tok, 64) || tok.length < 40) return 403;
+  const wrap = await accountWrap(env, request, id);
+  if (!wrap) return 403;
+  const record = await env.USERS.get("p:" + id, "json");
+  if (!record || record.w !== wrap || !record.h) return 428;
+  return record.h === await sha("bynurzy-sync:" + tok) ? 200 : 403;
 }
 async function count(env) { let n = 0, cursor; do { const r = await env.USERS.list({ prefix: "u:", cursor }); n += r.keys.length; cursor = r.list_complete ? null : r.cursor; } while (cursor); return n; }
 

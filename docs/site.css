@@ -726,3 +726,23 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
  .live-bluebook>.passage{border-right:0;border-bottom:1px solid var(--stone)}
  .live-host-question>h3{padding:14px 20px}
 }
+
+/* Presentation-synced practice. */
+.lp-student{max-width:960px;margin:0 auto;padding:24px 16px}
+.lp-student h1{margin:0 0 10px}
+.lp-question,.lp-roster{overflow-wrap:anywhere}
+.lp-question[hidden],.lp-question [hidden],.lp-roster [hidden],.lp-control[hidden]{display:none!important}
+.lp-options{display:grid;gap:8px;margin:14px 0}
+.lp-choice{display:grid;grid-template-columns:auto 20px minmax(0,1fr);align-items:baseline;gap:9px;border:1px solid var(--studio);padding:12px;cursor:pointer;border-radius:var(--control-radius)}
+.lp-choice input{margin:0;min-height:auto;width:auto}
+.lp-choice .lp-eliminated-label{grid-column:3}
+.lp-choice.lp-eliminated .qhtml{text-decoration:line-through}
+.lp-hints{gap:8px;flex-wrap:wrap}
+.lp-roster{display:grid;gap:8px;margin:10px 0}
+.lp-roster article{border:1px solid var(--studio);border-radius:var(--control-radius);padding:12px}
+.lp-roster p{margin:5px 0;white-space:pre-wrap}
+.lp-control{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.lp-dialog{max-width:min(580px,calc(100vw - 24px));border:1px solid var(--studio);border-radius:var(--panel-radius);padding:20px}
+.lp-dialog form,.lp-dialog label{display:grid;gap:6px}
+.lp-dialog form{gap:12px}
+.lp-dialog label:has(input[type="checkbox"]){display:flex;align-items:center}
