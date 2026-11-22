@@ -7,15 +7,28 @@
     if (!response.ok) throw Error("Не удалось загрузить вопросы.");
     return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));
   }
+  // Typed-answer keys arrive as display text: «3/2», «3/2; 1.5», «x = 4», «.75 (or 3/4)», «−2 или 2».
+  // Keep every piece that is a number the server can compare; a key with no number (for example «2√3») is graded as text.
+  const NUMBER = /^[+-]?(?:\d+\/\d+|\d+(?:[.,]\d*)?|[.,]\d+)$/;
+  function typedKeys(q) {
+    const raw = [].concat(q.acc != null && String(q.acc).trim() ? q.acc : q.ans).filter((v) => v != null && String(v).trim()).map(String);
+    const pieces = raw.flatMap((v) => v.split(/\s*(?:;|\||,\s+|\s+(?:или|or)\s+)\s*/i)).map((v) => v
+      .normalize("NFKC").replace(/[−–—]/g, "-").replace(/[⁄∕]/g, "/")
+      .replace(/\s*\([^()]*\)\s*/g, " ").replace(/^\s*[a-zа-я]\s*=\s*/i, "").replace(/^[≈~]\s*/, "").trim()).filter(Boolean);
+    const numbers = [...new Set(pieces.filter((v) => NUMBER.test(v.replace(/\s/g, ""))).map((v) => v.replace(/\s/g, "")))];
+    return numbers.length ? { type: "spr", accepted: numbers } : { type: "custom", accepted: (pieces.length ? pieces : raw).slice(0, 20).map((v) => v.slice(0, 64)) };
+  }
   function workbook(items) {
     return items.map((q) => {
-      const numericKeys = [].concat(q.acc).filter((value) => value != null && String(value).trim());
+      const key = q.t === "mc" ? { type: "mc", accepted: [q.ans] } : typedKeys(q);
       return {
         prompt: (q.stim || "") + q.stem,
         passageLength: (q.stim || "").length,
         options: q.t === "mc" ? q.opts : [],
-        type: q.t === "mc" ? "mc" : "spr",
-        accepted: q.t === "mc" ? [q.ans] : (numericKeys.length ? numericKeys : [].concat(q.ans)).filter((value) => value != null).map(String)
+        // the student screen shows an input for both typed kinds; only the grading differs
+        type: key.type === "mc" ? "mc" : "spr",
+        keyType: key.type,
+        accepted: key.accepted
       };
     });
   }
@@ -26,7 +39,7 @@
       method: "POST",
       body: JSON.stringify({
         title: set.title.slice(0, 160), set: "sealed:" + encrypted,
-        keys: questions.map(({ type, accepted }) => ({ type, accepted })),
+        keys: questions.map(({ type, keyType, accepted }) => ({ type: keyType || type, accepted })),
         settings
       })
     });

@@ -53,8 +53,11 @@ export function isCorrect(key, value) {
   if (typeof key === "string") return key === value; // Rounds created before sealed snapshots.
   if (key.type === "mc") return key.accepted.includes(value);
   if (key.type === "custom") return key.accepted.some((answer) => customRight(answer, value));
+  // A typed key without any number (for example «2√3») is compared as text, like the teacher's own tests.
+  const numbers = key.accepted.map(numericKey).filter((answer) => answer !== null);
+  if (!numbers.length) return key.accepted.some((answer) => customRight(answer, value));
   const actual = numeric(value);
-  return actual !== null && key.accepted.some((answer) => numericKey(answer) === actual);
+  return actual !== null && numbers.includes(actual);
 }
 
 export async function onRequest({ env, request }) {
