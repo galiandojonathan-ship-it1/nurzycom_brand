@@ -921,3 +921,13 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pg-tw { font: inherit; font-size: 12px; padding: 3px 9px; border: 1px solid var(--stone, #D9D5CD); border-radius: 999px; background: #fff; color: #0F0F0F; cursor: pointer; white-space: nowrap; }
 .pg-tw:hover { border-color: #0F0F0F; }
 .pg-trap .pg-tw { margin-top: 4px; }
+/* Bluebook shares (bbshare.js, bluebook-import.js, 2026-11-23) */
+.bb-share { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--stone, #D9D5CD); }
+.bb-confirm { border: 1px solid var(--stone, #D9D5CD); border-radius: 12px; padding: 10px 14px; margin: 8px 0; background: #fff; }
+.bbs-one { border: 1px solid var(--stone, #D9D5CD); border-radius: 12px; padding: 10px 14px; margin: 10px 0; background: #fff; }
+.bbs-one summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; cursor: pointer; }
+.bbs-one summary small { color: #5E5A54; }
+.bbs-one summary .chip { margin-left: auto; }
+.bbs-sec { margin: 10px 0; }
+.bbs-t { width: 100%; margin: 6px 0; }
+.cb-h3 { font-size: 1rem; margin: 18px 0 6px; }

@@ -163,6 +163,16 @@ positions, 641 items, 0 key mismatches. Math waits for the Math index PDF (the h
 Tests: `t_bbimport.js [opened catalog]` (formats, Ctrl+A page, unique test and route for every test, exact numbers, errors),
 `t_bbimport_ui.js desktop|phone` (a real Ctrl+A copy of a Score Details-shaped HTML page pasted into the site; fixture from
 `mkfx.mjs`, which seals the synthetic catalog of `bbsynth.cjs`).
+«Поделиться с преподавателем» (2026-11-23): under a preview, only with the student's own login. A confirmation says what is
+sent; then `localStorage bb_share_<6-byte hash of the rows>` = { v, src, at, hash, sections: { rw|math: { test, label, route, n,
+tot, miss: [[module, q, chosen, keys, id, skill, level, unverified]], skills: { skill: [wrong, total] } } } }. There is no
+question text. The key is synced (`auth.js` SYNC `bb_share_`) and `SITE.syncNow()` saves it at once. The same attempt has the
+same key, so sharing again is refused («уже отправлен»). Teacher: `docs/bbshare.js` (`fromCopy`, `html`, `mistakes`). Cabinet
+account card → «Результаты» → «Bluebook · отправлено учеником» shows source, module, number, choice → key, the skill with
+sample size, and «Убрать». The results card (`teacher.js` `#st-bb`) finds the student's account by matching account names to
+the form name (`accountsByName`, admin key). The Gemini picker gets the misses with a bank-confirmed skill as a work «Bluebook ·
+SAT Practice Test N» (key and skill only). Test: `t_bbshare.js desktop|phone` (ayana and dias from `cbseed.js`: confirm,
+cancel, duplicate after reload, 403 across accounts, cabinet, results card, picker, removal).
 
 «Прогресс ученика · индекс» (2026-11-22): in the cabinet's results, a student card (`#st-prog`, `progMount` / `progObs` in
 `teacher.js`) runs `docs/progress.js` (engine, `PROGRESS.compute`) and draws it with `docs/progress-view.js` (`PVIEW.render`; styles `.pg-*`).

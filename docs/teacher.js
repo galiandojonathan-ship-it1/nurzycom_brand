@@ -176,7 +176,7 @@
       ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
     html += kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
-    html += '<div id="st-prog"></div><div id="st-rv"></div><div id="st-tw"></div>';
+    html += '<div id="st-prog"></div><div id="st-bb"></div><div id="st-rv"></div><div id="st-tw"></div>';
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
     html += `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
@@ -184,9 +184,11 @@
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
+    if (window.BBSHARE && SITE.adminKey()) bbShares(s).then((sh) => { const b = $("st-bb"); if (b && D.student === s.key && sh.length) b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span>${BBSHARE.html(sh, { open: true })}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`; }).catch(() => { /* no accounts: nothing to show */ });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
-      if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: () => twinPool(all), quick: () => twinQuick(s),
-        load: async (c) => { const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
+      if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
+        load: async (c) => { if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
+          const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
@@ -224,6 +226,22 @@
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
     const res = PROGRESS.compute(progObs(s, TAGS), tags); D.prog = { key: s.key, res };
     PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); } });   // «Похожие» on a subtopic or a trap
+  }
+  // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
+  let ACCT = null;
+  function accountsByName() {
+    if (!ACCT) ACCT = (async () => { const m = new Map(), r = await SITE.api("admin/users"); if (!r.ok) return m;
+      for (const u of r.data.users || []) { const nm = await SITE.nameOf(u.n).catch(() => null), k = nm && nm.name && window.FORMKIT ? FORMKIT.key(nm.name) : ""; if (k) { if (!m.has(k)) m.set(k, []); m.get(k).push(u.id); } }
+      return m; })().catch(() => { ACCT = null; return new Map(); });
+    return ACCT;
+  }
+  async function bbShares(s) {
+    const out = [];
+    for (const id of (await accountsByName()).get(s.key) || []) {
+      const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
+      out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null)));
+    }
+    return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
   // every first-attempt mistake of one student for the Gemini picker, with the subtopic and the trap from the progress tags
   async function twinPool(all) {

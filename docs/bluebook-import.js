@@ -87,14 +87,36 @@
     return { matches, match: matches.length === 1 ? matches[0] : null };
   }
 
-  if (typeof module !== "undefined") { module.exports = { parse, detect, canon }; return; }
-  window.BBIMPORT = { parse, detect, canon };
+  /* «Поделиться с преподавателем»: what the teacher gets. Only numbers, letters and skills: no question text, no College Board
+     account. One attempt = one key bb_share_<hash of the rows>, so sharing the same table twice changes nothing.
+     sec: { test, label, route, n, tot: [m1, m2], miss: [[module, q, chosen|null, keys, id|null, skill|null, level|null, unverified]],
+            skills: { skill: [wrong, total] } }   (skills only with a single exact route match) */
+  async function shareOf(rows, cat) {
+    const enc = new TextEncoder().encode(rows.map((r) => `${r.section}.${r.module}.${r.question}:${r.answers.join("|")}:${r.selected || ""}:${r.status}`).join(";"));
+    const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc))].slice(0, 6).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const out = { v: 1, src: "bluebook", at: Date.now(), hash, sections: {} };
+    for (const section of Object.keys(SIZES)) {
+      const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
+      const m = cat ? detect(rows, cat, section).match : null, items = (cat && cat.items) || {}, skills = {};
+      const itemOf = (r) => (m ? m.ids[r.module - 1][r.question - 1] : null);
+      if (m) sel.forEach((r) => { const it = items[itemOf(r)], k = it && (it.s || it.si); if (!k) return; const x = (skills[k] = skills[k] || [0, 0]); x[1]++; if (r.status !== "correct") x[0]++; });
+      out.sections[section] = { test: m ? m.test : null, label: m ? m.label : null, route: m ? m.route : null, n: sel.length,
+        tot: [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length),
+        miss: sel.filter((r) => r.status !== "correct").map((r) => { const id = itemOf(r), it = items[id] || null;
+          return [r.module, r.question, r.selected, r.answers, id, it ? it.s || it.si || null : null, it ? it.d || null : null, it && it.u ? 1 : 0]; }),
+        skills };
+    }
+    return out;
+  }
+
+  if (typeof module !== "undefined") { module.exports = { parse, detect, canon, shareOf }; return; }
+  window.BBIMPORT = { parse, detect, canon, shareOf };
 
   // ---- page ----------------------------------------------------------------------------------------------------------------
   const details = document.getElementById("bb-import"); if (!details) return;
   const form = document.getElementById("bb-form"), input = document.getElementById("bb-text");
   const status = document.getElementById("bb-status"), result = document.getElementById("bb-result"), initial = status.textContent;
-  let revision = 0, catalog;
+  let revision = 0, catalog, last = null;   // last: { rows, cat } of the shown preview
   const ROUTE = { m2h: "сложный", m2e: "лёгкий" };
 
   function loadCatalog() {
@@ -125,7 +147,34 @@
     result.replaceChildren(out);
   }
 
-  function clear() { revision++; result.replaceChildren(); status.textContent = initial; }
+  function clear() { revision++; last = null; result.replaceChildren(); status.textContent = initial; }
+
+  // the share block under a preview: explicit confirmation, one key per attempt, only with the student's own login
+  function shareBox() {
+    const box = el("div", null, "bb-share"); result.append(box);
+    const me = window.SITE && SITE.me ? SITE.me() : "";
+    if (!me || /^lesson(-|$)/.test(me)) { box.append(el("p", "Чтобы поделиться результатом с преподавателем, войдите на сайт под своим логином.", "hint")); return; }
+    const ask = el("button", "Поделиться с преподавателем", "btn"); ask.type = "button"; box.append(ask);
+    const note = el("p", "", "hint"); note.setAttribute("role", "status"); box.append(note);
+    ask.onclick = async () => {
+      const data = await shareOf(last.rows, last.cat), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
+      if (was) { let at = ""; try { at = new Date(JSON.parse(was).at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
+        note.textContent = `Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`; return; }
+      ask.hidden = true;
+      const c = el("div", null, "bb-confirm");
+      c.append(el("p", "Преподаватель увидит: какой это тест и модули, номера ошибок и пропусков, ваш выбор и правильный ответ, навыки. Текст вопросов и ваш аккаунт College Board не передаются."));
+      const yes = el("button", "Отправить", "btn"), no = el("button", "Отмена", "btn ghost"); yes.type = no.type = "button";
+      const row = el("div", null, "row"); row.append(yes, no); c.append(row); box.insertBefore(c, note); yes.focus();
+      no.onclick = () => { c.remove(); ask.hidden = false; note.textContent = "Не отправлено."; };
+      yes.onclick = async () => {
+        yes.disabled = no.disabled = true; note.textContent = "Отправляю…";
+        localStorage.setItem(key, JSON.stringify(data));   // synced with the account (auth.js SYNC: bb_share_)
+        const saved = await SITE.syncNow().catch(() => false);
+        c.remove();
+        note.textContent = saved ? "Отправлено. Преподаватель увидит ошибки в своём кабинете и сможет разобрать их на уроке." : "Сохранено на этом устройстве. Отправится само, когда будет связь.";
+      };
+    };
+  }
   async function check() {
     const req = ++revision;
     let rows;
@@ -136,6 +185,7 @@
     const data = await loadCatalog();
     if (req !== revision) return;
     if (data) render(rows, data);
+    last = { rows, cat: data }; shareBox();
     status.textContent = data ? summary : summary + " Навыки пока недоступны: нажмите «Проверить таблицу» ещё раз, когда будет связь.";
   }
 
