@@ -83,9 +83,11 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await host.locator("[data-close]").click(); await host.waitForTimeout(2500);
   ok(/Раунд завершён/.test(await msg(host)), "host: round finished");
   ok(!(await vis(host, "[data-close]")), "«Завершить раунд» disappears after the end");
-  const keys = await host.$$eval("[data-review] details p", (ps) => ps.map((p) => p.textContent));   // closed <details> have no innerText
-  ok(keys.filter((t) => /^Правильный ответ: [A-D]$/.test(t)).length === 10, "review shows 10 keys");
-  const k1 = (keys.find((t) => /^Правильный ответ/.test(t)) || "").slice(-1);
+  // the review shows one question at a time (select + card); the key sits in a closed «Правильный ответ» <details>
+  const keys = [];
+  for (let i = 0; i < 10; i++) { await host.selectOption("[data-review] select", String(i)); keys.push(await host.$eval("[data-review] .live-review-key p", (p) => p.textContent)); }
+  ok(keys.filter((t) => /^[A-D]$/.test(t)).length === 10, "review shows 10 keys");
+  const k1 = keys[0] || "";
   ok(rows.every((r) => (r[1][0] === k1) === /✓/.test(r[1])), "✓ matches the key of question 1 (" + k1 + ")");
   await s1.waitForTimeout(2500); ok(/Раунд завершён/.test(await msg(s1)), "student: round finished");
 

@@ -165,7 +165,7 @@ node mkreal.mjs /home/user/nurzycom_brand/docs $S/loop/real $S/master_key.b64   
 (nohup node pages_dev.mjs $S/loop/real 8768 > $S/loop/pd.log 2>&1 &)            # stand-in with the real API and an in-memory KV
 ```
 
-Without the key, `mkfx.mjs` builds a fixture copy with fake data. Rebuild the copy after every change, because it is a copy, not a link.
+Without the key, `mkfx.mjs` builds a fixture copy with fake data (also a synthetic hard set X01 and the logins `loop-test` and `lesson`, so the cabinet and live-round tests run: `t_live.js`, `t_live_fast.js desktop|phone`). Rebuild the copy after every change, because it is a copy, not a link.
 
 Tests to run by area:
 
@@ -175,7 +175,7 @@ Tests to run by area:
 | Mock tests | `t_mock.js`, `t_timer.js`, `t_pred2.js` |
 | Cabinet | `t_cabinet.js`, `t_deltask.js`, `t_taskearly.js` (seed with `cbseed.js` on 8768) |
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
-| «Мои тесты» | `t_ct.js`, `t_ctparse.js` |
+| «Мои тесты» | `t_ct.js`, `t_ctparse.js`, then `t_ct_replace.js part\|all` on the same stand-in (questions replaced after students submitted) |
 | Login | `t_auth.js` |
 | Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
 | «Пульт урока», «Подготовить урок» | `t_classroom.js <real copy> <key> desktop\|phone` |
