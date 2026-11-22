@@ -31,6 +31,8 @@ function numeric(raw) {
 
 // A display key can include a parenthetical note after its numeric value.
 const numericKey = (answer) => numeric(answer.replace(/\s*\([^()]*\)\s*$/, ""));
+// What a student types: «x = 655», «≈ 1.5» and spaces still count as the number.
+const typedValue = (value) => String(value).normalize("NFKC").replace(/^\s*[a-zа-я]\s*=\s*/i, "").replace(/^\s*[≈~]\s*/, "").trim();
 
 function num(s) {
   const t = String(s).normalize("NFKC").trim().replace(/\s+/g, "").replace(/,/g, ".").replace(/^\+/, "")
@@ -56,7 +58,7 @@ export function isCorrect(key, value) {
   // A typed key without any number (for example «2√3») is compared as text, like the teacher's own tests.
   const numbers = key.accepted.map(numericKey).filter((answer) => answer !== null);
   if (!numbers.length) return key.accepted.some((answer) => customRight(answer, value));
-  const actual = numeric(value);
+  const actual = numeric(typedValue(value));
   return actual !== null && numbers.includes(actual);
 }
 
@@ -224,7 +226,7 @@ export async function onRequest({ env, request }) {
     if ((typeof grading === "string" || grading.type === "mc") && !/^[A-D]$/.test(data.answer)) {
       return error(400, "Выберите вариант ответа.");
     }
-    if (grading.type === "spr" && numeric(data.answer) === null) return error(400, "Введите число или дробь, например −6/5.");
+    // A typed answer is always stored, even when it is not a number, so the teacher sees exactly what the student wrote.
     const correct = isCorrect(grading, data.answer);
     const timing = strict
       ? "AND ? >= r.starts_at + (q.number - 1) * ? AND ? < r.starts_at + q.number * ?"
