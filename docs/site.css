@@ -901,3 +901,23 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pg-tip { position: fixed; pointer-events: none; background: #0F0F0F; color: #F5F3EE; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; z-index: 50; opacity: 0; transition: opacity .08s; max-width: 260px; }
 .pg-tipn { color: #D9D5CD; font-size: 11.5px; }
 .pg-noise { color: #77736D; }
+/* Gemini picker (twins.js, 2026-11-23) */
+.tw-quick { margin: 12px 0 4px; }
+.tw-quick .row { flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tw-filt { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 12px; margin: 12px 0; }
+.tw-filt label, .tw-note { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #5E5A54; }
+.tw-filt select, .tw-note textarea { font: inherit; font-size: 14px; color: #0F0F0F; padding: 7px 9px; border: 1px solid var(--stone, #D9D5CD); border-radius: 9px; background: #fff; min-width: 0; }
+.tw-note { margin: 10px 0 4px; }
+.tw-selctl { align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.tw-list { list-style: none; padding: 0; margin: 8px 0; max-height: 360px; overflow-y: auto; border: 1px solid var(--stone, #D9D5CD); border-radius: 12px; background: #fff; }
+.tw-list li { border-top: 1px solid var(--stone, #D9D5CD); }
+.tw-list li:first-child { border-top: 0; }
+.tw-list label { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 9px 12px; cursor: pointer; align-items: start; }
+.tw-list label:hover { background: #F5F3EE; }
+.tw-list input { margin-top: 3px; }
+.tw-list b { font-weight: 600; font-size: 14px; }
+.tw-list small { display: block; color: #5E5A54; font-size: 12.5px; margin-top: 2px; }
+.tw-list li.hint { padding: 12px; }
+.pg-tw { font: inherit; font-size: 12px; padding: 3px 9px; border: 1px solid var(--stone, #D9D5CD); border-radius: 999px; background: #fff; color: #0F0F0F; cursor: pointer; white-space: nowrap; }
+.pg-tw:hover { border-color: #0F0F0F; }
+.pg-trap .pg-tw { margin-top: 4px; }

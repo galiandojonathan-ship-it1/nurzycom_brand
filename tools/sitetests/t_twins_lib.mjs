@@ -11,6 +11,10 @@ ok(inp && inp.mistakes.length === 2 && inp.mistakes[0].text && !inp.mistakes[1].
 ok(!JSON.stringify(inp).includes("name") && !JSON.stringify(inp).includes("secret"), "no name and no College Board text in the Gemini input");
 ok(twinsInput({ mistakes: [] }) === null && twinsInput({ perMistake: 5, mistakes: [own] }) === null && twinsInput({ mistakes: Array(7).fill(own) }) === null, "rejects empty, too many per mistake, more than 6 mistakes");
 ok(twinsInput({ mistakes: [{ ...own, skill: "Algebra" }] }) === null, "rejects an unknown RW skill");
+{ const f = twinsInput({ perMistake: 1, note: "  упор на запятую перед which  ", mistakes: [{ ...cb, focus: "Comma splice и слитные предложения", trapKind: "Перевёрнутая связь" }, { ...cb, focus: "x".repeat(81), trapKind: 5 }] });
+  ok(f && f.mistakes[0].focus === "Comma splice и слитные предложения" && f.mistakes[0].trapKind === "Перевёрнутая связь" && f.teacherNote === "упор на запятую перед which", "keeps the subtopic, the trap kind and the teacher note");
+  ok(f && !("focus" in f.mistakes[1]) && !("trapKind" in f.mistakes[1]), "drops a subtopic longer than 80 characters and a trap that is not text");
+  ok(twinsInput({ perMistake: 1, note: "z".repeat(900), mistakes: [cb] }).teacherNote.length === 300, "cuts the teacher note to 300 characters"); }
 const good = (source, extra = {}) => ({ source, mechanism: "Путает уступку с продолжением мысли.", passage: `A small orchard in the valley produced a record harvest of apples this autumn after years of drought and careful irrigation work by farmers number ${source}${extra.tag || ""}.`, prompt: "Which choice completes the text with the most logical transition?",
   options: ["Likewise,", "Nevertheless,", "For instance,", "Thus,"], answer: "B", trap: "A", rationale: "Контраст между засухой и урожаем.", trapWhy: "Likewise вводит сходство.", ...extra });
 const copied = good(1, { passage: "The museum's collection grew quickly over the decade. ______ the curators admitted that storage space was running out today." });

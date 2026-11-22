@@ -185,7 +185,8 @@
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
-      if (D.student === s.key && $("st-tw") && window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key, scope: "последние ошибки, по одной на навык", mistakes: () => twinSources(all) }); }).catch(() => { /* the card works without it */ });
+      if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: () => twinPool(all), quick: () => twinQuick(s),
+        load: async (c) => { const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
@@ -221,16 +222,28 @@
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
     const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
-    PVIEW.render(box, PROGRESS.compute(progObs(s, TAGS), tags), { name: s.name });
+    const res = PROGRESS.compute(progObs(s, TAGS), tags); D.prog = { key: s.key, res };
+    PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); } });   // «Похожие» on a subtopic or a trap
   }
-  async function twinSources(all) {
-    const bad = all.filter((q) => q.wrong > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0)), first = [], rest = [], seen = new Set();
-    bad.forEach((q) => (seen.has(q.sk) ? rest : (seen.add(q.sk), first)).push(q));
-    const out = [];
-    for (const q of [...first, ...rest].slice(0, 6)) {
-      const item = await teacherReviewItem(q).catch(() => null); if (!item) continue;
-      out.push({ id: q.id, title: q.title, sec: q.sec, sk: q.sk || item.sk, d: q.d || item.d, chosen: (q.mine || [])[0] || "", item });
-    }
+  // every first-attempt mistake of one student for the Gemini picker, with the subtopic and the trap from the progress tags
+  async function twinPool(all) {
+    const TAGS = await progTags().catch(() => ({})), NAME = (window.PVIEW && PVIEW.NAME) || {}, TRAP = (window.PVIEW && PVIEW.TRAP) || {};
+    return all.filter((q) => q.wrong > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0)).map((q) => {
+      const tg = TAGS[q.id] || {}, ch = /^[A-D]$/.test((q.mine || [])[0] || "") ? q.mine[0] : "", tk = ch && tg.t ? tg.t[ch] : "";
+      return { id: q.id, title: q.title, plabel: q.plabel || q.work || "", sec: q.sec, sk: q.sk || "", d: q.d || tg.d || "", chosen: ch, ts: q.ts, focus: NAME[tg.p] || "", trapKind: TRAP[tk] || "", q };
+    });
+  }
+  // picks from the progress analytics: weak and dropped subtopics, the trap chosen most often
+  function twinQuick(s) {
+    const r = D.prog && D.prog.key === s.key ? D.prog.res : null, NAME = (window.PVIEW && PVIEW.NAME) || {}, TRAP = (window.PVIEW && PVIEW.TRAP) || {};
+    if (!r || !r.snaps.length) return [];
+    const n = r.snaps.length - 1, out = [];
+    r.subs.filter((x) => x.n >= 3 && x.series[n] != null && x.series[n] < 0.45).sort((a, b) => a.series[n] - b.series[n]).slice(0, 2)
+      .forEach((x) => NAME[x.k] && out.push({ label: `Слабое место: ${NAME[x.k]}`, hint: `мастерство ${Math.round(x.series[n] * 100)}%`, f: { focus: NAME[x.k] } }));
+    r.subs.filter((x) => x.n >= 3).map((x) => ({ x, c: PROGRESS.change(r, x, 0, n) })).filter((y) => y.c && y.c.z <= -PROGRESS.ZMIN).slice(0, 2)
+      .forEach(({ x }) => NAME[x.k] && out.push({ label: `Просело: ${NAME[x.k]}`, hint: "падение больше шума", f: { focus: NAME[x.k] } }));
+    r.traps.filter((t) => t.n >= 4 && TRAP[t.trap]).sort((a, b) => b.now - a.now).slice(0, 2)
+      .forEach((t) => out.push({ label: `Ловушка: ${TRAP[t.trap]}`, hint: `выбирает в ${Math.round(t.now * 100)}% случаев, когда она есть`, f: { trap: TRAP[t.trap] } }));
     return out;
   }
   // one result of one student, question by question: only this student's answers (for discussing mistakes together)
@@ -261,8 +274,9 @@
     $("hw-all").onchange = () => { D.hwAll = $("hw-all").checked; hwReview(s, r); };
     $("hw-close").onclick = () => { box.innerHTML = ""; };
     if ($("hw-tw")) $("hw-tw").onclick = () => { $("hw-tw").remove(); TWINS.mount($("hw-twbox"), { name: s.name, key: s.key, scope: whatOf(r),
-      mistakes: async () => items.filter((q) => bad.has(String(q.n))).map((q) => ({ id: `${r.lesson}.${r.pid}.${q.n}`, title: `${whatOf(r)} · №${q.n}`,
-        sec: "VA".includes(r.lesson[0]) ? "rw" : "math", sk: q.sk, d: q.d, chosen: (tries[String(q.n)] || [])[0] || "", item: q })) });
+      mistakes: async () => { const TAGS = await progTags().catch(() => ({})), NAME = (window.PVIEW && PVIEW.NAME) || {}, TRAP = (window.PVIEW && PVIEW.TRAP) || {};
+        return items.filter((q) => bad.has(String(q.n))).map((q) => { const id = `${r.lesson}.${r.pid}.${q.n}`, tg = TAGS[id] || {}, ch = (tries[String(q.n)] || [])[0] || "";
+          return { id, title: `${whatOf(r)} · №${q.n}`, sec: "VA".includes(r.lesson[0]) ? "rw" : "math", sk: q.sk, d: q.d, chosen: ch, item: q, focus: NAME[tg.p] || "", trapKind: (tg.t && TRAP[tg.t[ch]]) || "" }; }); } });
       $("hw-twbox").querySelector("#tw-go").click(); };
   }
   function relink() {   // apply the teacher's merges again and keep them with the saved answers

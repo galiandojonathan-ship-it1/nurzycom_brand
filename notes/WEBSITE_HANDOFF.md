@@ -135,6 +135,12 @@ as the key, and a separate blind call solves the rest: a question whose key it d
 ambiguous, is dropped. The teacher unticks what is not needed and clicks «Задать ученику как «Мой тест»»: the test
 («Работа над ошибками · <имя> · <дата>») is saved in the sealed bank and the assign form opens with that student ticked.
 Uses the same `GEMINI_API_KEY`. Tests: `t_twins_lib.mjs`, `t_twins.js desktop|phone` on `pages_dev_gemini.mjs` (fake Gemini).
+Picker (2026-11-23): `TWINS.mount(box, { pool, load, quick })` lists every first-attempt mistake (`twinPool` in `teacher.js`:
+gaCollect rows + `tags.bin` subtopic `p` and trap `t[chosen]`, labels from `PVIEW.NAME`/`PVIEW.TRAP`). It filters by work, skill,
+subtopic, trap and period. Quick picks come from the progress result `D.prog` (`twinQuick`: mastery < 45% with n ≥ 3, a drop
+beyond 1 SE, traps chosen most). The handle's `preset(f)` is called by «Похожие» in the progress card (`PVIEW.render` `onTwins`).
+Up to 12 mistakes, sent as batches of 6 (the server keeps MAX_ITEMS 6). The payload adds `focus`, `trapKind` (≤ 80 characters)
+and `note` (≤ 300 → `teacherNote`) to the prompt. The one-part review keeps the one-click mode (`mistakes`, up to 12).
 Gemini puts the right option first: `lib/option-order.js` `balanceKeys` reorders every generated question (twins and the
 Verbal lesson) so a batch's keys are spread evenly over A–D, and remaps letter mentions in the explanations. Test: `t_option_order.mjs`.
 On the lesson: «Пульт урока» → «Тесты преподавателя» lists the bank (Gemini tests first, `src: "gemini"`) with «Решать вместе»
