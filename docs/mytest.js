@@ -21,13 +21,15 @@
   function renderList() {
     const tasks = myTasks(), byId = Object.fromEntries(st.bank.map((t) => [t.id, t]));
     const mine = [...new Set(tasks.map((x) => x.rk[1]))].filter((id) => byId[id]);
-    const open = st.bank.filter((t) => t.open && !mine.includes(t.id));
+    const lesson = /^lesson(?:-[a-z0-9]+)?$/.test(SITE.me() || "");   // the lesson account (shared screen) sees every test, Gemini drafts first
+    const open = lesson ? [...st.bank].filter((t) => !mine.includes(t.id)).sort((a, b) => (b.src === "gemini") - (a.src === "gemini") || (b.at || 0) - (a.at || 0))
+      : st.bank.filter((t) => t.open && !mine.includes(t.id));
     const card = (t, tag) => {
       const K = CTL.keys(who(), t.id), last = store(K.last), task = tasks.filter((x) => x.rk[1] === t.id).sort((a, b) => b.at - a.at)[0], run = store(runKey(t.id));
       return `<a class="set" href="mytest.html?t=${encodeURIComponent(t.id)}"><span class="no">${esc(t.q.length)}</span><span class="t">${esc(t.title || "Без названия")}</span>
         <span class="meta"><span class="label">${esc(tag)}${task && task.due ? ` · <span class="due">${esc(PLAN.dueTxt(task.due))}</span>` : ""}</span><span class="label">${qn(t.q.length)} · ${esc(mins(t))}${last ? ` · ${esc(last)}` : run ? " · начат" : ""}</span></span></a>`;
     };
-    const html = mine.map((id) => card(byId[id], "Задано вам")).join("") + open.map((t) => card(t, "Открыт для всех")).join("");
+    const html = mine.map((id) => card(byId[id], "Задано вам")).join("") + open.map((t) => card(t, lesson ? (t.src === "gemini" ? "Для урока · Gemini" : "Для урока") : "Открыт для всех")).join("");
     $("sets").innerHTML = html;
     $("list-msg").textContent = html ? "" : "Пока здесь пусто. Когда преподаватель задаст вам тест или откроет его для всех, он появится здесь.";
   }
@@ -56,6 +58,7 @@
       }))
     }));
     show("p-start"); $("s-title").focus({ preventScroll: true });
+    if (new URLSearchParams(location.search).get("live") === "1") { const b = document.getElementById("live-go"); if (b) b.click(); }
   }
   function loadRun() { try { const r = JSON.parse(store(runKey(st.t.id)) || "null"); return r && r.at === st.t.at ? r : null; } catch (e) { return null; } }
   const save = () => store(runKey(st.t.id), JSON.stringify(st.run));

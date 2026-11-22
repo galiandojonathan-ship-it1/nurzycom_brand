@@ -71,14 +71,14 @@ window.TWINS = (() => {
       if (!picked.length) { S.msg = "Отметьте хотя бы одно задание."; draw(); return; }
       if (!window.CTED || !window.CTL) { S.msg = "«Мои тесты» не загрузились: обновите страницу."; draw(); return; }
       const t = CTL.newTest();
-      t.title = `Работа над ошибками · ${o.name} · ${today()}`;
+      t.title = `Работа над ошибками · ${o.name} · ${today()}`; t.src = "gemini";
       t.note = "Задания на ваши недавние ошибки. Решайте без подсказок и проверяйте каждый вариант.";
       t.q = picked.map((q) => Object.assign(CTL.newQ("mc"), { passage: q.passage, stem: q.prompt, o: q.options.slice(), a: q.answer,
         x: `${q.rationale}\n\nЛовушка ${q.trap}: ${q.trapWhy}`, skill: q.skill, level: q.level || "M" }));
       const bad = t.q.filter((q) => CTL.problems(q).length).length;
       if (bad) { S.msg = `Не готовы заданий: ${bad}. Сгенерируйте заново.`; draw(); return; }
       const ok = await CTED.addTest(t, `Тест «${t.title}» сохранён`);
-      S.msg = ok ? "Тест сохранён в «Мои тесты»." : "Тест сохранён только в этом браузере: повторите, когда будет связь.";
+      S.msg = ok ? "Тест сохранён в «Мои тесты». На уроке он есть на аккаунте урока: «Пульт урока» → «Тесты преподавателя» (решать вместе или живая практика)." : "Тест сохранён только в этом браузере: повторите, когда будет связь.";
       draw();
       if (assign && ok) CTED.giveTo(t.id, o.key);
     }

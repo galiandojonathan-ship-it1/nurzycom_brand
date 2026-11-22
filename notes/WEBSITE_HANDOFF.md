@@ -135,6 +135,9 @@ as the key, and a separate blind call solves the rest: a question whose key it d
 ambiguous, is dropped. The teacher unticks what is not needed and clicks «Задать ученику как «Мой тест»»: the test
 («Работа над ошибками · <имя> · <дата>») is saved in the sealed bank and the assign form opens with that student ticked.
 Uses the same `GEMINI_API_KEY`. Tests: `t_twins_lib.mjs`, `t_twins.js desktop|phone` on `pages_dev_gemini.mjs` (fake Gemini).
+On the lesson: «Пульт урока» → «Тесты преподавателя» lists the bank (Gemini tests first, `src: "gemini"`) with «Решать вместе»
+(`mytest.html?t=<id>` on the shared screen) and «Живая практика» (`&live=1` opens the round settings at once); the lesson account's
+`mytest.html` list shows every test. Students still see a Gemini test only when it is assigned. Test: `t_lesson_ct.js desktop|phone`.
 
 Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesson`. Set the encrypted Cloudflare Pages
 secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy. The endpoint uses aggregate
