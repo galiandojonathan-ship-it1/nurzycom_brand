@@ -176,13 +176,14 @@
       ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
     html += kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
-    html += '<div id="st-rv"></div><div id="st-tw"></div>';
+    html += '<div id="st-prog"></div><div id="st-rv"></div><div id="st-tw"></div>';
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
     html += `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
+    progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
       if (D.student === s.key && $("st-tw") && window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key, scope: "последние ошибки, по одной на навык", mistakes: () => twinSources(all) }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
@@ -191,6 +192,36 @@
     if ($("join-go")) $("join-go").onclick = () => { const k = $("join-sel").value, o = D.students.find((x) => x.key === k); if (!o) return;
       new Set(o.rows.map((r) => r.raw)).forEach((sp) => (D.aliases[sp] = s.key)); relink(); };
     if ($("alias-reset")) $("alias-reset").onclick = (e) => { e.preventDefault(); D.aliases = {}; relink(); };
+  }
+  // «Прогресс ученика» (progress.js + progress-view.js): this student's first attempts → observations for the index
+  let tagsReady = null;
+  const progTags = () => (tagsReady ??= SITE.json("tags").then((t) => (t && t.q) || {}).catch(() => { tagsReady = null; return {}; }));
+  function progObs(s, TAGS) {
+    const out = [];
+    for (const r of s.rows) {
+      const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b ? r.sec / r.b : 0;
+      let base;
+      if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
+        base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock" }; };
+      } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final" });
+      else if ("VAM".includes(r.kind)) { const P = partOf(r.lesson, r.pid); if (!P) continue;
+        const ctx = P.mode === "test" ? "final" : /Домашн|Дополн/.test(P.title) ? "hw" : "learn", sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
+        base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx });
+      } else continue;
+      for (const a of r.answers) {
+        const b = base(a), tag = TAGS[b.id], blank = !a.tries.length;
+        out.push({ ...b, t: +r.ts, x: blank || wrong.has(String(a.n)) ? 0 : 1, blank, level: tag ? tag.d : "M", type: tag ? tag.ty : "mc", part: `${r.lesson}|${r.pid}|${+r.ts}`,
+          attempt: r.attempt || 1, chosen: a.tries[0] || "", second: a.tries.length > 1 && tag && tag.ty === "mc" ? (a.tries[1] === tag.k ? 1 : 0) : null, secs: per });
+      }
+    }
+    return out;
+  }
+  async function progMount(s) {
+    const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
+    box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
+    const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
+    const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
+    PVIEW.render(box, PROGRESS.compute(progObs(s, TAGS), tags), { name: s.name });
   }
   async function twinSources(all) {
     const bad = all.filter((q) => q.wrong > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0)), first = [], rest = [], seen = new Set();
