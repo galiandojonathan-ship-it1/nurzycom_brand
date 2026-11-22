@@ -44,4 +44,13 @@ const mockgloss = { words: { curators: { w: "curator", pos: "n", en: "a person i
 fs.writeFileSync(path.join(out, "data/lessons.bin"), await seal(lessons));
 fs.writeFileSync(path.join(out, "data/vocab.bin"), await seal(vocab));
 fs.writeFileSync(path.join(out, "data/mockgloss.bin"), await seal(mockgloss));
+// synthetic hard set X01 (practice.bin) for live-round tests: 10 made-up questions, key B for odd, D for even
+{ const PS = "fxp", px = [];
+  for (let i = 1; i <= 10; i++) { const key = i % 2 ? "B" : "D";
+    px.push({ i, b: [{ k: "p", v: `Synthetic passage number ${i} about a made-up town.` }], s: `Synthetic question ${i}: which choice is right?`, o: ["Alpha " + i, "Bravo " + i, "Charlie " + i, "Delta " + i], h: await sha(`${PS}:${i}:${key}`) }); }
+  fs.writeFileSync(path.join(out, "data/practice.bin"), await seal({ sets: [{ id: "X01", title: "Synthetic set", en: "Synthetic", minutes: 15, salt: PS, q: px }] })); }
+// logins «loop-test» and «lesson» with the same password, as mkreal.mjs makes them (cabinet, lesson and live-round tests)
+{ const a = JSON.parse(fs.readFileSync(path.join(out, "access.json"), "utf8")), entry = { v: 1, salt: a.salt, iter: a.iter, wrap: a.wrap };
+  const lid = async (l) => Buffer.from(await C.subtle.digest("SHA-256", enc.encode("bynurzy-login:" + l))).toString("base64").slice(0, 24);
+  a.users = { [await lid("loop-test")]: entry, [await lid("lesson")]: entry }; fs.writeFileSync(path.join(out, "access.json"), JSON.stringify(a)); }
 console.log("fixture ready:", out);

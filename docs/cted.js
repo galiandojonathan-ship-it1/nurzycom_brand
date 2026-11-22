@@ -155,20 +155,27 @@
     const me = E.stu ? R.rows.find((r) => r.u.id === E.stu) : null; if (!me) E.stu = "";
     const tools = `<div class="ct-mtools"><label class="f"><span>Чьи ошибки</span><select id="ct-stu"><option value="">Вся группа · сдали ${R.rows.length}</option>${R.rows.map((r) => `<option value="${esc(r.u.id)}"${r.u.id === E.stu ? " selected" : ""}>${esc(r.u.name)} · ${esc(r.last)}</option>`).join("")}</select></label>
       <label class="ct-only"><input type="checkbox" id="ct-only"${E.onlyWrong ? " checked" : ""}> только вопросы с ошибками</label></div>`;
-    let body, lead;
+    // answers kept for questions that are no longer in the test (deleted or replaced after students submitted)
+    const ids = new Set(t.q.map((q) => q.id)), staleOf = (rows) => rows.reduce((a, r) => a + Object.keys(r.A).filter((k) => k !== "sec" && !ids.has(k)).length, 0);
+    let body, lead, note = "";
     if (me) {
       const all = t.q.map((q, i) => ({ q, i, a: me.A[q.id] })).filter((x) => x.a !== undefined), bad = all.filter((x) => !rightOf(x.q, x.a));
       const show = E.onlyWrong ? bad : all;
+      const old = staleOf([me]);
       lead = `${esc(me.u.name)} · ${esc(me.last)} · ошибок и пропусков: ${bad.length}${me.att > 1 ? ` · попыток ${me.att}, показана последняя` : ""}`;
-      body = show.length ? show.map((x) => qcard(x.q, x.i, { mine: x.a, open: true })).join("") : `<p class="td-sub">${all.length ? "Ошибок нет: все ответы верные." : "В этой попытке нет ответов на нынешние вопросы теста."}</p>`;
+      note = old ? `Балл ${esc(me.last)} посчитан по прежней версии теста: ${old} ${pl(old, "ответ относится", "ответа относятся", "ответов относятся")} к вопросам, которые потом удалили или заменили. Их здесь нет.` : "";
+      body = show.length ? show.map((x) => qcard(x.q, x.i, { mine: x.a, open: true })).join("") : `<p class="td-sub">${!all.length ? "В этой попытке нет ответов на нынешние вопросы теста." : old ? "В нынешних вопросах теста ошибок нет." : "Ошибок нет: все ответы верные."}</p>`;
     } else {
-      const st = t.q.map((q, i) => { const rows = R.rows.filter((r) => r.A[q.id] !== undefined); return { q, i, rows, wrong: rows.filter((r) => !rightOf(q, r.A[q.id])).length }; })
-        .filter((x) => x.rows.length && (!E.onlyWrong || x.wrong));
+      const all = t.q.map((q, i) => { const rows = R.rows.filter((r) => r.A[q.id] !== undefined); return { q, i, rows, wrong: rows.filter((r) => !rightOf(q, r.A[q.id])).length }; });
+      const st = all.filter((x) => x.rows.length && (!E.onlyWrong || x.wrong)), fresh = all.filter((x) => !x.rows.length), old = staleOf(R.rows);
+      note = fresh.length || old ? [fresh.length ? `Без ответов: ${fresh.length === 1 ? "вопрос" : "вопросы"} ${fresh.map((x) => x.i + 1).join(", ")}. ${fresh.length === 1 ? "Его" : "Их"} добавили или заменили после того, как ученики сдали тест.` : "",
+        old ? `${old} ${pl(old, "ответ относится", "ответа относятся", "ответов относятся")} к удалённым или заменённым вопросам; ошибки в них здесь не видны, а балл в таблице посчитан по прежней версии.` : ""].filter(Boolean).join(" ") : "";
       st.sort((a, b) => b.wrong / b.rows.length - a.wrong / a.rows.length || a.i - b.i);
       lead = "Сначала самые трудные вопросы. Под каждым вариантом: сколько учеников его выбрали и кто.";
-      body = st.length ? st.map((x, k) => qcard(x.q, x.i, { rows: x.rows, wrong: x.wrong, open: k < 3 })).join("") : '<p class="td-sub">Ошибок нет: все ответили верно.</p>';
+      body = st.length ? st.map((x, k) => qcard(x.q, x.i, { rows: x.rows, wrong: x.wrong, open: k < 3 })).join("")
+        : `<p class="td-sub">${fresh.length === all.length ? "В сданных попытках нет ответов на нынешние вопросы теста: вопросы заменили после сдачи." : fresh.length || old ? "Ошибок нет в вопросах, на которые есть ответы." : "Ошибок нет: все ответили верно."}</p>`;
     }
-    return `<section class="ct-mist" id="ct-mist"><h3 tabindex="-1">Разбор ошибок</h3>${tools}<p class="hint">${lead}</p>${body}</section>`;
+    return `<section class="ct-mist" id="ct-mist"><h3 tabindex="-1">Разбор ошибок</h3>${tools}<p class="hint">${lead}</p>${note ? `<p class="hint ct-stale" role="note">${note}</p>` : ""}${body}</section>`;
   }
   const html = () => (!E.loaded ? '<p class="cb-wait">Загружаю тесты…</p>' : E.view === "edit" && E.d ? editHTML() : E.view === "res" ? resHTML() : listHTML());
 

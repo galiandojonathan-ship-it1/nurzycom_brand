@@ -286,25 +286,38 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   }
 
   async function saveAnswer(number, value) {
-    if (submissions.get(number)?.saving) return;
+    const current = submissions.get(number);
+    if (current?.saving) {
+      // An editable round keeps the student's latest choice: send it as soon as the earlier save ends.
+      if (state.editable && value) { current.next = value; render(displayedSet); }
+      return;
+    }
     if (!value) {
       submissions.set(number, { error: "Введите ответ." });
       render(displayedSet);
       return;
     }
-    submissions.set(number, { saving: true });
+    submissions.set(number, { saving: true, value });
     render(displayedSet);
+    let failure = null;
     try {
       await api("answer", { number, answer: value });
     } catch (error) {
-      submissions.set(number, { error: error.message });
+      failure = error;
+    }
+    const next = submissions.get(number)?.next;
+    if (!failure) {
+      if (drafts.get(number)?.trim() === value) drafts.delete(number);
+      state.answers = state.answers.filter((item) => item.question_number !== number);
+      state.answers.push({ question_number: number, answer: value });
+    }
+    submissions.delete(number);
+    if (next && next !== value) return saveAnswer(number, next);
+    if (failure) {
+      submissions.set(number, { error: failure.message });
       render(displayedSet);
       return;
     }
-    if (drafts.get(number)?.trim() === value) drafts.delete(number);
-    state.answers = state.answers.filter((item) => item.question_number !== number);
-    state.answers.push({ question_number: number, answer: value });
-    submissions.delete(number);
     render(displayedSet);
     await refresh();
   }
@@ -368,12 +381,13 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     const receipt = content.querySelector(".live-receipt");
     if (!receipt) return;
     const submission = submissions.get(number);
-    const text = submission?.saving ? "Сохраняем ответ…" : submission?.error || (answer ? "Ответ принят: " + answer : "");
+    const chosen = submission?.saving && state.editable ? submission.next || submission.value : answer;
+    const text = submission?.saving ? "Сохраняем ответ" + (state.editable ? ": " + chosen + "…" : "…") : submission?.error || (answer ? "Ответ принят: " + answer : "");
     if (receipt.textContent !== text) receipt.textContent = text;
     receipt.classList.toggle("live-feedback", !!submission?.error);
     for (const control of content.querySelectorAll("[data-live-submit]")) {
-      control.setAttribute("aria-disabled", String(!!submission?.saving));
-      if (control.dataset.liveChoice) control.setAttribute("aria-pressed", String(control.dataset.liveChoice === answer));
+      control.setAttribute("aria-disabled", String(!!submission?.saving && !state.editable));
+      if (control.dataset.liveChoice) control.setAttribute("aria-pressed", String(control.dataset.liveChoice === chosen));
     }
   }
 
