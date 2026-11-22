@@ -1,5 +1,6 @@
 // pages_dev.mjs with a fake Gemini: GEMINI_API_KEY is set and calls to generativelanguage.googleapis.com are answered locally.
-// Drafts: perMistake questions per mistake, key B, trap A. Blind solver: answers B, except the 2nd question (C), so one is dropped.
+// Drafts: perMistake questions per mistake, key B, trap A (the server then reorders the options). Blind solver: finds the right
+// option by its text, except on the 2nd question, so one is dropped.
 // usage: node pages_dev_gemini.mjs <docs dir> <port>    (log of what reached «Gemini»: gemini.log next to this file)
 import fs from "node:fs"; import path from "node:path"; import { fileURLToPath } from "node:url";
 const LOG = path.join(path.dirname(fileURLToPath(import.meta.url)), "gemini.log");
@@ -17,7 +18,10 @@ globalThis.fetch = async (url, opt) => {
       prompt: m.sec === "math" ? `If 2x + ${m.source + k} = ${2 * (m.source + 3) + m.source + k}, what is x?` : "Which choice completes the text with the most logical transition?",
       options: m.sec === "math" ? [`${m.source + 2}`, `${m.source + 3}`, `${m.source + 4}`, `${m.source + 5}`] : ["Similarly,", "Even so,", "For example,", "In short,"],
       answer: "B", trap: "A", rationale: "Синтетическое объяснение: верен B.", trapWhy: "A вводит сходство, а не контраст." }))) };
-  } else out = { items: data.questions.map((q, i) => ({ answer: i === 1 ? "C" : "B", sound: true })) };
+  } else out = { items: data.questions.map((q, i) => {   // a solver that finds the right option by its text; the 2nd answer is wrong on purpose
+    const m = /2x \+ (\d+) = (\d+)/.exec(q.prompt || ""), right = m ? String((+m[2] - +m[1]) / 2) : "Even so,";
+    const k = q.options.indexOf(right), letter = "ABCD"[k < 0 ? 0 : k];
+    return { answer: i === 1 ? "ABCD"[(k + 1) % 4] : letter, sound: true }; }) };
   return new Response(JSON.stringify({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(out) }] } }] }), { status: 200, headers: { "content-type": "application/json" } });
 };
 await import("./pages_dev.mjs");

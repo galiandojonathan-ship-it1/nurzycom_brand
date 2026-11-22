@@ -23,12 +23,14 @@ ok(out.every((q) => new Set(q.options).size === 4), "duplicate options dropped")
 const calls = [];
 const gen = async (key, instruction, data) => { calls.push(data);
   if (data.mistakes) return { questions: [good(1), good(1, { tag: "b" }), good(2), good(2, { tag: "d" })] };
-  return { items: data.questions.map((q, i) => ({ answer: i === 1 ? "C" : "B", sound: i !== 2 })) }; };
+  return { items: data.questions.map((q, i) => { const k = q.options.indexOf("Nevertheless,"); return { answer: i === 1 ? "ABCD"[(k + 1) % 4] : "ABCD"[k], sound: i !== 2 }; }) }; };
 const req = (b) => ({ json: async () => b });
 const r = await buildTwins(req({ perMistake: 2, mistakes: [own, cb] }), { GEMINI_API_KEY: "x" }, gen);
 ok(r.status === 200 && r.questions.length === 2 && r.dropped === 2 && r.asked === 4, "blind check drops the wrong key and the ambiguous one: " + JSON.stringify({ s: r.status, n: r.questions?.length, d: r.dropped }));
 ok(!JSON.stringify(calls[1]).includes('"answer"') && !JSON.stringify(calls[1]).includes('"trap"'), "the blind solver never sees keys or traps");
 ok((await buildTwins(req({ mistakes: [own] }), {}, gen)).status === 503, "no GEMINI_API_KEY → 503");
-ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async (k, i, d) => d.mistakes ? { questions: [good(1)] } : { items: [{ answer: "C", sound: true }] })).status === 422, "nothing passes → 422");
+ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async (k, i, d) => d.mistakes ? { questions: [good(1)] } : { items: [{ answer: "ABCD"[(d.questions[0].options.indexOf("Nevertheless,") + 1) % 4], sound: true }] })).status === 422, "nothing passes → 422");
+const r2 = await buildTwins(req({ perMistake: 2, mistakes: [own, cb] }), { GEMINI_API_KEY: "x" }, async (k, i, d) => d.mistakes ? { questions: [good(1), good(1, { tag: "b" }), good(2), good(2, { tag: "d" })] } : { items: d.questions.map((q) => ({ answer: "ABCD"[q.options.indexOf("Nevertheless,")], sound: true })) });
+ok(r2.status === 200 && new Set(r2.questions.map((q) => q.answer)).size === 4 && r2.questions.every((q) => q.options["ABCD".indexOf(q.answer)] === "Nevertheless," && q.options["ABCD".indexOf(q.trap)] === "Likewise,"), "4 drafts all keyed B by the model come back keyed A, B, C and D, key and trap still right");
 ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async () => { throw Object.assign(new Error(), { status: 429 }); })).status === 429, "rate limit → 429");
 console.log(`ALL PASS (${n})`);
