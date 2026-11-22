@@ -899,3 +899,5 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pg-trap { margin: 10px 0; } .pg-trap > div:first-child { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
 .pg-hab { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #ECE9E2; } .pg-hab .num { font-size: 18px; text-align: right; }
 .pg-tip { position: fixed; pointer-events: none; background: #0F0F0F; color: #F5F3EE; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; z-index: 50; opacity: 0; transition: opacity .08s; max-width: 260px; }
+.pg-tipn { color: #D9D5CD; font-size: 11.5px; }
+.pg-noise { color: #77736D; }
