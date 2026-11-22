@@ -931,3 +931,4 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .bbs-sec { margin: 10px 0; }
 .bbs-t { width: 100%; margin: 6px 0; }
 .cb-h3 { font-size: 1rem; margin: 18px 0 6px; }
+.bb-rep { color: #5E5A54; }

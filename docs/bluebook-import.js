@@ -136,17 +136,33 @@
         : cat ? (det.matches.length > 1 ? "Таблица подходит к нескольким тестам: навыки скрыты." : "Тест не найден в справочнике (сейчас: SAT Practice Tests 4–11). Ошибки видны, навыки скрыты.")
           : `Ошибок и пропусков: ${misses.length}. Навыки загружаются…`, "hint"));
       if (!misses.length) continue;
-      const ul = el("ul");
+      const ul = el("ul"); let seenN = 0, againN = 0;
       for (const r of misses) {
         const id = m && m.ids[r.module - 1][r.question - 1], it = id && cat.items[id];
         const skill = it ? (it.s || (it.si ? `${it.si} (по открытому индексу)` : "")) : "";
-        ul.append(el("li", `М${r.module}, №${r.question} · ${r.selected == null ? "пропуск" : r.selected} → ${r.answers.join(", ")}${skill ? " · " + skill : ""}`));
+        const li = el("li", `М${r.module}, №${r.question} · ${r.selected == null ? "пропуск" : r.selected} → ${r.answers.join(", ")}${skill ? " · " + skill : ""}`);
+        const rp = repeatsOf(id, m && m.test, cat);
+        if (rp.length) { seenN++; if (rp.some((x) => x.wrong)) againN++;
+          li.append(el("small", ` Этот вопрос есть и в: ${rp.map((x) => x.label + (x.wrong ? " (ошибка и тогда)" : x.right ? " (тогда верно)" : "")).join("; ")}.`, "bb-rep")); }
+        ul.append(li);
       }
+      if (seenN) out.append(el("p", `Из этих ошибок ${seenN} — вопросы, которые есть и в курсе или в других пробниках${againN ? `; в ${againN} из них вы ошиблись и тогда: это первые кандидаты на разбор` : ""}.`, "hint bb-repsum"));
       out.append(ul);
     }
     result.replaceChildren(out);
   }
 
+  // where else this question was: in the course (catalog item c: course question ids) and in other Bluebook tests of the catalog
+  let testsOf = null;
+  function repeatsOf(id, test, cat) {
+    if (!id || !cat) return [];
+    if (!testsOf) { testsOf = new Map(); for (const [t, x] of Object.entries(cat.tests)) for (const sec of ["rw", "math"]) for (const ids of Object.values(x[sec] || {})) ids.forEach((i) => { if (!testsOf.has(i)) testsOf.set(i, new Set()); testsOf.get(i).add(t); }); }
+    const it = cat.items[id] || {}, out = [], name = localStorage.getItem("hw_student") || "", get = (k) => localStorage.getItem(k);
+    for (const ref of it.c || []) { const own = window.BBSHARE ? BBSHARE.ownMock(ref, it.k, get, name) : null;
+      out.push({ label: window.BBSHARE ? BBSHARE.refLabel(ref) : ref, wrong: own === false, right: own === true }); }
+    for (const t of testsOf.get(id) || []) if (t !== test) out.push({ label: (cat.tests[t] || {}).label || t });
+    return out;
+  }
   function clear() { revision++; last = null; result.replaceChildren(); status.textContent = initial; }
 
   // the share block under a preview: explicit confirmation, one key per attempt, only with the student's own login

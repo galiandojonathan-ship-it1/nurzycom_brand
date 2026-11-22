@@ -184,8 +184,7 @@
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
-    if (window.BBSHARE && SITE.adminKey()) bbShares(s).then((sh) => { const b = $("st-bb"); if (b && D.student === s.key && sh.length) b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span>${BBSHARE.html(sh, { open: true })}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`; }).catch(() => { /* no accounts: nothing to show */ });
-    gaCollect({ keys: new Set([s.key]) }).then((all) => { if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
+    gaCollect({ keys: new Set([s.key]) }).then((all) => { bbRender(s, all); if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
       if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
         load: async (c) => { if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
           const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
@@ -234,6 +233,22 @@
       for (const u of r.data.users || []) { const nm = await SITE.nameOf(u.n).catch(() => null), k = nm && nm.name && window.FORMKIT ? FORMKIT.key(nm.name) : ""; if (k) { if (!m.has(k)) m.set(k, []); m.get(k).push(u.id); } }
       return m; })().catch(() => { ACCT = null; return new Map(); });
     return ACCT;
+  }
+  // the Bluebook block of a student card, with repeats: the same College Board question in the course (form answers of this
+  // student: right or wrong then) and in an earlier shared Bluebook result
+  async function bbRender(s, all) {
+    if (!window.BBSHARE || !SITE.adminKey()) return;
+    const [sh, cat] = await Promise.all([bbShares(s).catch(() => []), SITE.json("bluebook").catch(() => null)]);
+    const b = $("st-bb"); if (!b || D.student !== s.key || !sh.length) return;
+    const byId = new Map(all.map((q) => [q.id, q])); let again = 0;
+    const rep = (id, d) => {
+      const it = cat && cat.items[id], parts = [];
+      for (const ref of (it && it.c) || []) { const q = byId.get(ref); parts.push(`${BBSHARE.refLabel(ref)}${q ? (q.wrong ? ` · ✗ ${esc((q.mine || [])[0] || "")}` : " · ✓") : ""}`); if (q && q.wrong) again++; }
+      for (const e of sh) if (e.at < d.at) for (const x of Object.values(e.sections)) if (x.miss.some((m) => m[4] === id)) { parts.push(`Bluebook ${esc(x.label || "")} · ✗`); again++; }
+      return parts.length ? `<br><small class="bb-rep">Уже был: ${parts.join("; ")}</small>` : "";
+    };
+    const body = BBSHARE.html(sh, { open: true, rep });
+    b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span>${again ? `<p class="hint"><b>Повторные ошибки: ${again}.</b> Эти вопросы ученик уже решал в курсе или в прошлом пробнике и ошибся снова (✗).</p>` : ""}${body}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`;
   }
   async function bbShares(s) {
     const out = [];
