@@ -387,7 +387,7 @@
 
   // ---------- presentation viewer: PDF images with selectable text, editable slides and a drawing board
   const DK = { box: null, d: null, slides: [], i: 0, board: null, prev: null };
-  async function openDeck(id, coldStart = false) {
+  async function openDeck(id, coldStart = false, resumeAt = null) {
     const d = deckFor(id); if (!d || DK.box) return;
     DK.prev = { lq: document.body.dataset.lq, lt: document.body.dataset.lt };
     DK.box = document.createElement("div"); DK.box.className = "dk"; DK.box.setAttribute("role", "dialog"); DK.box.setAttribute("aria-label", "Презентация");
@@ -405,15 +405,24 @@
     DK.d = d; DK.uploaded = d.uploaded ? uploadedSlides(d.id) : null; DK.slides = Array.from({ length: d.n });
     const lesson = C.lessons.find((l) => l.tag === id);
     const source = DK.uploaded;
+    const textByIndex = new Map();
+    const readSlide = source ? async (index) => (await source)[index] : null;
     const readText = async (index) => {
-      if (!source) return "";
-      const entry = (await source)[index];
-      if (entry?.paragraphs) return [entry.title, ...entry.paragraphs].join("\n");
-      return SlidePracticeContent.pdfText(entry?.text?.items || []);
+      if (!readSlide) return "";
+      if (!textByIndex.has(index)) {
+        const entry = await readSlide(index);
+        textByIndex.set(index, entry?.paragraphs ? [entry.title, ...entry.paragraphs].join("\n")
+          : SlidePracticeContent.pdfText(entry?.text?.items || []));
+      }
+      return textByIndex.get(index);
     };
-    window.LessonPracticeHost?.attach(DK.box, d, lesson, () => DK.i, readText);
-    go(Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)));
-    if (coldStart) window.LessonPracticeHost?.startCold(lesson, d, readText);
+    window.LessonPracticeHost?.attach(DK.box, d, lesson, () => DK.i, readText, readSlide, (index) => go(index, false));
+    go(resumeAt ?? Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)), !coldStart && resumeAt === null);
+    if (resumeAt !== null) {
+      const next = DK.box.querySelector(".lp-control [data-lp-deck-advance]:not([hidden])");
+      (next || DK.box.querySelector('[data-k="next"]')).focus();
+    }
+    if (coldStart) window.LessonPracticeHost?.startCold(lesson, d, readText, readSlide, () => DK.d === d);
   }
   // one encrypted image per slide (tools/private/deckpack.mjs), fetched when shown; the next one is fetched ahead
   function slide(i) {
@@ -434,7 +443,7 @@
       .then((b) => SITE.open(b)).then((u) => ({ url: URL.createObjectURL(new Blob([u], { type: "image/" + (d.fmt || "jpeg") })) }));
     return DK.slides[i];
   }
-  function go(i) {
+  function go(i, broadcast = true) {
     if (!DK.d || i < 0 || i >= DK.d.n) return;
     DK.i = i; $("dk-pos").textContent = `${i + 1} / ${DK.d.n}`;
     const box = DK.box, img = box.querySelector(".dk-frame img"), native = box.querySelector(".dk-native"), text = box.querySelector(".dk-text");
@@ -467,7 +476,8 @@
     document.body.dataset.lq = `DECK.${DK.d.id}.${i + 1}`; document.body.dataset.lt = `Презентация · ${DK.d.title}`;   // the lesson's timeline records the slides
     if (window.LESSON && LESSON.tick) LESSON.tick();   // at once, a quick flip through slides is recorded too
     if (DK.board) DK.board.show(`${DK.d.id}.${i}`);
-    window.LessonPracticeHost?.publish(DK.d, i, C.lessons.find((l) => l.tag === DK.d.id));
+    window.LessonPracticeHost?.view(DK.d, i);
+    if (broadcast) window.LessonPracticeHost?.publish(DK.d, i, C.lessons.find((l) => l.tag === DK.d.id));
   }
   async function showDeckText({ text, viewport }, host, current) {
     const { TextLayer } = await pdfModule();
@@ -554,8 +564,8 @@
     else if (b.dataset.l) { C.open = C.open === b.dataset.l ? null : b.dataset.l; document.querySelectorAll(".cr-tile").forEach((x) => x.setAttribute("aria-expanded", String(x.dataset.l === C.open))); panel(); }
     else if (b.hasAttribute("data-deck-cold")) {
       const lesson = C.lessons.find((l) => l.tag === C.open);
-      if (window.LessonPracticeHost?.coldPart(lesson)) window.LessonPracticeHost.startCold(lesson);
-      else if (deckFor(C.open)?.uploaded) openDeck(C.open, true);
+      if (deckFor(C.open)?.uploaded) openDeck(C.open, true);
+      else if (window.LessonPracticeHost?.coldPart(lesson)) window.LessonPracticeHost.startCold(lesson);
     }
     else if (b.dataset.deck) openDeck(b.dataset.deck);
     else if (b.dataset.deckUpload) {
@@ -580,9 +590,13 @@
       C.lessons = ((L && (L.lessons || L)) || []).filter((l) => l && l.tag && Array.isArray(l.parts) && /^[VM]/.test(l.tag));
       const lesson = new URLSearchParams(location.search).get("lesson");
       if (C.lessons.some((l) => l.tag === lesson)) { C.open = lesson; C.course = lesson[0]; }
-      window.LessonPracticeHost?.mount($("lp-home"));
       C.vocab = V; C.decks = (D && D.decks) || [];
       C.uploaded = uploaded?.ok && Array.isArray(uploaded.data?.decks) ? uploaded.data.decks : [];
+      window.LessonPracticeHost?.mount($("lp-home"), (view) => {
+        const deck = deckFor(view.id);
+        return !!deck && (deck.revision || deck.at || null) === view.updated && deck.n === view.count &&
+          Number.isInteger(view.index) && view.index >= 0 && view.index < deck.n;
+      }, (view) => openDeck(view.id, false, view.index));
       render(); setInterval(now, 30000);
     });
   });

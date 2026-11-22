@@ -227,7 +227,7 @@ export async function onRequest(context) {
       if (request.headers.get("if-none-match") === "*" && await env.USERS.get(key) !== null) {
         return fail(412, "presentation already exists");
       }
-      const metadata = { n: b.n, w: b.w, h: b.h };
+      const metadata = { n: b.n, w: b.w, h: b.h, revision: crypto.randomUUID() };
       await env.USERS.put(key, b.data, { metadata });
       return json({ deck: { id, ...metadata } });
     }

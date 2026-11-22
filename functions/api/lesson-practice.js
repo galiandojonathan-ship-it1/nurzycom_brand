@@ -40,7 +40,7 @@ function validQuestion(data) {
     ["mc", "spr"].includes(kind) && Array.isArray(accepted) && accepted.length <= 20 &&
     accepted.every((a) => typeof a === "string" && a.trim() && a.length <= 64) &&
     (kind === "mc" ? (accepted.length === 1 && letters.includes(accepted[0])) ||
-      (accepted.length === 0 && ref.split(".")[1] === "slide") : accepted.length > 0);
+      (accepted.length === 0 && /^(?:slide|v[0-9a-f]{9})$/.test(ref.split(".")[1])) : accepted.length > 0);
 }
 const coldStep = (ref) => /:cold:([1-4])$/.exec(ref || "")?.[1];
 
