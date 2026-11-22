@@ -61,7 +61,7 @@
       <label class="live-setting-check" data-self-paced><input name="selfPaced" type="checkbox"> Каждый ученик решает в своём темпе</label>
       <label data-seconds>Секунд на вопрос<input name="seconds" type="number" min="5" max="600" step="1" required></label>
       <p class="hint" data-mode></p>
-      <label class="live-setting-check"><input name="calculator" type="checkbox"> Калькулятор Desmos</label>
+      <label class="live-setting-check"><input name="calculator" type="checkbox"> Desmos и справочник формул</label>
       <label class="live-setting-check"><input name="shuffle" type="checkbox"> Перемешать выбранные вопросы</label>
       <p class="hint" data-duration></p><p class="hint" role="status"></p>
       <div class="row"><button class="btn" type="submit">Создать раунд</button><button class="btn ghost" type="button" data-cancel>Отмена</button></div>
