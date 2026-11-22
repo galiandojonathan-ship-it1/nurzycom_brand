@@ -1,7 +1,7 @@
 // The presentation only controls the active question. Names and answers stay in the teacher monitor.
 window.LessonPracticeHost = (() => {
   const params = new URLSearchParams(location.search), hostId = params.get("practiceHost");
-  const storageKey = "lp-room";
+  const storageKey = "lp-room", viewKey = "lp-room-view", queueKey = "lp-room-queue";
   const stored = (key) => { try { return sessionStorage.getItem(key) || ""; } catch { return ""; } };
   const remember = (id) => { try { sessionStorage.setItem(storageKey, id); } catch { /* optional resume */ } };
   const el = (tag, value) => { const node = document.createElement(tag); if (value != null) node.textContent = value; return node; };
@@ -10,7 +10,21 @@ window.LessonPracticeHost = (() => {
     "Inferences", "Boundaries", "Form, Structure, and Sense", "Transitions", "Rhetorical Synthesis"
   ].find((s) => l.title.includes(s)) || "";
   let room = hostId || stored(storageKey), closed = false, panels, status, roster, monitorLink, studentLink;
-  let signature = "", findings = new Map(), running = false, activeLesson = "", dispatchNumber = 0, dispatch = Promise.resolve(), sent = null;
+  let signature = "", findings = new Map(), refreshing, activeLesson = "", dispatchNumber = 0, dispatch = Promise.resolve(), sent = null;
+  let restoring = !!room, resumeFailed = false, teachingView, home;
+  const roomStorage = (key) => { try { return JSON.parse(stored(key)); } catch { return null; } };
+  let savedView = roomStorage(viewKey), queue = roomStorage(queueKey), sendingStage = false;
+  const saveQueue = () => { try { sessionStorage.setItem(queueKey, JSON.stringify(queue)); } catch { /* optional resume */ } };
+  const deckPosition = (deck) => ({ id: deck.id, updated: deck.revision || deck.at || null, count: deck.n });
+  function rememberView(position = teachingView) {
+    if (hostId || !room || closed || !position) return;
+    savedView = { ...position, room };
+    try { sessionStorage.setItem(viewKey, JSON.stringify(savedView)); } catch { /* optional resume */ }
+  }
+  function view(deck, index) {
+    teachingView = { ...deckPosition(deck), index };
+    if (!restoring) rememberView();
+  }
   let accounts, creating, autoReport = false, cold = 0, activeNumber, advancing = false, preparingCold = false;
   let historyCurrent, historyRoom, attemptsByKey = new Map();
   const coldPart = (lesson) => lesson?.parts.find((p) => p.b && p.q?.length >= 4 && /холодн|cold[ -]+start/i.test(p.title));
@@ -27,9 +41,27 @@ window.LessonPracticeHost = (() => {
     if (status) status.textContent = message;
     for (const controls of deckUIs.values()) controls.status.textContent = message;
   }
+  function setClassState(node, message) {
+    node.hidden = !message;
+    if (node.textContent !== message) node.textContent = message;
+  }
   function links() {
-    const visible = !!room && !closed;
-    if (panels) panels.hidden = !room;
+    const visible = !!room && !closed && !restoring;
+    const classState = restoring ? "Восстанавливаю практику…" : visible
+      ? cold ? `У класса холодный старт · ${cold} из 4` : activeNumber ? `У класса вопрос ${activeNumber}` : "Класс ждёт следующий вопрос"
+      : "";
+    if (panels) panels.hidden = !room || restoring;
+    if (home) {
+      home.create.disabled = restoring;
+      home.create.hidden = !!hostId || (!!room && !closed);
+      home.retry.hidden = !restoring || !resumeFailed;
+      setClassState(home.state, classState);
+      const candidate = visible && !hostId && savedView?.room === room ? savedView : null;
+      const available = candidate && home.canReturn(candidate);
+      home.returnSlide.hidden = !available;
+      if (available) home.returnSlide.textContent = `Вернуться к слайду ${candidate.index + 1}`;
+      if (home.unavailable) setClassState(home.unavailable, candidate && !available ? "Презентация изменилась. Откройте её из списка уроков." : "");
+    }
     if (room && studentLink) {
       studentLink.href = link("practice.html", "lessonRoom");
       studentLink.textContent = visible ? "Ссылка для учеников" : "Ссылка на завершённую практику";
@@ -39,7 +71,7 @@ window.LessonPracticeHost = (() => {
     }
     const updateAdvance = (button) => {
       button.hidden = !visible || !cold;
-      button.disabled = advancing;
+      button.disabled = advancing || !activeNumber || sendingStage || !!roomQueue()?.pending;
       button.textContent = cold === 4 ? "Закончить холодный старт · 4/4" : `Следующий вопрос · ${cold}/4`;
     };
     if (panels) updateAdvance(panels.querySelector("[data-lp-advance]"));
@@ -48,6 +80,8 @@ window.LessonPracticeHost = (() => {
       controls.monitor.hidden = !room;
       controls.monitor.href = room ? link("classroom.html", "practiceHost") : "#";
       controls.copy.hidden = !visible;
+      setClassState(controls.state, classState);
+      if (controls.queue) renderQueue(controls.queue);
     }
   }
   async function canonicalAccounts(refresh = false) {
@@ -70,10 +104,15 @@ window.LessonPracticeHost = (() => {
     catch { notify(url); }
   }
   async function create(title) {
+    if (restoring) {
+      await refresh();
+      if (restoring) throw Error("Дождитесь восстановления практики и попробуйте ещё раз.");
+    }
     if (room && !closed) return room;
     creating ||= api("create", { title: title.slice(0, 160) }).then(({ room: id }) => {
       room = id; remember(room); closed = false; cold = 0; activeNumber = null; sent = null; findings = new Map(); autoReport = false; signature = "";
       activeLesson = window.LESSON?.session()?.id || "";
+      rememberView();
       links(); notify("Практика открыта. Скопируйте ссылку для учеников.");
       return id;
     }).finally(() => { creating = null; });
@@ -140,12 +179,12 @@ window.LessonPracticeHost = (() => {
     }
   }
   async function finish() {
-    if (!room || closed) return;
+    if (!room || closed || restoring) return;
     try {
       await api("close", {});
       closed = true; cold = 0; autoReport = true; links();
       notify("Практика завершена. Gemini анализирует ответы учеников.");
-      refresh();
+      refresh(true);
     } catch (error) { notify(error.message); }
   }
   const answerStatus = (answer) => answer.correct == null ? "без ключа" : answer.correct ? "верно" : "ошибка";
@@ -170,8 +209,7 @@ window.LessonPracticeHost = (() => {
   function renderMonitor(state, names) {
     const previous = roster.querySelector(".lp-matrix-wrap"), scroll = previous?.scrollLeft || 0;
     const focused = previous?.contains(document.activeElement) ? document.activeElement.dataset.lpFocus : null;
-    const heading = el("p", state.closed ? "Итоги практики" : state.cold ? `Холодный старт · ${state.cold}/4` :
-      state.current ? `Сейчас вопрос ${state.current}` : "Ученики ждут вопрос.");
+    const heading = el("p", state.closed ? "Итоги практики" : "Ответы учеников");
     heading.className = "lp-matrix-status";
     roster.replaceChildren(heading);
     if (!state.members.length) { roster.append(el("p", "Пока никто не подключился.")); return; }
@@ -228,10 +266,13 @@ window.LessonPracticeHost = (() => {
     wrap.scrollLeft = scroll;
     if (focused) [...wrap.querySelectorAll("[data-lp-focus]")].find((button) => button.dataset.lpFocus === focused)?.focus({ preventScroll: true });
   }
-  async function refresh() {
-    if (running || !room || !roster) return;
-    running = true;
-    const roomId = room;
+  async function refresh(afterUpdate = false) {
+    if (afterUpdate) await refreshing;
+    if (!room || !roster) return;
+    refreshing ||= readRoom(room).finally(() => { refreshing = null; });
+    return refreshing;
+  }
+  async function readRoom(roomId) {
     try {
       let full = historyRoom !== roomId || closed;
       let state = await api("host", undefined, full, roomId);
@@ -245,6 +286,13 @@ window.LessonPracticeHost = (() => {
       for (const a of state.attempts) attemptsByKey.set(`${a.account}:${a.number}`, a);
       historyRoom = roomId; historyCurrent = state.current;
       closed = state.closed; cold = state.cold || 0; activeNumber = state.current;
+      if (restoring) {
+        restoring = false; resumeFailed = false;
+        if (status) status.textContent = "";
+        for (const controls of deckUIs.values()) controls.status.textContent = "";
+        rememberView();
+      }
+      reconcileQueue(state);
       links();
       const data = JSON.stringify([state, [...attemptsByKey.values()]]);
       if (signature !== data) {
@@ -264,26 +312,47 @@ window.LessonPracticeHost = (() => {
       }
     } catch (error) {
       if (roomId !== room) return;
-      if (error.status === 404 && !hostId) { room = ""; remember(""); links(); }
-      notify(error.message);
+      if (error.status === 404) {
+        room = ""; restoring = false; resumeFailed = false;
+        if (!hostId) remember("");
+        links();
+        notify("Сохранённая практика больше недоступна.");
+      } else if (restoring) {
+        resumeFailed = true; links();
+        notify("Связь прервалась. Пульт повторит проверку.");
+      } else notify(error.message);
     }
-    finally { running = false; }
   }
-  function mount(root) {
+  function mount(root, canReturn, returnToSlide) {
     if (!root || !SITE.adminKey()) return;
     root.hidden = false;
     root.innerHTML = `<section class="cr-card">
       <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p>${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Раздайте одну ссылку. Откройте презентацию и нажмите «Показать с этого слайда»."}</p>
+      <p data-lp-current role="status" hidden></p>
       <div class="lp-control"><button class="btn" type="button" data-lp-new>Открыть практику</button>
-        <div data-lp-panels class="lp-control" hidden><a class="btn ghost" data-lp-link></a>
+        <button class="btn ghost" type="button" data-lp-retry hidden>Повторить восстановление</button>
+        <div data-lp-panels class="lp-control" hidden>
+          <button class="btn" data-lp-return type="button" hidden></button>
+          <button class="btn ghost" data-lp-advance type="button" hidden></button>
+          <a class="btn ghost" data-lp-link></a>
           <button class="btn ghost" data-lp-copy type="button">Копировать ссылку</button>
           <a class="btn ghost" data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a>
-          <button class="btn ghost" data-lp-advance type="button" hidden></button>
           <button class="btn ghost" data-lp-finish type="button">Завершить и запустить анализ</button></div></div>
-      <p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
+      <p data-lp-view-notice hidden></p><p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
     panels = root.querySelector("[data-lp-panels]"); status = root.querySelector("[data-lp-status]"); roster = root.querySelector(".lp-roster");
     monitorLink = root.querySelector("[data-lp-monitor]"); studentLink = root.querySelector("[data-lp-link]");
-    root.querySelector("[data-lp-new]").onclick = () => room && !closed ? notify("Ссылка уже готова. Её можно скопировать.") : newRoom(window.LESSON?.session()?.group || "Практика SAT");
+    home = { create: root.querySelector("[data-lp-new]"), retry: root.querySelector("[data-lp-retry]"),
+      returnSlide: root.querySelector("[data-lp-return]"), unavailable: root.querySelector("[data-lp-view-notice]"),
+      state: root.querySelector("[data-lp-current]"), canReturn };
+    home.create.onclick = () => room && !closed ? notify("Ссылка уже готова. Её можно скопировать.") : newRoom(window.LESSON?.session()?.group || "Практика SAT");
+    home.retry.onclick = async () => {
+      home.retry.disabled = true;
+      try { await refresh(); } finally { home.retry.disabled = false; }
+    };
+    home.returnSlide.onclick = () => {
+      if (savedView?.room === room && !restoring && !closed && canReturn(savedView)) returnToSlide(savedView);
+      else links();
+    };
     root.querySelector("[data-lp-copy]").onclick = copyLink;
     root.querySelector("[data-lp-finish]").onclick = finish;
     root.querySelector("[data-lp-advance]").onclick = advance;
@@ -302,7 +371,7 @@ window.LessonPracticeHost = (() => {
       if (activeLesson && !window.LESSON?.session()) { activeLesson = ""; finish(); }
     });
   }
-  function key(deck) { return "lp-slide:" + deck.id + ":" + deck.n + ":" + (deck.at || ""); }
+  function key(deck) { return "lp-slide:" + deck.id + ":" + deck.n + ":" + (deck.revision || deck.at || ""); }
   function mapping(deck) {
     try { return JSON.parse(localStorage.getItem(key(deck)) || "{}"); } catch { return {}; }
   }
@@ -324,7 +393,7 @@ window.LessonPracticeHost = (() => {
     catch { notify("Не удалось сохранить привязку в браузере."); }
   }
   async function publish(deck, index, lesson, choice) {
-    if (cold && !choice) return;
+    if ((cold || restoring || sendingStage || roomQueue()?.pending || roomQueue()?.stage >= 0) && !choice) return;
     const map = choice || mapping(deck)[index];
     if (!map || !room || closed || !lesson) return;
     const revision = ++dispatchNumber, id = room;
@@ -365,19 +434,29 @@ window.LessonPracticeHost = (() => {
     input.value = value; input.required = true;
     return input;
   }
-  function slideItem(index, draft, answer) {
+  function slideItem(index, draft, answer, material) {
     const { passage, stem } = SlidePracticeContent.splitPrompt(draft.prompt);
-    return { t: "mc", n: index + 1, stim: passageHTML(passage), stem: paragraphs(stem), opts: draft.opts.map(safeText), ans: answer };
+    return { t: "mc", n: index + 1, stim: material?.stim ?? passageHTML(passage), stem: material?.stem ?? paragraphs(stem),
+      opts: draft.opts.map(safeText), ans: answer };
   }
-  async function publishSlide(lesson, index, draft, answer, visible = () => true) {
-    const payload = await questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson);
+  async function slidePayload(lesson, index, draft, answer, material) {
+    const question = slideItem(index, draft, answer, material);
+    const payload = await questionPayload(question, { id: "slide" }, lesson);
+    if (material) {
+      payload.ref = `${lesson.tag}.${await SlideMaterialPreview.reference(material, answer)}.${index + 1}`;
+      if (payload.snapshot.length > 160000) throw Error("Фрагмент слишком большой. Уменьшите выделение.");
+    }
+    return payload;
+  }
+  async function publishSlide(lesson, index, draft, answer, visible = () => true, material) {
+    const payload = await slidePayload(lesson, index, draft, answer, material);
     if (!visible()) return;
     const id = await create(lesson.title);
     const revision = ++dispatchNumber;
     const send = dispatch.catch(() => {}).then(async () => {
       if (revision !== dispatchNumber || id !== room || !visible()) return;
       await api("show", payload);
-      cold = 0; sent = null; links(); await refresh();
+      cold = 0; sent = null; links(); await refresh(true);
       notify(`Вопрос со слайда ${index + 1} открыт у учеников.${answer ? "" : " Ключ не найден. Ответы сохраняются без оценки."}`);
     });
     dispatch = send;
@@ -489,15 +568,36 @@ window.LessonPracticeHost = (() => {
     const loaded = await Promise.allSettled(parts.map(async (p) => (await readPart(p)).map((question) => ({ part: p.id, question }))));
     return loaded.flatMap((part) => part.status === "fulfilled" ? part.value : []);
   }
-  async function recognize(box, deck, lesson, current, readText, button) {
+  async function resolveSlide(deck, lesson, index, readText, readSlide) {
+    const text = await readText(index);
+    const parsed = SlideMaterialPreview.readDraft(text);
+    const material = readSlide ? await SlideMaterialPreview.prepare(deck, index, await readSlide(index), parsed, text) : null;
+    const draft = material?.draft || parsed;
+    if (!draft) return { text };
+    let answer = SlidePracticeContent.answerKey(text);
+    const slot = SlidePracticeContent.coldNumber(text);
+    if (!answer && slot) {
+      const recap = await readColdDeck(deck, readText).catch(() => null);
+      answer = recap?.keys?.[slot - 1];
+    }
+    if (!answer && index + 1 < deck.n) {
+      const next = await readText(index + 1).catch(() => "");
+      answer = SlidePracticeContent.nextKey(text, next);
+      if (!answer && index + 2 < deck.n) {
+        answer = SlidePracticeContent.nextKey(text, next, await readText(index + 2).catch(() => ""));
+      }
+    }
+    if (!answer) answer = SlideQuestionMatch.exactSlide(draft, await questionCandidates(lesson))?.question.ans;
+    return { text, draft, answer, material };
+  }
+  async function recognize(box, deck, lesson, current, readText, readSlide, button) {
     const index = current();
     const visible = () => box.isConnected && index === current();
     button.disabled = true;
     notify("Ищу вопрос по тексту слайда…");
     try {
-      const text = await readText(index);
+      const { text, draft, answer, material } = await resolveSlide(deck, lesson, index, readText, readSlide);
       if (!visible()) return;
-      const draft = SlidePracticeContent.parse(text);
       if (!draft) {
         const saved = mapping(deck)[index];
         if (saved && !SlidePracticeContent.isSolution(text)) {
@@ -508,21 +608,7 @@ window.LessonPracticeHost = (() => {
         }
         return;
       }
-      let answer = SlidePracticeContent.answerKey(text);
-      const slot = SlidePracticeContent.coldNumber(text);
-      if (!answer && slot) {
-        const recap = await readColdDeck(deck, readText).catch(() => null);
-        answer = recap?.keys?.[slot - 1];
-      }
-      if (!answer && index + 1 < deck.n) {
-        const next = await readText(index + 1).catch(() => "");
-        answer = SlidePracticeContent.nextKey(text, next);
-        if (!answer && index + 2 < deck.n) {
-          answer = SlidePracticeContent.nextKey(text, next, await readText(index + 2).catch(() => ""));
-        }
-      }
-      if (!answer) answer = SlideQuestionMatch.exactSlide(draft, await questionCandidates(lesson))?.question.ans;
-      await publishSlide(lesson, index, draft, answer, visible);
+      await publishSlide(lesson, index, draft, answer, visible, material);
     } catch (error) { if (visible()) notify(error.message); }
     finally { button.disabled = false; }
   }
@@ -534,7 +620,7 @@ window.LessonPracticeHost = (() => {
         let keys = null;
         for (let i = 0; i < deck.n; i++) {
           const text = await readText(i), number = SlidePracticeContent.coldNumber(text);
-          if (number && !slides.has(number)) slides.set(number, { index: i, text, draft: SlidePracticeContent.parse(text) });
+          if (number && !slides.has(number)) slides.set(number, { index: i, text, draft: SlideMaterialPreview.readDraft(text) });
           keys ||= SlidePracticeContent.recapKeys(text);
           if (slides.size === 4 && keys) break;
         }
@@ -544,89 +630,328 @@ window.LessonPracticeHost = (() => {
     }
     return coldDecks.get(deck);
   }
-  async function coldQuestions(lesson, part, deck, readText) {
-    const { slides, keys } = await readColdDeck(deck, readText).catch(() => ({ slides: new Map(), keys: null }));
-    if (slides.size === 4) {
+  const coldSlots = [1, 2, 3, 4];
+  async function checkMaterial(deck, slide, readSlide) {
+    if (!readSlide) return {};
+    const { index, draft, text } = slide;
+    const entry = await readSlide(index);
+    try { return { material: await SlideMaterialPreview.prepare(deck, index, entry, draft, text) }; }
+    catch (error) { return { issue: error.message }; }
+  }
+  async function coldQuestions(lesson, deck, readText, readSlide) {
+    const { slides, keys } = await readColdDeck(deck, readText);
+    if (slides.size) {
       const candidates = keys && [...slides.values()].every(({ draft }) => draft) ? []
         : await questionCandidates(lesson).catch(() => []);
-      return [1, 2, 3, 4].map((number) => {
-        const slide = slides.get(number), answer = SlidePracticeContent.answerKey(slide.text) || keys?.[number - 1];
-        if (slide.draft && answer) return { ...slide, answer };
-        if (slide.draft) return { ...slide, answer: SlideQuestionMatch.exactSlide(slide.draft, candidates)?.question.ans };
+      return Promise.all(coldSlots.map(async (slot) => {
+        const slide = slides.get(slot);
+        if (!slide) return { slot, issue: "Слайд с этим номером не найден." };
+        const { material, issue } = await checkMaterial(deck, slide, readSlide);
+        if (issue) return { ...slide, slot, issue };
+        const draft = material?.draft || slide.draft;
+        if (draft) {
+          const answer = SlidePracticeContent.answerKey(slide.text) || keys?.[slot - 1] ||
+            SlideQuestionMatch.exactSlide(draft, candidates)?.question.ans;
+          return { ...slide, slot, draft, answer, material };
+        }
         const match = SlideQuestionMatch.match(slide.text, candidates);
-        if (match) return { part: lesson.parts.find((p) => p.id === match.part),
-          question: candidates.find((q) => q.part === match.part && q.question.n === match.number)?.question };
-        return slide;
-      });
+        const question = match && candidates.find((item) => item.part === match.part && item.question.n === match.number)?.question;
+        if (question) return { ...slide, slot, part: lesson.parts.find((part) => part.id === match.part), question };
+        return { ...slide, slot, issue: "Не удалось прочитать вопрос и четыре варианта." };
+      }));
     }
+    const part = coldPart(lesson);
     if (!part) return [];
     const items = await readPart(part);
-    return part.q.slice(0, 4).map(({ n }) => ({ part, question: items.find((q) => q.n === n) }));
+    return coldSlots.map((slot) => {
+      const question = items.find((item) => item.n === part.q[slot - 1]?.n);
+      return question ? { slot, part, question } : { slot, issue: "Вопрос из рабочей тетради не загрузился." };
+    });
   }
-  async function startCold(lesson, deck, readText) {
+  async function readiness(deck, lesson, readText, readSlide, opener, jump) {
+    const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker lp-deck-check";
+    const title = el("h2", "Готовность презентации"); title.id = "lp-deck-check-title";
+    dialog.setAttribute("aria-labelledby", title.id);
+    const status = el("p", "Проверяю текст слайдов…"); status.setAttribute("role", "status");
+    const results = el("div");
+    const close = action("Закрыть", () => dialog.close());
+    const header = el("header"); header.append(title, close);
+    let jumping = false;
+    dialog.append(header, status, results);
+    document.body.append(dialog);
+    dialog.addEventListener("close", () => {
+      dialog.remove();
+      if (!jumping && opener.isConnected) opener.focus();
+    }, { once: true });
+    dialog.showModal();
+    function row(title, message, index) {
+      const item = el("li"); item.append(el("strong", title), el("span", message));
+      if (index !== undefined) item.append(action(`Перейти к слайду ${index + 1}`, () => {
+        jumping = true;
+        dialog.close();
+        jump(index);
+      }));
+      return item;
+    }
+    try {
+      const series = await coldQuestions(lesson, deck, readText, readSlide);
+      const seriesIndex = new Set(series.map(({ index }) => index));
+      const missing = [];
+      for (let index = 0; index < deck.n && dialog.open; index++) {
+        if (seriesIndex.has(index)) continue;
+        const text = await readText(index), draft = SlideMaterialPreview.readDraft(text);
+        if (!SlideMaterialPreview.requiredMaterial(draft)) continue;
+        const { issue } = await checkMaterial(deck, { index, text, draft }, readSlide);
+        if (issue) missing.push({ index, issue });
+      }
+      if (!dialog.open) return;
+      const seriesList = el("ul"), mediaList = el("ul");
+      const ready = series.filter(({ issue }) => !issue).length;
+      for (const item of series) {
+        const slide = item.index === undefined ? item.question ? " · тетрадь" : "" : ` · слайд ${item.index + 1}`;
+        const state = item.issue || (item.answer || item.question?.ans || item.question?.acc?.length ? "Готов" : "Готов · без оценки");
+        seriesList.append(row(`Вопрос ${item.slot}${slide}`, state, item.issue ? item.index : undefined));
+      }
+      for (const { index, issue } of missing) mediaList.append(row(`Слайд ${index + 1}`, issue, index));
+      results.append(el("h3", "Холодный старт"), series.length ? seriesList : el("p", "Четыре вопроса не найдены."),
+        el("h3", "Другие задания"), missing.length ? mediaList : el("p", "У распознанных заданий нет пропущенных фрагментов."));
+      status.textContent = `${series.length ? `Холодный старт · ${ready} из 4 готовы. ` : ""}Другие задания для подготовки · ${missing.length}.`;
+    } catch (error) {
+      if (dialog.open) status.textContent = "Проверка прервалась. Проверьте подключение и снова откройте презентацию.";
+    }
+  }
+  async function coldPayload(lesson, deck, readText, readSlide) {
+    const selected = await coldQuestions(lesson, deck, readText, readSlide);
+    if (!selected.length) throw Error("В презентации и рабочей тетради не найдены четыре вопроса холодного старта.");
+    const pending = selected.filter(({ issue }) => issue);
+    if (pending.length) {
+      const titles = pending.map(({ slot, index }) => index === undefined ? `вопрос ${slot}` : `слайд ${index + 1}`);
+      throw Error(`Подготовьте ${titles.join(", ")}.${deck?.uploaded ? " Подробности в «Проверить готовность»." : ""}`);
+    }
+    const source = selected.map((item) => ({
+      question: item.question || slideItem(item.index, item.draft, item.answer, item.material), part: item.part || { id: "slide" }
+    }));
+    const series = selected.some(({ index }) => index !== undefined)
+      ? await SlideMaterialPreview.reference(source.map(({ question, part }) => [part.id, question])) : null;
+    return Promise.all(source.map(async ({ question, part }, index) => {
+      const payload = await questionPayload(question, part, lesson);
+      if (payload.snapshot.length > 160000) throw Error(`Вопрос ${index + 1} слишком большой.`);
+      if (series) payload.ref = `${lesson.tag}.${series}.${index + 1}`;
+      return payload;
+    }));
+  }
+  async function startCold(lesson, deck, readText, readSlide, visible = () => true) {
     if (!lesson || preparingCold) return;
     preparingCold = true;
     try {
       notify("Готовлю четыре вопроса холодного старта…");
-      const selected = await coldQuestions(lesson, coldPart(lesson), deck, readText);
-      if (selected.length !== 4) throw new Error("В этой презентации нет четырёх пронумерованных вопросов холодного старта. Проверьте рабочую тетрадь или загрузите PDF с текстом.");
-      const missing = selected.filter((item) => !item.question && !item.draft).map((item) => item.index === undefined ? "" : item.index + 1).filter(Boolean);
-      if (selected.some((item) => !item.question && !item.draft)) {
-        throw new Error(missing.length ? `Не удалось прочитать вопрос холодного старта на слайде ${missing.join(", ")}.`
-          : "Один из вопросов холодного старта не загрузился из тетради.");
-      }
-      const questions = await Promise.all(selected.map(({ question, part, draft, answer, index }) => question
-        ? questionPayload(question, part, lesson) : questionPayload(slideItem(index, draft, answer), { id: "slide" }, lesson)));
+      const questions = await coldPayload(lesson, deck, readText, readSlide);
+      if (!visible()) return;
       const id = await create(lesson.title);
       const revision = ++dispatchNumber;
       const send = dispatch.catch(() => {}).then(async () => {
-        if (revision !== dispatchNumber || id !== room) return;
+        if (revision !== dispatchNumber || id !== room || !visible()) return;
         await api("cold", { questions });
-        sent = null; cold = 1; activeNumber = null; links();
-        await refresh();
+        sent = null;
+        await refresh(true);
         const ungraded = questions.some(({ accepted }) => !accepted.length);
         notify("Холодный старт открыт. Переключайте вопросы кнопкой «Следующий вопрос»." +
           (ungraded ? " Вопросы без ключа сохраняются без оценки." : ""));
       });
       dispatch = send;
       await send;
-    } catch (error) { notify(error.message); }
+    } catch (error) { if (visible()) notify(error.message); }
     finally { preparingCold = false; }
   }
   async function advance() {
-    if (!room || !activeNumber || !cold || advancing) return;
+    if (!room || !activeNumber || !cold || advancing || sendingStage || roomQueue()?.pending) return;
     advancing = true; links();
     try {
       const step = cold;
       await api("advance", { number: activeNumber });
       activeNumber = null;
       if (step === 4) { cold = 0; notify("Холодный старт завершён."); }
-      await refresh();
+      await refresh(true);
     } catch (error) { notify(error.message); }
     finally { advancing = false; links(); }
   }
-  function attach(box, deck, lesson, current, readText) {
+  const stages = ["Холодный старт", "Объяснение", "Упражнение 1", "Упражнение 2"];
+  function roomQueue() {
+    return room && !closed && queue?.room === room ? queue : null;
+  }
+  function matchesDeck(deck) {
+    const { id, updated, count } = deckPosition(deck);
+    return queue?.deck?.id === id && queue.deck.updated === updated && queue.deck.count === count;
+  }
+  function reconcileQueue(state) {
+    const pending = roomQueue()?.pending;
+    if (!pending || sendingStage) return;
+    const ref = state.questions.find(({ number }) => number === state.current)?.ref;
+    const matched = pending.refs.length ? pending.refs.includes(ref) : state.current === null;
+    if (matched) {
+      queue.stage = pending.target;
+      rememberView({ ...queue.deck, index: pending.slide });
+    }
+    queue.pending = null;
+    saveQueue();
+    if (!matched) notify("Переход не подтверждён. Нажмите кнопку этапа ещё раз.");
+  }
+  function renderQueue(controls) {
+    const configured = matchesDeck(controls.deck);
+    const current = configured ? roomQueue() : null;
+    const stage = current?.stage ?? -1;
+    const blocked = restoring || sendingStage || !!current?.pending || advancing || (stage >= 0 && !!cold);
+    setClassState(controls.label, !configured ? "" : stage < 0 ? "План готов · 4 этапа" : `Этап ${stage + 1} из 4 · ${stages[stage]}`);
+    controls.prev.hidden = stage < 1;
+    controls.prev.disabled = blocked;
+    controls.next.hidden = !configured || stage >= stages.length - 1;
+    controls.next.disabled = blocked;
+    controls.next.textContent = stage < 0 ? "Начать по плану" : "Далее по плану";
+    controls.setup.disabled = sendingStage || !!current?.pending;
+  }
+  function editQueue(controls) {
+    const dialog = el("dialog"); dialog.className = "lp-dialog lp-question-picker";
+    const title = el("h2", "План урока"); title.id = "lp-queue-title";
+    dialog.setAttribute("aria-labelledby", title.id);
+    const form = el("form"), message = el("p"); message.setAttribute("role", "status");
+    const saved = matchesDeck(controls.deck) ? queue.slides : [];
+    const fields = stages.slice(1).map((name, i) => {
+      const input = el("select"), label = el("label", name); input.required = true;
+      input.setAttribute("aria-label", name);
+      input.append(new Option("Выберите слайд", ""));
+      for (let index = 0; index < controls.deck.n; index++) input.append(new Option(`Слайд ${index + 1}`, index));
+      input.value = saved[i] ?? "";
+      label.append(input); form.append(label);
+      return input;
+    });
+    const save = el("button", "Сохранить план"); save.className = "btn"; save.type = "submit";
+    form.append(message, save, action("Закрыть", () => dialog.close()));
+    dialog.append(title, el("p", "Первый этап — четыре вопроса холодного старта."), form);
+    dialog.addEventListener("close", () => { dialog.remove(); controls.setup.focus(); }, { once: true });
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      const slides = fields.map((field) => Number(field.value));
+      if (slides[1] === slides[2]) { message.textContent = "Выберите разные слайды для двух упражнений."; return; }
+      if (!saved.every((slide, index) => slide === slides[index]) || !saved.length) {
+        queue = { deck: deckPosition(controls.deck), slides, stage: -1, room: null };
+        saveQueue();
+      }
+      renderQueue(controls);
+      dialog.close();
+    };
+    document.body.append(dialog); dialog.showModal();
+  }
+  async function exercisePayload(controls, index) {
+    const { deck, lesson, readText, readSlide } = controls;
+    try {
+      const { draft, answer, material } = await resolveSlide(deck, lesson, index, readText, readSlide);
+      if (!draft) throw Error("Нужен вопрос с четырьмя вариантами.");
+      return await slidePayload(lesson, index, draft, answer, material);
+    } catch (error) { throw Error(`Слайд ${index + 1}. ${error.message}`); }
+  }
+  async function changeStage(controls, offset) {
+    if (!matchesDeck(controls.deck) || sendingStage || restoring || advancing || roomQueue()?.pending) return;
+    const { deck, lesson, readText, readSlide, box, jump } = controls;
+    const previous = roomQueue()?.stage ?? -1;
+    const target = previous + offset;
+    if (target < 0 || target >= stages.length || (previous >= 0 && cold)) return;
+    const plan = queue;
+    sendingStage = true; links();
+    let slide;
+    try {
+      let actionName, body, refs;
+      if (target === 0) {
+        const questions = await coldPayload(lesson, deck, readText, readSlide);
+        await Promise.all(plan.slides.slice(1).map((index) => exercisePayload(controls, index)));
+        const manifest = await readColdDeck(deck, readText);
+        slide = manifest.slides.get(1)?.index ?? 0;
+        actionName = "cold"; body = { questions }; refs = questions.map((q, i) => `${q.ref}:cold:${i + 1}`);
+      } else {
+        slide = plan.slides[target - 1];
+        if (target === 1) { actionName = "pause"; body = {}; refs = []; }
+        else { actionName = "show"; body = await exercisePayload(controls, slide); refs = [body.ref]; }
+      }
+      if (plan !== queue || !box.isConnected) return;
+      const id = await create(lesson.title);
+      if (plan !== queue || !box.isConnected) return;
+      const revision = ++dispatchNumber;
+      const send = dispatch.catch(() => {}).then(async () => {
+        if (revision !== dispatchNumber || id !== room || !box.isConnected) return;
+        queue.room = id;
+        queue.pending = { target, refs, slide }; saveQueue();
+        await api(actionName, body, false, id);
+        sent = null;
+      });
+      dispatch = send;
+      await send;
+    } catch (error) { if (box.isConnected) notify(error.message); }
+    finally {
+      sendingStage = false;
+      if (plan === queue && roomQueue()?.pending) {
+        await refresh(true);
+        if (queue.stage === target && !queue.pending && box.isConnected) {
+          jump(slide);
+          const nextAction = target === 0 ? box.querySelector("[data-lp-deck-advance]") : controls.next.hidden ? controls.prev : controls.next;
+          if (nextAction && !nextAction.hidden && !nextAction.disabled) nextAction.focus();
+          notify(`${stages[target]} · этап ${target + 1} из 4.`);
+        }
+      }
+      links();
+    }
+  }
+  function attachQueue(box, bar, context) {
+    const label = el("span"); label.className = "lp-queue-state"; label.setAttribute("role", "status");
+    const controls = { ...context, box, label };
+    controls.setup = action("План урока", () => editQueue(controls));
+    controls.setup.setAttribute("aria-haspopup", "dialog");
+    controls.prev = action("Назад по плану", () => changeStage(controls, -1));
+    controls.next = action("Начать по плану", () => changeStage(controls, 1));
+    bar.append(controls.setup, controls.prev, controls.next, label);
+    return controls;
+  }
+  function attach(box, deck, lesson, current, readText, readSlide, jump) {
     if (!lesson || !SITE.adminKey()) return;
     const bar = el("div"); bar.className = "lp-control dk-bar";
-    const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, pick));
+    const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, readSlide, pick));
     pick.className = "lp-show-slide";
     const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
     const next = action("Следующий вопрос", advance);
+    next.dataset.lpDeckAdvance = "";
     next.hidden = true;
     const copy = action("Ссылка для учеников", copyLink);
     const monitor = el("a", "Монитор преподавателя"); monitor.target = "_blank"; monitor.rel = "noopener";
     const status = el("small"); status.setAttribute("role", "status");
+    const state = el("small"); state.className = "lp-class-state"; state.setAttribute("role", "status");
     bar.append(pick, manual);
+    if (readSlide) {
+      const material = action("Материал слайда", async () => {
+        if (await SlideMaterialPreview.open(deck, current(), readSlide, readText, material)) {
+          notify("Материал сохранён для этого слайда.");
+        }
+      });
+      const ready = action("Проверить готовность", () => readiness(deck, lesson, readText, readSlide, ready, (index) => {
+        jump(index);
+        material.focus();
+      }));
+      ready.setAttribute("aria-haspopup", "dialog");
+      bar.append(material, ready);
+    }
     if (coldPart(lesson) || deck.uploaded) {
       const start = action("Холодный старт · 4 вопроса", async () => {
         start.disabled = true;
-        try { await startCold(lesson, deck, readText); } finally { start.disabled = false; }
+        try { await startCold(lesson, deck, readText, readSlide, () => box.isConnected); }
+        finally { start.disabled = false; }
       });
       bar.append(start);
     }
-    bar.append(next, copy, monitor, status); box.querySelector(".dk-bar").after(bar);
-    deckUIs.set(box, { monitor, copy, status, advance: next });
+    const queueControls = readSlide ? attachQueue(box, bar, { deck, lesson, readText, readSlide, jump }) : null;
+    bar.append(next, copy, monitor, state, status); box.querySelector(".dk-bar").after(bar);
+    deckUIs.set(box, { monitor, copy, status, state, advance: next, queue: queueControls });
     links();
   }
-  return { mount, attach, publish, startCold, coldPart, detach: (box) => deckUIs.delete(box) };
+  function detach(box) {
+    deckUIs.delete(box);
+    teachingView = null;
+  }
+  return { mount, attach, publish, startCold, coldPart, view, detach };
 })();
