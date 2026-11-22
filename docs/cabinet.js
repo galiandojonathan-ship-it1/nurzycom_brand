@@ -340,7 +340,8 @@
   function results(u, I) {
     return `<p class="hint cb-lead">«Сбросить» убирает результат и счётчик попыток, и ученик решает эту работу заново как в первый раз. Ответы, уже отправленные в Google Form, остаются там.</p>
       ${I.R.length ? `<ul class="cb-rows cb-res">${I.R.map((r) => `<li><span>${esc(r.label)}<small>${esc(r.t ? new Date(r.t).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "")}</small></span>
-          <b>${esc(r.score)}</b>${/^ct_last_.+_C[a-z0-9]{8}$/.test(r.key) ? `<button class="chip" type="button" data-ctrev="${esc(r.key.slice(-9))}">Разбор →</button>` : ""}<button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}`;
+          <b>${esc(r.score)}</b>${/^ct_last_.+_C[a-z0-9]{8}$/.test(r.key) ? `<button class="chip" type="button" data-ctrev="${esc(r.key.slice(-9))}">Разбор →</button>` : ""}<button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}
+      ${window.BBSHARE ? (() => { const sh = BBSHARE.fromCopy(u.B); return sh.length ? `<h3 class="cb-h3">Bluebook · отправлено учеником</h3>${BBSHARE.html(sh, { del: true, open: false })}` : ""; })() : ""}`;
   }
   function tasks(u, I) {
     return `<div class="cb-bar">${archived(u) ? "" : '<button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>'}
@@ -690,6 +691,7 @@
       on("[data-reset]", (b) => { const r = I.R.find((x) => x.key === b.dataset.reset); if (!r || !confirm(`Сбросить «${r.label}» (${r.score}) у ${u.name}? Ученик решит эту работу заново.`)) return;
         act(u, (B, set) => PLAN.resetKeys(nm, r.kind, r.rest).forEach((k) => set(k, null)), `Сброшено: ${r.label}`); });
       on("[data-new]", () => openAssign([u.id]));
+      on("[data-bbdel]", (b) => act(u, (B, set) => set(b.dataset.bbdel, null), "Результат Bluebook убран"));
       on("[data-deltask]", (b) => {   // no confirm dialog (Nurassyl, 2026-11-12): the task goes at once, «Вернуть» in the message puts it back
         const L0 = (() => { try { return JSON.parse(I.get("tasks") || "[]"); } catch (e) { return []; } })(), orig = L0.find((t) => t.id === b.dataset.deltask); if (!orig) return;
         const rd = (get) => { try { return JSON.parse(get("tasks") || "[]"); } catch (e) { return []; } };
