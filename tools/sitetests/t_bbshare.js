@@ -33,6 +33,10 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
   await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")');
   ok(/уже отправлен/.test(await a.textContent(".bb-share")), "after a reload the same attempt is still recognised as sent");
+  // a later attempt (SAT3 shares module 1 with SAT2) with the same RW question missed again
+  await a.fill("#bb-text", tableOf(synthetic(), "SAT3", { rw: "m2e", math: "m2h" }, "tab", ["rw.1.9"])); await a.click("#bb-form button[type=submit]");
+  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")'); await a.click('.bb-confirm button:has-text("Отправить")');
+  await a.waitForFunction(() => /Отправлено|Сохранено/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
   // access between accounts
   const d = await student("dias"); await d.goto(B + "mock.html", { waitUntil: "load" }); await d.waitForTimeout(1500);
   const cross = await d.evaluate(async () => { const me = await SITE.practiceIdentity(), other = await SITE.lid("ayana");
@@ -42,8 +46,8 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   ok(own === 200, "Ayana reads her own copy");
   const copies = await teacher.evaluate(async () => { const out = {}; for (const L of ["ayana", "dias"]) { const id = await SITE.lid(L), g = await SITE.api("admin/progress?id=" + encodeURIComponent(id));
     const Bx = g.ok ? await SITE.unsealBlob(g.data.data) : {}; out[L] = Object.keys(Bx).filter((k) => k.startsWith("bb_share_") && Bx[k].v != null).map((k) => JSON.parse(Bx[k].v)); } return out; });
-  ok(copies.ayana.length === 1 && copies.dias.length === 0, `exactly one record on Ayana's account, none on Dias's (${copies.ayana.length}/${copies.dias.length})`);
-  const sh = copies.ayana[0] || { sections: {} };
+  ok(copies.ayana.length === 2 && copies.dias.length === 0, `two different attempts → two records on Ayana's account, none on Dias's (${copies.ayana.length}/${copies.dias.length})`);
+  const sh = copies.ayana.find((x) => x.sections.rw && x.sections.rw.test === "SAT2") || { sections: {} };
   ok(sh.sections.rw && sh.sections.rw.test === "SAT2" && sh.sections.rw.miss.length === 2 && sh.sections.math.route === "m2e" && sh.sections.math.miss.length === 2, "the record: test, route and the 4 misses");
   ok(!JSON.stringify(sh).match(/passage|stem|stim|<p>/), "no question text in the record");
   ok(Object.values(sh.sections.rw.skills).every((v) => v[1] >= v[0] && v[1] > 0), "skills carry the sample size (wrong of total)");
@@ -62,15 +66,17 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);
   await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300);
   await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
-  ok(/SAT Practice Test 2/.test(await teacher.textContent("#st-bb")), "the results card shows the shared Bluebook result");
+  const bbTxt = (await teacher.textContent("#st-bb")).replace(/\s+/g, " ");
+  ok(/SAT Practice Test 2/.test(bbTxt) && /SAT Practice Test 3/.test(bbTxt), "the results card shows both shared Bluebook results");
+  ok(/Повторные ошибки: \d/.test(bbTxt) && /Уже был: Пробный тест 1 · М1 · №3; Bluebook SAT Practice Test 2 · ✗/.test(bbTxt), "the later miss is flagged: it was in our PT1 and was missed in the earlier Bluebook attempt");
   await teacher.waitForSelector("#st-tw [data-twsel]", { timeout: 15000 });
   const works = await teacher.$$eval('#st-tw [data-twf="work"] option', (o) => o.map((x) => x.textContent));
-  ok(works.some((w) => /^Bluebook · SAT Practice Test 2 · 4$/.test(w)), "the Gemini picker offers the Bluebook misses as a work: " + works.join(" | "));
+  ok(works.some((w) => /^Bluebook · SAT Practice Test 2 · 4$/.test(w)) && works.some((w) => /^Bluebook · SAT Practice Test 3 · 1$/.test(w)), "the Gemini picker offers the Bluebook misses as works: " + works.join(" | "));
   // remove in the cabinet
   await teacher.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await teacher.waitForSelector(".scard", { timeout: 20000 });
   await teacher.click(`.scard:has(.sc-nm:text-is("Ayana Seitkali")) .sc-open`); await teacher.waitForSelector(".cb-head"); await teacher.click('[data-tab="res"]');
-  await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500);
-  ok(!/Bluebook · отправлено/.test(await teacher.textContent(".cb-body")), "«Убрать» removes it from the account");
+  await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500); await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500);
+  ok(!/Bluebook · отправлено/.test(await teacher.textContent(".cb-body")), "«Убрать» removes them from the account");
   if (dev === "phone") ok((await a.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone: no sideways scroll on the student page");
   ok(!a.errs.length && !d.errs.length, "no page errors " + JSON.stringify([...a.errs, ...d.errs]));
   await br.close(); console.log(fails ? `${fails} FAILED` : "ALL PASS"); process.exit(fails ? 1 : 0);

@@ -173,6 +173,16 @@ sample size, and «Убрать». The results card (`teacher.js` `#st-bb`) find
 the form name (`accountsByName`, admin key). The Gemini picker gets the misses with a bank-confirmed skill as a work «Bluebook ·
 SAT Practice Test N» (key and skill only). Test: `t_bbshare.js desktop|phone` (ayana and dias from `cbseed.js`: confirm,
 cancel, duplicate after reload, 403 across accounts, cabinet, results card, picker, removal).
+Repeats (2026-11-23): `tools/bluebook/fingerprints.py catalog.json bank_rw.json fp.json` hashes each verified catalog question
+from the bank (stimulus+stem, and +options; tags removed, entities dropped, only a–z0–9; no text kept). Then
+`tools/bluebook/link_course.mjs <key> catalog.json fp.json out.json` hashes every course question from the bank (lesson parts in
+lessons.bin, practice tests in mocks.bin; own questions skipped) and writes `items[id].c` = course ids («V03.p2.4»,
+«PT15.rw.m1.12»). First run, Reading and Writing: 348 of 541 Bluebook questions are in the course: 270 in PT13–19 and 78 in
+Verbal lesson parts (those 78 are no longer new in the official tests). On «Пробные тесты» each miss shows «Этот вопрос есть и в:
+…» (course places, other Bluebook tests of the catalog), with «(ошибка и тогда)» / «(тогда верно)» from the student's synced
+practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
+per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
+Rebuild order: build_catalog → fingerprints → link_course → seal.
 
 «Прогресс ученика · индекс» (2026-11-22): in the cabinet's results, a student card (`#st-prog`, `progMount` / `progObs` in
 `teacher.js`) runs `docs/progress.js` (engine, `PROGRESS.compute`) and draws it with `docs/progress-view.js` (`PVIEW.render`; styles `.pg-*`).

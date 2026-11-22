@@ -8,6 +8,8 @@ function synthetic() {   // 3 tests; T2 and T3 share module 1 (as real tests nev
     tests[t] = { label: "SAT Practice Test " + t.slice(3) };
     for (const sec of ["rw", "math"]) tests[t][sec] = { m1: t === "SAT3" ? tests.SAT2[sec].m1 : mod(sec, seed), m2e: mod(sec, seed + 10), m2h: mod(sec, seed + 20) };
   }
+  // repeats: SAT2 RW module 1 №9 was also in the course practice test PT1 (RW module 1 №3); SAT2 and SAT3 share module 1
+  items[tests.SAT2.rw.m1[8]].c = ["PT1.rw.m1.3"];
   return { items, tests };
 }
 // a Score Details text for one test and routes, with planted misses

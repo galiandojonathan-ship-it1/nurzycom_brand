@@ -15,7 +15,9 @@ const page = `<html><body><header><h1>My Practice</h1><p>Score Details · SAT Pr
   const br = await chromium.launch();
   const ctx = await br.newContext(dev === "phone" ? { ...devices["iPhone 13"] } : { viewport: { width: 1280, height: 900 } });
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: B });
-  await ctx.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.setItem("hw_student", "Loop Test"); });
+  const k9 = cat.items[cat.tests.SAT2.rw.m1[8]].k[0], wrong9 = ["A", "B", "C", "D"].find((x) => x !== k9);   // the student once missed it in our PT1
+  await ctx.addInitScript((W) => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.setItem("hw_student", "Loop Test");
+    localStorage.setItem("mk_done_Loop Test_PT1", JSON.stringify({ phase: "done", ans: { "rw.m1": { 3: W } } })); }, wrong9);
   const src = await ctx.newPage(); await src.route("http://127.0.0.1:8768/__scoredetails", (r) => r.fulfill({ contentType: "text/html", body: page }));
   await src.goto(B + "__scoredetails");
   const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -33,6 +35,8 @@ const page = `<html><body><header><h1>My Practice</h1><p>Score Details · SAT Pr
   ok(/SAT Practice Test 2 · модуль 2 сложный/.test(res) && /SAT Practice Test 2 · модуль 2 лёгкий/.test(res), "test and route recognised per section (RW hard, Math easy)");
   ok(/М1, №9 · \w → \w · Skill \d/.test(res) && /М2, №8 · 999 → /.test(res) && /М2, №22 · пропуск → /.test(res), "each miss: module, number, choice → key, skill; the omitted one says «пропуск»");
   ok(ms < 3000, `from paste to preview in ${ms} ms`);
+  ok(/М1, №9 .*Этот вопрос есть и в: Пробный тест 1 · М1 · №3 \(ошибка и тогда\); SAT Practice Test 3\./.test(res), "a repeated question says where it was before: our PT1 (wrong then) and SAT Practice Test 3");
+  ok(/Из этих ошибок 1 — вопросы, которые есть и в курсе или в других пробниках; в 1 из них вы ошиблись и тогда/.test(res), "the section summary counts repeated misses");
   // a lost row: the student sees what to do
   await p.fill("#bb-text", text.split("\r\n").filter((_, i) => i !== 30).join("\n")); await p.click("#bb-form button[type=submit]");
   ok(/Скопируйте таблицу/.test(await p.textContent("#bb-status")), "a lost row asks to copy again: " + (await p.textContent("#bb-status")).slice(0, 80));
