@@ -339,7 +339,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     if (state.calculator && !tools) {
       tools = document.createElement("div");
       panel.insertBefore(tools, studentNav?.nav || content);
-      BBTools.mount(tools, { reference: false, label: "Desmos" });
+      BBTools.mount(tools, { reference: true, label: "Desmos" });   // Math as in Bluebook: Desmos and the reference sheet
     }
     if (tools) {
       const visible = !!number && !ended;
