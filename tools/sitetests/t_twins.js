@@ -30,7 +30,9 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   ok(audit && !JSON.stringify(audit).includes('"answer"'), "the blind check gets no keys");
   const cards = await pg.$$eval("#st-tw .tw-q", (a) => a.length);
   ok(cards === 3 && /Готово: 3 из 4 · 1 не прошли проверку ключа/.test(st), "4 drafts, the one whose key the blind solver did not reproduce is dropped → 3 cards");
-  ok(await pg.$$eval("#st-tw .tw-opts li.ok", (a) => a.every((li) => /^B/.test(li.textContent))), "the key is marked on every card");
+  const keys = await pg.$$eval("#st-tw .tw-opts li.ok", (a) => a.map((li) => li.textContent.trim()));
+  ok(keys.length === 3 && keys.every((k) => /Even so,/.test(k)), "the key is marked on every card (the right option)");
+  ok(new Set(keys.map((k) => k[0])).size === 3, "the 3 keys sit on different letters: " + keys.map((k) => k[0]).join(""));
   ok(/Отрабатывает:/.test(await pg.textContent("#st-tw .tw-q")), "each card says which mistake it trains");
   await pg.screenshot({ path: `${__dirname}/twins_${dev}.png`, fullPage: true });
   if (dev === "phone") ok((await pg.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone 390px: no sideways scroll");
@@ -39,8 +41,8 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await pg.click("#st-tw #tw-give"); await pg.waitForTimeout(1500);
   const bank = await pg.evaluate(async () => { const r = await CTL.loadBank(); return r && r.tests.map((t) => ({ ...t, bad: t.q.filter((q) => CTL.problems(q).length).length })); });
   const t = (bank || []).find((x) => /^Работа над ошибками · Ayana Seitkali/.test(x.title));
-  ok(t && t.q.length === 2 && t.bad === 0 && t.q.every((q) => q.a === "B"), "a «Мой тест» with the 2 ticked questions is saved on the server (sealed bank)");
-  ok(t && t.q.every((q) => /Ловушка A/.test(q.x)), "the explanation keeps the trap note");
+  ok(t && t.q.length === 2 && t.bad === 0 && t.q.every((q) => q.o["ABCD".indexOf(q.a)] === "Even so,"), "a «Мой тест» with the 2 ticked questions is saved on the server (sealed bank)");
+  ok(t && t.q.every((q) => /Ловушка [A-D]:/.test(q.x)), "the explanation keeps the trap note");
   await pg.waitForSelector(".cb-assign", { timeout: 8000 }).catch(() => {});
   const form = (await pg.textContent("main").catch(() => "")).replace(/\s+/g, " ");
   const chosen = await pg.$$eval(".cb-assign input[type=checkbox]:checked", (a) => a.map((c) => (c.closest("label") || c.parentElement).textContent.replace(/\s+/g, " ").trim()));
