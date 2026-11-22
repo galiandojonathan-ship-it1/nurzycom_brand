@@ -141,6 +141,21 @@ On the lesson: «Пульт урока» → «Тесты преподавате
 (`mytest.html?t=<id>` on the shared screen) and «Живая практика» (`&live=1` opens the round settings at once); the lesson account's
 `mytest.html` list shows every test. Students still see a Gemini test only when it is assigned. Test: `t_lesson_ct.js desktop|phone`.
 
+«Прогресс ученика · индекс» (2026-11-22): in the cabinet's results, a student card (`#st-prog`, `progMount` / `progObs` in
+`teacher.js`) runs `docs/progress.js` (engine, `PROGRESS.compute`) and draws it with `docs/progress-view.js` (`PVIEW.render`; styles `.pg-*`).
+The index is internal analytics, not an SAT score, and is never published. Engine: per subtopic and per section a 3PL model
+(guess 0.25 for A–D, 0 for typed; b: easy −1.2, medium 0, hard +1.2) with a Laplace update of θ and its variance, drift 0.05/day,
+start θ = −1. Weights: mock or final 1, homework 0.8, learning part 0.6; a repeat ×0.3; hints ×(1 − 0.5·share).
+Mastery = mean over easy/medium/hard of σ(θ − 0.5√v − b), weighted by exam domain shares (RW 28/26/26/20, Math 35/35/15/15)
+and bank frequency inside a domain. Index = 0.60 mastery + 0.15 transfer (mock results against prediction, only subtopics practised 3+
+times outside mocks) + 0.10 retention (subtopic seen again after 7+ days) + 0.10 pace (timed parts against SAT time, keeping accuracy)
++ 0.05 correction (second try after a miss, rescaled above chance). The weight of a missing part is shared among the others.
+Drivers count subtopics with n ≥ 3. Tags: `docs/data/tags.bin` (sealed with the master key: per question id the primary and
+secondary subtopic, trap per wrong letter, flags, level, type, key; no question text). It covers the 1,087 questions students had
+answered on 2026-11-22. Untagged questions still move the section ability but not the subtopics. Tag new questions with the kit in
+`notes/private/progress-tagging.bin` (taxonomy, scripts, README; open with `tools/private/unpack.mjs`). Tests: `t_progress_engine.js`
+(synthetic students, node). The real-data render check was run on a local copy only.
+
 Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesson`. Set the encrypted Cloudflare Pages
 secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy. The endpoint uses aggregate
 first-attempt counts, including option counts of two or more, and course skill labels. The teacher can opt in to send
@@ -193,6 +208,7 @@ Tests to run by area:
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js`, then `t_ct_replace.js part\|all` on the same stand-in (questions replaced after students submitted) |
 | «Похожие вопросы · Gemini» | `t_twins_lib.mjs`; `t_twins.js desktop\|phone` on `node pages_dev_gemini.mjs <copy> 8768` (fake Gemini, no key) |
+| «Прогресс ученика» | `node t_progress_engine.js` (no browser) |
 | Login | `t_auth.js` |
 | Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
 | «Пульт урока», «Подготовить урок» | `t_classroom.js <real copy> <key> desktop\|phone` |
