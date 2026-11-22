@@ -153,7 +153,8 @@ Group analytics and the normal review queue also work without the secret.
 ## 5. Rules for every change
 
 - **After any change to `docs/*.js` or `docs/site.css`, run `python3 deploy/bump_version.py`.** It writes new `?v=` tags. Cloudflare keeps scripts for 4 hours, and
-  a new page with an old script has broken the teacher page before.
+  a new page with an old script has broken the teacher page before. The tag is Almaty time and always above the current one, whatever the machine's clock zone
+  (a cloud container runs on UTC; before 2026-11-22 a tag could go back and repeat an older one).
 - **CSP** (`docs/_headers`): no inline scripts, and no scripts from other hosts. The `404.html` inline script is allowed by its hash; update the
   hash if it changes. Allowed: Google Fonts styles and fonts, the Desmos frame, Google Forms and Sheets, the GitHub API, the Cloudflare beacon.
 - **New extra pages go under «Полезное»:** a card on `useful.html`, the next «07.n —» number, a «← Полезное» link. Never add a new top-nav item.
