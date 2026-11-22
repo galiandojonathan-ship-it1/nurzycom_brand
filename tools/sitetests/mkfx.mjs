@@ -18,7 +18,8 @@ const wrap = b64([...iv, ...new Uint8Array(await C.subtle.encrypt({ name: "AES-G
 fs.writeFileSync(path.join(out, "access.json"), JSON.stringify({ v: 1, salt: b64(salt), iter: 1000, wrap }));
 const sha = async (t) => Buffer.from(await C.subtle.digest("SHA-256", enc.encode(t))).toString("hex").slice(0, 16);
 const SALT = "fx";
-const mc = (i, n, stim, stem, opts, ans) => ({ i, n, t: "mc", stim, stem, opts, ans, rat: "<p>Explanation.</p>", own: true });
+const SK = { v1: ["Words in Context", "M"], v2: ["Central Ideas and Details", "E"], v3: ["Transitions", "H"], v4: ["Words in Context", "E"], m1: ["Linear equations in one variable", "E"] };
+const mc = (i, n, stim, stem, opts, ans) => ({ i, n, t: "mc", stim, stem, opts, ans, rat: "<p>Explanation.</p>", own: true, sk: (SK[i] || [])[0], d: (SK[i] || [])[1] });
 const V = [
   mc("v1", 1, "<p>The council's decision to <u>undermine</u> the proposal surprised observers, who had expected a ______ response.</p>", "<p>Which choice completes the text with the most logical and precise word or phrase?</p>", ["candid", "devoid", "tentative", "lucid"], "C"),
   mc("v2", 2, "<p>Critics argued that the new policy would undermine public trust, and the report was devoid of any clear evidence. Its authors were notably candid about the gaps.</p>", "<p>Which choice best states the main idea of the text?</p>", ["The report was candid but undermined by weak evidence.", "The policy was popular.", "Critics were wrong.", "Trust increased."], "A"),
@@ -29,7 +30,7 @@ const M = [mc("m1", 1, "", "<p>If 3x = 12, what is x? The answer is not devoid o
 const part = async (id, title, mode, items, bundle) => {
   fs.mkdirSync(path.join(out, "q/fx"), { recursive: true });
   fs.writeFileSync(path.join(out, bundle), await seal(items));
-  return { id, title, mode, b: bundle, q: await Promise.all(items.map(async (q) => ({ n: q.n, i: q.i, t: q.t, h: [await sha(`${SALT}:${q.i}:${q.ans}`)] }))) };
+  return { id, title, mode, b: bundle, q: await Promise.all(items.map(async (q) => ({ n: q.n, i: q.i, t: q.t, sk: q.sk, d: q.d, h: [await sha(`${SALT}:${q.i}:${q.ans}`)] }))) };
 };
 const lessons = { lessons: [
   { tag: "V01", title: "SAT Verbal · Урок 1 · Words in Context", salt: SALT, tip: "Tip.", parts: [await part("p1", "Практика", "learn", V, "q/fx/V01_p1.bin"), await part("p2", "Финальный тест", "test", V, "q/fx/V01_p2.bin")] },
