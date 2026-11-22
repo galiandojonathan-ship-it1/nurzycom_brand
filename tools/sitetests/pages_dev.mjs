@@ -27,7 +27,7 @@ http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c); const body = chunks.length ? Buffer.concat(chunks) : undefined;
     const hd = Object.fromEntries(Object.entries(req.headers).filter(([k]) => !["connection", "keep-alive", "host", "transfer-encoding", "content-length"].includes(k)));
     try { const request = new Request(url, { method: req.method, headers: hd, body: ["GET", "HEAD"].includes(req.method) ? undefined : body });
-    console.log(" built", JSON.stringify(hd)); const r = url.pathname === "/api/live" ? await live.onRequest({ request, env: { USERS: KV, ASSETS, LIVE_LESSONS: D1 } }) : await fn.onRequest({ request, env: { USERS: KV, ASSETS }, params: { route: url.pathname.slice(5).split("/") } }); console.log(" done", r.status);
+    console.log(" built", JSON.stringify(hd)); const r = url.pathname === "/api/live" ? await live.onRequest({ request, env: { USERS: KV, ASSETS, LIVE_LESSONS: D1, GEMINI_API_KEY: process.env.GEMINI_API_KEY } }) : await fn.onRequest({ request, env: { USERS: KV, ASSETS, GEMINI_API_KEY: process.env.GEMINI_API_KEY }, params: { route: url.pathname.slice(5).split("/") } }); console.log(" done", r.status);
     res.writeHead(r.status, Object.fromEntries(r.headers)); res.end(Buffer.from(await r.arrayBuffer())); } catch (e) { console.log("api error", e); res.writeHead(500); res.end(String(e)); } return;
   }
   const f = file(url.pathname); if (!f) { res.writeHead(404); res.end("not found"); return; }

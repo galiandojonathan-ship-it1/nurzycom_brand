@@ -732,8 +732,13 @@
   // «Мои тесты» (cted.js): what the editor needs from the cabinet
   if (window.CTED) CTED.init({ toast, render, users: activeUsers, focus: (sel) => (S.focus = sel),
     close: closeSection,
-    give: (id) => {
+    give: async (id, key) => {
       S.ct = false;
+      if (key) {   // from «Похожие вопросы» on the results view: load the students first, then tick the student matched by the form name
+        await openView("students");
+        openAssign(activeUsers().filter((u) => !u.err && FORMKIT.key(u.name) === key).map((u) => u.id), "ct", id);
+        return;
+      }
       const ids = returnView === "students" && S.gview !== "all" ? shown().map((u) => u.id) : [];
       setView("students"); openAssign(ids, "ct", id);
     },

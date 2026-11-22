@@ -126,6 +126,16 @@ follow the student account to the next practice. Gemini receives only anonymous 
 
 KV free limit: 1,000 writes a day. That is why `auth.js` bundles saves.
 
+«Похожие вопросы · Gemini» (`docs/twins.js`, `lib/mistake-twins.js`, `POST admin/twins`, 2026-11-22): in the cabinet's results,
+a student card («последние ошибки, по одной на навык», up to 6) and the one-part review («Похожие вопросы на эти ошибки») send
+that student's first-attempt mistakes to Gemini: section, skill, level, chosen and correct letters, and the text only for
+nurzycom's own questions. No name, no account id, no College Board text. Gemini writes 1–3 new questions per mistake on the
+same skill, level and trap; the server drops drafts that copy 8 words of the source passage, repeat options or set the trap
+as the key, and a separate blind call solves the rest: a question whose key it does not reproduce, or that it calls
+ambiguous, is dropped. The teacher unticks what is not needed and clicks «Задать ученику как «Мой тест»»: the test
+(«Работа над ошибками · <имя> · <дата>») is saved in the sealed bank and the assign form opens with that student ticked.
+Uses the same `GEMINI_API_KEY`. Tests: `t_twins_lib.mjs`, `t_twins.js desktop|phone` on `pages_dev_gemini.mjs` (fake Gemini).
+
 Group analysis builds a SAT Verbal lesson on demand via `POST admin/verbal-lesson`. Set the encrypted Cloudflare Pages
 secret `GEMINI_API_KEY` in the production environment for `bynurzy-study` and redeploy. The endpoint uses aggregate
 first-attempt counts, including option counts of two or more, and course skill labels. The teacher can opt in to send
@@ -176,6 +186,7 @@ Tests to run by area:
 | Cabinet | `t_cabinet.js`, `t_deltask.js`, `t_taskearly.js` (seed with `cbseed.js` on 8768) |
 | Teacher page | `t_teacher.js`, `t_group.js`, `t_group_cb.js` |
 | «Мои тесты» | `t_ct.js`, `t_ctparse.js`, then `t_ct_replace.js part\|all` on the same stand-in (questions replaced after students submitted) |
+| «Похожие вопросы · Gemini» | `t_twins_lib.mjs`; `t_twins.js desktop\|phone` on `node pages_dev_gemini.mjs <copy> 8768` (fake Gemini, no key) |
 | Login | `t_auth.js` |
 | Lesson mode | `t_lesson.js desktop\|phone`, cabinet view `t_cblesson.js desktop\|phone`, «Ошибки класса» `t_lsmist.js desktop\|phone` and `t_lsmist2.js desktop\|phone` (picker, one-student review, Desmos, board) (stand-in on 8768; restart the stand-in before `t_cabinet.js`, which expects no groups) |
 | «Пульт урока», «Подготовить урок» | `t_classroom.js <real copy> <key> desktop\|phone` |

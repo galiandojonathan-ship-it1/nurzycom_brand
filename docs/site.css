@@ -855,3 +855,18 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .annotation-editor ol li{margin:6px 0}
 .annotation-editor ol button{margin-left:8px}
 .annotation-editor .lp-crop [data-outline]{box-shadow:0 0 0 1px #fff}
+/* «Похожие вопросы · Gemini» (twins.js) */
+.tw .tw-ctl { align-items: center; gap: 12px; flex-wrap: wrap; }
+.tw .tw-ctl select { margin-left: 6px; }
+.tw-q { border: 1px solid var(--stone, #D9D5CD); border-radius: 12px; padding: 10px 14px; margin: 10px 0; background: #fff; }
+.tw-q summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; cursor: pointer; }
+.tw-q summary small { color: #5E5A54; }
+.tw-pick { font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+.tw-mech { margin: 8px 0; color: #5E5A54; }
+.tw-opts { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 6px; }
+.tw-opts li { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--stone, #D9D5CD); border-radius: 9px; }
+.tw-opts li.ok { border-color: #2F7A33; background: #EEF6EE; }
+.tw-opts li.trap { border-color: #A63328; border-style: dashed; }
+.tw-opts li em { font-style: normal; font-size: 13px; color: #5E5A54; }
+.tw-why { margin: 6px 0; }
+@media (max-width: 480px) { .tw-opts li { grid-template-columns: 24px 1fr; } .tw-opts li em { grid-column: 2; } }

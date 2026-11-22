@@ -21,6 +21,7 @@
 // The wrapped key of the class code is given out only after the server has checked the code (POST invite), so the code
 // cannot be guessed offline; wrong codes are limited per IP (10 per 15 minutes, counted in the Cloudflare cache, no KV writes).
 import { buildVerbalLesson } from "../../lib/verbal-lesson.js";
+import { buildTwins } from "../../lib/mistake-twins.js";
 
 const MAX_USERS = 300;
 const enc = new TextEncoder();
@@ -151,6 +152,10 @@ export async function onRequest(context) {
       return json(result, status);
     }
     if (route === "admin/review-advice" && m === "POST") return reviewAdvice(request, env);
+    if (route === "admin/twins" && m === "POST") {   // «Похожие вопросы»: new questions on one student's mistakes (lib/mistake-twins.js)
+      const { status, ...result } = await buildTwins(request, env);
+      return json(result, status);
+    }
     if (route === "admin/users" && m === "GET") {
       const out = []; let cursor;
       do { const r = await env.USERS.list({ prefix: "u:", cursor });

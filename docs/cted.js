@@ -259,5 +259,8 @@
   }
   window.CTED = { init: (a) => (api = a), load, html, bind, items, escape, leave,
     open: () => { if (E.pending && E.tests.some((t) => t.id === E.pending.id)) { E.view = "res"; E.resId = E.pending.id; E.stu = E.pending.uid || ""; } else E.view = "list"; E.pending = null; },
-    openRes: (id, uid) => { E.pending = { id, uid }; }, get loaded() { return E.loaded; } };
+    openRes: (id, uid) => { E.pending = { id, uid }; }, get loaded() { return E.loaded; },
+    // «Похожие вопросы» (twins.js): a finished test from Gemini drafts, then the assign form for that student
+    addTest: async (t, msg) => { if (!E.loaded) await load(); E.tests.unshift(t); return save(msg); },
+    giveTo: (id, key) => api.give(id, key) };
 })();
