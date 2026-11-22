@@ -86,7 +86,7 @@ window.PVIEW = (() => {
           <section><b>Сложность вопросов</b>${res.secs.length > 1 ? `<div class="chips">${res.secs.map((s) => `<button class="chip" type="button" data-ps="${s}" aria-pressed="${st.sec === s}">${s === "rw" ? "Reading and Writing" : "Math"}</button>`).join("")}</div>` : ""}
             <p class="hint">Ожидаемая доля верных ответов, угадывание учтено. Линия уровня появляется после ${PROGRESS.MIN_LV} ответов этого уровня.</p><div class="pg-legend"><span><i style="background:#2A7DB8"></i>Лёгкие</span><span><i style="background:#6E57C9"></i>Средние</span><span><i style="background:#B5402F"></i>Трудные</span></div><div id="pg-df"></div></section></div>
         <section><b>Карта подтем</b><p class="hint">Чёрная полоса — сейчас, красная метка — начало периода. Изменение серым — в пределах шума: по стольким ответам его нельзя отличить от случайности. Серая строка — меньше трёх ответов.</p>
-          <div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th></tr></thead><tbody id="pg-rows"></tbody></table></div></section>
+          <div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th>${o.onTwins ? "<th><span class=\"sr-only\">Gemini</span></th>" : ""}</tr></thead><tbody id="pg-rows"></tbody></table></div></section>
         <div class="pg-grid2"><section><b>Ловушки</b><p class="hint">Как часто выбирает ловушку, когда она есть: начало → сейчас. Меньше — лучше.</p><div id="pg-tr"></div></section>
           <section><b>Привычки</b><div id="pg-hb"></div></section></div></div>`;
       line(box.querySelector("#pg-ix"), { series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t),
@@ -100,21 +100,23 @@ window.PVIEW = (() => {
       res.secs.forEach((sec) => groups[sec].forEach(([, list], gi) => {
         const rows = res.subs.filter((x) => x.sec === sec && list.includes(x.k) && (x.n > 0));
         if (!rows.length) return;
-        tb.insertAdjacentHTML("beforeend", `<tr><td class="pg-dom" colspan="7">${esc(DOMN[sec][gi])}</td></tr>`);
+        tb.insertAdjacentHTML("beforeend", `<tr><td class="pg-dom" colspan="${o.onTwins ? 8 : 7}">${esc(DOMN[sec][gi])}</td></tr>`);
         rows.forEach((x) => {
           const thin = x.n < 3, c = thin ? null : PROGRESS.change(res, x, a, n - 1), b0 = c ? c.from : n - 1, now = x.series[n - 1] ?? 0, was = x.series[b0] ?? now, ch = c ? c.ch : 0, sig = c && Math.abs(c.z) >= PROGRESS.ZMIN, late = !!c && b0 > a;   // change from the first reliable value; sig: above the noise
           const stt = thin ? ["thin", "мало данных"] : now >= 0.8 ? ["ok", "освоено"] : sig && ch > 0 ? ["grow", "растёт"] : sig && ch < 0 ? ["stuck", "просело"] : now < 0.45 ? ["stuck", "слабое место"] : ["", "держится"];
           const tr = document.createElement("tr"); if (thin) tr.className = "pg-thin";
-          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em></div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b></td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>`;
+          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em></div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b></td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>${o.onTwins ? `<td><button class="pg-tw" type="button" data-twk="${x.k}" title="Похожие вопросы на ошибки этой подтемы">Похожие</button></td>` : ""}`;
           tr.querySelector(".sp").appendChild(spark(x.series.slice(a).map((v, j) => (a + j < b0 ? null : v)), thin ? "#D9D5CD" : "#0F0F0F"));
           tb.appendChild(tr);
         });
       }));
-      box.querySelector("#pg-tr").innerHTML = res.traps.length ? res.traps.slice(0, 6).map((x) => `<div class="pg-trap"><div><span>${esc(TRAP[x.trap] || x.trap)}</span><span class="num"><span class="hint">${pct(x.was)}%</span> → <b>${pct(x.now)}%</b></span></div><div class="pg-bar"><i style="width:${pct(x.now)}%"></i><em style="left:calc(${pct(x.was)}% - 1px)"></em></div></div>`).join("") : '<p class="hint">Пока мало вопросов с размеченными ловушками.</p>';
+      box.querySelector("#pg-tr").innerHTML = res.traps.length ? res.traps.slice(0, 6).map((x) => `<div class="pg-trap"><div><span>${esc(TRAP[x.trap] || x.trap)}</span><span class="num"><span class="hint">${pct(x.was)}%</span> → <b>${pct(x.now)}%</b></span></div><div class="pg-bar"><i style="width:${pct(x.now)}%"></i><em style="left:calc(${pct(x.was)}% - 1px)"></em></div>${o.onTwins ? `<button class="pg-tw" type="button" data-twt="${esc(x.trap)}" title="Похожие вопросы на ошибки с этой ловушкой">Похожие</button>` : ""}</div>`).join("") : '<p class="hint">Пока мало вопросов с размеченными ловушками.</p>';
       const H = res.habits;
       box.querySelector("#pg-hb").innerHTML = [["Невнимательность", "ошибки там, где модель была почти уверена в верном ответе", H.slip, H.slipExpected], ["Пропуски", "вопросы без ответа", H.blank, null]]
         .map(([l, s, v, e]) => `<div class="pg-hab"><div><b>${l}</b><div class="hint">${s}</div></div><div class="num">${v == null ? "—" : pct(v) + "%"}${e != null ? `<div class="hint">ожидалось ${pct(e)}%</div>` : ""}</div></div>`).join("");
       box.querySelectorAll("[data-pw]").forEach((b) => (b.onclick = () => { st.weeks = +b.dataset.pw; draw(); }));
+      if (o.onTwins) { box.querySelectorAll("[data-twk]").forEach((b) => (b.onclick = () => o.onTwins({ focus: NAME[b.dataset.twk] || "" })));
+        box.querySelectorAll("[data-twt]").forEach((b) => (b.onclick = () => o.onTwins({ trap: TRAP[b.dataset.twt] || "" }))); }
       box.querySelectorAll("[data-ps]").forEach((b) => (b.onclick = () => { st.sec = b.dataset.ps; draw(); }));
     };
     draw();

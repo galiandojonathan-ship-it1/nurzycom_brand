@@ -19,13 +19,28 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await pg.click('#tabs [data-v="students"]'); await pg.waitForTimeout(400);
   await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForSelector("#st-tw .tw", { timeout: 15000 });
   ok(/Похожие вопросы · Gemini/.test(await pg.textContent("#st-tw")), "student card shows «Похожие вопросы · Gemini»");
-  // one click
+  // picker: every first-attempt mistake is listed, nothing is sent until the teacher ticks
+  await pg.waitForSelector("#st-tw .tw-list [data-twsel]", { timeout: 15000 });
+  ok((await pg.$$eval("#st-tw [data-twsel]", (a) => a.length)) === 2, "the picker lists Ayana's 2 first-attempt mistakes");
+  ok(await pg.$eval("#st-tw #tw-go", (b) => b.disabled), "«Сгенерировать» waits until a mistake is ticked");
+  const works = await pg.$$eval('#st-tw [data-twf="work"] option', (a) => a.map((o) => o.textContent));
+  ok(works.length === 2 && /· 2$/.test(works[1]), "filter «Работа» lists the work with its count: " + works.join(" | "));
+  await pg.selectOption('#st-tw [data-twf="days"]', "7"); await pg.waitForTimeout(150);
+  const after7 = await pg.$$eval("#st-tw [data-twsel]", (a) => a.length);
+  await pg.selectOption('#st-tw [data-twf="days"]', "0"); await pg.waitForTimeout(150);
+  console.log("mistakes in the last 7 days:", after7);
+  await pg.click("#st-tw [data-twsel]"); await pg.waitForTimeout(100);
+  ok(/выбрано 1 из 12/.test((await pg.textContent("#st-tw .tw-selctl")).replace(/\s+/g, " ")), "ticking one mistake counts it");
+  await pg.click("#st-tw #tw-all"); await pg.waitForTimeout(100);
+  ok((await pg.$$eval("#st-tw [data-twsel]:checked", (a) => a.length)) === 2, "«Отметить показанные» ticks both");
+  await pg.fill("#st-tw #tw-note", "тексты про океан");
   await pg.click("#st-tw #tw-go"); await pg.waitForSelector("#st-tw .tw-q", { timeout: 20000 });
   const st = await pg.textContent("#st-tw #tw-st"); console.log("status:", st);
   const sent = fs.readFileSync(LOG, "utf8").trim().split("\n").map((l) => JSON.parse(l));
   const gen = sent.find((d) => d.mistakes), audit = sent.find((d) => d.questions);
   ok(gen && gen.mistakes.length === 2 && gen.mistakes.map((m) => m.chosen).join("") === "AB", "Gemini gets Ayana's two mistakes with her first choices A and B");
   ok(gen && gen.mistakes.every((m) => m.skill && m.level && m.key && m.text && m.text.passage), "each mistake carries skill, level, key and the text of the own question");
+  ok(gen && gen.teacherNote === "тексты про океан", "the teacher's note reaches Gemini");
   ok(!JSON.stringify(sent).includes("Ayana") && !JSON.stringify(sent).includes("Seitkali"), "the student's name never reaches Gemini");
   ok(audit && !JSON.stringify(audit).includes('"answer"'), "the blind check gets no keys");
   const cards = await pg.$$eval("#st-tw .tw-q", (a) => a.length);
