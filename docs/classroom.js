@@ -389,16 +389,19 @@
   const DK = { box: null, d: null, slides: [], i: 0, board: null, prev: null };
   async function openDeck(id, coldStart = false, resumeAt = null) {
     const d = deckFor(id); if (!d || DK.box) return;
+    const canMark = d.uploaded && SITE.adminKey();
     DK.prev = { lq: document.body.dataset.lq, lt: document.body.dataset.lt };
     DK.box = document.createElement("div"); DK.box.className = "dk"; DK.box.setAttribute("role", "dialog"); DK.box.setAttribute("aria-label", "Презентация");
     DK.box.innerHTML = `<div class="dk-bar"><b>${esc(d.title)}</b><button type="button" data-k="prev" aria-label="Предыдущий слайд">←</button><span class="dk-pos" id="dk-pos" aria-live="polite">Загружаю…</span><button type="button" data-k="next" aria-label="Следующий слайд">→</button>
       ${id.startsWith("M") ? '<button type="button" data-k="calc" aria-controls="dk-calc" aria-pressed="false">Desmos</button>' : ""}
+      ${canMark ? '<button type="button" data-annotation-edit disabled>Пометки</button><button type="button" data-annotation-next hidden></button><button type="button" data-annotation-hide hidden>Скрыть пометки</button>' : ""}
       <button type="button" data-k="draw" aria-pressed="false">Рисовать</button><button type="button" data-k="fs">Во весь экран</button><button type="button" data-k="x" aria-label="Закрыть презентацию">✕</button></div>
       <div class="dk-workspace"><div class="dk-stage"><div class="dk-frame" style="--ar:${d.w && d.h ? d.w / d.h : 16 / 9}"><img alt="" hidden>
         <div class="dk-native" hidden lang="en"></div><button type="button" class="dk-nav prev" data-k="prev" tabindex="-1">Назад</button><button type="button" class="dk-nav next" data-k="next" tabindex="-1">Далее</button>
         <div class="dk-text"></div><div class="dk-draw"></div></div></div>
         ${id.startsWith("M") ? '<div id="dk-calc" hidden></div>' : ""}</div>`;
     document.body.appendChild(DK.box); document.documentElement.style.overflow = "hidden";
+    DK.annotations = canMark ? window.SlideAnnotations?.create(DK.box, d) : null;
     DK.board = window.LSBOARD ? LSBOARD.create(DK.box.querySelector(".dk-draw"), { clear: true }) : null;
     DK.box.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (!b) return; ({ prev: () => go(DK.i - 1), next: () => go(DK.i + 1), draw: toggleDraw, calc: toggleCalc, fs: fullscreen, x: closeDeck })[b.dataset.k](); });
     document.addEventListener("keydown", onKey);
@@ -436,7 +439,8 @@
         if (typeof encoded !== "string") throw new Error("slide missing");
         const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
         const type = entry?.format === "webp" ? "image/webp" : "image/jpeg";
-        return { url: URL.createObjectURL(new Blob([bytes], { type })), text: entry?.text, viewport: entry?.viewport };
+        return { url: URL.createObjectURL(new Blob([bytes], { type })), text: entry?.text, viewport: entry?.viewport,
+          signature: DK.annotations && window.SlideAnnotations.fingerprint(bytes) };
       });
     }
     if (!DK.slides[i]) DK.slides[i] = fetch(`${d.dir}/${i + 1}.bin`).then((r) => { if (!r.ok) throw new Error("slide " + r.status); return r.arrayBuffer(); })
@@ -448,6 +452,7 @@
     DK.i = i; $("dk-pos").textContent = `${i + 1} / ${DK.d.n}`;
     const box = DK.box, img = box.querySelector(".dk-frame img"), native = box.querySelector(".dk-native"), text = box.querySelector(".dk-text");
     clearDeckText();
+    DK.annotations?.reset();
     img.hidden = true;
     native.hidden = true;
     native.replaceChildren();
@@ -459,6 +464,7 @@
         img.src = entry.url;
         img.alt = entry.text ? "" : `Слайд ${i + 1}`;
         img.hidden = false;
+        if (entry.signature) DK.annotations?.showSlide(entry.signature);
         if (entry.text) showDeckText(entry, text, current).catch(() => {
           if (current()) $("dk-pos").textContent += " · текст недоступен";
         });
@@ -547,6 +553,7 @@
   function closeDeck() {
     if (!DK.box) return; if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     clearDeckText();
+    DK.annotations?.destroy(); DK.annotations = null;
     DK.slides.forEach((p) => p && p.then(({ url }) => { if (url) URL.revokeObjectURL(url); }).catch(() => {})); DK.slides = [];
     window.LessonPracticeHost?.detach(DK.box); DK.box.remove(); DK.box = null; DK.d = null; DK.uploaded = null; DK.current = null; document.documentElement.style.overflow = ""; document.removeEventListener("keydown", onKey);
     const p = DK.prev || {}; if (p.lq) document.body.dataset.lq = p.lq; else delete document.body.dataset.lq; if (p.lt) document.body.dataset.lt = p.lt; else delete document.body.dataset.lt;

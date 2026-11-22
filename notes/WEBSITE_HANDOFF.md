@@ -101,6 +101,9 @@ The JSON renderer uses the site's slide template. PDF graphics and original form
 {"version":1,"slides":[{"title":"Linear equations","paragraphs":["Solve for x.","Check the result using Desmos."]}]}
 ```
 
+«Пометки» adds highlights, underlines or frames to the uploaded PDF viewer. The teacher reveals them in order during screen sharing.
+The marks live in the teacher browser and are keyed by lesson and the SHA-256 of the rendered slide image. Reordering identical images preserves their marks. A changed image starts with separate marks. Keep the source PDF for changes to the slides themselves.
+
 `functions/api/live.js` (live practice rounds) uses the D1 binding `LIVE_LESSONS`; schema `deploy/live-lesson-d1.sql`; locally `pages_dev.mjs` serves it with an in-memory SQLite D1 (tests `t_live.js` and `t_live_sources.mjs`).
 New rounds allow students to update their answers while the question is open. «Каждый ученик решает в своём темпе» gives each student
 their own navigation until the teacher closes the round. In teacher-paced rounds, going back reopens the question for the class.
