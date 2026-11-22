@@ -66,6 +66,7 @@
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
         <input id="cr-deck-file" type="file" hidden>
         <p class="cr-note" id="cr-deck-msg" role="status"></p></div>
+      <div class="cr-card cr-wide" id="cr-ct"><h2>Тесты преподавателя</h2><p class="cr-sub">Ваши тесты из «Мои тесты», сверху задания Gemini на ошибки учеников. «Решать вместе» — тест на общем экране; «Живая практика» — класс решает на своих устройствах, вы видите ответы.</p><div id="cr-ct-list"><p class="cr-empty">Загружаю тесты…</p></div></div>
       <div class="cr-card cr-wide"><h2>Прошлые уроки</h2>${ss.length ? `<ul class="cr-list">${ss.map((s) => { const parts = [...new Set(s.ev.filter((e) => e.k === "at" && e.q && e.ti).map((e) => e.ti.replace(/^Разбор ошибок · /, "")))];
           const n = (k) => s.ev.filter((e) => e.k === k).length;
           return `<li><div class="cr-item" style="cursor:default"><span><b>${esc(s.group)}</b><small>${esc(day(s.t0))}, ${esc(time(s.t0))} · ${Math.round((s.t1 - s.t0) / 60000)} мин${parts.length ? " · " + esc(parts.slice(0, 2).join(", ")) + (parts.length > 2 ? ` и ещё ${parts.length - 2}` : "") : ""}</small></span>
@@ -88,7 +89,19 @@
         replace = false;
       };
     }
-    tiles(); words();
+    tiles(); words(); customTests();
+  }
+  // ---------- «Тесты преподавателя»: the cabinet's tests (incl. Gemini drafts on students' mistakes) for the lesson screen
+  async function customTests() {
+    const box = $("cr-ct-list"); if (!box) return;
+    let bank = null; try { bank = window.CTL ? await CTL.loadBank() : null; } catch (e) { bank = null; }
+    if ($("cr-ct-list") !== box) return;
+    const tests = ((bank && bank.tests) || []).filter((t) => t && Array.isArray(t.q) && t.q.length)
+      .sort((a, b) => (b.src === "gemini" || /^Работа над ошибками/.test(b.title || "")) - (a.src === "gemini" || /^Работа над ошибками/.test(a.title || "")) || (b.at || 0) - (a.at || 0)).slice(0, 12);
+    box.innerHTML = tests.length ? `<ul class="cr-list cr-ct">${tests.map((t) => { const g = t.src === "gemini" || /^Работа над ошибками/.test(t.title || ""), href = `mytest.html?t=${encodeURIComponent(t.id)}`;
+      return `<li><div class="cr-item" style="cursor:default"><span><span class="cr-kind">${g ? "Gemini · на ошибки" : "Мой тест"}</span><b>${esc(t.title || "Без названия")}</b><small>${t.q.length} ${pl(t.q.length, "вопрос", "вопроса", "вопросов")}${t.at ? " · " + esc(day(t.at)) : ""}</small></span>
+        <span class="cr-acts"><a class="cr-chip" href="${href}">Решать вместе</a><a class="cr-chip main" href="${href}&amp;live=1">Живая практика</a></span></div></li>`; }).join("")}</ul>`
+      : '<p class="cr-empty">Тестов пока нет. В кабинете: «Результаты» → карточка ученика → «Похожие вопросы · Gemini» → «Задать» или «Только сохранить».</p>';
   }
   function tiles() {
     const ls = C.lessons.filter((l) => l.tag[0] === C.course), box = $("cr-tiles"); if (!box) return;
