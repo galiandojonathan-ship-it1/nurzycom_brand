@@ -127,7 +127,7 @@ window.SlideMaterialPreview = (() => {
   const edgeNames = ["x", "y", "w", "h"];
   const rectFromFields = (fields) => Object.fromEntries(edgeNames.map((name) => [name, fields[name].valueAsNumber]));
   const clamp = (value) => Math.min(100, Math.max(0, value));
-  function attachCropPicker(board, fields, status, changed) {
+  function attachCropPicker(board, fields, status, changed, selected = "Область выбрана. Откройте предпросмотр для ученика.") {
     const image = board.querySelector("img"), outline = board.querySelector("[data-outline]");
     let drag;
     const draw = ({ x, y, w, h }) => {
@@ -165,7 +165,7 @@ window.SlideMaterialPreview = (() => {
       }
       for (const name of edgeNames) fields[name].value = rect[name];
       changed();
-      status.textContent = "Область выбрана. Откройте предпросмотр для ученика.";
+      status.textContent = selected;
     });
     board.addEventListener("lostpointercapture", () => { drag = null; refresh(); });
     return refresh;
@@ -268,5 +268,5 @@ window.SlideMaterialPreview = (() => {
     }, { once: true }));
   }
   const reference = async (material, answer) => "v" + (await fingerprint(JSON.stringify([material, answer || ""]))).slice(0, 9);
-  return { open, prepare, readDraft, reference, requiredMaterial };
+  return { open, prepare, readDraft, reference, requiredMaterial, attachCropPicker, rectFromFields };
 })();

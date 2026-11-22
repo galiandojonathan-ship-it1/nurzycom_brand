@@ -843,3 +843,15 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 [data-lp-current]{font-weight:700;margin:6px 0 12px;overflow-wrap:anywhere}
 .lp-class-state{flex-basis:100%;font-size:.9rem;overflow-wrap:anywhere}
 .lp-queue-state{flex-basis:100%;font-weight:700;overflow-wrap:anywhere}
+.dk-bar [hidden]{display:none!important}
+.annotation-layer{position:absolute;inset:0;pointer-events:none}
+.annotation-screen{inset:50% auto auto 50%;transform:translate(-50%,-50%);overflow:hidden}
+.annotation{position:absolute;box-sizing:border-box;border-radius:2px}
+.annotation-highlight{background:#f4cb3075;mix-blend-mode:multiply}
+.annotation-underline{border-bottom:3px solid #a63328}
+.annotation-outline{border:2px solid #1f4fa3}
+.annotation-editor fieldset{min-width:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.annotation-editor input[type="number"]{box-sizing:border-box;width:100%;min-height:44px;font:inherit}
+.annotation-editor ol li{margin:6px 0}
+.annotation-editor ol button{margin-left:8px}
+.annotation-editor .lp-crop [data-outline]{box-shadow:0 0 0 1px #fff}
