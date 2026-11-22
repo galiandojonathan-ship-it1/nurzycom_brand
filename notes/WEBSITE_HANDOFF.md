@@ -147,6 +147,23 @@ On the lesson: «Пульт урока» → «Тесты преподавате
 (`mytest.html?t=<id>` on the shared screen) and «Живая практика» (`&live=1` opens the round settings at once); the lesson account's
 `mytest.html` list shows every test. Students still see a Gemini test only when it is assigned. Test: `t_lesson_ct.js desktop|phone`.
 
+«Импорт результатов Bluebook» (2026-11-23; pilot by Codex from the handoff archive, generalised by Claude): on `mock.html`
+(`docs/bluebook-import.js`) a student pastes College Board My Practice → Score Details (the table, or the whole page with Ctrl+A,
+on a phone «Выбрать всё»). Parsing is in the browser and nothing is sent. The check starts on paste. Rows are «N  Section
+Correct answer(s)  Your answer; Status»; tabs, line breaks, «\» endings, non-breaking spaces and page text around the table are
+tolerated. Numbering restarting at 1 marks module 2. A lost or swapped row asks for a new copy. The test and route are found
+from the ordered correct answers of each section against every test of `data/bluebook.bin` (module 1 shared; m2e easier, m2h
+harder). A skill is shown only for a single exact match. Fractions and finite decimals are compared as exact numbers.
+Catalog: `tools/bluebook/build_catalog.py out.json --rw rw.txt [--math math.txt]` reads the open indexes (pdftotext -layout of
+the Dropbox PDFs linked in the handoff) and checks every College Board ID against the public question bank API: the key must
+match, and the skill and difficulty come from the bank. No question text is kept. Questions missing from the bank (placeholders
+«xyz…»/«abcd…», and all of SAT 11, which has no IDs yet) keep the index key for routing, with the index skill labelled «по
+открытому индексу». Seal it with `datafile.mjs seal`. Built 2026-11-23: Reading and Writing of SAT Practice Tests 4–11, 648
+positions, 641 items, 0 key mismatches. Math waits for the Math index PDF (the handoff's Math link opens a Dropbox login).
+Tests: `t_bbimport.js [opened catalog]` (formats, Ctrl+A page, unique test and route for every test, exact numbers, errors),
+`t_bbimport_ui.js desktop|phone` (a real Ctrl+A copy of a Score Details-shaped HTML page pasted into the site; fixture from
+`mkfx.mjs`, which seals the synthetic catalog of `bbsynth.cjs`).
+
 «Прогресс ученика · индекс» (2026-11-22): in the cabinet's results, a student card (`#st-prog`, `progMount` / `progObs` in
 `teacher.js`) runs `docs/progress.js` (engine, `PROGRESS.compute`) and draws it with `docs/progress-view.js` (`PVIEW.render`; styles `.pg-*`).
 The index is internal analytics, not an SAT score, and is never published. Engine: per subtopic and per section a 3PL model

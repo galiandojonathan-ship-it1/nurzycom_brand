@@ -45,6 +45,8 @@ const mockgloss = { words: { curators: { w: "curator", pos: "n", en: "a person i
 fs.writeFileSync(path.join(out, "data/lessons.bin"), await seal(lessons));
 fs.writeFileSync(path.join(out, "data/vocab.bin"), await seal(vocab));
 fs.writeFileSync(path.join(out, "data/mockgloss.bin"), await seal(mockgloss));
+{ const { createRequire } = await import("node:module"); const { synthetic } = createRequire(import.meta.url)("./bbsynth.cjs");
+  fs.writeFileSync(path.join(out, "data/bluebook.bin"), await seal(synthetic())); }   // Bluebook import: synthetic catalog, no real keys
 // synthetic hard set X01 (practice.bin) for live-round tests: 10 made-up questions, key B for odd, D for even
 { const PS = "fxp", px = [];
   for (let i = 1; i <= 10; i++) { const key = i % 2 ? "B" : "D";
