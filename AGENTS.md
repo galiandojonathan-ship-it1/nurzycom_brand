@@ -23,7 +23,12 @@ student site. These rules add what agents working side by side need.
 
 ## Rules that are easy to miss
 
+The full list, with the reasons, is `notes/WEBSITE_HANDOFF.md` → «5. Rules for every change»; when the two differ, that section wins.
+
+
 - After any change to `docs/*.js` or `docs/site.css`, run `python3 deploy/bump_version.py` (new `?v=` cache tags).
+- No inline scripts and no scripts from other hosts: `docs/_headers` sets a Content-Security-Policy (the `404.html` inline script is allowed
+  by its hash; update the hash if that script changes).
 - New extra pages on the student site go under «Полезное» (`docs/useful.html`, next «07.n —» number).
 - Student-facing text on the course site is Russian; SAT questions, terms and slides are English.
 - Never copy College Board or Barron's text into new content; never invent results, scores, reviews or statistics.
