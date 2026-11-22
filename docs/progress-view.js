@@ -32,7 +32,7 @@ window.PVIEW = (() => {
     tip.innerHTML = html; tip.style.opacity = 1; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px"; }
   const hideTip = () => tip && (tip.style.opacity = 0);
 
-  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220 }) {
+  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220, note = null }) {
     box.innerHTML = ""; const W = 720, P = { l: 34, r: 92, t: 10, b: 26 }, n = times.length; if (!n) return;
     const svg = el("svg", { viewBox: `0 0 ${W} ${h}`, role: "img", "aria-label": series.map((s) => s.label).join(", ") }, box);
     const x = (i) => P.l + (W - P.l - P.r) * (n === 1 ? 0.5 : i / (n - 1)), y = (v) => P.t + (h - P.t - P.b) * (1 - v / ymax);
@@ -49,7 +49,7 @@ window.PVIEW = (() => {
     const cross = el("line", { y1: P.t, y2: h - P.b, stroke: "#77736D", opacity: 0 }, svg), hit = el("rect", { x: P.l, y: P.t, width: W - P.l - P.r, height: h - P.t - P.b, fill: "transparent" }, svg);
     hit.addEventListener("mousemove", (e) => { const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width), i = n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((px - P.l) / ((W - P.l - P.r) / (n - 1)))));
       cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
-      showTip(e, `<b>${day(times[i])}</b><br>` + series.map((s) => `${esc(s.label)}: <b>${s.v[i] == null ? "—" : fmt(s.v[i])}</b>`).join("<br>") + (marks.includes(i) ? "<br>пробный тест" : "")); });
+      showTip(e, `<b>${day(times[i])}</b><br>` + series.map((s) => `${esc(s.label)}: <b>${s.v[i] == null ? "—" : fmt(s.v[i])}</b>`).join("<br>") + (marks.includes(i) ? "<br>пробный тест" : "") + (note ? note(i) : "")); });
     hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); hideTip(); });
   }
   function spark(vals, color = "#0F0F0F", w = 110, h = 26) {
@@ -59,28 +59,33 @@ window.PVIEW = (() => {
     return s;
   }
 
+  // index change a steady simulated student shows by chance (1 sd, 2026-11-22): ±7 at 72 answers a week, ±15 at 36; scales as 1/√answers
+  const noiseOf = (perWeek) => Math.min(25, 7 * Math.sqrt(72 / Math.max(10, perWeek)));
   // box: container; res: PROGRESS.compute result; o: { name }
   function render(box, res, o = {}) {
     const st = { weeks: 8, sec: res.secs[0] };
     const draw = () => {
-      const S = res.snaps, n = S.length, a = Math.max(0, n - 1 - st.weeks), cut = S.slice(a), last = S[n - 1], first = cut[0];
-      if (!last || last.index == null) { box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Пока нет размеченных ответов для расчёта.</p></div>'; return; }
-      const d = last.index - first.index, slope = cut.length > 1 ? (last.index - cut[Math.max(0, cut.length - 4)].index) / Math.min(3, cut.length - 1) : 0;
+      const S = res.snaps, n = S.length, start = S.findIndex((s) => s.nAns >= PROGRESS.MIN_IX && s.index != null), last = S[n - 1];
+      // weeks resting on fewer than MIN_IX answers are not drawn: there the start value of the model, not the student, sets the line
+      if (start < 0) { const na = last ? last.nAns : 0, c = (last && last.cnt) || {}, by = Object.keys(c).map((k) => `${k === "rw" ? "Reading and Writing" : "Math"}: ${Object.values(c[k]).reduce((x, y) => x + y[1], 0)}`).join(", ");
+        box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">${na < PROGRESS.MIN_IX ? `Мало ответов для расчёта: ${na} из ${PROGRESS.MIN_IX}.` : `Ни в одном разделе пока нет ${PROGRESS.MIN_SEC} ответов (${by}).`} Индекс появится, когда ответов с первой попытки будет ${PROGRESS.MIN_IX}, из них ${PROGRESS.MIN_SEC} в одном разделе.</p></div>`; return; }
+      const a = Math.max(start, n - 1 - st.weeks), cut = S.slice(a), first = cut[0];
+      const NOISE = noiseOf((last.nAns - first.nAns) / Math.max(1, (last.t - first.t) / 6048e5)), d = last.index - first.index, slope = cut.length > 1 ? (last.index - cut[Math.max(0, cut.length - 4)].index) / Math.min(3, cut.length - 1) : 0;
       const drv = PROGRESS.drivers(res, a, n - 1).slice(0, 6), mx = Math.max(1e-6, ...drv.map((x) => Math.abs(x.v)));
       box.innerHTML = `<div class="card pg"><div class="pg-top"><div><span class="label">Прогресс ученика · индекс</span>
           <p class="hint">Внутренняя аналитика по ответам с первой попытки и разметке подтем. Не балл SAT и не для публикации.</p></div>
           <div class="chips" role="group" aria-label="Период">${[[4, "4 недели"], [8, "8 недель"], [99, "Всё время"]].map(([v, l]) => `<button class="chip" type="button" data-pw="${v}" aria-pressed="${st.weeks === v}">${l}</button>`).join("")}</div></div>
         <div class="pg-grid">
-          <section class="pg-hero"><div class="pg-big">${last.index}</div><div class="pg-delta ${d >= 0 ? "up" : "down"}">${d >= 0 ? "▲ +" : "▼ "}${d} <span>с ${day(first.t)}</span></div>
-            <div class="pg-kv"><span>Скорость <b>${slope >= 0 ? "+" : ""}${slope.toFixed(1)}</b> в неделю</span><span>Ответов <b>${res.n}</b>, размечено <b>${res.tagged}</b></span></div>
+          <section class="pg-hero"><div class="pg-big">${last.index}</div><div class="pg-delta ${Math.abs(d) < NOISE ? "pg-noise" : d >= 0 ? "up" : "down"}">${d >= 0 ? "▲ +" : "▼ "}${d} <span>с ${day(first.t)}${Math.abs(d) < NOISE ? ` · в пределах шума (±${Math.round(NOISE)})` : ""}</span></div>
+            <div class="pg-kv"><span>Скорость <b>${slope >= 0 ? "+" : ""}${slope.toFixed(1)}</b> в неделю</span><span>Ответов <b>${res.n}</b>, размечено <b>${res.tagged}</b></span></div>${start > 0 ? `<p class="hint">Недели до ${day(S[start].t)} не показаны: меньше ${PROGRESS.MIN_IX} ответов.</p>` : ""}
             <p class="hint">Собран из ${last.used} частей из 5${last.used < 5 ? ": для остальных пока мало данных" : ""}. Около 0 — ответы наугад, 100 — уверенное решение на экзаменационном уровне.</p></section>
           <section class="pg-chart"><b>Индекс по неделям</b><div id="pg-ix"></div></section></div>
         <div class="pg-parts">${PARTS.map(([k, l]) => { const v = cut.map((s) => s.parts[k]), now = last.parts[k], was = first.parts[k];
           return `<div class="pg-part" data-pp="${k}"><div class="l">${l}</div><div class="n">${now == null ? "—" : Math.round(now)}${now != null && was != null ? ` <small class="${now >= was ? "up" : "down"}">${now >= was ? "+" : ""}${Math.round(now - was)}</small>` : ""}</div><div class="w">${now == null ? "мало данных" : "вес " + String(PROGRESS.W[k]).replace(".", ",")}</div></div>`; }).join("")}</div>
-        <div class="pg-grid2"><section><b>Откуда рост за период</b><ul class="pg-drv">${drv.length ? drv.map((x) => `<li><div><span>${esc(NAME[x.k] || x.k)}</span><div class="pg-bar"><i style="width:${Math.abs(x.v) / mx * 100}%;background:${x.v >= 0 ? "#0F0F0F" : "#A63328"}"></i></div></div><b class="${x.v >= 0 ? "up" : "down"}">${x.v >= 0 ? "+" : ""}${x.v.toFixed(1)}</b></li>`).join("") : '<li class="hint">Пока мало ответов по подтемам.</li>'}</ul></section>
+        <div class="pg-grid2"><section><b>Откуда рост за период</b><p class="hint">Только изменения больше шума.</p><ul class="pg-drv">${drv.length ? drv.map((x) => `<li><div><span>${esc(NAME[x.k] || x.k)}</span><div class="pg-bar"><i style="width:${Math.abs(x.v) / mx * 100}%;background:${x.v >= 0 ? "#0F0F0F" : "#A63328"}"></i></div></div><b class="${x.v >= 0 ? "up" : "down"}">${x.v >= 0 ? "+" : ""}${x.v.toFixed(1)}</b></li>`).join("") : '<li class="hint">За период нет изменений больше шума. По 4–5 ответам в неделю на подтему рост виден через 3–4 недели.</li>'}</ul></section>
           <section><b>Сложность вопросов</b>${res.secs.length > 1 ? `<div class="chips">${res.secs.map((s) => `<button class="chip" type="button" data-ps="${s}" aria-pressed="${st.sec === s}">${s === "rw" ? "Reading and Writing" : "Math"}</button>`).join("")}</div>` : ""}
-            <div class="pg-legend"><span><i style="background:#2A7DB8"></i>Лёгкие</span><span><i style="background:#6E57C9"></i>Средние</span><span><i style="background:#B5402F"></i>Трудные</span></div><div id="pg-df"></div></section></div>
-        <section><b>Карта подтем</b><p class="hint">Чёрная полоса — сейчас, красная метка — начало периода. Серым — меньше трёх ответов: оценка неуверенная.</p>
+            <p class="hint">Ожидаемая доля верных ответов, угадывание учтено. Линия уровня появляется после ${PROGRESS.MIN_LV} ответов этого уровня.</p><div class="pg-legend"><span><i style="background:#2A7DB8"></i>Лёгкие</span><span><i style="background:#6E57C9"></i>Средние</span><span><i style="background:#B5402F"></i>Трудные</span></div><div id="pg-df"></div></section></div>
+        <section><b>Карта подтем</b><p class="hint">Чёрная полоса — сейчас, красная метка — начало периода. Изменение серым — в пределах шума: по стольким ответам его нельзя отличить от случайности. Серая строка — меньше трёх ответов.</p>
           <div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th></tr></thead><tbody id="pg-rows"></tbody></table></div></section>
         <div class="pg-grid2"><section><b>Ловушки</b><p class="hint">Как часто выбирает ловушку, когда она есть: начало → сейчас. Меньше — лучше.</p><div id="pg-tr"></div></section>
           <section><b>Привычки</b><div id="pg-hb"></div></section></div></div>`;
@@ -88,7 +93,8 @@ window.PVIEW = (() => {
         marks: cut.map((s, i) => (res.mocks.some((t) => t <= s.t && t > (cut[i - 1] ? cut[i - 1].t : 0)) ? i : -1)).filter((i) => i >= 0) });
       const ds = cut.map((s) => s.diff[st.sec] || {});
       line(box.querySelector("#pg-df"), { series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].map(([k, c, l]) => ({ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l })),
-        times: cut.map((s) => s.t), fmt: (v) => Math.round(v) + "%", h: 240 });
+        times: cut.map((s) => s.t), fmt: (v) => Math.round(v) + "%", h: 240,
+        note: (i) => { const c = (cut[i].cnt || {})[st.sec] || {}, f = [["E", "лёгкие"], ["M", "средние"], ["H", "трудные"]].filter(([k]) => c[k]).map(([k, l]) => `${l} ${c[k][0]}/${c[k][1]}`); return f.length ? `<br><span class="pg-tipn">Факт к этой дате: ${f.join(" · ")}</span>` : ""; } });
       box.querySelectorAll("[data-pp]").forEach((elx) => elx.appendChild(spark(cut.map((s) => (s.parts[elx.dataset.pp] == null ? null : s.parts[elx.dataset.pp] / 100)), "#0F0F0F", 140, 28)));
       const tb = box.querySelector("#pg-rows"), groups = PROGRESS.DOMAINS;
       res.secs.forEach((sec) => groups[sec].forEach(([, list], gi) => {
@@ -96,11 +102,11 @@ window.PVIEW = (() => {
         if (!rows.length) return;
         tb.insertAdjacentHTML("beforeend", `<tr><td class="pg-dom" colspan="7">${esc(DOMN[sec][gi])}</td></tr>`);
         rows.forEach((x) => {
-          const now = x.series[n - 1], was = x.series[a], ch = now - was, thin = x.n < 3;
-          const stt = thin ? ["thin", "мало данных"] : now >= 0.8 ? ["ok", "освоено"] : ch >= 0.06 ? ["grow", "растёт"] : ch <= -0.06 ? ["stuck", "просело"] : now < 0.45 ? ["stuck", "слабое место"] : ["", "держится"];
+          const thin = x.n < 3, c = thin ? null : PROGRESS.change(res, x, a, n - 1), b0 = c ? c.from : n - 1, now = x.series[n - 1] ?? 0, was = x.series[b0] ?? now, ch = c ? c.ch : 0, sig = c && Math.abs(c.z) >= PROGRESS.ZMIN, late = !!c && b0 > a;   // change from the first reliable value; sig: above the noise
+          const stt = thin ? ["thin", "мало данных"] : now >= 0.8 ? ["ok", "освоено"] : sig && ch > 0 ? ["grow", "растёт"] : sig && ch < 0 ? ["stuck", "просело"] : now < 0.45 ? ["stuck", "слабое место"] : ["", "держится"];
           const tr = document.createElement("tr"); if (thin) tr.className = "pg-thin";
-          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em></div></td><td class="num"><b>${pct(now)}%</b></td><td class="num ${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : ""}${pct(ch)}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>`;
-          tr.querySelector(".sp").appendChild(spark(x.series.slice(a), thin ? "#D9D5CD" : "#0F0F0F"));
+          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em></div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b></td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>`;
+          tr.querySelector(".sp").appendChild(spark(x.series.slice(a).map((v, j) => (a + j < b0 ? null : v)), thin ? "#D9D5CD" : "#0F0F0F"));
           tb.appendChild(tr);
         });
       }));

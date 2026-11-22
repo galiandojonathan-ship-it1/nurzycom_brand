@@ -150,7 +150,19 @@ Mastery = mean over easy/medium/hard of σ(θ − 0.5√v − b), weighted by ex
 and bank frequency inside a domain. Index = 0.60 mastery + 0.15 transfer (mock results against prediction, only subtopics practised 3+
 times outside mocks) + 0.10 retention (subtopic seen again after 7+ days) + 0.10 pace (timed parts against SAT time, keeping accuracy)
 + 0.05 correction (second try after a miss, rescaled above chance). The weight of a missing part is shared among the others.
-Drivers count subtopics with n ≥ 3. Tags: `docs/data/tags.bin` (sealed with the master key: per question id the primary and
+Drivers count subtopics with n ≥ 3.
+Corrected the same day after Nurassyl asked whether a first-day point was real (Beksultan, 1 Nov: 16 answers drew curves of
+61/32/12%, almost all from the prior):
+- a section counts from 20 first-try answers, a difficulty level from 5, the index from 30; weeks below that are not drawn;
+- subtopic θ = section level + offset (offset prior 0, variance 1); the section level is learned net of the subtopic's offset;
+- weekly points are smoothed backwards (RTS, uncapped drift), so each week uses later answers too;
+- a subtopic's change counts from its first point with 3+ answers, never from the prior, and only when it is at least 1 standard
+  error (drivers and «растёт/просело»; otherwise grey, «в пределах шума»). The hero marks a change below the noise (±7 points at
+  72 answers a week, ±15 at 36);
+- the difficulty chart shows the expected share right with guessing, and the tooltip shows the actual count;
+- simulated steady student: index change 0.6 ± 6.9 over 8 weeks (before the fix +23); a learned subtopic is found 2 times in 3
+  at 72 answers a week, with 0.17 false drivers per student. One answer to a question with 25% guessing carries little
+  information, so subtopic trends need 3–4 weeks to show. Tags: `docs/data/tags.bin` (sealed with the master key: per question id the primary and
 secondary subtopic, trap per wrong letter, flags, level, type, key; no question text). It covers the 1,087 questions students had
 answered on 2026-11-22. Untagged questions still move the section ability but not the subtopics. Tag new questions with the kit in
 `notes/private/progress-tagging.bin` (taxonomy, scripts, README; open with `tools/private/unpack.mjs`). Tests: `t_progress_engine.js`

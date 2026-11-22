@@ -1,16 +1,19 @@
 /* «Прогресс ученика»: the progress index of one student over time (2026-11-22, formula approved by Nurassyl).
    Pure computation, no DOM: PROGRESS.compute(observations, tags, opts) → weekly series, subtopic mastery, components, traps.
    Formula (notes/WEBSITE_HANDOFF.md → «Прогресс ученика»):
-   - every first attempt updates a per-subtopic ability θ with uncertainty v (Gaussian prior, Laplace update for a 3PL item:
+   - every first attempt updates the section level and a per-subtopic offset (subtopic θ = section θ + offset), each with uncertainty v (Gaussian prior, Laplace update for a 3PL item:
      guessing g = 0.25 for A–D, 0 for typed), difficulty b = −1.2 / 0 / +1.2 for E / M / H; v grows 0.05 a day without practice (tuned on synthetic learners 2026-11-22);
+   - weekly points are smoothed backwards (RTS), so each week uses all answers; a section counts from 20 answers;
    - mastery of a subtopic = mean σ(θ − 0.5·√v − b) over E, M, H; mastery M = exam-weighted mean over the student's sections;
    - index = 0.60·M + 0.15·transfer + 0.10·retention + 0.10·pace + 0.05·correction (weights of missing parts are shared out). */
 (function (root) {
   "use strict";
   const B = { E: -1.2, M: 0, H: 1.2 }, LV = ["E", "M", "H"], TH0 = -1, DAY = 864e5, TAU2 = 0.05, V0 = 1.0, VSEC = 2.25;
+  let TAUD = 0.05, VD = 1.0;   // subtopic offsets (chosen on simulated students 2026-11-22: steady student ±7 index points over 8 weeks, a learned subtopic found 2 times in 3)
   const W = { M: 0.6, X: 0.15, R: 0.1, P: 0.1, C: 0.05 };
   const CTX = { mock: 1, final: 1, hw: 0.8, learn: 0.6 };
   const PACE = { rw: 71, math: 95 };
+  const MIN_SEC = 20, MIN_LV = 5, MIN_IX = 30;   // answers needed before a section, a level or the index is drawn
   const sig = (z) => 1 / (1 + Math.exp(-z));
   // exam weights: domain share of the real SAT, split equally among the domain's subtopics
   const DOMAINS = {
@@ -36,20 +39,20 @@
   }
   const OMEGA0 = weights(null);
 
-  function update(st, x, b, g, w) {   // one observation on a Gaussian state {th, v}
-    const pi = sig(st.th - b), p = g + (1 - g) * pi, D = (1 - g) * pi * (1 - pi), q = Math.max(p * (1 - p), 1e-6);
+  function update(st, x, b, g, w, base = 0) {   // one observation on a Gaussian state {th, v}; base: the section level under a subtopic offset
+    const pi = sig(base + st.th - b), p = g + (1 - g) * pi, D = (1 - g) * pi * (1 - pi), q = Math.max(p * (1 - p), 1e-6);
     const v2 = 1 / (1 / st.v + (w * D * D) / q);
     st.th += v2 * w * D * (x - p) / q; st.v = v2;
     return p;
   }
-  const grow = (st, t) => { if (st.t != null) st.v = Math.min(st.cap, st.v + TAU2 * Math.max(0, (t - st.t) / DAY)); st.t = t; };
-  const mastery = (st, t) => { const v = Math.min(st.cap, st.v + TAU2 * Math.max(0, (t - st.t) / DAY)), th = st.th - 0.5 * Math.sqrt(v); return LV.reduce((a, d) => a + sig(th - B[d]), 0) / 3; };
+  const grow = (st, t) => { if (st.t != null) st.v = Math.min(st.cap, st.v + (st.q ?? TAU2) * Math.max(0, (t - st.t) / DAY)); st.t = t; };
 
   /* obs: [{ id, t (ms), x (0/1 first try), sec ("rw"|"math"), level, type ("mc"|"spr"), ctx ("mock"|"final"|"hw"|"learn"),
              part (id of the submission), attempt (1…), chosen (letter or ""), second (0/1/null), secs (seconds per question or 0),
              hints (0..1 share) }]
      tags: { id: { p: primary, s: [secondary], t: { A: trap, … } } } */
   function compute(obs, tags, opts = {}) {
+    TAUD = opts.tauD ?? 0.05; VD = opts.vD ?? 1.0;   // opts only for experiments; reset on every call
     const now = opts.now || Date.now(), OMEGA = weights(opts.freq || bankFreq(tags));
     obs = obs.filter((o) => o && Number.isFinite(o.t)).sort((a, b) => a.t - b.t);
     const secs = [...new Set(obs.map((o) => o.sec))].filter((s) => DOMAINS[s]);
@@ -57,28 +60,58 @@
     const S = {};   // subtopic states
     const seen = {}, lastTag = {};
     const X = [], R = [], C = { n: 0, k: 0 }, partStats = {}, trapOpp = {}, slip = { n: 0, miss: 0, exp: 0 }, blanks = { n: 0, b: 0 };
-    let tagged = 0;
+    let tagged = 0, done = 0; const cnt = {};   // answers so far (first tries) by section and level: [right, total]
     const lambda = (t, half) => Math.pow(2, -(now - t) / (half * DAY));
     const snaps = [];
     const weekEnd = (t) => { const d = new Date(t); d.setHours(23, 59, 59, 999); d.setDate(d.getDate() + ((7 - d.getDay()) % 7)); return +d; };
     let nextSnap = obs.length ? weekEnd(obs[0].t) : now;
     const snap = (t) => snaps.push(state(t));
-    function state(t) {   // index and parts at time t
-      const sub = {};
-      let mNum = 0, mDen = 0;
-      for (const sec of secs) for (const k in OMEGA) if (SEC_OF[k] === sec) {
-        const st = S[k] || { th: ability[sec].th, v: V0, cap: V0, t: t };
-        const m = mastery(st, t); sub[k] = m; mNum += OMEGA[k] * m; mDen += OMEGA[k];
-      }
-      const parts = { M: mDen ? 100 * mNum / mDen : null };
-      const ratio = (list, half) => { const live = list.filter((o) => o.t <= t); if (live.length < 10) return null; const A = live.reduce((a, o) => a + lambda(o.t, half) * o.x, 0), E = live.reduce((a, o) => a + lambda(o.t, half) * o.p, 0); return 100 * Math.min(1, (A + 5) / (E + 5)); };
+    function state(t) {   // what is known at time t; mastery, index and difficulty are filled in by finish() after smoothing
+      const at = (st) => (st ? { th: st.th, v: st.t == null ? st.v : Math.min(st.cap, st.v + (st.q ?? TAU2) * Math.max(0, (t - st.t) / DAY)), cap: st.cap, q: st.q ?? TAU2 } : null);
+      const tot = (sec) => LV.reduce((a, d) => a + (cnt[sec] && cnt[sec][d] ? cnt[sec][d][1] : 0), 0);
+      // only sections with MIN_SEC answers by t count: before that a section's subtopics sit at the prior and would fake a drop, then growth
+      const live = secs.filter((sec) => tot(sec) >= MIN_SEC);
+      const parts = { M: null };
+      const ratio = (list, half) => { const lv = list.filter((o) => o.t <= t); if (lv.length < 10) return null; const A = lv.reduce((a, o) => a + lambda(o.t, half) * o.x, 0), E = lv.reduce((a, o) => a + lambda(o.t, half) * o.p, 0); return 100 * Math.min(1, (A + 5) / (E + 5)); };
       parts.X = ratio(X, 30); parts.R = ratio(R, 30);
       const ps = Object.values(partStats).filter((p) => p.t <= t && p.timed && p.secs > 0);
       if (ps.length >= 2) { let a = 0, d = 0; for (const p of ps) { const l = lambda(p.t, 21) * p.n, pace = Math.max(0, Math.min(1, 2 - p.secs / PACE[p.sec])), acc = Math.min(1, (p.right + 1) / (p.exp + 1)); a += l * pace * acc; d += l; } parts.P = 100 * a / d; } else parts.P = null;
       parts.C = C.n >= 10 ? 100 * Math.max(0, Math.min(1, ((C.k + 1) / (C.n + 3) - 1 / 3) / (2 / 3))) : null;
-      let num = 0, den = 0; for (const k in W) if (parts[k] != null) { num += W[k] * parts[k]; den += W[k]; }
-      const diff = {}; for (const sec of secs) diff[sec] = Object.fromEntries(LV.map((d) => [d, sig(ability[sec].th - B[d])]));
-      return { t, index: den ? Math.round(num / den) : null, parts, sub, diff, used: Object.keys(W).filter((k) => parts[k] != null).length };
+      return { t, index: null, parts, sub: {}, sd: {}, diff: {}, nAns: done, live, subN: Object.fromEntries(Object.entries(S).map(([k, v]) => [k, v.n])), cnt: JSON.parse(JSON.stringify(cnt)), used: 0,
+        ab: Object.fromEntries(secs.map((sec) => [sec, at(ability[sec])])), st: Object.fromEntries(Object.keys(S).map((k) => [k, at(S[k])])) };
+    }
+    /* Backward (Rauch–Tung–Striebel) smoothing over the weekly points: each week's ability is estimated with all answers, later ones
+       included. Without it the forward estimate climbs out of the prior as answers pile up, and a student who does not change
+       still shows growth (+23 index points over 8 weeks on a simulated steady student; with smoothing about 0). */
+    function smooth(get, put) {
+      const n = snaps.length; let nx = null;
+      for (let i = n - 1; i >= 0; i--) {
+        const f = get(snaps[i]); if (!f) break;
+        if (!nx) { nx = { th: f.th, v: f.v }; put(snaps[i], nx); continue; }
+        const vp = f.v + f.q * Math.max(0, (snaps[i + 1].t - snaps[i].t) / DAY), J = f.v / vp;   // uncapped: with the cap the walk stalls and the last value is copied back
+        nx = { th: f.th + J * (nx.th - f.th), v: Math.max(1e-6, f.v + J * J * (nx.v - vp)) }; put(snaps[i], nx);
+      }
+    }
+    function finish() {
+      if (!opts.noSmooth) { for (const sec of secs) smooth((s) => s.ab[sec], (s, v) => (s.ab[sec] = v)); for (const k in S) smooth((s) => s.st[k], (s, v) => (s.st[k] = v)); }
+      for (const s of snaps) {
+        let mNum = 0, mDen = 0;
+        for (const sec of s.live) for (const k in OMEGA) if (SEC_OF[k] === sec) {
+          const d = s.st[k] || { th: 0, v: VD }, vt = s.ab[sec].v + d.v, th = s.ab[sec].th + d.th - 0.5 * Math.sqrt(vt);   // subtopic = section level + its own offset
+          const m = LV.reduce((a, d) => a + sig(th - B[d]), 0) / 3; s.sub[k] = m;
+          s.sd[k] = Math.sqrt(vt) * LV.reduce((a, d) => a + sig(th - B[d]) * (1 - sig(th - B[d])), 0) / 3;   // standard error of the mastery (delta method)
+          mNum += OMEGA[k] * m; mDen += OMEGA[k];
+        }
+        s.parts.M = mDen ? 100 * mNum / mDen : null;
+        let num = 0, den = 0; for (const k in W) if (s.parts[k] != null) { num += W[k] * s.parts[k]; den += W[k]; }
+        s.index = den && s.parts.M != null ? Math.round(num / den) : null;   // no index without mastery: pace or correction alone say nothing about level
+        s.used = Object.keys(W).filter((k) => s.parts[k] != null).length;
+        // expected share right at each level, guessing included (comparable with the raw count); a section from MIN_SEC answers,
+        // a level from MIN_LV answers of that level, so the prior never draws a line by itself
+        for (const sec of secs) { const c = s.cnt[sec] || {}, tot = LV.reduce((a, d) => a + (c[d] ? c[d][1] : 0), 0), g = sec === "rw" ? 0.25 : 0.18;
+          s.diff[sec] = tot < MIN_SEC ? {} : Object.fromEntries(LV.filter((d) => c[d] && c[d][1] >= MIN_LV).map((d) => [d, g + (1 - g) * sig(s.ab[sec].th - B[d])])); }
+        delete s.ab; delete s.st;
+      }
     }
     let mockBefore = null, mockPart = null;
     for (const o of obs) {
@@ -88,19 +121,21 @@
       const repeat = (seen[o.id] = (seen[o.id] || 0) + 1) > 1 || o.attempt > 1;
       const w = (CTX[o.ctx] || 0.8) * (1 - 0.5 * (o.hints || 0)) * (repeat ? 0.3 : 1);
       blanks.n++; if (o.blank) blanks.b++;
+      if (!repeat) { done++; const c = (cnt[sec] = cnt[sec] || {}); const r = (c[o.level] = c[o.level] || [0, 0]); r[0] += o.x; r[1]++; }
       // prediction before the update (for transfer, retention, slips): the primary subtopic, else the section
-      const pk = tag && tag.p, pst = pk && S[pk] ? S[pk] : A;
-      const pHat = g + (1 - g) * sig(pst.th - b);
+      const pk = tag && tag.p;
+      const pHat = g + (1 - g) * sig(A.th + (pk && S[pk] ? S[pk].th : 0) - b);
       if (o.ctx === "mock" && pk && S[pk] && S[pk].np >= 3) X.push({ t: o.t, x: o.x, p: pHat });   // transfer: only subtopics already practised outside mocks
       if (pk && lastTag[pk] && o.t - lastTag[pk] >= 7 * DAY) R.push({ t: o.t, x: o.x, p: pHat });
       if (pHat >= 0.8) { slip.n++; slip.miss += 1 - o.x; slip.exp += 1 - pHat; }
-      grow(A, o.t); update(A, o.x, b, g, w);
+      const base = A.th;   // section level before this answer: the subtopic offset is learned against it
+      grow(A, o.t); update(A, o.x, b, g, w, pk && S[pk] ? S[pk].th : 0);   // the section level is learned net of the subtopic's own offset
       if (tag) {
         tagged++;
         [[tag.p, 1], ...(tag.s || []).map((k) => [k, 0.5])].forEach(([k, alpha]) => {
           if (!OMEGA[k]) return;
-          if (!S[k]) S[k] = { th: A.th, v: V0, cap: V0, t: o.t, n: 0, np: 0, first: o.t, hist: [] };
-          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha); S[k].n += alpha === 1 ? 1 : 0; if (alpha === 1 && o.ctx !== "mock") S[k].np++;
+          if (!S[k]) S[k] = { th: 0, v: VD, cap: VD, q: TAUD, t: o.t, n: 0, np: 0, first: o.t, hist: [] };   // offset from the section level, prior 0
+          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha, base); S[k].n += alpha === 1 ? 1 : 0; if (alpha === 1 && o.ctx !== "mock") S[k].np++;
         });
         if (tag.p) lastTag[tag.p] = o.t;
         for (const [L, trap] of Object.entries(tag.t || {})) {
@@ -114,8 +149,9 @@
     }
     while (nextSnap < now) { snap(nextSnap); nextSnap += 7 * DAY; }
     snaps.push(state(now));
+    finish();
     // subtopic rows: now vs the start of the shown period, answer counts
-    const subs = Object.keys(OMEGA).filter((k) => secs.includes(SEC_OF[k])).map((k) => ({ k, sec: SEC_OF[k], n: S[k] ? S[k].n : 0, series: snaps.map((s) => s.sub[k]) }));
+    const subs = Object.keys(OMEGA).filter((k) => secs.includes(SEC_OF[k])).map((k) => ({ k, sec: SEC_OF[k], n: S[k] ? S[k].n : 0, series: snaps.map((s) => s.sub[k] ?? null), sd: snaps.map((s) => s.sd[k] ?? null), first: snaps.findIndex((s) => (s.subN[k] || 0) >= 3 && s.sub[k] != null) }));   // first: first snapshot with 3+ answers
     const traps = Object.entries(trapOpp).map(([trap, r]) => {
       const L = r.list, h = Math.max(1, Math.floor(L.length * 0.4));
       const rate = (a) => (a.reduce((x, y) => x + y.pick, 0) + 0.5) / (a.length + 2);
@@ -127,12 +163,22 @@
   }
   // contribution of each subtopic to the change of the index between two snapshots (mastery part only)
   // only subtopics with at least minN answers: a change built on one or two answers is noise
-  function drivers(res, i0, i1, minN = 3) {
-    const a = res.snaps[i0], b = res.snaps[i1]; if (!a || !b) return [];
+  /* change of one subtopic between two weekly points, from its first reliable value (3+ answers), never from the prior;
+     z = change / its standard error (errors of both points added: conservative, smoothed points are correlated) */
+  const ZMIN = 1;   // measured on simulated students (2026-11-22): at 70 answers a week finds a learned subtopic 25 of 30 times, about 0.4 false per student
+  function change(res, x, i0, i1) {
+    if (x.first < 0 || x.first >= i1 || x.series[i1] == null) return null;
+    const j = Math.max(i0, x.first), a0 = x.series[j]; if (a0 == null) return null;
+    const ch = x.series[i1] - a0, se = Math.hypot(x.sd[j] || 0, x.sd[i1] || 0) || 1e-6;
+    return { ch, z: ch / se, from: j };
+  }
+  function drivers(res, i0, i1, minN = 3, zmin = ZMIN) {   // only changes clearly above the noise
+    const b = res.snaps[i1]; if (!res.snaps[i0] || !b) return [];
     const OM = res.omega, den = res.subs.reduce((s, x) => s + OM[x.k], 0) || 1, used = Object.keys(W).filter((k) => b.parts[k] != null).reduce((s, k) => s + W[k], 0) || 1;
-    return res.subs.filter((x) => x.n >= minN).map((x) => ({ k: x.k, v: (W.M / used) * 100 * OM[x.k] * ((b.sub[x.k] ?? 0) - (a.sub[x.k] ?? 0)) / den, n: x.n })).sort((p, q) => Math.abs(q.v) - Math.abs(p.v));
+    return res.subs.filter((x) => x.n >= minN).map((x) => { const c = change(res, x, i0, i1); return c && Math.abs(c.z) >= zmin ? { k: x.k, v: (W.M / used) * 100 * OM[x.k] * c.ch / den, n: x.n, z: c.z } : null; })
+      .filter(Boolean).sort((p, q) => Math.abs(q.v) - Math.abs(p.v));
   }
   function bankFreq(tags) { const f = {}; for (const id in tags) { const k = tags[id] && tags[id].p; if (k) f[k] = (f[k] || 0) + 1; } return f; }
-  const api = { compute, drivers, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W };
+  const api = { compute, drivers, change, ZMIN, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
   if (typeof module !== "undefined") module.exports = api; else root.PROGRESS = api;
 })(typeof window !== "undefined" ? window : globalThis);
