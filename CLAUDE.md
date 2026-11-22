@@ -148,6 +148,8 @@ Say the techniques are backed by research; do not claim the method as a whole wa
 
 ## Working style
 
+**Merging (Nurassyl, 2026-11-22: «сливай без моего разрешения»):** once a website change is tested (browser checks and the area's tests pass), merge its pull request into `main` without asking, then fast-forward `claude/ecstatic-mayer-3asg7r` and check the version and files on study.bynurzy.com. Report what went live afterwards.
+
 **How to treat rules (Nurassyl, 2026-11-06):** when Nurassyl proposes something new, do it, even if it changes an earlier style or process rule in this file, and update this file to match. Do not stall on questions; make sensible calls and state them. Say plainly, in a line or two, what would be too much (a real risk, a cost, a conflict, a privacy or credibility problem) and suggest the lighter version, but do not block. The hard rules above (privacy, consent, no invented results, official scores only, no guarantees) and the security of the student site stay firm: if a proposal would break one, say so and offer a way that does not.
 
 Nurassyl wants a company-level, premium look and finished work, not just advice. All his apps and services (Google Forms, Sheets, GitHub and others) are in English: when giving step-by-step instructions, quote the English menu and button names, even when the explanation itself is in Russian (set 2026-10-22). Do what you can yourself, mark what depends on him clearly, and keep him honest on proof: credibility with parents is the whole business.
