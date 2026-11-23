@@ -32,18 +32,41 @@ window.PVIEW = (() => {
     tip.innerHTML = html; tip.style.opacity = 1; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px"; }
   const hideTip = () => tip && (tip.style.opacity = 0);
 
-  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220, note = null }) {
+  // a smooth line through the points that never overshoots them (monotone cubic, Fritsch–Carlson), and a y range zoomed to the
+  // data (Nurassyl, 2026-11-23: «увеличь масштаб графиков и сделай изменения более заметными»): at least `span` wide, rounded to `step`
+  function curve(pts) {
+    if (pts.length < 3) return pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
+    const n = pts.length, d = [], m = [];
+    for (let i = 0; i < n - 1; i++) d.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0] || 1));
+    m.push(d[0]); for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2); m.push(d[n - 2]);
+    for (let i = 0; i < n - 1; i++) { if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; } const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b; if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; } }
+    let path = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], h = (x1 - x0) / 3;
+      path += `C${(x0 + h).toFixed(1)},${(y0 + m[i] * h).toFixed(1)} ${(x1 - h).toFixed(1)},${(y1 - m[i + 1] * h).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`; }
+    return path;
+  }
+  function zoom(vals, { lo = 0, hi = 100, span = 10, step = 5 } = {}) {
+    const v = vals.filter((x) => x != null && !isNaN(x)); if (!v.length) return [lo, hi];
+    let a = Math.min(...v), b = Math.max(...v); const pad = Math.max((b - a) * 0.15, span * 0.15);
+    a = Math.floor((a - pad) / step) * step; b = Math.ceil((b + pad) / step) * step;
+    while (b - a < span) { if (a > lo) a -= step; if (b - a < span && b < hi) b += step; if (a <= lo && b >= hi) break; }
+    return [Math.max(lo, a), Math.min(hi, b)];
+  }
+  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220, note = null, dots = false }) {
     box.innerHTML = ""; const W = 720, P = { l: 34, r: 92, t: 10, b: 26 }, n = times.length; if (!n) return;
     const svg = el("svg", { viewBox: `0 0 ${W} ${h}`, role: "img", "aria-label": series.map((s) => s.label).join(", ") }, box);
-    const x = (i) => P.l + (W - P.l - P.r) * (n === 1 ? 0.5 : i / (n - 1)), y = (v) => P.t + (h - P.t - P.b) * (1 - v / ymax);
+    const [y0, y1] = zoom(series.flatMap((s) => s.v), { hi: ymax, span: Math.max(10, ymax / 10), step: 5 });
+    const x = (i) => P.l + (W - P.l - P.r) * (n === 1 ? 0.5 : i / (n - 1)), y = (v) => P.t + (h - P.t - P.b) * (1 - (v - y0) / (y1 - y0 || 1));
     const ax = el("g", { class: "pg-axis" }, svg);
-    for (let k = 0; k <= 4; k++) { const v = ymax * k / 4; el("line", { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v) }, ax); el("text", { x: P.l - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = fmt(v); }
+    const tk = y1 - y0 <= 20 ? 5 : y1 - y0 <= 50 ? 10 : 25;   // round ticks: 15 20 25 30, not 15 19 23 26 30
+    for (let v = y0; v <= y1 + 0.001; v += tk) { el("line", { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v) }, ax); el("text", { x: P.l - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = fmt(v); }
     const step = Math.max(1, Math.ceil(n / 6));
     times.forEach((t, i) => { if (i % step === 0 || i === n - 1) el("text", { x: x(i), y: h - 6, "text-anchor": "middle" }, ax).textContent = day(t); });
     const ends = [];
     series.forEach((s) => {
       const pts = s.v.map((v, i) => (v == null ? null : [x(i), y(v)])).filter(Boolean); if (!pts.length) return;
-      el("path", { d: pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(""), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dim ? { opacity: 0.85 } : {}) }, svg);
+      if (dots || s.w >= 3) pts.forEach((p) => el("circle", { cx: p[0], cy: p[1], r: s.w >= 3 ? 3 : 2.2, fill: s.color }, svg));
+      el("path", { d: curve(pts), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dim ? { opacity: 0.85 } : {}) }, svg);
       const lv = s.v[s.v.length - 1]; if (lv != null && !s.nolabel) ends.push({ y: y(lv) + 4, t: `${s.label} ${fmt(lv)}`, bold: s.w >= 3 });
     });
     ends.sort((a, b) => a.y - b.y); for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;   // end labels never overlap
@@ -55,10 +78,17 @@ window.PVIEW = (() => {
       showTip(e, `<b>${day(times[i])}</b><br>` + series.map((s) => `${esc(s.label)}: <b>${s.v[i] == null ? "—" : fmt(s.v[i])}</b>`).join("<br>") + (marks.includes(i) ? "<br>пробный тест" : "") + (note ? note(i) : "")); });
     hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); hideTip(); });
   }
+  // a small line zoomed to its own values (at least 10 points tall), with the first and the last value written beside it
   function spark(vals, color = "#0F0F0F", w = 110, h = 26) {
-    const s = el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, "aria-hidden": "true" }), v = vals.filter((x) => x != null); if (v.length < 2) return s;
-    const x = (i) => 2 + (w - 4) * i / (vals.length - 1), y = (q) => h - 3 - (h - 6) * q;
-    el("path", { d: vals.map((q, i) => (q == null ? "" : `${i && vals[i - 1] != null ? "L" : "M"}${x(i)},${y(q)}`)).join(""), fill: "none", stroke: color, "stroke-width": 2, "stroke-linecap": "round" }, s);
+    h = Math.max(h, 34); const W = w + 34;
+    const s = el("svg", { viewBox: `0 0 ${W} ${h}`, width: W, height: h, "aria-hidden": "true" }), v = vals.filter((x) => x != null); if (v.length < 2) return s;
+    const [lo, hi] = zoom(v.map((q) => q * 100), { span: 10, step: 5 }), first = vals.findIndex((q) => q != null);
+    const x = (i) => 3 + (w - 6) * i / (vals.length - 1), y = (q) => h - 4 - (h - 8) * ((q * 100 - lo) / (hi - lo || 1));
+    const pts = vals.map((q, i) => (q == null ? null : [x(i), y(q)])).filter(Boolean);
+    el("path", { d: curve(pts), fill: "none", stroke: color, "stroke-width": 2, "stroke-linecap": "round" }, s);
+    const last = pts[pts.length - 1]; el("circle", { cx: last[0], cy: last[1], r: 2.6, fill: color === "#0F0F0F" ? "#A63328" : color }, s);
+    const d = Math.round(v[v.length - 1] * 100 - vals[first] * 100);
+    const t = el("text", { x: w + 2, y: h / 2 + 4, "font-size": 11, fill: d > 0 ? "#2F7A33" : d < 0 ? "#A63328" : "#5E5A54", "font-weight": 600 }, s); t.textContent = `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}`;
     return s;
   }
 
@@ -101,7 +131,7 @@ window.PVIEW = (() => {
           <div id="pg-mapctl"></div><div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th>${o.onTwins ? "<th><span class=\"sr-only\">Gemini</span></th>" : ""}</tr></thead><tbody id="pg-rows"></tbody></table></div></section>
         <div class="pg-grid2"><section><b>Ловушки</b><p class="hint">Как часто выбирает ловушку, когда она есть: начало → сейчас. Меньше — лучше.</p><div id="pg-tr"></div></section>
           <section><b>Привычки</b><div id="pg-hb"></div></section></div></div>`;
-      line(box.querySelector("#pg-ix"), { series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t),
+      line(box.querySelector("#pg-ix"), { series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t), dots: true,
         marks: cut.map((s, i) => (res.mocks.some((t) => t <= s.t && t > (cut[i - 1] ? cut[i - 1].t : 0)) ? i : -1)).filter((i) => i >= 0) });
       const ds = cut.map((s) => s.diff[st.sec] || {});
       line(box.querySelector("#pg-df"), { series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].map(([k, c, l]) => ({ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l })),

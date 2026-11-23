@@ -36,14 +36,37 @@ window.REPORT = (() => {
   const rng = (x) => `${x.lo}–${x.hi}`;
   // the weekly progress index: a number 0–100 with its change, a line and the five parts, explained in plain words
   const PARTS = [["M", "Мастерство", "решает подтемы с учётом сложности"], ["X", "Перенос на экзамен", "результаты в полных пробниках"], ["R", "Удержание", "помнит решённое неделями позже"], ["P", "Темп", "укладывается во время"], ["C", "Исправление", "исправляет ошибки со второй попытки"]];
+  // a smooth line through the points that never overshoots them (monotone cubic, Fritsch–Carlson), and a y range zoomed to the
+  // data (Nurassyl, 2026-11-23: «увеличь масштаб графиков и сделай изменения более заметными»): at least `span` wide, rounded to `step`
+  function curve(pts) {
+    if (pts.length < 3) return pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
+    const n = pts.length, d = [], m = [];
+    for (let i = 0; i < n - 1; i++) d.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0] || 1));
+    m.push(d[0]); for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2); m.push(d[n - 2]);
+    for (let i = 0; i < n - 1; i++) { if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; } const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b; if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; } }
+    let path = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], h = (x1 - x0) / 3;
+      path += `C${(x0 + h).toFixed(1)},${(y0 + m[i] * h).toFixed(1)} ${(x1 - h).toFixed(1)},${(y1 - m[i + 1] * h).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`; }
+    return path;
+  }
+  function zoom(vals, { lo = 0, hi = 100, span = 10, step = 5 } = {}) {
+    const v = vals.filter((x) => x != null && !isNaN(x)); if (!v.length) return [lo, hi];
+    let a = Math.min(...v), b = Math.max(...v); const pad = Math.max((b - a) * 0.15, span * 0.15);
+    a = Math.floor((a - pad) / step) * step; b = Math.ceil((b + pad) / step) * step;
+    while (b - a < span) { if (a > lo) a -= step; if (b - a < span && b < hi) b += step; if (a <= lo && b >= hi) break; }
+    return [Math.max(lo, a), Math.min(hi, b)];
+  }
   function indexSVG(w) {
     if (w.length < 2) return "";
-    const W = 640, H = 120, L = 30, R = 50, T = 16, B = 24, x = (i) => L + (W - L - R) * i / (w.length - 1), y = (v) => T + (H - T - B) * (1 - v / 100);
-    const grid = [0, 50, 100].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#D9D5CD"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="#5E5A54">${v}</text>`).join("");
-    const path = w.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(""), step = Math.ceil(w.length / 6);
+    const [lo, hi] = zoom(w.map((p) => p[1]), { span: 10, step: 5 });
+    const W = 640, H = 150, L = 30, R = 50, T = 16, B = 24, x = (i) => L + (W - L - R) * i / (w.length - 1), y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+    const tick = hi - lo <= 20 ? 5 : hi - lo <= 50 ? 10 : 25, ticks = []; for (let v = lo; v <= hi; v += tick) ticks.push(v);
+    const grid = ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#D9D5CD"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="#5E5A54">${v}</text>`).join("");
+    const pts = w.map((p, i) => [x(i), y(p[1])]), path = curve(pts), step = Math.ceil(w.length / 6);
+    const dots = pts.slice(0, -1).map((p) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.2" fill="#0F0F0F"/>`).join("");
     const labels = w.map((p, i) => (i % step === 0 || i === w.length - 1 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#5E5A54">${esc(dShort(p[0]))}</text>` : "")).join("");
     const last = w[w.length - 1];
-    return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" role="img" aria-label="Индекс прогресса по неделям">${grid}<path d="${path}" fill="none" stroke="#0F0F0F" stroke-width="2"/><circle cx="${x(w.length - 1)}" cy="${y(last[1])}" r="4" fill="#A63328"/>${labels}<text x="${x(w.length - 1) + 8}" y="${y(last[1]) + 4}" font-size="11" font-weight="600" fill="#0F0F0F">${last[1]}</text></svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" role="img" aria-label="Индекс прогресса по неделям">${grid}<path d="${path}" fill="none" stroke="#0F0F0F" stroke-width="2.4"/>${dots}<circle cx="${x(w.length - 1)}" cy="${y(last[1])}" r="4" fill="#A63328"/>${labels}<text x="${x(w.length - 1) + 8}" y="${y(last[1]) + 4}" font-size="11" font-weight="600" fill="#0F0F0F">${last[1]}</text></svg>`;
   }
   // three windows, as in the card (Nurassyl, 2026-11-23: «three graphs for the last 4 weeks, 8 weeks and all time»)
   function indexCharts(ix) {
@@ -62,7 +85,7 @@ window.REPORT = (() => {
       ${indexCharts(ix)}
       <table class="rp-t"><thead><tr><th>Часть индекса</th><th>Что показывает</th><th class="n">Сейчас</th></tr></thead><tbody>${PARTS.map(([k, l, what]) => { const v = ix.parts[k], v0 = ix.parts0[k];
         return `<tr><td>${l}</td><td>${what}</td><td class="n">${v == null ? "мало данных" : Math.round(v) + (v0 != null && ix.weeks.length > 1 ? ` <span class="rp-hint">(${Math.round(v - v0) >= 0 ? "+" : "−"}${Math.abs(Math.round(v - v0))})</span>` : "")}</td></tr>`; }).join("")}</tbody></table>
-      <p class="rp-hint">Индекс nurzycom от 0 до 100 по всем ответам ученика с первой попытки с учётом сложности вопросов: около 0 — ответы наугад, 100 — уверенное решение на уровне экзамена. Это внутренняя мера прогресса, а не балл SAT.</p>`;
+      <p class="rp-hint">Шкала каждого графика подстроена под его значения, чтобы изменения были видны (числа на оси). Индекс nurzycom от 0 до 100 по всем ответам ученика с первой попытки с учётом сложности вопросов: около 0 — ответы наугад, 100 — уверенное решение на уровне экзамена. Это внутренняя мера прогресса, а не балл SAT.</p>`;
   }
   // a range, never one number; always with what it rests on and that it is not an official score and not a promise (hard rules 2, 6)
   function predHTML(p) {
