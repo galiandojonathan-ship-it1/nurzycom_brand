@@ -25,7 +25,7 @@ window.BBSHARE = (() => {
   }
   function html(shares, o = {}) {
     if (!shares.length) return o.empty ? `<p class="hint">${esc(o.empty)}</p>` : "";
-    return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(d.title || Object.values(d.sections).map((x) => x.label).find(Boolean) || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
+    return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
         <small>${Object.entries(d.sections).map(([s, x]) => `${SEC[s]} ${x.tot[0] + x.tot[1]}/${x.n}`).join(" · ")} · отправлено учеником${d.taken ? ` ${esc(day(d.at))}` : ""}</small>
         ${d.resent ? `<span class="bbs-resent">отправлен снова после удаления${d.removedAt ? ` ${esc(day(d.removedAt))}` : ""}</span>` : ""}
         ${o.del ? `<button class="chip" type="button" data-bbdel="${esc(d.key)}">Убрать</button>` : ""}</summary>

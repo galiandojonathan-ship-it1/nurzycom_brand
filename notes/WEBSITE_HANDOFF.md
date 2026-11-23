@@ -193,6 +193,14 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+One click (2026-11-23, Nurassyl: «вставил — проверилось само — отправилось… вместо "проверить таблицу" — "отправить"»): the
+form button is «Отправить преподавателю» (`#bb-go`; «Проверить таблицу» without the student's own login). Pasting checks at once
+and sends nothing. The button checks first if needed and sends only a fully read table (a broken one shows what to fix). The
+note under it says what is sent, and the separate confirm step was removed. «Уже отправлены преподавателю» (`#bb-sent`, Nurassyl:
+«чтобы ученик не путался, какой пробный отправлял»): a green block with a chip per sent attempt (recognised test name, «пройден
+<date>»), and «отправлено: N» in the import heading. It is built from this account's synced `bb_share_` keys (removed ones skipped)
+and redrawn after sending, on opening and after the page's account sync.
+
 Removing a shared practice test (2026-11-23, Nurassyl: «удалять практисы… если посчитаю нерелевантными», then «allow the
 student to send it again… just mark it for me»): «Убрать» in the results card (`teacher.js` `bbDelWire`/`bbSet`) and in the
 cabinet account card writes a mark `{ deleted: 1, at, hash, title, taken }` into the same `bb_share_<hash>` key, so the student's

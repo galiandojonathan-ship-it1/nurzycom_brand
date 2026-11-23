@@ -38,17 +38,17 @@ const page = `<html><body><header><h1>My Practice</h1><p>Score Details · SAT Pr
   ok(/М1, №9 .*Этот вопрос есть и в: Пробный тест 1 · М1 · №3 \(ошибка и тогда\); SAT Practice Test 3\./.test(res), "a repeated question says where it was before: our PT1 (wrong then) and SAT Practice Test 3");
   ok(/Из этих ошибок 1 — вопросы, которые есть и в курсе или в других пробниках; в 1 из них вы ошиблись и тогда/.test(res), "the section summary counts repeated misses");
   // the My Practice page as students copy it (header with test and date, domains), with «Show Correct Answers» off
-  await p.fill("#bb-text", tableOf(cat, "SAT2", { rw: "m2h", math: "m2e" }, "mp-off", ["rw.1.9", "math.2.8"])); await p.click("#bb-form button[type=submit]");
+  await p.fill("#bb-text", tableOf(cat, "SAT2", { rw: "m2h", math: "m2e" }, "mp-off", ["rw.1.9", "math.2.8"])); await p.click("#bb-go");
   await p.waitForFunction(() => /Practice Test/.test(document.getElementById("bb-result").textContent), null, { timeout: 8000 });
   const mp = (await p.textContent("#bb-result")).replace(/\s+/g, " ");
   ok(/SAT Practice 2 · пройден 2 марта 2025/.test(mp), "the test name and the date taken are read from the page");
   ok(/Домены College Board: Information and Ideas 7\/7/.test(mp), "official domain scores are shown");
   ok(/Show Correct Answers» был выключен: правильные ответы взяты из справочника/.test(mp) && /М1, №9 · \w → \w/.test(mp), "switch off: keys of the misses filled in from the catalog");
   // a lost row: the student sees what to do
-  await p.fill("#bb-text", text.split("\r\n").filter((_, i) => i !== 30).join("\n")); await p.click("#bb-form button[type=submit]");
+  await p.fill("#bb-text", text.split("\r\n").filter((_, i) => i !== 30).join("\n")); await p.click("#bb-go");
   ok(/Скопируйте таблицу/.test(await p.textContent("#bb-status")), "a lost row asks to copy again: " + (await p.textContent("#bb-status")).slice(0, 80));
   if (dev === "phone") ok((await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone: no sideways scroll");
-  await p.fill("#bb-text", text); await p.click("#bb-form button[type=submit]"); await p.waitForTimeout(400);
+  await p.fill("#bb-text", text); await p.click("#bb-go"); await p.waitForTimeout(400);
   await (await p.$("#bb-import")).screenshot({ path: `${__dirname}/bbimport_${dev}.png` });
   ok(!errs.length, "no page errors " + JSON.stringify(errs));
   await br.close(); console.log(fails ? `${fails} FAILED` : "ALL PASS"); process.exit(fails ? 1 : 0);

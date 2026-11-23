@@ -283,7 +283,7 @@
       try { await bbSet(d.acct, d.key, BBSHARE.tomb(d)); } catch (err) { st.textContent = "Не удалось убрать: " + err.message; btn.disabled = false; return; }
       await bbRender(s, all);
       const st2 = $("bb-del-st"); if (!st2) return;
-      st2.innerHTML = `Пробник «${esc(d.title || Object.values(d.sections).map((x) => x.label).find(Boolean) || "Bluebook")}» убран. <button class="chip" type="button" id="bb-undo">Вернуть</button>`;
+      st2.innerHTML = `Пробник «${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "Bluebook")}» убран. <button class="chip" type="button" id="bb-undo">Вернуть</button>`;
       const timer = setTimeout(() => { if ($("bb-undo")) st2.textContent = "Пробник убран."; }, 10000);
       $("bb-undo").onclick = async () => { clearTimeout(timer); try { await bbSet(d.acct, d.key, orig); await bbRender(s, all); const st3 = $("bb-del-st"); if (st3) st3.textContent = "Пробник возвращён."; } catch (err) { st2.textContent = "Не удалось вернуть: " + err.message; } };
     }));
