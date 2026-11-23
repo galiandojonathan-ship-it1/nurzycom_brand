@@ -203,8 +203,7 @@
     goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { bbRender(s, all); if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
       if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
-        load: async (c) => { if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
-          const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
+        load: twinLoad }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     if ($("st-pdf")) $("st-pdf").onclick = async () => { const b = $("st-pdf"); b.disabled = true; try { REPORT.open(await reportData(s)); } finally { b.disabled = false; } };
@@ -526,6 +525,15 @@
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
   // every first-attempt mistake of one student for the Gemini picker, with the subtopic and the trap from the progress tags
+  async function twinLoad(c) {
+    if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
+    const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null;
+  }
+  // every first-attempt mistake of one student (site work and shared Bluebook tests), newest first
+  async function studentPool(s) {
+    const all = await gaCollect({ keys: new Set([s.key]) });
+    return [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  }
   async function twinPool(all) {
     const TAGS = await progTags().catch(() => ({})), NAME = (window.PVIEW && PVIEW.NAME) || {}, TRAP = (window.PVIEW && PVIEW.TRAP) || {};
     return all.filter((q) => q.wrong > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0)).map((q) => {
@@ -918,7 +926,7 @@
       ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
     html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
       ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
-    html += '<div id="ga-prog"></div>';
+    html += '<div id="ga-prog"></div><div id="ga-hw"></div>';
     if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); gpMount(grp).catch(() => {}); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
     html += `<div id="ga-rv"></div><h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
@@ -942,6 +950,12 @@
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
     gpMount(grp).catch(() => { const b = $("ga-prog"); if (b) b.innerHTML = ""; });
+    // «Персональные ДЗ · Gemini» (hwplan.js): on the cabinet page, for a chosen group with the admin key
+    if (grp && $("ga-hw") && window.HWPLAN && window.CTED && window.TWINS && SITE.adminKey()) {
+      const studs = D.students.filter((st) => grp.keys.has(st.key));
+      if (studs.length) HWPLAN.mount($("ga-hw"), { group: grp, students: studs, skillMap, pool: studentPool, load: twinLoad, payloadOf: TWINS.payloadOf,
+        acct: async (s) => { const ids = (await accountsByName()).get(s.key) || []; return ids[0] || null; } });
+    }
     rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, ranked, top, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
       note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") });
     gaBind(box);
