@@ -375,6 +375,12 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **Zoomed, curved charts (2026-11-23, Nurassyl: «увеличь масштаб графиков и сделай изменения более заметными и кривыми»):**
+  `zoom()` in `progress-view.js` and `report.js` fits each chart's y axis to its own values (at least 10 points tall, padded,
+  rounded to 5; ticks every 5, 10 or 25), and `curve()` draws a smooth monotone cubic line through the weekly points (it never
+  overshoots a point). Used by the card's index, difficulty and domain charts (dots on the index), the subtopic sparklines
+  (now with the change written beside them, green or red) and the PDF's three index charts. The PDF note says the scale is
+  fitted to each chart.
 - **Progress index in the PDF report (2026-11-23, Nurassyl: «всегда добавляй в PDF отчёт индекс прогресса студента»):**
   `report.js` section «Индекс прогресса» (on by default, can be unticked): the index out of 100, the change since the first
   week with enough answers, the weekly line, the five parts (Мастерство, Перенос на экзамен, Удержание, Темп, Исправление)
