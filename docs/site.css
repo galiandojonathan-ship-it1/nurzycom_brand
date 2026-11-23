@@ -1032,3 +1032,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pg-map .pg-fold small { font-weight: 500; color: #5E5A54; }
 .pg-map .pg-caret { display: inline-block; width: 12px; }
 .pg-map .pg-fold:focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
+
+/* «Контрольные» Gemini questions (2026-11-23) */
+.tw-dec { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.tw-decb { display: inline-block; margin: 0 0 6px; padding: 3px 10px; border-radius: 9px; background: #F1E7D6; color: #6A4A12; font-size: 13px; font-weight: 600; }

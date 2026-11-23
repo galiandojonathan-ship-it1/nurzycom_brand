@@ -34,8 +34,10 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await pg.click("#st-tw #tw-all"); await pg.waitForTimeout(100);
   ok((await pg.$$eval("#st-tw [data-twsel]:checked", (a) => a.length)) === 2, "«Отметить показанные» ticks both");
   await pg.fill("#st-tw #tw-note", "тексты про океан");
+  ok(await pg.isChecked("#st-tw #tw-decoys"), "«Контрольные ~30%» is on by default");
   await pg.click("#st-tw #tw-go"); await pg.waitForSelector("#st-tw .tw-q", { timeout: 20000 });
   const st = await pg.textContent("#st-tw #tw-st"); console.log("status:", st);
+  ok(/контрольных: \d/.test(st) && (await pg.$$("#st-tw .tw-decb")).length >= 1, "control questions are counted in the status and marked on their cards for the teacher");
   const sent = fs.readFileSync(LOG, "utf8").trim().split("\n").map((l) => JSON.parse(l));
   const gen = sent.find((d) => d.mistakes), audit = sent.find((d) => d.questions);
   ok(gen && gen.mistakes.length === 2 && gen.mistakes.map((m) => m.chosen).join("") === "AB", "Gemini gets Ayana's two mistakes with her first choices A and B");
@@ -44,7 +46,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   ok(!JSON.stringify(sent).includes("Ayana") && !JSON.stringify(sent).includes("Seitkali"), "the student's name never reaches Gemini");
   ok(audit && !JSON.stringify(audit).includes('"answer"'), "the blind check gets no keys");
   const cards = await pg.$$eval("#st-tw .tw-q", (a) => a.length);
-  ok(cards === 3 && /Готово: 3 из 4 · 1 не прошли проверку ключа/.test(st), "4 drafts, the one whose key the blind solver did not reproduce is dropped → 3 cards");
+  ok(cards === 3 && /Готово: 3 из 4 ·( контрольных: \d ·)? 1 не прошли проверку ключа/.test(st), "4 drafts, the one whose key the blind solver did not reproduce is dropped → 3 cards");
   const keys = await pg.$$eval("#st-tw .tw-opts li.ok", (a) => a.map((li) => li.textContent.trim()));
   ok(keys.length === 3 && keys.every((k) => /Even so,/.test(k)), "the key is marked on every card (the right option)");
   ok(new Set(keys.map((k) => k[0])).size === 3, "the 3 keys sit on different letters: " + keys.map((k) => k[0]).join(""));

@@ -12,7 +12,7 @@ globalThis.fetch = async (url, opt) => {
   fs.appendFileSync(LOG, JSON.stringify(data) + "\n");
   let out;
   if (data.mistakes) {
-    out = { questions: data.mistakes.flatMap((m) => Array.from({ length: data.perMistake }, (_, k) => ({ source: m.source,
+    out = { questions: data.mistakes.flatMap((m) => Array.from({ length: data.perMistake }, (_, k) => ({ source: m.source, kind: k < (m.decoys || 0) ? "decoy" : "target",
       mechanism: `Тренирует ловушку навыка ${m.skill} (вариант ${m.chosen || "пропуск"}).`,
       passage: m.sec === "math" ? "" : `Synthetic passage ${m.source}.${k} about a river town whose market grew after a new bridge opened; ______ the old ferry kept a few loyal passengers every morning.`,
       prompt: m.sec === "math" ? `If 2x + ${m.source + k} = ${2 * (m.source + 3) + m.source + k}, what is x?` : "Which choice completes the text with the most logical transition?",

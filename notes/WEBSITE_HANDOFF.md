@@ -375,6 +375,15 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **«Контрольные» Gemini questions (2026-11-23, Nurassyl: «рандомные 30% вопросов with an intentional off-topic answer… чтобы
+  он смог выявить правильный ответ, а не заучить его»):** the server (`lib/mistake-twins.js` `decoyPlan`) picks about 30% of
+  the slots of a batch at random (none when the batch has fewer than 3 questions) and passes `decoys` per mistake to Gemini.
+  Those drafts come back as `kind: "decoy"`: the same skill, level and look as the weak spot, the student's habitual pick among
+  the options (e.g. a contrast word for Transitions), but the right answer is of another type; that habitual pick is the trap.
+  A decoy where none was planned is dropped; drafts go through the same blind key check. In the cabinet the switch «Контрольные
+  ~30%» (on by default, kept as `tw_decoys`) sends `decoys`; each control card has a label for the teacher; the status line
+  counts them; on saving, the questions are shuffled so the control ones sit anywhere. The student's test does not mark them.
+  Tests: `t_twins_lib.mjs` (plan size, off switch, kind checks), `t_twins.js` (fake Gemini emits decoys).
 - **«Карта подтем» controls (2026-11-23, Nurassyl: «allow me to categorize the sections here»):** above the map in
   `progress-view.js`: «Группировать» по доменам / по статусу (Требуют внимания = слабое место и просело, Растут, Держатся,
   Освоено, Мало данных) / по разделу / без групп; «Показать» filters by status with counts; «Сортировать» как в SAT / слабые
