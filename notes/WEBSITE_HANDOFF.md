@@ -147,6 +147,16 @@ On the lesson: «Пульт урока» → «Тесты преподавате
 (`mytest.html?t=<id>` on the shared screen) and «Живая практика» (`&live=1` opens the round settings at once); the lesson account's
 `mytest.html` list shows every test. Students still see a Gemini test only when it is assigned. Test: `t_lesson_ct.js desktop|phone`.
 
+«PDF-отчёт» (2026-11-23, Nurassyl: «allow me to create a PDF of the student's progress to send anyone interested in»): the
+button «PDF-отчёт» in a student card on the cabinet's results opens `docs/report.js` (`REPORT.open(reportData(s))` in
+`teacher.js`): an A4 sheet over the page with settings on the left. It has 8 sections to tick: summary, weekly homework accuracy
+(SVG), skills, strengths and what to work on (from the progress analysis; fallback: homework skills under 70%), practice tests on
+the site (labelled «примерный балл… не является официальным результатом SAT»), shared Bluebook results (raw correct counts),
+latest work, and the teacher's comment with next steps. «Сохранить PDF» calls `window.print()`, and the print CSS (`.rp-*` in
+`site.css`) keeps only the sheet, on white A4. No library, nothing is sent. The internal progress index is not printed. The footer
+carries contacts and a confidentiality line. Test: `t_report.js desktop|phone [csv] [name]` (sections, comment, print-only
+sheet, a real PDF via `page.pdf`, checked with pdfinfo/pdftotext).
+
 «Импорт результатов Bluebook» (2026-11-23; pilot by Codex from the handoff archive, generalised by Claude): on `mock.html`
 (`docs/bluebook-import.js`) a student pastes College Board My Practice → Score Details (the table, or the whole page with Ctrl+A,
 on a phone «Выбрать всё»). Parsing is in the browser and nothing is sent. The check starts on paste. Rows are «N  Section
