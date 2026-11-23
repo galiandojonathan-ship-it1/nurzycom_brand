@@ -183,6 +183,7 @@
     const TABS = [["over", "Обзор"], ["charts", "Графики"], ["anal", "Анализ"], ["subs", "Сдачи"], ["fix", "Работа над ошибками"]];
     const cur = TABS.some(([k]) => k === D.stTab) ? D.stTab : (localStorage.getItem("st_tab") || "over"), tab = TABS.some(([k]) => k === cur) ? cur : "over";
     const pane = (k, inner) => `<section class="st-pane" data-pane="${k}"${k === tab ? "" : " hidden"}>${inner}</section>`;
+    html += '<div id="st-goal"></div>';
     html += `<div class="st-tabs" role="tablist" aria-label="Разделы карточки">${TABS.map(([k, t]) => `<button type="button" role="tab" class="st-tab" data-st="${k}" aria-selected="${k === tab}">${t}</button>`).join("")}</div>`;
     html += pane("over", kpiHTML + lesHTML + spellHTML)
       + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
@@ -197,6 +198,7 @@
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
     predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
+    goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { bbRender(s, all); if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
       if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
         load: async (c) => { if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
@@ -292,6 +294,7 @@
     const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
     const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
+    await goalLoad(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
     const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
     Object.assign(tags, extra.tags);
@@ -300,15 +303,73 @@
     const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
     const draw = () => {
       const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
-      PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
+      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
           set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
     };
-    draw();
+    draw(); D.progDraw = { key: s.key, fn: draw };
     liveMount(s).catch(() => { /* no lesson account */ });
   }
   // «Ориентир на SAT» (predict.js): a range from the full practice-test sections, site tests and shared Bluebook tests;
   // follows the «Пробные на сайте» / «Bluebook» source switches of the progress block. Internal: an estimate, not a result.
+  // «Цель ученика» (2026-11-23): target scores and the exam date, kept in the student's own synced copy (key goal_target), so the
+  // student sees them on «Сегодня»; written here through the admin key. PROGRESS.targetNeeds turns them into the needed accuracy.
+  const SAT_DATES = [["2026-12-05", "5 декабря 2026"], ["2027-03-06", "6 марта 2027"], ["2027-05-01", "1 мая 2027"], ["2027-06-05", "5 июня 2027"]];
+  async function goalLoad(s) {
+    if (D.goal && D.goal.key === s.key) return D.goal;
+    const ids = SITE.adminKey() ? (await accountsByName()).get(s.key) || [] : [];
+    let goal = null, acct = ids[0] || null;
+    for (const id of ids) { const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
+      const B = await SITE.unsealBlob(g.data.data).catch(() => null), r = B && B.goal_target; if (r && r.v) { try { goal = JSON.parse(r.v); acct = id; break; } catch (e) { /* bad record */ } } }
+    D.goal = { key: s.key, acct, g: goal };
+    return D.goal;
+  }
+  const goalNeeds = (s) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
+    const P = D.pred && D.pred.key === s.key && D.pred.est ? D.pred.est.sections : {};
+    return PROGRESS.targetNeeds(D.goal.g, SATSCALE, { rw: P.rw && P.rw.mid, math: P.math && P.math.mid }); };
+  async function goalSave(acct, goal) {
+    const url = "admin/progress?id=" + encodeURIComponent(acct), g = await SITE.api(url);
+    let B = {}; if (g.ok) B = await SITE.unsealBlob(g.data.data); else if (g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
+    B.goal_target = { v: goal ? JSON.stringify(goal) : null, t: Date.now() };
+    const p = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(B) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
+  }
+  async function goalMount(s, edit = false) {
+    const box = $("st-goal"); if (!box) return;
+    const G = await goalLoad(s); if ($("st-goal") !== box || D.student !== s.key) return;
+    if (!G.acct) { box.innerHTML = '<div class="st-goal hint">Цель можно задать, когда у ученика есть свой аккаунт на сайте.</div>'; return; }
+    const g = G.g || {}, exam = g.exam ? new Date(g.exam + "T00:00:00") : null, days = exam ? Math.ceil((exam - Date.now()) / 864e5) : null;
+    const tot = g.rw && g.math ? +g.rw + +g.math : null, P = D.pred && D.pred.key === s.key && D.pred.est ? D.pred.est : null;
+    const secs = P ? ["rw", "math"].filter((k) => g[k] && P.sections[k]) : [], now = secs.length ? secs.reduce((a, k) => a + P.sections[k].mid, 0) : null;
+    const want = secs.length ? secs.reduce((a, k) => a + +g[k], 0) : null, weeks = days != null ? Math.max(1, days / 7) : null;
+    const pace = now != null && want ? `${want - now > 0 ? `до цели ≈ +${want - now}` : "ориентир уже на уровне цели"}${weeks && want - now > 0 ? ` · нужно ≈ +${Math.round((want - now) / weeks)} в неделю` : ""}` : "";
+    if (!edit && G.g) {
+      box.innerHTML = `<div class="st-goal"><b>Цель:</b> ${[g.rw ? `RW ${g.rw}` : "", g.math ? `Math ${g.math}` : "", tot ? `всего ${tot}` : ""].filter(Boolean).join(" · ")}${exam ? ` · экзамен ${esc(exam.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }))}${days >= 0 ? ` (через ${days} дн.)` : ""}` : ""}${pace ? ` · <span class="hint">${esc(pace)}</span>` : ""}
+        <button class="chip" type="button" id="goal-edit">Изменить</button><span class="hint"> Цель видит и ученик на странице «Сегодня».</span>${G.msg ? `<span class="hint" role="status"> ${esc(G.msg)}</span>` : ""}</div>`;
+      $("goal-edit").onclick = () => goalMount(s, true); return;
+    }
+    if (!edit) { box.innerHTML = `<div class="st-goal">${G.msg ? `<span class="hint" role="status">${esc(G.msg)}</span> ` : ""}<b>Цель не задана.</b> <button class="chip" type="button" id="goal-edit">Задать цель</button> <span class="hint">Целевой балл ученика: анализ покажет, где он ниже цели.</span></div>`; $("goal-edit").onclick = () => goalMount(s, true); return; }
+    const opt = SAT_DATES.map(([v, l]) => `<option value="${v}"${g.exam === v ? " selected" : ""}>${l}</option>`).join("");
+    box.innerHTML = `<form class="st-goal st-goal-f" id="goal-f"><b>Цель</b>
+      <label>RW <input type="number" id="goal-rw" min="200" max="800" step="10" value="${g.rw || ""}" placeholder="—"></label>
+      <label>Math <input type="number" id="goal-m" min="200" max="800" step="10" value="${g.math || ""}" placeholder="—"></label>
+      <label>Экзамен <select id="goal-ex"><option value="">—</option>${opt}${g.exam && !SAT_DATES.some(([v]) => v === g.exam) ? `<option value="${esc(g.exam)}" selected>${esc(g.exam)}</option>` : ""}<option value="other">другая дата…</option></select></label>
+      <input type="date" id="goal-ex2" hidden>
+      <button class="btn sm" type="submit">Сохранить</button>${G.g ? '<button class="chip" type="button" id="goal-del">Убрать цель</button>' : ""}<button class="chip" type="button" id="goal-cancel">Отмена</button>
+      <span class="hint" id="goal-st">Реалистичная цель: обычно не больше +100–150 к нынешнему ориентиру за 2–3 месяца.</span></form>`;
+    $("goal-ex").onchange = () => { $("goal-ex2").hidden = $("goal-ex").value !== "other"; };
+    $("goal-cancel").onclick = () => goalMount(s, false);
+    const after = async (goal, msg) => { D.goal = { key: s.key, acct: G.acct, g: goal, msg }; await goalMount(s, false); progMount(s).catch(() => {}); predMount(s).catch(() => {}); };
+    if ($("goal-del")) $("goal-del").onclick = async () => { try { await goalSave(G.acct, null); await after(null, "Цель убрана."); } catch (e) { $("goal-st").textContent = "Не сохранилось: " + e.message; } };
+    $("goal-f").onsubmit = async (e) => {
+      e.preventDefault();
+      const n = (id) => { const v = $(id).value.trim(); if (!v) return null; const x = Math.round(+v / 10) * 10; return x >= 200 && x <= 800 ? x : NaN; };
+      const rw = n("goal-rw"), math = n("goal-m"), exam = $("goal-ex").value === "other" ? $("goal-ex2").value : $("goal-ex").value;
+      if (Number.isNaN(rw) || Number.isNaN(math)) { $("goal-st").textContent = "Балл раздела — от 200 до 800."; return; }
+      if (!rw && !math) { $("goal-st").textContent = "Впишите цель хотя бы по одному разделу."; return; }
+      const goal = { ...(rw ? { rw } : {}), ...(math ? { math } : {}), ...(exam ? { exam } : {}), at: Date.now() };
+      try { await goalSave(G.acct, goal); await after(goal, "Цель сохранена."); } catch (x) { $("goal-st").textContent = "Не сохранилось: " + x.message; }
+    };
+  }
   async function predData(s) {
     if (!window.PREDICT || !window.SATSCALE) return null;
     const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
@@ -321,14 +382,18 @@
     const box = $("st-pred"); if (!box) return;
     const P = await predData(s); if ($("st-pred") !== box || D.student !== s.key) return;
     D.pred = { key: s.key, ...(P || {}) };
+    if ($("st-goal") && !$("goal-f")) goalMount(s).catch(() => {});   // the pace line needs the range
+    if (D.goal && D.goal.key === s.key && D.goal.g && D.progDraw && D.progDraw.key === s.key) D.progDraw.fn();   // the target is anchored on the range
     if (!P || !P.tests.length) { box.innerHTML = '<div class="card pred"><span class="label">Ориентир на SAT</span><p class="hint">Появится после первого полного пробного теста (на сайте или в Bluebook).</p></div>'; return; }
     const E = P.est, S = E.sections, NM = { rw: "Reading and Writing", math: "Math" };
     const big = E.total ? `${E.total.lo}–${E.total.hi}` : Object.keys(S).map((k) => `${S[k].lo}–${S[k].hi}`).join(" · ");
     const secLine = Object.entries(S).map(([k, x]) => `<div class="pred-sec"><b>${NM[k]}</b><span class="pred-r">${x.lo}–${x.hi}</span><small>${x.n} ${x.n === 1 ? "тест" : x.n < 5 ? "теста" : "тестов"} · последний ${dY(x.last)}${x.trend != null ? ` · с первого ${x.trend >= 0 ? "+" : "−"}${Math.abs(x.trend)}` : ""}${x.weak ? " · мало свежих данных" : ""}</small></div>`).join("");
     const list = P.tests.slice().sort((a, b) => b.t - a.t).map((x) => `<li>${dY(x.t)} · ${x.src === "bb" ? "Bluebook" : "сайт"} · ${esc(x.label)} · ${NM[x.sec]} ≈ ${x.score}</li>`).join("");
+    const gl = D.goal && D.goal.key === s.key && D.goal.g ? D.goal.g : null, gtot = gl && gl.rw && gl.math ? gl.rw + gl.math : null;
+    const gline = gl ? `<p class="pred-goal"><b>Цель:</b> ${[gl.rw ? `RW ${gl.rw}${S.rw ? ` (сейчас ${S.rw.lo}–${S.rw.hi})` : ""}` : "", gl.math ? `Math ${gl.math}${S.math ? ` (сейчас ${S.math.lo}–${S.math.hi})` : ""}` : "", gtot && E.total ? `всего ${gtot} (сейчас ${E.total.lo}–${E.total.hi})` : ""].filter(Boolean).join(" · ")}</p>` : "";
     box.innerHTML = `<div class="card pred"><span class="label">Ориентир на SAT · примерный диапазон</span>
       <div class="pred-top"><div class="pred-big">${big}${E.total ? '<small>сумма двух разделов</small>' : `<small>${Object.keys(S).map((k) => NM[k]).join(" · ")}</small>`}</div><div class="pred-secs">${secLine}</div></div>
-      <p class="hint">Оценка по полным пробным тестам: свежие весят больше, Bluebook чуть больше пробников сайта. Это не официальный балл College Board и не обещание результата; чем больше свежих полных пробников, тем уже диапазон. Учитывает переключатели источников ниже.</p>
+      ${gline}<p class="hint">Оценка по полным пробным тестам: свежие весят больше, Bluebook чуть больше пробников сайта. Это не официальный балл College Board и не обещание результата; чем больше свежих полных пробников, тем уже диапазон. Учитывает переключатели источников ниже.</p>
       <details><summary>На чём основано · ${P.tests.length}</summary><ul class="pred-list">${list}</ul></details></div>`;
   }
   // «Уроки · живая практика»: the rounds this student answered on lessons

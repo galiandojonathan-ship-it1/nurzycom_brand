@@ -57,6 +57,16 @@
     </svg>`;
   }
 
+  // «Цель» (2026-11-23): the target the teacher set in the cabinet (goal_target), with the exam date and the last practice test
+  function goal(T, full) {
+    let g = null; try { g = JSON.parse(store("goal_target") || "null"); } catch (e) { g = null; }
+    if (!g || !(g.rw || g.math)) return "";
+    const exam = g.exam ? new Date(g.exam + "T00:00:00") : null, days = exam ? Math.ceil((exam - Date.now()) / 864e5) : null;
+    const tot = g.rw && g.math ? g.rw + g.math : null, want = full ? tot : (g.rw || g.math), last = T.length ? T[T.length - 1].v : null;
+    return `<section class="td-goal" aria-label="Цель"><span>Твоя цель</span><b>${[g.rw ? `RW ${g.rw}` : "", g.math ? `Math ${g.math}` : "", tot ? `всего ${tot}` : ""].filter(Boolean).join(" · ")}</b>
+      ${exam && days >= 0 ? `<small>экзамен ${esc(exam.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }))}, через ${days} ${pl(days, "день", "дня", "дней")}</small>` : ""}
+      ${last && want ? `<small>последний пробный тест ≈ ${last} (примерный балл)${want > last ? ` · до цели ≈ ${want - last}` : " · на уровне цели"}</small>` : ""}</section>`;
+  }
   function render() {
     const box = $("today"); if (!box || !window.PLAN || !window.SITE || !SITE.me()) return;
     const name = (store("hw_student") || "").trim(); if (!name) return;
@@ -92,6 +102,7 @@
       <div class="td-head"><div><h2>${hello}, ${esc(first)}.</h2><p class="td-sub">Шаг за шагом: регулярность даёт балл.</p></div>
         <div class="td-course" role="group" aria-label="Курс">${COURSES.map(([c, t]) => `<button type="button" class="chip" data-c="${c}" aria-pressed="${P.course === c}">${t}</button>`).join("")}</div></div>
       ${tasks(name)}
+      ${goal(T, full)}
       <div class="td-stats" aria-label="Прогресс">
         <div class="td-big"><span>План курса</span><b>${pctDone}%</b><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pctDone}"><i style="width:${pctDone}%"></i></div></div>
         <div><b>${lessonsDone}<small> / ${lessonsAll}</small></b><span>уроков сдано</span></div>

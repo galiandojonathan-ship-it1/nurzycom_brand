@@ -375,6 +375,22 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **«Цель ученика» (target score), stage 1 of 3 (2026-11-23, Nurassyl: «вписать target score… где у него проседает относительно
+  его target score… у сильного ученика всё "освоено"»; decisions: the student sees the target, homework is proposed and he
+  confirms, 3 tasks a week by default):** the card has a line above the tabs (`#st-goal`, `teacher.js` `goalMount`): RW / Math
+  target (200–800) and the exam date (SAT dates or another), saved in the student's own copy as `goal_target` (synced, so the
+  student sees «Твоя цель» on «Сегодня», `today.js` `goal()`, with the exam countdown and the last practice test). Model
+  (`progress.js`): `targetNeeds(target, scale, current)` turns a section score into the raw count on the hard route
+  (`scale.js`) and the level θ that expects it on the real difficulty mix; with a current ориентир (`predict.js` middle) the
+  target is a shift Δθ from where the student is, applied to the model's own section level (`targetFor(res, need)`, using the
+  last week's levels kept as `res.lv`), so both sides use the same cautious scale. A first version compared with the absolute
+  level and called everything «ниже цели» for a strong student (Бексултан: 45 of 45); anchored, he has 25 below and 20 at the
+  target. Per subtopic: needed mastery (same form as its mastery column), status «ниже цели / на уровне цели / выше цели /
+  мало данных» with a 5-point margin (`vsTarget`). View: a target line in the progress hero, dashed «цель» lines on the
+  difficulty chart (needed accuracy per level), a dashed «Нужно для цели» line on the domain chart, a dashed red tick and «нужно
+  N%» in the subtopic map, the statuses and a «дальше от цели сверху» sort; «Ориентир на SAT» shows the target next to the
+  range; the goal line shows the pace needed per week. Test `t_target.js desktop|phone`; real cards checked locally.
+  Next: stage 2 «Подобрать домашку» (per student, with reasons, confirm to assign), stage 3 the same for a whole group.
 - **Zoomed, curved charts (2026-11-23, Nurassyl: «увеличь масштаб графиков и сделай изменения более заметными и кривыми»):**
   `zoom()` in `progress-view.js` and `report.js` fits each chart's y axis to its own values (at least 10 points tall, padded,
   rounded to 5; ticks every 5, 10 or 25), and `curve()` draws a smooth monotone cubic line through the weekly points (it never
