@@ -375,6 +375,12 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **«Карта подтем» controls (2026-11-23, Nurassyl: «allow me to categorize the sections here»):** above the map in
+  `progress-view.js`: «Группировать» по доменам / по статусу (Требуют внимания = слабое место и просело, Растут, Держатся,
+  Освоено, Мало данных) / по разделу / без групп; «Показать» filters by status with counts; «Сортировать» как в SAT / слабые
+  сверху / просели сверху / больше ответов; a click on a group heading folds it (the heading shows the count and the average
+  mastery). The choice is kept in this browser (`pg_map`) for every student. The synthetic fixture has no tagged subtopics,
+  so it was checked on the local real-data copy (scratchpad `realpaste/map_real.js`, not in the repo).
 - **Bluebook import from a PDF (2026-11-23, Nurassyl: «импорт с Bluebook с телефона в качестве pdf… не всегда можно скопировать
   весь PDF»):** «Загрузить PDF» in the import block. The student saves Score Details as a PDF (iPhone: Share → Print → Share →
   Save to Files; Android or a computer: Print → Save as PDF) and picks it. `docs/bbpdf.js` reads the text with the
