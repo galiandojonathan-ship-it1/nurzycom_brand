@@ -1,6 +1,7 @@
 // Two accounts on one browser (2026-11-23: Nurassyl's Bluebook tests appeared on a student's account after he logged in as that
 // student on his own browser). A shares a Bluebook result, logs out, B logs in on the same browser: B sees nothing of A's, and
-// B's cloud copy gets none of A's keys. Then the teacher's cabinet finds an old leaked record (no owner stamp) and removes it.
+// B's cloud copy gets none of A's keys. Then the teacher's cabinet finds an old leaked record (no owner stamp), also when the
+// source account is archived, and removes it.
 // Stand-in: node mkfx.mjs ../../docs <fx> && node pages_dev.mjs <fx> 8768.   usage: node t_switch.js [desktop|phone]
 const { chromium, devices } = require("playwright"); const { seed, ADMIN } = require("./cbseed"); const { synthetic, tableOf } = require("./bbsynth.cjs");
 const B = "http://127.0.0.1:8768/", dev = process.argv[2] || "desktop";
@@ -50,8 +51,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
       Bx[k] = { v: JSON.stringify(v), t: Date.now() }; if (l === "aruzhan") Bx["hw_last_Dias Omarov_V01_p3"] = { v: "24/26", t: Date.now() };
       await SITE.api("admin/progress?id=" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(Bx) }) }); }
   }, dk[0]);
+  // Dias is archived (a former student): his copy still counts for the check
+  await teacher.evaluate((id) => localStorage.setItem("cb_groups", JSON.stringify({ groups: [{ id: "g1", name: "Группа", kind: "group", color: "blue", members: [] }], archived: [id], at: Date.now() + 5000 })), diasId);
   await teacher.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await teacher.waitForSelector(".scard", { timeout: 20000 });
-  await teacher.click('.scard:has(.sc-nm:text-is("Aruzhan Bek")) .sc-open'); await teacher.waitForSelector(".cb-head", { timeout: 10000 });
+  await teacher.click('.scard:has(.sc-nm:text-is("Aruzhan Bek")) .sc-open'); await teacher.waitForSelector(".cb-head", { timeout: 10000 }); await teacher.waitForSelector(".cb-foreign", { timeout: 10000 }).catch(() => {});
   const box = await teacher.$(".cb-foreign"), txt = box ? (await box.textContent()).replace(/\s+/g, " ") : "";
   console.log("notice:", txt.slice(0, 260));
   ok(/данные другого аккаунта \(Dias Omarov\)/.test(txt) && /SAT Practice Test 2/.test(txt) && /на чужое имя: 1/.test(txt), "the cabinet points out Dias's Bluebook test and his result inside Aruzhan's copy");
