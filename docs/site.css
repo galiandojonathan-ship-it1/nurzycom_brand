@@ -1023,3 +1023,12 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pred .pred-r { font-weight: 700; font-size: 18px; }
 .pred .pred-list { margin: 6px 0 0; padding-left: 18px; color: #5E5A54; font-size: 14px; }
 @media (max-width: 640px) { .pred .pred-big { font-size: 34px; } .pred .pred-sec { grid-template-columns: 1fr auto; } }
+
+/* «Карта подтем»: grouping, filter, sort, folding (2026-11-23) */
+.pg-mapctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }
+.pg-mapctl > .hint { min-width: 92px; margin: 0; }
+.pg-mapctl .chip small { opacity: .65; margin-left: 3px; }
+.pg-map .pg-fold { display: inline-flex; align-items: baseline; gap: 8px; font: inherit; font-weight: 700; color: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer; text-align: left; }
+.pg-map .pg-fold small { font-weight: 500; color: #5E5A54; }
+.pg-map .pg-caret { display: inline-block; width: 12px; }
+.pg-map .pg-fold:focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
