@@ -981,3 +981,13 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .bbs-resent { font-size: 12px; color: #A63328; border: 1px solid #A63328; border-radius: 999px; padding: 1px 8px; }
 .bb-st { margin: 10px 0 6px; font-size: 15px; }
 .bb-st.ok { color: #1F5E2A; font-weight: 600; }
+/* progress: sources and the domain chart (2026-11-23) */
+.pg-src { margin-top: 8px; }
+.pg-src .chip small { opacity: .7; margin-left: 4px; }
+.pg-src .chip[aria-pressed="false"] { opacity: .55; text-decoration: line-through; }
+.pg-domain { margin-top: 18px; }
+.pg-domain .chips { margin: 6px 0; flex-wrap: wrap; }
+#pg-domleg { flex-wrap: wrap; gap: 6px 14px; }
+#pg-domleg .pg-limp { color: #A63328; font-weight: 600; }
+.pg-dlb { font-weight: 700; }
+#pg-dom { max-width: 760px; }

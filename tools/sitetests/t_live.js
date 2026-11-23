@@ -83,6 +83,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await host.locator("[data-close]").click(); await host.waitForTimeout(2500);
   ok(/Раунд завершён/.test(await msg(host)), "host: round finished");
   ok(!(await vis(host, "[data-close]")), "«Завершить раунд» disappears after the end");
+  // the lesson account keeps a record of the round for the teacher's analysis (lv_r_, synced): questions with their set ids, students' answers
+  const rec = await host.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.startsWith("lv_r_")); return k ? JSON.parse(localStorage.getItem(k)) : null; });
+  ok(rec && rec.items.length >= 1 && rec.items.every((it) => it.ref && /^X\d\d\.\d+$/.test(it.ref)) && rec.students.length >= 1 && rec.students.every((st) => st.name) && rec.students.some((st) => Object.keys(st.ans).length),
+    "the round record is saved on the lesson account: " + (rec ? `${rec.items.length} questions (${rec.items[0].ref}…), students ${rec.students.map((x) => x.name).join(", ")}` : "none"));
   // the review shows one question at a time (select + card); the key sits in a closed «Правильный ответ» <details>
   const keys = [];
   for (let i = 0; i < 10; i++) { await host.selectOption("[data-review] select", String(i)); keys.push(await host.$eval("[data-review] .live-review-key p", (p) => p.textContent)); }

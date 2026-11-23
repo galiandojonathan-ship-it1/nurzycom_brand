@@ -28,7 +28,8 @@
         // the student screen shows an input for both typed kinds; only the grading differs
         type: key.type === "mc" ? "mc" : "spr",
         keyType: key.type,
-        accepted: key.accepted
+        accepted: key.accepted,
+        meta: { n: q.n, sk: q.sk || null, d: q.d || null }   // where the question comes from; stays in the teacher's browser
       };
     });
   }
@@ -45,6 +46,9 @@
     });
     if (!result.ok) throw Error(result.data?.error || "Не удалось создать раунд.");
     sessionStorage.setItem("live:" + result.data.round, JSON.stringify({ host: result.data.host }));
+    // for the round record the lesson account saves at the end (livepractice.js): course ids, skills and levels of the questions
+    try { localStorage.setItem("lr_meta_" + result.data.round, JSON.stringify({ title: set.title, at: Date.now(), sec: set.sec || (set.math ? "math" : "rw"),
+      items: questions.map((q) => ({ ref: set.ref && q.meta && q.meta.n != null ? `${set.ref}.${q.meta.n}` : null, sk: (q.meta && q.meta.sk) || null, d: (q.meta && q.meta.d) || null, type: q.type === "mc" ? "mc" : "spr" })) })); } catch { /* the round runs without it */ }
     location.href = "practice.html?live=" + result.data.round;
   }
   function configure(set, status) {
@@ -100,6 +104,7 @@
       const limit = seconds.valueAsNumber;
       const preferences = { count: Number(count.value), seconds: Number.isInteger(limit) && limit >= 5 && limit <= 600 ? limit : 45,
         strict: strict.checked, selfPaced: selfPaced.checked };
+      set.questions.forEach((q, i) => { q.meta = Object.assign({ n: i + 1 }, q.meta || {}); if (q.meta.n == null) q.meta.n = i + 1; });   // position in the set when the bundle has no number
       const questions = set.questions.slice(Number(first.value) - 1, Number(first.value) - 1 + preferences.count);
       if (shuffle.checked) {
         for (let index = questions.length - 1; index > 0; index--) {

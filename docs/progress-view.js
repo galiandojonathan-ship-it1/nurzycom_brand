@@ -40,11 +40,14 @@ window.PVIEW = (() => {
     for (let k = 0; k <= 4; k++) { const v = ymax * k / 4; el("line", { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v) }, ax); el("text", { x: P.l - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = fmt(v); }
     const step = Math.max(1, Math.ceil(n / 6));
     times.forEach((t, i) => { if (i % step === 0 || i === n - 1) el("text", { x: x(i), y: h - 6, "text-anchor": "middle" }, ax).textContent = day(t); });
+    const ends = [];
     series.forEach((s) => {
       const pts = s.v.map((v, i) => (v == null ? null : [x(i), y(v)])).filter(Boolean); if (!pts.length) return;
-      el("path", { d: pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(""), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
-      const lv = s.v[s.v.length - 1]; if (lv != null) el("text", { x: x(n - 1) + 8, y: y(lv) + 4, class: "pg-dl" }, svg).textContent = `${s.label} ${fmt(lv)}`;
+      el("path", { d: pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(""), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dim ? { opacity: 0.85 } : {}) }, svg);
+      const lv = s.v[s.v.length - 1]; if (lv != null && !s.nolabel) ends.push({ y: y(lv) + 4, t: `${s.label} ${fmt(lv)}`, bold: s.w >= 3 });
     });
+    ends.sort((a, b) => a.y - b.y); for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;   // end labels never overlap
+    ends.forEach((e) => (el("text", { x: x(n - 1) + 8, y: e.y, class: "pg-dl" + (e.bold ? " pg-dlb" : "") }, svg).textContent = e.t));
     marks.forEach((i) => { const v = series[0].v[i]; if (v != null) el("circle", { cx: x(i), cy: y(v), r: 5, fill: "#A63328", stroke: "#fff", "stroke-width": 2 }, svg); });
     const cross = el("line", { y1: P.t, y2: h - P.b, stroke: "#77736D", opacity: 0 }, svg), hit = el("rect", { x: P.l, y: P.t, width: W - P.l - P.r, height: h - P.t - P.b, fill: "transparent" }, svg);
     hit.addEventListener("mousemove", (e) => { const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width), i = n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((px - P.l) / ((W - P.l - P.r) / (n - 1)))));
@@ -63,17 +66,24 @@ window.PVIEW = (() => {
   const noiseOf = (perWeek) => Math.min(25, 7 * Math.sqrt(72 / Math.max(10, perWeek)));
   // box: container; res: PROGRESS.compute result; o: { name }
   function render(box, res, o = {}) {
-    const st = { weeks: 8, sec: res.secs[0] };
+    // period: 8 weeks, or all the time when the last answers are older than that (practice tests taken long ago)
+    const lastNew = (() => { const S = res.snaps; for (let i = S.length - 1; i > 0; i--) if (S[i].nAns > S[i - 1].nAns) return i; return 0; })();
+    const st = { weeks: res.snaps.length - 1 - lastNew > 8 ? 99 : 8, sec: res.secs[0], dom: null };
+    // which sources count (teacher.js): chips that stay even when the chosen sources give too few answers for an index
+    const srcHTML = () => (o.sources && o.sources.list.length ? `<div class="chips pg-src" role="group" aria-label="Что учитывать">${o.sources.list.map((x) => `<button class="chip" type="button" data-src="${x.k}" aria-pressed="${x.on}">${esc(x.l)} <small>${x.n}</small></button>`).join("")}</div>` : "");
+    const srcWire = () => { if (o.sources) box.querySelectorAll("[data-src]").forEach((b) => (b.onclick = () => {   // at least one source stays on
+      const on = b.getAttribute("aria-pressed") !== "true"; if (!on && o.sources.list.filter((x) => x.on).length <= 1) return; o.sources.set(b.dataset.src, on); })); };
     const draw = () => {
       const S = res.snaps, n = S.length, start = S.findIndex((s) => s.nAns >= PROGRESS.MIN_IX && s.index != null), last = S[n - 1];
       // weeks resting on fewer than MIN_IX answers are not drawn: there the start value of the model, not the student, sets the line
       if (start < 0) { const na = last ? last.nAns : 0, c = (last && last.cnt) || {}, by = Object.keys(c).map((k) => `${k === "rw" ? "Reading and Writing" : "Math"}: ${Object.values(c[k]).reduce((x, y) => x + y[1], 0)}`).join(", ");
-        box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">${na < PROGRESS.MIN_IX ? `Мало ответов для расчёта: ${na} из ${PROGRESS.MIN_IX}.` : `Ни в одном разделе пока нет ${PROGRESS.MIN_SEC} ответов (${by}).`} Индекс появится, когда ответов с первой попытки будет ${PROGRESS.MIN_IX}, из них ${PROGRESS.MIN_SEC} в одном разделе.</p></div>`; return; }
+        box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика</span>${srcHTML()}<p class="hint">${na < PROGRESS.MIN_IX ? `Мало ответов для расчёта: ${na} из ${PROGRESS.MIN_IX}.` : `Ни в одном разделе пока нет ${PROGRESS.MIN_SEC} ответов (${by}).`} Индекс появится, когда ответов с первой попытки будет ${PROGRESS.MIN_IX}, из них ${PROGRESS.MIN_SEC} в одном разделе.</p></div>`; srcWire(); return; }
       const a = Math.max(start, n - 1 - st.weeks), cut = S.slice(a), first = cut[0];
       const NOISE = noiseOf((last.nAns - first.nAns) / Math.max(1, (last.t - first.t) / 6048e5)), d = last.index - first.index, slope = cut.length > 1 ? (last.index - cut[Math.max(0, cut.length - 4)].index) / Math.min(3, cut.length - 1) : 0;
       const drv = PROGRESS.drivers(res, a, n - 1).slice(0, 6), mx = Math.max(1e-6, ...drv.map((x) => Math.abs(x.v)));
       box.innerHTML = `<div class="card pg"><div class="pg-top"><div><span class="label">Прогресс ученика · индекс</span>
           <p class="hint">Внутренняя аналитика по ответам с первой попытки и разметке подтем. Не балл SAT и не для публикации.</p></div>
+          ${srcHTML()}
           <div class="chips" role="group" aria-label="Период">${[[4, "4 недели"], [8, "8 недель"], [99, "Всё время"]].map(([v, l]) => `<button class="chip" type="button" data-pw="${v}" aria-pressed="${st.weeks === v}">${l}</button>`).join("")}</div></div>
         <div class="pg-grid">
           <section class="pg-hero"><div class="pg-big">${last.index}</div><div class="pg-delta ${Math.abs(d) < NOISE ? "pg-noise" : d >= 0 ? "up" : "down"}">${d >= 0 ? "▲ +" : "▼ "}${d} <span>с ${day(first.t)}${Math.abs(d) < NOISE ? ` · в пределах шума (±${Math.round(NOISE)})` : ""}</span></div>
@@ -85,6 +95,8 @@ window.PVIEW = (() => {
         <div class="pg-grid2"><section><b>Откуда рост за период</b><p class="hint">Только изменения больше шума.</p><ul class="pg-drv">${drv.length ? drv.map((x) => `<li><div><span>${esc(NAME[x.k] || x.k)}</span><div class="pg-bar"><i style="width:${Math.abs(x.v) / mx * 100}%;background:${x.v >= 0 ? "#0F0F0F" : "#A63328"}"></i></div></div><b class="${x.v >= 0 ? "up" : "down"}">${x.v >= 0 ? "+" : ""}${x.v.toFixed(1)}</b></li>`).join("") : '<li class="hint">За период нет изменений больше шума. По 4–5 ответам в неделю на подтему рост виден через 3–4 недели.</li>'}</ul></section>
           <section><b>Сложность вопросов</b>${res.secs.length > 1 ? `<div class="chips">${res.secs.map((s) => `<button class="chip" type="button" data-ps="${s}" aria-pressed="${st.sec === s}">${s === "rw" ? "Reading and Writing" : "Math"}</button>`).join("")}</div>` : ""}
             <p class="hint">Ожидаемая доля верных ответов, угадывание учтено. Линия уровня появляется после ${PROGRESS.MIN_LV} ответов этого уровня.</p><div class="pg-legend"><span><i style="background:#2A7DB8"></i>Лёгкие</span><span><i style="background:#6E57C9"></i>Средние</span><span><i style="background:#B5402F"></i>Трудные</span></div><div id="pg-df"></div></section></div>
+        <section class="pg-domain"><b>Домен</b><div class="chips" role="group" aria-label="Домен">${res.secs.flatMap((sec) => DOMN[sec].map((d, i) => `<button class="chip" type="button" data-pd="${sec}:${i}">${esc(d)}</button>`)).join("")}</div>
+          <p class="hint">Жирная линия — домен в целом, тонкие — навыки College Board внутри него. Навык показан, когда по нему есть ответы; «хромает» — ниже домена на 5 пунктов и больше.</p><div class="pg-legend" id="pg-domleg"></div><div id="pg-dom"></div></section>
         <section><b>Карта подтем</b><p class="hint">Чёрная полоса — сейчас, красная метка — начало периода. Изменение серым — в пределах шума: по стольким ответам его нельзя отличить от случайности. Серая строка — меньше трёх ответов.</p>
           <div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th>${o.onTwins ? "<th><span class=\"sr-only\">Gemini</span></th>" : ""}</tr></thead><tbody id="pg-rows"></tbody></table></div></section>
         <div class="pg-grid2"><section><b>Ловушки</b><p class="hint">Как часто выбирает ловушку, когда она есть: начало → сейчас. Меньше — лучше.</p><div id="pg-tr"></div></section>
@@ -115,6 +127,20 @@ window.PVIEW = (() => {
       box.querySelector("#pg-hb").innerHTML = [["Невнимательность", "ошибки там, где модель была почти уверена в верном ответе", H.slip, H.slipExpected], ["Пропуски", "вопросы без ответа", H.blank, null]]
         .map(([l, s, v, e]) => `<div class="pg-hab"><div><b>${l}</b><div class="hint">${s}</div></div><div class="num">${v == null ? "—" : pct(v) + "%"}${e != null ? `<div class="hint">ожидалось ${pct(e)}%</div>` : ""}</div></div>`).join("");
       box.querySelectorAll("[data-pw]").forEach((b) => (b.onclick = () => { st.weeks = +b.dataset.pw; draw(); }));
+      srcWire();
+      // the domain chart: the weakest domain by default
+      const DS = res.secs.flatMap((sec) => DOMN[sec].map((d, i) => ({ id: `${sec}:${i}`, sec, i, d: PROGRESS.domainSeries(res, sec, i) })));
+      if (!st.dom || !DS.some((x) => x.id === st.dom)) { const last = (x) => { const v = x.d && x.d.dom.filter((y) => y != null); return v && v.length ? v[v.length - 1] : 9; }; st.dom = (DS.slice().sort((a, b) => last(a) - last(b))[0] || {}).id; }
+      const cur = DS.find((x) => x.id === st.dom);
+      box.querySelectorAll("[data-pd]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.pd === st.dom)); b.onclick = () => { st.dom = b.dataset.pd; draw(); }; });
+      if (cur && cur.d) {
+        const PAL = ["#2A7DB8", "#B5402F", "#3E8E41", "#C77C02", "#6E57C9", "#1B8A8A", "#B0397E", "#5E5A54"], N = res.snaps.length;
+        const domNow = cur.d.dom[N - 1], sk = cur.d.skills.map((x, k) => ({ ...x, color: PAL[k % PAL.length], now: x.series[N - 1] })).sort((p, q) => (p.now ?? 9) - (q.now ?? 9));
+        box.querySelector("#pg-domleg").innerHTML = `<span><i style="background:#0F0F0F;height:4px"></i><b>${esc(DOMN[cur.sec][cur.i])} в целом</b></span>` + sk.map((x) => `<span${x.now != null && domNow != null && x.now < domNow - 0.05 ? ' class="pg-limp"' : ""}><i style="background:${x.color}"></i>${esc(x.skill)} <small>· ответов ${Math.round(x.n)}</small>${x.now != null && domNow != null && x.now < domNow - 0.05 ? " · хромает" : ""}</span>`).join("");
+        line(box.querySelector("#pg-dom"), { series: [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 },
+          ...sk.map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
+          times: cut.map((q) => q.t), fmt: (v) => Math.round(v) + "%", h: 260 });
+      }
       if (o.onTwins) { box.querySelectorAll("[data-twk]").forEach((b) => (b.onclick = () => o.onTwins({ focus: NAME[b.dataset.twk] || "" })));
         box.querySelectorAll("[data-twt]").forEach((b) => (b.onclick = () => o.onTwins({ trap: TRAP[b.dataset.twt] || "" }))); }
       box.querySelectorAll("[data-ps]").forEach((b) => (b.onclick = () => { st.sec = b.dataset.ps; draw(); }));
