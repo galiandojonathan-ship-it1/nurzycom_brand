@@ -1093,3 +1093,30 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .hwp-t { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; } .hwp-t th, .hwp-t td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid #D9D5CD; }
 .hwp-st { font-size: 13px; color: #5E5A54; } .hwp-st.ok { color: #1f6b3a; } .hwp-st.bad { color: #A63328; }
 @media (max-width: 700px) { .hwp-t thead { display: none; } .hwp-t tr, .hwp-t td { display: block; } .hwp-t td { border: 0; padding: 4px 0; } .hwp-t tr { border-bottom: 1px solid #D9D5CD; padding: 8px 0; } }
+
+/* «nurzycom bank» (nbank.js) */
+.nb-filt { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin: 12px 0; }
+.nb-filt label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #5E5A54; }
+.nb-filt label.nb-chk { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 8px; }
+.nb-filt .nb-search input { min-width: 200px; }
+.nb-ctl, .nb-make { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0; }
+.nb-make { padding: 12px; background: #fff; border: 1px solid #D9D5CD; border-radius: 18px; }
+.nb-make label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #5E5A54; flex: 1 1 320px; }
+.nb-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.nb-row { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid #D9D5CD; border-radius: 18px; padding: 10px 12px; }
+.nb-row.on { border-color: #0F0F0F; box-shadow: 0 0 0 1px #0F0F0F inset; }
+.nb-pick { padding-top: 3px; } .nb-pick input { width: 18px; height: 18px; }
+.nb-q { flex: 1; min-width: 0; } .nb-q summary { cursor: pointer; display: flex; gap: 10px; justify-content: space-between; list-style: none; }
+.nb-q summary::-webkit-details-marker { display: none; }
+.nb-sum { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; min-width: 0; } .nb-sum small { color: #5E5A54; }
+.nb-stem { flex-basis: 100%; color: #3a3733; font-size: 14px; } .nb-q code { font-size: 11px; color: #77736D; white-space: nowrap; }
+.nb-tag { font-style: normal; font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid #D9D5CD; }
+.nb-tag.hard { border-color: #A63328; color: #A63328; } .nb-tag.ctl { background: #ECE9E2; }
+.nb-body { margin-top: 10px; border-top: 1px solid #ECE9E2; padding-top: 10px; }
+.nb-pass { background: #F5F3EE; border-radius: 9px; padding: 10px 12px; margin-bottom: 8px; }
+.nb-opts { list-style: none; padding: 0; margin: 8px 0; } .nb-opts li { display: flex; gap: 8px; padding: 6px 8px; border-radius: 9px; align-items: baseline; }
+.nb-opts li.ok { background: #e7f1e9; } .nb-opts li b { width: 16px; flex: none; } .nb-opts li em { margin-left: auto; font-style: normal; font-size: 12px; color: #1f6b3a; }
+.nb-opts li small { margin-left: auto; font-size: 11px; color: #77736D; }
+.nb-why { font-size: 14px; margin: 6px 0; } .nb-words { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.nb-w { font-size: 12px; background: #F5F3EE; border-radius: 99px; padding: 3px 10px; }
+@media (max-width: 700px) { .nb-row { padding: 8px; } .nb-q code { display: none; } .nb-filt label { flex: 1 1 45%; } }

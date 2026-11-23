@@ -14,7 +14,7 @@
   const DAY = 864e5, nn = (n) => String(n).padStart(2, "0");
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
   const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false, archived: new Set(), view: "overview" };
-  const VIEWS = ["overview", "students", "results", "archive", "tests", "lessons", "accounts", "forms"];
+  const VIEWS = ["overview", "students", "results", "archive", "tests", "bank", "lessons", "accounts", "forms"];
   const ACCOUNT_BOOKMARKS = ["#reg", "#acc", "#pw", "#gh-set"];
   function viewFromURL() {
     const view = new URLSearchParams(location.search).get("view");
@@ -585,14 +585,14 @@
   let viewChange = 0, returnView = "overview", loadingCabinet = null;
   async function openView(view, focus = false, hash = "") {
     const step = ++viewChange;
-    if (["overview", "students", "archive"].includes(S.view) && ["tests", "lessons", "forms", "results", "accounts"].includes(view)) returnView = S.view;
+    if (["overview", "students", "archive"].includes(S.view) && ["tests", "bank", "lessons", "forms", "results", "accounts"].includes(view)) returnView = S.view;
     if (hash || (S.view !== view && location.hash)) {
       const url = new URL(location.href);
       url.hash = hash;
       history.replaceState(null, "", url);
     }
     setView(view);
-    S.cur = null; S.assign = null; S.imp = null; S.editG = null; S.ct = false; S.ls = false; S.q = "";
+    S.cur = null; S.assign = null; S.imp = null; S.editG = null; S.ct = false; S.ls = false; S.nb = false; S.q = "";
     if (view === "results" || view === "accounts") {
       if (view === "accounts") S.loaded = false;
       const panel = window.TeacherWorkspace.open(view);
@@ -611,7 +611,7 @@
       await loadingCabinet;
       if (step !== viewChange || !S.loaded) return;
     }
-    S.loadingView = view === "tests" || view === "lessons";
+    S.loadingView = view === "tests" || view === "lessons" || view === "bank";
     if (focus && !S.loadingView && view !== "forms") S.focus = ".cb-section-title";
     if (view === "forms") { await openImport(); if (step === viewChange && focus) $("cb").querySelector(".cb-ah h2")?.focus(); return; }
     render();
@@ -619,6 +619,10 @@
       try { await CTED.load(); } catch (e) { /* a local copy may still be available */ }
       if (step !== viewChange) return;
       S.ct = true; CTED.open(); S.focus = ".ct h2";
+    } else if (view === "bank") {   // «nurzycom bank» (nbank.js): our own question bank
+      try { await Promise.all([NBANK.load(), CTED.load()]); } catch (e) { /* the section says what failed */ }
+      if (step !== viewChange) return;
+      S.nb = true; S.focus = ".nb h2";
     } else if (view === "lessons") {
       await Promise.all(S.lsAcc.map(fetchCopy));
       if (step !== viewChange) return;
@@ -635,6 +639,7 @@
     if (S.loadingView) detail = '<p class="cb-wait" role="status">Загружаю…</p>';
     else if (S.ct) detail = CTED.html();
     else if (S.ls) detail = CBL.html();
+    else if (S.nb) detail = NBANK.html();
     else if (S.imp) detail = importHTML();
     else if (S.assign) detail = assignHTML();
     else if (S.editG) detail = groupHTML();
@@ -650,6 +655,7 @@
     bind(u);
     if (S.ct) CTED.bind(main);
     if (S.ls) CBL.bind(main);
+    if (S.nb) NBANK.bind(main);
     if (S.focus) { const el = main.querySelector(S.focus); S.focus = ""; if (el) el.focus({ preventScroll: true }); }
     if (focusQ && $("cb-q")) { const q = $("cb-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
@@ -658,16 +664,17 @@
     if (S.assignBusy) return true;
     if (S.ct) { if (CTED.escape() || !CTED.leave()) return true; closeSection(); return true; }
     else if (S.ls) { if (CBL.escape()) return true; closeSection(); return true; }
+    else if (S.nb) { closeSection(); return true; }
     else if (S.assign) { S.assign = null; S.focus = S.cur ? '[data-new="1"]' : '[data-bulk="1"]'; }
     else if (S.editG) { const id = S.editG.id; S.editG = null; S.focus = S.groups.some((g) => g.id === id) ? `[data-gedit="${id}"]` : ".gtab.add"; }
     else if (S.imp) { closeSection(); return true; }
     else return false;
     render(); return true;
   }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct || S.ls) && closeForm()) e.preventDefault(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && (S.assign || S.editG || S.imp || S.ct || S.ls || S.nb) && closeForm()) e.preventDefault(); });
   const top = () => window.scrollTo({ top: 0 });
   function closeSection() { openView(returnView, true); }
-  const offCt = () => { if (S.assignBusy || (S.ct && !CTED.leave())) return false; S.ct = false; S.ls = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
+  const offCt = () => { if (S.assignBusy || (S.ct && !CTED.leave())) return false; S.ct = false; S.ls = false; S.nb = false; return true; };   // leaving «Мои тесты» asks about unsaved edits
   document.addEventListener("click", (event) => {
     const link = event.target.closest("[data-cb-view]");
     if (!link || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -776,6 +783,7 @@
   // «Уроки» (cblesson.js): the lesson-mode sessions of the lesson account
   if (window.CBL) CBL.init({ accounts: () => S.lsAcc || [], lessons: () => S.lessons || [], render, toast, change, focus: (sel) => (S.focus = sel), close: closeSection });
   // «Мои тесты» (cted.js): what the editor needs from the cabinet
+  if (window.NBANK) NBANK.init({ toast, render, focus: (sel) => (S.focus = sel) });   // «nurzycom bank»
   if (window.CTED) CTED.init({ toast, render, users: activeUsers, focus: (sel) => (S.focus = sel),
     close: closeSection,
     give: async (id, key) => {
