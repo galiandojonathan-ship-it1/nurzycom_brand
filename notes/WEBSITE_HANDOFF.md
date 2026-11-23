@@ -375,6 +375,14 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **Bluebook import from a PDF (2026-11-23, Nurassyl: «импорт с Bluebook с телефона в качестве pdf… не всегда можно скопировать
+  весь PDF»):** «Загрузить PDF» in the import block. The student saves Score Details as a PDF (iPhone: Share → Print → Share →
+  Save to Files; Android or a computer: Print → Save as PDF) and picks it. `docs/bbpdf.js` reads the text with the
+  self-hosted pdf.js already used by the lesson console (`vendor/pdfjs-4.10.38/`, loaded only then), puts the text items back
+  into lines by position, rebuilds the question rows from the status cells («D; Correct») and the totals line, and hands the
+  table to the copy-paste parser, so test, routes, misses and date work the same. Nothing is uploaded. A PDF without text (a
+  picture) gets a message on how to save it from the page. Nurassyl's real iPhone PDF of SAT Practice 7 reads 98 rows, 13
+  misses, SAT7 hard modules in both sections. Test: `t_bbpdf.js desktop|phone [real.pdf]` (Chromium prints a synthetic page).
 - **«Ориентир на SAT», legend toggles, years in dates (2026-11-23, Nurassyl: «predict the possible score… PDF summary concise
   for students, parents and my manager… выбирать какую линию скрыть… добавь года в датах»):** `docs/predict.js` (pure, tested by
   `t_predict.mjs`) reads only full practice-test sections: the site's tests (form rows, `scale.js`) and shared Bluebook records

@@ -12,8 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611231508">
-<script src="auth.js?v=202611231508"></script>
+<link rel="stylesheet" href="site.css?v=202611231517">
+<script src="auth.js?v=202611231517"></script>
 <style>
 .mocks{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:700px){.mocks{grid-template-columns:1fr 1fr}}
@@ -35,6 +35,7 @@
 .bb-import li{margin-bottom:8px;overflow-wrap:anywhere}
 .bb-import h3{font-size:1rem;margin-bottom:6px}
 .bb-steps{padding-left:20px;margin:6px 0 12px}.bb-steps li{margin-bottom:6px}
+.bb-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.bb-pdf{cursor:pointer}.bb-file:focus-visible+*,.bb-pdf:focus-within{outline:2px solid var(--oxide)}
 .bb-mp{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border:1px solid var(--oxide);border-radius:9px;color:var(--oxide);text-decoration:none;font-weight:600}.bb-mp:hover{background:var(--oxide);color:#fff}
 .bb-rep{display:block;color:#5E5A54;margin-top:2px}
 .bb-title{font-weight:600;margin:4px 0}.bb-cnt{margin-left:10px;font-size:14px;font-weight:600;color:#1F5E2A;background:#E8F2E9;border-radius:999px;padding:2px 10px}.bb-cnt:empty{display:none}.bb-sent{border:2px solid #1F5E2A;border-radius:14px;padding:10px 14px;margin:6px 0 14px;background:#F3F8F3}.bb-sent b{display:block;font-size:16px;margin-bottom:6px}.bb-sent ul{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.bb-sent li{background:#fff;border:1px solid #1F5E2A;border-radius:10px;padding:6px 12px;font-size:15px;font-weight:600}.bb-sent li small{font-weight:400;color:#5E5A54;margin-left:6px}.bb-warn{color:#A63328;font-weight:500}
@@ -136,12 +137,14 @@
       <ol class="bb-steps">
         <li>Откройте <a class="bb-mp" href="https://mypractice.collegeboard.org/dashboard" target="_blank" rel="noopener"><b>My Practice</b> ↗</a> и войдите в College Board тем же аккаунтом, что в Bluebook. Выберите нужный тест → <b>Score Details</b>. <small>(<a href="https://satsuite.collegeboard.org/practice/my-practice-101" target="_blank" rel="noopener">подробная инструкция College Board</a>)</small></li>
         <li>Над таблицей вопросов включите <b>Show Correct Answers</b> и выберите <b>View: All</b>.</li>
-        <li><b>Компьютер:</b> нажмите Ctrl+A, затем Ctrl+C (на Mac ⌘A и ⌘C). <b>Телефон:</b> долгое нажатие на текст → «Выбрать всё» → «Копировать».</li>
-        <li>Вставьте ниже и нажмите «Отправить преподавателю». Проверка идёт сама: лишний текст страницы не мешает.</li>
+        <li><b>Скопируйте страницу.</b> Компьютер: Ctrl+A, затем Ctrl+C (на Mac ⌘A и ⌘C). Телефон: долгое нажатие на текст → «Выбрать всё» → «Копировать». Вставьте ниже.</li>
+        <li><b>Не получается скопировать? Сохраните PDF.</b> iPhone: «Поделиться» → «Печать» → снова «Поделиться» → «Сохранить в Файлы». Android и компьютер: «Печать» → «Сохранить как PDF». Затем нажмите «Загрузить PDF» ниже.</li>
+        <li>Нажмите «Отправить преподавателю». Проверка идёт сама: лишний текст страницы не мешает.</li>
       </ol>
       <form id="bb-form">
         <label for="bb-text">Страница Score Details</label>
         <textarea id="bb-text" rows="5" maxlength="60000" spellcheck="false" autocomplete="off" placeholder="Вставьте сюда всю страницу Score Details" required></textarea>
+        <div class="row"><label class="btn ghost bb-pdf" for="bb-file">Загрузить PDF</label><input type="file" id="bb-file" accept="application/pdf,.pdf" class="bb-file"></div>
         <div class="row"><button class="btn" type="submit" id="bb-go">Отправить преподавателю</button><button class="btn ghost" type="reset">Очистить</button></div>
         <p class="hint" id="bb-note">Преподаватель увидит тест и дату, ошибки и пропуски, ваш выбор, правильный ответ и навыки. Текст вопросов и ваш аккаунт College Board не передаются.</p>
       </form>
@@ -246,14 +249,15 @@
   <p class="label foot-cred">SAT 1560 · Reading &amp; Writing 760 · IELTS 8.0 · Nazarbayev University</p>
   <div class="foot-links"><a href="https://t.me/nurzycom" target="_blank" rel="noopener">Telegram</a><a href="https://wa.me/77054211262" target="_blank" rel="noopener">WhatsApp</a></div>
 </div><p class="foot-small">© 2026 nurzycom · материалы курса только для учеников</p></footer>
-<script src="config.js?v=202611231508"></script>
-<script src="tools.js?v=202611231508"></script>
-<script src="scale.js?v=202611231508"></script>
-<script src="gloss.js?v=202611231508"></script>
-<script src="liveround.js?v=202611231508"></script>
-<script src="mock.js?v=202611231508"></script>
-<script src="bbshare.js?v=202611231508"></script>
-<script src="bluebook-import.js?v=202611231508"></script>
-<script src="dict.js?v=202611231508"></script>
+<script src="config.js?v=202611231517"></script>
+<script src="tools.js?v=202611231517"></script>
+<script src="scale.js?v=202611231517"></script>
+<script src="gloss.js?v=202611231517"></script>
+<script src="liveround.js?v=202611231517"></script>
+<script src="mock.js?v=202611231517"></script>
+<script src="bbshare.js?v=202611231517"></script>
+<script src="bbpdf.js?v=202611231517"></script>
+<script src="bluebook-import.js?v=202611231517"></script>
+<script src="dict.js?v=202611231517"></script>
 </body>
 </html>
