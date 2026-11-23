@@ -24,6 +24,7 @@ const CSV = process.argv[3] ? fs.readFileSync(process.argv[3], "utf8") : "Timest
   ok(/Ориентир на SAT\. .{0,40}\d{3}–\d{3}/.test(t) && /не официальный балл College Board и не обещание/.test(t) && /20\d\d/.test(t), "the SAT range is a range with its basis, not a promise; dates with the year");
   ok(/Конфиденциально/.test(t) && /Telegram @nurzycom/.test(t), "footer: contacts and the confidentiality line");
   ok(/Индекс прогресса/.test(t) && (/из 100/.test(t) || /Индекс пока не рассчитан/.test(t)) && /не балл SAT/.test(t), "the progress index is in the report, labelled as not an SAT score");
+  ok(!/из 100/.test(t) || (/Последние 4 недели/.test(t) && /Последние 8 недель/.test(t) && /Всё время/.test(t)), "three index charts: 4 weeks, 8 weeks, all time");
   await p.uncheck('[data-rps="recent"]'); t = await txt();
   ok(!/Последние работы/.test(t), "unticking a section removes it from the sheet");
   await p.fill("#rp-note", "Стала увереннее в грамматике."); t = await txt();
