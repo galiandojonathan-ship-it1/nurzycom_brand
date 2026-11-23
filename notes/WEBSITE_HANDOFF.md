@@ -375,6 +375,12 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **Progress index in the PDF report (2026-11-23, Nurassyl: «всегда добавляй в PDF отчёт индекс прогресса студента»):**
+  `report.js` section «Индекс прогресса» (on by default, can be unticked): the index out of 100, the change since the first
+  week with enough answers, the weekly line, the five parts (Мастерство, Перенос на экзамен, Удержание, Темп, Исправление)
+  with what each shows, and the line «внутренняя мера nurzycom, не балл SAT»; «Главное» opens with it too. `teacher.js`
+  `progData(s)` computes the same index as the card (same source switches) when the PDF is opened before the card's block
+  is ready. With fewer than `PROGRESS.MIN_IX` (30) answers the section says how many there are and how many are needed.
 - **«Контрольные» Gemini questions (2026-11-23, Nurassyl: «рандомные 30% вопросов with an intentional off-topic answer… чтобы
   он смог выявить правильный ответ, а не заучить его»):** the server (`lib/mistake-twins.js` `decoyPlan`) picks about 30% of
   the slots of a batch at random (none when the batch has fewer than 3 questions) and passes `decoys` per mistake to Gemini.
