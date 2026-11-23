@@ -1,5 +1,5 @@
 /* Bluebook results a student chose to share (bluebook-import.js → synced key bb_share_<hash>), for the teacher's pages.
-   fromCopy(B): the shares of one synced copy, newest first. html(shares, o): the card. mistakes(shares): misses as candidates for
+   fromCopy(B, acct): the shares of one synced copy, newest first. html(shares, o): the card. mistakes(shares): misses as candidates for
    the Gemini picker (twins.js), only those with a College Board skill confirmed by the bank. No question text anywhere. */
 window.BBSHARE = (() => {
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -19,9 +19,9 @@ window.BBSHARE = (() => {
   }
   const dayTime = (t) => { const d = new Date(t); return `${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`; };
   const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-  function fromCopy(B) {
+  function fromCopy(B, acct) {   // acct: the account id of this copy; a record stamped by another account is not its own
     return Object.entries(B || {}).filter(([k, r]) => k.indexOf("bb_share_") === 0 && r && r.v != null)
-      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections && !d.deleted ? Object.assign(d, { key: k }) : null; } catch (e) { return null; } })
+      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections && !d.deleted && (!acct || !d.own || d.own === acct) ? Object.assign(d, { key: k }) : null; } catch (e) { return null; } })
       .filter(Boolean).sort((a, b) => (b.taken || b.at || 0) - (a.taken || a.at || 0));   // by the date the test was taken
   }
   function html(shares, o = {}) {

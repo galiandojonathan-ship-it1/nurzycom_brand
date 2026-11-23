@@ -375,6 +375,15 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **One browser, two accounts (fixed 2026-11-23):** synced keys sit in localStorage without an owner, so logging in as another
+  student on the same browser uploaded the previous account's results into the new one (Nurassyl's 8 Bluebook tests showed up
+  on Nurislam's account). `auth.js` now keeps `site_owner` (the login whose results the browser holds, kept through logout) and
+  `claimDevice()` clears every synced key, `sync_meta`, `hw_student` and tests in progress when a different login comes in
+  (they are safe in the old account's cloud copy). Bluebook records carry `own` (account id); the student list, the teacher
+  card and `BBSHARE.fromCopy(B, acct)` skip records stamped with another account. Older leaks have no stamp: the cabinet card
+  shows «В копии … есть данные другого аккаунта» (a Bluebook record also in another account's copy, the teacher's own
+  included, or results under another student's name) with «Удалить чужие данные» (sets the keys to null, «Вернуть» for 8 s;
+  the student's browser drops them at its next sync). Test: `tools/sitetests/t_switch.js desktop|phone` (fresh stand-in).
 
 ## 9. Still open (waiting on Nurassyl)
 

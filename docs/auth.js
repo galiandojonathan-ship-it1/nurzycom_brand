@@ -65,7 +65,8 @@
     if (s.status === 403) throw new Error("code");
     if (s.status === 429) { let why = ""; try { why = (await s.json()).error; } catch (x) { /* empty */ } throw new Error(why === "slow down" ? "slow" : "full"); }
     if (!s.ok) throw new TypeError("api " + s.status);
-    drop(); put("site_pw", pw, keep); put("site_login", login, keep); put("site_key", toB64(raw), false); put("site_wrap", entry.wrap, false);
+    const was = get("site_login") || "";
+    drop(); if (was && LS && !LS.getItem(OWNER)) rawSet.call(LS, OWNER, was); claimDevice(login); put("site_pw", pw, keep); put("site_login", login, keep); put("site_key", toB64(raw), false); put("site_wrap", entry.wrap, false);
     try { localStorage.setItem("hw_student", name); } catch (x) { /* private mode */ }
     await useKey(raw);
   }
@@ -92,6 +93,19 @@
   if (LS) {
     Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === LS && SYNC.test(k)) touch(k); };
     Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === LS && SYNC.test(k)) touch(k); };
+  }
+  // Whose results this browser holds (Nurassyl, 2026-11-23: his Bluebook tests showed up on a student's account after he logged
+  // in as that student on his own browser). A different login first clears the previous account's synced keys: they are safe
+  // in that account's own cloud copy, and otherwise the next sync would upload them into the new account.
+  const OWNER = "site_owner";
+  function claimDevice(login) {
+    if (!LS || !login) return;   // the shared password (no login) keeps this device's results so a first login can take them
+    const prev = LS.getItem(OWNER) || "";
+    if (prev && prev !== login) {
+      const gone = []; for (let i = 0; i < LS.length; i++) { const k = LS.key(i); if (SYNC.test(k) || k === META || /^(hw_student$|ct_run_|mk_state_|hw_draft_|hw_prog_|hw_resume_|hw_saved_)/.test(k)) gone.push(k); }
+      gone.forEach((k) => rawRemove.call(LS, k));
+    }
+    rawSet.call(LS, OWNER, login);
   }
   function local() {   // { key: { v, t } }; a removed key travels as v: null
     const m = meta(), out = {};
@@ -148,6 +162,7 @@
 
   async function useKey(raw) {
     KEY = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+    if (get("site_login") && LS && !LS.getItem(OWNER)) rawSet.call(LS, OWNER, get("site_login"));
     await Promise.race([sync(), new Promise((r) => setTimeout(r, 4000))]);   // bring this account's results before the page reads them
     document.documentElement.classList.remove("locked");
     const g = document.getElementById("auth"); if (g) g.remove();
@@ -172,7 +187,8 @@
     const a = await access(), e = await entryFor(a, user);
     if (!e) throw new Error(norm(user) ? "nologin" : "needlogin");
     const raw = await unwrap(pw, e);   // wrong password throws here
-    drop(); put("site_pw", pw, keep); if (norm(user)) put("site_login", norm(user), keep); put("site_key", toB64(raw), false); put("site_wrap", e.wrap, false);
+    const was = get("site_login") || "";
+    drop(); if (norm(user)) { if (was && LS && !LS.getItem(OWNER)) rawSet.call(LS, OWNER, was); claimDevice(norm(user)); } put("site_pw", pw, keep); if (norm(user)) put("site_login", norm(user), keep); put("site_key", toB64(raw), false); put("site_wrap", e.wrap, false);
     if (e.n) { try { const me = await unseal(raw, e.n); localStorage.setItem("hw_student", me.name); } catch (x) { /* name is optional */ } }
     await useKey(raw);
   }

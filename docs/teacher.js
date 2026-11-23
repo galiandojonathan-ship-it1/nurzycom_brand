@@ -359,7 +359,7 @@
     const out = [];
     for (const id of (await accountsByName()).get(s.key) || []) {
       const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
-      out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null)).map((x) => Object.assign(x, { acct: id })));
+      out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null), id).map((x) => Object.assign(x, { acct: id })));
     }
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
