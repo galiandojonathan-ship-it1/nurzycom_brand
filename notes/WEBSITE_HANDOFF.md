@@ -414,6 +414,12 @@ Tests to run by area:
   ~30%» (on by default, kept as `tw_decoys`) sends `decoys`; each control card has a label for the teacher; the status line
   counts them; on saving, the questions are shuffled so the control ones sit anywhere. The student's test does not mark them.
   Tests: `t_twins_lib.mjs` (plan size, off switch, kind checks), `t_twins.js` (fake Gemini emits decoys).
+- **Live practice: remove a participant, question row (2026-11-23, Nurassyl: «позволь мне удалять участников… быстро списком
+  перемещаться по вопросам при нестрогом раунде»):** in «Ответы группы» each name has «✕» (first click «Удалить?», second
+  removes; labels drawn by CSS so the cell text stays the name) and a duplicated name is marked «два входа»; API `remove`
+  (host) deletes the participant and its answers. A row of question numbers: in a teacher-led round without the strict clock a
+  click moves the class (API `goto`), in a self-paced round it shows that question on the host's screen, with how many answered
+  each one; students in a self-paced round get the same row (answered filled, current dark). Test `t_live_manage.js`.
 - **«Карта подтем» controls (2026-11-23, Nurassyl: «allow me to categorize the sections here»):** above the map in
   `progress-view.js`: «Группировать» по доменам / по статусу (Требуют внимания = слабое место и просело, Растут, Держатся,
   Освоено, Мало данных) / по разделу / без групп; «Показать» filters by status with counts; «Сортировать» как в SAT / слабые
