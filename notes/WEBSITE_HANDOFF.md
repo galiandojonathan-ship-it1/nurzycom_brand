@@ -414,6 +414,19 @@ Tests to run by area:
   ~30%» (on by default, kept as `tw_decoys`) sends `decoys`; each control card has a label for the teacher; the status line
   counts them; on saving, the questions are shuffled so the control ones sit anywhere. The student's test does not mark them.
   Tests: `t_twins_lib.mjs` (plan size, off switch, kind checks), `t_twins.js` (fake Gemini emits decoys).
+- **«Начало работы» and deeper analysis (2026-11-23, Nurassyl: «выбирать с какого момента учитывать результаты группы… с 24
+  октября… отметить на графиках всех учеников… то же у индивидуальных… добавь глубинного анализа»):** a group's date is
+  `start` (YYYY-MM-DD) in its cabinet groups record (`cabinet.js` keeps the field; set in «Анализ группы» → «Работаю с группой
+  с», `groupStartSave` writes KV `groups` and `cb_groups`); `gaCollect` drops that group's results before it. A student's own
+  date is `start` inside `goal_target` (synced; set in the card's goal line «Начало работы»; «Убрать цель» keeps it); without
+  it the group's date is used (`startOf`). Charts: a dashed red «начало работы · дата» line on the index, difficulty and domain
+  charts (`line({ vline })`, at the left edge with «←» when earlier than the chart), the group index chart and the PDF's index
+  charts; the period «С начала работы» (default when a date is set). Student card: «С начала работы» (index then → now, the
+  week used as the baseline when there were too few answers before, answers since, weeks with work, answers per week, 3
+  subtopics that grew most and 3 standing still). Group (`gpMount` `deepHTML`): «Рост с <дата>» (each student then → now,
+  answers, weeks with work, a one-line verdict: растёт быстрее группы / в темпе / занимается, но не растёт / мало занимается),
+  subtopics that grew most and least (median change), «Кто как занимается» (students × weeks). PDF: a «С начала работы»
+  chart and a line in «Главное». Test `t_workstart.js desktop|phone`; real data checked locally.
 - **«Прогресс группы» (2026-11-23, Nurassyl: «полный анализ всей группы… выделяй outliers, их не включай, например,
   Шахсанам. Бери общую массу»):** at the top of «Анализ группы» (`teacher.js` `gpMount`) for the chosen cabinet group: each
   member's index model (`progData`, same sources as the card). Left out automatically, with the reason shown: the teacher's

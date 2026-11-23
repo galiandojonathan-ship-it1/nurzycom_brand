@@ -56,7 +56,7 @@ window.REPORT = (() => {
     while (b - a < span) { if (a > lo) a -= step; if (b - a < span && b < hi) b += step; if (a <= lo && b >= hi) break; }
     return [Math.max(lo, a), Math.min(hi, b)];
   }
-  function indexSVG(w) {
+  function indexSVG(w, T0) {
     if (w.length < 2) return "";
     const [lo, hi] = zoom(w.map((p) => p[1]), { span: 10, step: 5 });
     const W = 640, H = 150, L = 30, R = 50, T = 16, B = 24, x = (i) => L + (W - L - R) * i / (w.length - 1), y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
@@ -66,16 +66,21 @@ window.REPORT = (() => {
     const dots = pts.slice(0, -1).map((p) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.2" fill="#0F0F0F"/>`).join("");
     const labels = w.map((p, i) => (i % step === 0 || i === w.length - 1 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#5E5A54">${esc(dShort(p[0]))}</text>` : "")).join("");
     const last = w[w.length - 1];
-    return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" role="img" aria-label="Индекс прогресса по неделям">${grid}<path d="${path}" fill="none" stroke="#0F0F0F" stroke-width="2.4"/>${dots}<circle cx="${x(w.length - 1)}" cy="${y(last[1])}" r="4" fill="#A63328"/>${labels}<text x="${x(w.length - 1) + 8}" y="${y(last[1]) + 4}" font-size="11" font-weight="600" fill="#0F0F0F">${last[1]}</text></svg>`;
+    // the day work began: a dashed red line (at the left edge when it is earlier than the chart)
+    let vl = ""; if (T0 && T0 <= last[0]) { const before = T0 < w[0][0]; let i = 0; while (i < w.length - 2 && w[i + 1][0] < T0) i++;
+      const xv = before ? x(0) : x(i) + (x(i + 1) - x(i)) * Math.min(1, Math.max(0, (T0 - w[i][0]) / ((w[i + 1][0] - w[i][0]) || 1)));
+      vl = `<line x1="${xv.toFixed(1)}" x2="${xv.toFixed(1)}" y1="${T}" y2="${H - B}" stroke="#A63328" stroke-width="1.4" stroke-dasharray="4 4"/><text x="${(xv + 4).toFixed(1)}" y="${T + 9}" font-size="10" fill="#A63328" font-weight="600">${before ? "← " : ""}начало работы · ${esc(dShort(T0))}</text>`; }
+    return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" role="img" aria-label="Индекс прогресса по неделям">${grid}${vl}<path d="${path}" fill="none" stroke="#0F0F0F" stroke-width="2.4"/>${dots}<circle cx="${x(w.length - 1)}" cy="${y(last[1])}" r="4" fill="#A63328"/>${labels}<text x="${x(w.length - 1) + 8}" y="${y(last[1]) + 4}" font-size="11" font-weight="600" fill="#0F0F0F">${last[1]}</text></svg>`;
   }
   // three windows, as in the card (Nurassyl, 2026-11-23: «three graphs for the last 4 weeks, 8 weeks and all time»)
   function indexCharts(ix) {
     const last = ix.weeks[ix.weeks.length - 1][0], WEEK = 6048e5;
-    return [["Последние 4 недели", 4], ["Последние 8 недель", 8], ["Всё время", 0]].map(([title, n]) => {
-      const w = n ? ix.weeks.filter(([t]) => t >= last - n * WEEK) : ix.weeks;
+    return [...(ix.start ? [[`С начала работы (${dShort(ix.start)})`, -1]] : []), ["Последние 4 недели", 4], ["Последние 8 недель", 8], ["Всё время", 0]].map(([title, n]) => {
+      const k = n === -1 ? ix.weeks.reduce((a, [t], i) => (t <= ix.start + 864e5 ? i : a), 0) : 0;
+      const w = n === -1 ? ix.weeks.slice(k) : n ? ix.weeks.filter(([t]) => t >= last - n * WEEK) : ix.weeks;
       if (w.length < 2) return `<div class="rp-ixw"><h3>${title}</h3><p class="rp-hint">Пока одна точка: ${w.length ? w[0][1] : "—"}. Линия появится через неделю.</p></div>`;
       const d = w[w.length - 1][1] - w[0][1];
-      return `<div class="rp-ixw"><h3>${title} <span class="rp-hint">${d >= 0 ? "+" : "−"}${Math.abs(d)} с ${esc(dShort(w[0][0]))} · было ${w[0][1]}, сейчас ${w[w.length - 1][1]}</span></h3>${indexSVG(w)}</div>`;
+      return `<div class="rp-ixw"><h3>${title} <span class="rp-hint">${d >= 0 ? "+" : "−"}${Math.abs(d)} с ${esc(dShort(w[0][0]))} · было ${w[0][1]}, сейчас ${w[w.length - 1][1]}</span></h3>${indexSVG(w, ix.start)}</div>`;
     }).join("");
   }
   function indexHTML(ix) {
@@ -105,6 +110,8 @@ window.REPORT = (() => {
       out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(a)} в начале, ${P(b)} в последних работах (${dd >= 0 ? "+" : "−"}${Math.abs(dd)} п.).`); }
     else if (pts.length) out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(mean(pts.map((r) => r.pct)))}.`);
     if (on.index && d.index && !d.index.thin) { const dd = d.index.now - d.index.first;
+      if (d.index.start) { const k = d.index.weeks.reduce((a, [t], i) => (t <= d.index.start + 864e5 ? i : a), 0), b = d.index.weeks[k];
+        out.push(`<b>С начала работы</b> (${esc(dShort(d.index.start))}): индекс ${b[1]} → ${d.index.now}${k > 0 || b[0] <= d.index.start + 864e5 ? "" : " (точка отсчёта: первая неделя с достаточным числом ответов)"}.`); }
       out.push(`<b>Индекс прогресса.</b> ${d.index.now} из 100${d.index.weeks.length > 1 ? `, ${dd >= 0 ? "+" : "−"}${Math.abs(dd)} с ${esc(dShort(d.index.from))}` : ""} (внутренняя мера nurzycom, не балл SAT).`); }
     if (on.pred && d.pred && d.pred.est && Object.keys(d.pred.est.sections).length) { const E = d.pred.est;
       out.push(`<b>Ориентир на SAT.</b> ${E.total ? rng(E.total) : Object.entries(E.sections).map(([k, x]) => `${NM[k]} ${rng(x)}`).join(", ")} по полным пробным тестам; это оценка, не официальный балл.`); }
