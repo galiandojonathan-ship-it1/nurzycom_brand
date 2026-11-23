@@ -23,10 +23,11 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await waitSt(/Всё прочитано/);
   ok(/Всё прочитано: нажмите «Отправить преподавателю»/.test(await st()) && !(await a.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("bb_share_")))), "pasting checks at once and sends nothing by itself");
   await a.click("#bb-go"); await waitSt(/Отправлено|Сохранено/);
-  ok(/Отправлено ✓/.test(await st()), "one click on «Отправить преподавателю» saves it on the account: " + (await st()));
+  ok(/Отправлено \d{1,2} [а-я]+ в \d{2}:\d{2} ✓/.test(await st()), "one click on «Отправить преподавателю» saves it on the account: " + (await st()));
   ok(/Уже отправлены преподавателю/.test(await a.textContent("#bb-sent")) && /SAT Practice Test 2/.test(await a.textContent("#bb-sent")) && /отправлено: 1/.test(await a.textContent("#bb-import summary")), "a visible list «Уже отправлены преподавателю» shows the test, and the heading counts it");
   await a.click("#bb-go"); await waitSt(/уже отправлен/);
-  ok(/уже отправлен/.test(await st()), "sending the same table again: «уже отправлен», no second record");
+  ok(/SAT Practice Test 2 уже отправлен \d{1,2} [а-я]+ в \d{2}:\d{2}/.test(await st()), "sending the same table again: «SAT Practice Test 2 уже отправлен <дата> в <время>», no second record: " + (await st()));
+  ok(/отправлен \d{1,2} [а-я]+ в \d{2}:\d{2}/.test(await a.textContent("#bb-sent")), "the list of sent tests shows the time of sending");
   await a.reload(); await a.waitForSelector("#bb-import:not([hidden])");
   ok(/SAT Practice Test 2/.test(await a.textContent("#bb-sent")), "after a reload the list still shows what was sent");
   await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-go"); await waitSt(/уже отправлен/);
@@ -86,7 +87,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.waitForTimeout(1500);
   await a.evaluate(() => SITE.syncNow()); await a.reload(); await a.waitForSelector("#bb-import:not([hidden])");
   await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-go");
-  await a.waitForFunction(() => /Отправлено ✓/.test(document.getElementById("bb-status").textContent), null, { timeout: 15000 });
+  await a.waitForFunction(() => /Отправлено .* ✓/.test(document.getElementById("bb-status").textContent), null, { timeout: 15000 });
   ok(true, "a removed attempt can be sent again (the teacher may change their mind)");
   await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
   await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);

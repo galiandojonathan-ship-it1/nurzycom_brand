@@ -17,6 +17,7 @@ window.BBSHARE = (() => {
     try { const d = JSON.parse(get(`mk_done_${name}_${p[0]}`) || "null"), a = d && d.ans && d.ans[`${p[1]}.${p[2]}`] && d.ans[`${p[1]}.${p[2]}`][p[3]];
       return a == null ? null : (keys || []).some((k) => String(k).toUpperCase() === String(a).toUpperCase()); } catch (e) { return null; }
   }
+  const dayTime = (t) => { const d = new Date(t); return `${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`; };
   const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   function fromCopy(B) {
     return Object.entries(B || {}).filter(([k, r]) => k.indexOf("bb_share_") === 0 && r && r.v != null)
@@ -26,7 +27,7 @@ window.BBSHARE = (() => {
   function html(shares, o = {}) {
     if (!shares.length) return o.empty ? `<p class="hint">${esc(o.empty)}</p>` : "";
     return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
-        <small>${Object.entries(d.sections).map(([s, x]) => `${SEC[s]} ${x.tot[0] + x.tot[1]}/${x.n}`).join(" · ")} · отправлено учеником${d.taken ? ` ${esc(day(d.at))}` : ""}</small>
+        <small>${Object.entries(d.sections).map(([s, x]) => `${SEC[s]} ${x.tot[0] + x.tot[1]}/${x.n}`).join(" · ")} · отправлено учеником ${esc(dayTime(d.at))}</small>
         ${d.resent ? `<span class="bbs-resent">отправлен снова после удаления${d.removedAt ? ` ${esc(day(d.removedAt))}` : ""}</span>` : ""}
         ${o.del ? `<button class="chip" type="button" data-bbdel="${esc(d.key)}">Убрать</button>` : ""}</summary>
       ${Object.entries(d.sections).map(([s, x]) => {
