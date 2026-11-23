@@ -7,6 +7,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
   const D = { csv: "", aliases: {}, lessons: [], sets: [], texts: [], mocks: null, bundles: {}, t: {}, rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
+  let ACCT = null;   // account ids by form student key (accountsByName)
   const DAY = 864e5;
 
   // CSV reading, dates and student names are shared with the cabinet (formkit.js)
@@ -41,6 +42,7 @@
     D.rows = rows; D.label = label;
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
+    ACCT = null;   // account ↔ student matching depends on the student list (bare first names)
     D.students = Object.values(by).map((s) => Object.assign(s, { name: usual(s.rows), last: s.rows[s.rows.length - 1].ts })).sort((a, b) => a.name.localeCompare(b.name, "ru"));
     $("dash").classList.remove("hidden"); $("src-msg").textContent = ""; sources(false);
     render();
@@ -428,10 +430,17 @@
     return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
   }
   // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
-  let ACCT = null;
   function accountsByName() {
     if (!ACCT) ACCT = (async () => { const m = new Map(), r = await SITE.api("admin/users"); if (!r.ok) return m;
-      for (const u of r.data.users || []) { const nm = await SITE.nameOf(u.n).catch(() => null), k = nm && nm.name && window.FORMKIT ? FORMKIT.key(nm.name) : ""; if (k) { if (!m.has(k)) m.set(k, []); m.get(k).push(u.id); } }
+      const bare = [];
+      for (const u of r.data.users || []) { const nm = await SITE.nameOf(u.n).catch(() => null), k = nm && nm.name && window.FORMKIT ? FORMKIT.key(nm.name) : "";
+        if (!k) continue; if (k.endsWith("|")) bare.push([k, u.id]); if (!m.has(k)) m.set(k, []); m.get(k).push(u.id); }
+      // an account named with a first name only («Sher») belongs to the one form student whose first name matches («Sher Zh»),
+      // the rule the form already uses for spellings (2026-11-23: Sher's 20 Bluebook tests were on his account but not in his card)
+      const keys = (D.students || []).map((x) => x.key);
+      for (const [k, id] of bare) { const f = k.slice(0, -1); if (f.length < 3) continue;
+        const hit = keys.filter((g) => g !== k && !g.startsWith("!") && (g.split("|")[0] === f || (g.split("|")[0].length >= 3 && (g.startsWith(f) || f.startsWith(g.split("|")[0])))));
+        if (hit.length === 1) { if (!m.has(hit[0])) m.set(hit[0], []); if (!m.get(hit[0]).includes(id)) m.get(hit[0]).push(id); } }
       return m; })().catch(() => { ACCT = null; return new Map(); });
     return ACCT;
   }
