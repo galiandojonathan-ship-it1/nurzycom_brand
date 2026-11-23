@@ -1087,3 +1087,9 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .gp .gp-grow tr.gp-thin td { color: #77736D; }
 .gp .gp-hmap td.gp-hm { text-align: center; color: #fff; font-size: 12px; min-width: 34px; }
 .gp .gp-hmap td.gp-hm[style*="rgba(15,15,15,0)"] { color: transparent; border: 1px solid #ECE9E2; }
+
+/* «Персональные ДЗ · Gemini» (hwplan.js) */
+.hwp { margin-top: 18px; } .hwp-ctl { flex-wrap: wrap; gap: 10px; align-items: end; }
+.hwp-t { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; } .hwp-t th, .hwp-t td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid #D9D5CD; }
+.hwp-st { font-size: 13px; color: #5E5A54; } .hwp-st.ok { color: #1f6b3a; } .hwp-st.bad { color: #A63328; }
+@media (max-width: 700px) { .hwp-t thead { display: none; } .hwp-t tr, .hwp-t td { display: block; } .hwp-t td { border: 0; padding: 4px 0; } .hwp-t tr { border-bottom: 1px solid #D9D5CD; padding: 8px 0; } }

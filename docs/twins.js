@@ -21,7 +21,7 @@ window.TWINS = (() => {
   function payloadOf(m) {
     const it = m.item || {}, mc = it.t !== "spr" && Array.isArray(it.opts) && it.opts.length === 4;
     const key = mc ? it.ans : [].concat(it.acc || it.ans || "")[0];
-    const out = { sec: m.sec, skill: m.sk || it.sk || "", level: m.d || it.d || "M", chosen: /^[A-D]$/.test(m.chosen || "") ? m.chosen : "", key: String(key || "") };
+    const out = { sec: m.sec, skill: m.sk || it.sk || "", level: m.d || it.d || "M", chosen: /^[A-D]$/.test(m.chosen || "") ? m.chosen : "", key: String(key || "").split(/\s+или\s+|\s+or\s+|;/)[0].trim().slice(0, 24) };   // typed keys list several forms; the server takes one (≤ 24)
     if (m.focus) out.focus = m.focus; if (m.trapKind) out.trapKind = m.trapKind;
     if (it.own === true) {
       out.own = true;
