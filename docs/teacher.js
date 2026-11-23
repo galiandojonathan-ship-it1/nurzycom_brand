@@ -280,6 +280,14 @@
     return { obs, tags };
   }
   const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"]];
+  async function progData(s) {
+    if (!window.PROGRESS) return null;
+    if (D.prog && D.prog.key === s.key) return D.prog.res;
+    const TAGS = await progTags(), tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
+    const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); Object.assign(tags, extra.tags);
+    let sel = {}; try { sel = JSON.parse(localStorage.getItem("pg_src_" + s.key) || "{}"); } catch (e) { sel = {}; }
+    return PROGRESS.compute([...progObs(s, TAGS), ...extra.obs].filter((o) => sel[o.src] !== false), tags);
+  }
   async function progMount(s) {
     const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
@@ -344,7 +352,15 @@
     }
     const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
     const pred = D.pred && D.pred.key === s.key && D.pred.est ? D.pred : await predData(s).catch(() => null);
-    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
+    // «Индекс прогресса» (Nurassyl, 2026-11-23: «всегда добавляй в PDF отчёт индекс прогресса студента»): the weekly index with
+    // its five parts, the same numbers as the card (same source switches)
+    let index = null;
+    try { const res = await progData(s), S = res ? res.snaps : [], from = S.findIndex((x) => x.nAns >= PROGRESS.MIN_IX && x.index != null);
+      if (from >= 0) { const W = S.slice(from).filter((x) => x.index != null), last = W[W.length - 1];
+        index = { now: last.index, first: W[0].index, from: W[0].t, at: last.t, nAns: last.nAns, weeks: W.map((x) => [x.t, x.index]), parts: last.parts || {}, parts0: W[0].parts || {} }; }
+      else index = { thin: true, nAns: S.length ? S[S.length - 1].nAns || 0 : 0, need: PROGRESS.MIN_IX };
+    } catch (e) { index = { thin: true, nAns: 0, need: (window.PROGRESS && PROGRESS.MIN_IX) || 30 }; }
+    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
   }
   // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
   let ACCT = null;
