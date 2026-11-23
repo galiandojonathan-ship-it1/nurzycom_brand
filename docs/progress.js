@@ -27,6 +27,21 @@
       [15, ["psda_ratio", "psda_pct", "psda_stats1", "psda_stats2", "psda_prob", "psda_infer"]],
       [15, ["geo_areavol", "geo_lines", "geo_trig", "geo_circle"]]],
   };
+  // College Board skill of each subtopic (the domain chart draws skills, not question types)
+  const CB = {
+    "Words in Context": ["wic_precise", "wic_meaning"], "Text Structure and Purpose": ["ts_purpose", "ts_function", "ts_structure"], "Cross-Text Connections": ["ctc"],
+    "Central Ideas and Details": ["ci_main", "ci_detail"], "Command of Evidence": ["coe_text", "coe_quant"], "Inferences": ["inf_complete"],
+    "Boundaries": ["b_splice", "b_fanboys", "b_semicolon", "b_colon_dash", "b_nonessential", "b_no_break", "b_intro", "b_other"],
+    "Form, Structure, and Sense": ["f_sv_agree", "f_pronoun", "f_tense", "f_verb_form", "f_modifier", "f_possessive", "f_noun_number"],
+    "Transitions": ["t_contrast", "t_concession", "t_cause", "t_addition", "t_sequence", "t_restate"], "Rhetorical Synthesis": ["rs_goal"],
+    "Linear equations in one variable": ["alg_lin1"], "Linear functions": ["alg_linfunc"], "Linear equations in two variables": ["alg_lin2"],
+    "Systems of two linear equations in two variables": ["alg_system"], "Linear inequalities in one or two variables": ["alg_ineq"],
+    "Equivalent expressions": ["adv_equiv"], "Nonlinear equations in one variable and systems of equations in two variables": ["adv_quad", "adv_nonlin"],
+    "Nonlinear functions": ["adv_exp", "adv_func"], "Ratios, rates, proportional relationships, and units": ["psda_ratio"], "Percentages": ["psda_pct"],
+    "One-variable data: Distributions and measures of center and spread": ["psda_stats1"], "Two-variable data: Models and scatterplots": ["psda_stats2"],
+    "Probability and conditional probability": ["psda_prob"], "Inference from sample statistics and margin of error": ["psda_infer"],
+    "Area and volume": ["geo_areavol"], "Lines, angles, and triangles": ["geo_lines"], "Right triangles and trigonometry": ["geo_trig"], "Circles": ["geo_circle"] };
+  const SKILL_OF = {}; for (const [sk, list] of Object.entries(CB)) list.forEach((k) => (SKILL_OF[k] = sk));
   // within a domain, a subtopic weighs by how often it appears in the tagged question bank (+1 so a rare one still counts)
   const SEC_OF = {}; for (const sec in DOMAINS) for (const [, list] of DOMAINS[sec]) list.forEach((k) => (SEC_OF[k] = sec));
   function weights(freq) {
@@ -132,10 +147,10 @@
       grow(A, o.t); update(A, o.x, b, g, w, pk && S[pk] ? S[pk].th : 0);   // the section level is learned net of the subtopic's own offset
       if (tag) {
         tagged++;
-        [[tag.p, 1], ...(tag.s || []).map((k) => [k, 0.5])].forEach(([k, alpha]) => {
+        [...(tag.p ? [[tag.p, 1]] : []), ...(tag.s || []).map((k) => [k, tag.sw ?? 0.5])].forEach(([k, alpha]) => {   // sw: share for evidence spread over a skill
           if (!OMEGA[k]) return;
           if (!S[k]) S[k] = { th: 0, v: VD, cap: VD, q: TAUD, t: o.t, n: 0, np: 0, first: o.t, hist: [] };   // offset from the section level, prior 0
-          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha, base); S[k].n += alpha === 1 ? 1 : 0; if (alpha === 1 && o.ctx !== "mock") S[k].np++;
+          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha, base); S[k].n += alpha === 1 ? 1 : 0; S[k].m = (S[k].m || 0) + alpha; if (alpha === 1 && o.ctx !== "mock") S[k].np++;
         });
         if (tag.p) lastTag[tag.p] = o.t;
         for (const [L, trap] of Object.entries(tag.t || {})) {
@@ -151,7 +166,7 @@
     snaps.push(state(now));
     finish();
     // subtopic rows: now vs the start of the shown period, answer counts
-    const subs = Object.keys(OMEGA).filter((k) => secs.includes(SEC_OF[k])).map((k) => ({ k, sec: SEC_OF[k], n: S[k] ? S[k].n : 0, series: snaps.map((s) => s.sub[k] ?? null), sd: snaps.map((s) => s.sd[k] ?? null), first: snaps.findIndex((s) => (s.subN[k] || 0) >= 3 && s.sub[k] != null) }));   // first: first snapshot with 3+ answers
+    const subs = Object.keys(OMEGA).filter((k) => secs.includes(SEC_OF[k])).map((k) => ({ k, sec: SEC_OF[k], n: S[k] ? S[k].n : 0, m: S[k] ? S[k].m || 0 : 0, series: snaps.map((s) => s.sub[k] ?? null), sd: snaps.map((s) => s.sd[k] ?? null), first: snaps.findIndex((s) => (s.subN[k] || 0) >= 3 && s.sub[k] != null) }));   // first: first snapshot with 3+ answers
     const traps = Object.entries(trapOpp).map(([trap, r]) => {
       const L = r.list, h = Math.max(1, Math.floor(L.length * 0.4));
       const rate = (a) => (a.reduce((x, y) => x + y.pick, 0) + 0.5) / (a.length + 2);
@@ -178,7 +193,26 @@
     return res.subs.filter((x) => x.n >= minN).map((x) => { const c = change(res, x, i0, i1); return c && Math.abs(c.z) >= zmin ? { k: x.k, v: (W.M / used) * 100 * OM[x.k] * c.ch / den, n: x.n, z: c.z } : null; })
       .filter(Boolean).sort((p, q) => Math.abs(q.v) - Math.abs(p.v));
   }
+  /* the domain chart: the domain as a whole (thick line) and its College Board skills (thin lines), from the weekly snapshots.
+     Only skills with answers of their own are drawn: an unanswered skill would only repeat the section level. */
+  function domainSeries(res, sec, di) {
+    const list = (DOMAINS[sec] || [])[di]; if (!list) return null;
+    const OM = res.omega, n = {}; res.subs.forEach((x) => (n[x.k] = x.m || x.n));   // m: answers incl. evidence spread over a skill
+    const avg = (s, ks) => { let a = 0, w = 0; for (const k of ks) { const v = s.sub[k]; if (v == null) continue; a += OM[k] * v; w += OM[k]; } return w ? a / w : null; };
+    const dom = res.snaps.map((s) => avg(s, list[1]));
+    const skills = Object.entries(CB).map(([sk, ks]) => [sk, ks.filter((k) => list[1].includes(k))]).filter(([, ks]) => ks.length)
+      .map(([sk, ks]) => ({ skill: sk, n: ks.reduce((a, k) => a + (n[k] || 0), 0), series: res.snaps.map((s) => avg(s, ks.filter((k) => (n[k] || 0) > 0))) }))
+      .filter((x) => x.n > 0);
+    return { dom, skills };
+  }
+  // a tag from a College Board skill name alone (a Bluebook question not in the course): one subtopic → primary, several → evidence spread evenly
+  const ALIAS = { "evaluating statistical claims: observational studies and experiments": "psda_infer", "text, structure, and purpose": "ts_purpose" };
+  function tagFromSkill(name) {
+    const key = String(name || "").toLowerCase().trim(), hit = Object.entries(CB).find(([sk]) => sk.toLowerCase() === key);
+    const ks = hit ? hit[1] : ALIAS[key] ? [ALIAS[key]] : [];
+    return !ks.length ? null : ks.length === 1 ? { p: ks[0], s: [], t: {} } : { p: null, s: ks.slice(), sw: 1 / ks.length, t: {} };
+  }
   function bankFreq(tags) { const f = {}; for (const id in tags) { const k = tags[id] && tags[id].p; if (k) f[k] = (f[k] || 0) + 1; } return f; }
-  const api = { compute, drivers, change, ZMIN, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
+  const api = { compute, drivers, change, ZMIN, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
   if (typeof module !== "undefined") module.exports = api; else root.PROGRESS = api;
 })(typeof window !== "undefined" ? window : globalThis);

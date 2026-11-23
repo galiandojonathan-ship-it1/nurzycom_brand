@@ -249,6 +249,26 @@ and bank frequency inside a domain. Index = 0.60 mastery + 0.15 transfer (mock r
 times outside mocks) + 0.10 retention (subtopic seen again after 7+ days) + 0.10 pace (timed parts against SAT time, keeping accuracy)
 + 0.05 correction (second try after a miss, rescaled above chance). The weight of a missing part is shared among the others.
 Drivers count subtopics with n ≥ 3.
+All sources (2026-11-23, Nurassyl: «включи эти пробные тесты в анализ… учти повторения, дату… позволь менять… какие
+элементы задействовать… домен… activity on lessons»): `progMount` combines four sources, each observation carrying `src`:
+- homework (`hw`: lesson parts, X sets) and site practice tests (`mock`) from the form. An abandoned practice-test section (more
+  than half skipped) is left out.
+- Shared Bluebook attempts (`bb`, `progExtra`): every position of the recognised route from the catalog, dated by the day taken,
+  weight of a mock. A question also in the course takes its course id (`items[id].c`), so a later meeting counts as a repeat
+  and uses its subtopic. Otherwise `PROGRESS.tagFromSkill` spreads the evidence over the College Board skill's subtopics
+  (`tag.sw`, counted in `subs[].m`).
+- Live-lesson rounds (`live`): `liveround.js` keeps each question's set id, skill and level (`lr_meta_<round>`, host only). At the
+  end `livepractice.js` `saveRound` writes `lv_r_<round>` to the lesson account (synced, at most once a minute) with each
+  student's answers. `liveRecords`/`liveOf` read them and match students by name; weight of a learning part.
+Chips «Домашние / Пробные на сайте / Bluebook / Уроки» (with counts) choose the sources. They are remembered per student
+(`pg_src_<key>`); at least one stays on, and they also show when the choice is too thin for an index. The period defaults to
+«Всё время» when the last answers are older than 8 weeks. «Домен» (`PROGRESS.domainSeries`): domain chips; a thick line for the
+domain (omega-weighted subtopic mastery) and thin lines for its College Board skills (`PROGRESS.CB`, skills with answers only).
+The legend is sorted weakest first, with «хромает» below the domain by 5+ points. End labels never overlap. «Уроки · живая
+практика» (`#st-live`) lists the rounds a student answered. On Nurassyl's own card his site tests were abandoned runs, so they
+drop out by the rule. With homework off, his two real Bluebook attempts give index 67 with domains and skills. Tests:
+`t_progsrc.js desktop|phone`, `t_live.js` (record saved).
+
 Corrected the same day after Nurassyl asked whether a first-day point was real (Beksultan, 1 Nov: 16 answers drew curves of
 61/32/12%, almost all from the prior):
 - a section counts from 20 first-try answers, a difficulty level from 5, the index from 30; weeks below that are not drawn;

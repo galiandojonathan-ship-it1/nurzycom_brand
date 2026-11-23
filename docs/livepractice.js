@@ -65,7 +65,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         return { prompt: passage + "<p>" + rich(question.s) + "</p>", passageLength: passage.length,
           options: question.o.map((option) => rich(option)), type: "mc", accepted: [answer] };
       }));
-      return { title: set.title, questions };
+      return { title: set.title, ref: set.id, questions };
     });
     return;
   }
@@ -200,11 +200,24 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return table;
   }
 
+  // the lesson account keeps a record of every round for the teacher's analysis (2026-11-23, Nurassyl: «activity on lessons»):
+  // synced key lv_r_<round> with the questions' course ids, skills and levels (lr_meta_ from liveround.js) and each student's answers
+  function saveRound() {
+    if (!credentials?.host || !state.students?.length || state.started == null) return;
+    let meta = null; try { meta = JSON.parse(localStorage.getItem("lr_meta_" + round) || "null"); } catch { /* none */ }
+    const by = new Map(state.students.map((student) => [student.id, { name: student.display_name, ans: {} }]));
+    for (const answer of state.answers) { const st = by.get(answer.participant_id); if (st) st.ans[answer.question_number] = [String(answer.answer).slice(0, 64), answer.correct ? 1 : 0]; }
+    const record = { v: 1, round, at: state.started, title: (meta && meta.title) || "Живая практика",
+      items: (meta && meta.items) || Array.from({ length: state.total || 0 }, () => ({ sec: (meta && meta.sec) || "rw" })), students: [...by.values()] };
+    record.items.forEach((it) => { if (!it.sec) it.sec = (meta && meta.sec) || "rw"; });
+    try { localStorage.setItem("lv_r_" + round, JSON.stringify(record)); } catch { /* storage full */ }
+  }
   function updateScoreboard(results) {
     const signature = JSON.stringify([hideCorrect, state.students, state.answers]);
     if (results.dataset.signature !== signature) {
       results.replaceChildren(scoreboard());
       results.dataset.signature = signature;
+      saveRound();
     }
   }
 

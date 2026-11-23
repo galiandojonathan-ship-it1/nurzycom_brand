@@ -176,7 +176,7 @@
       ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
     html += kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
-    html += '<div id="st-prog"></div><div id="st-bb"></div><div id="st-rv"></div><div id="st-tw"></div>';
+    html += '<div id="st-prog"></div><div id="st-bb"></div><div id="st-live"></div><div id="st-rv"></div><div id="st-tw"></div>';
     html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
     html += `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
@@ -205,12 +205,14 @@
       const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b ? r.sec / r.b : 0;
       let base;
       if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
-        base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock" }; };
-      } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final" });
+        base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
+      } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final", src: "hw" });
       else if ("VAM".includes(r.kind)) { const P = partOf(r.lesson, r.pid); if (!P) continue;
         const ctx = P.mode === "test" ? "final" : /Домашн|Дополн/.test(P.title) ? "hw" : "learn", sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
-        base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx });
+        base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx, src: "hw" });
       } else continue;
+      // an abandoned practice-test section (more than half the questions skipped) shows no skill: left out of the analysis
+      if (r.kind === "P" && r.answers.length && r.answers.filter((a) => !a.tries.length).length > r.answers.length / 2) continue;
       for (const a of r.answers) {
         const b = base(a), tag = TAGS[b.id], blank = !a.tries.length;
         out.push({ ...b, t: +r.ts, x: blank || wrong.has(String(a.n)) ? 0 : 1, blank, level: tag ? tag.d : "M", type: tag ? tag.ty : "mc", part: `${r.lesson}|${r.pid}|${+r.ts}`,
@@ -219,13 +221,76 @@
     }
     return out;
   }
+  /* Bluebook practice tests the student shared and practice on live lessons, as observations for the progress engine (2026-11-23,
+     Nurassyl: «включи эти пробные тесты в анализ… учти повторения, дату… activity on lessons»).
+     Bluebook: every position of the recognised route (from the catalog), dated by the day the test was taken, weight of a mock.
+     A question that is also in the course takes the course id, so the engine counts a later meeting as a repeat and uses its
+     subtopic; otherwise its College Board skill spreads the evidence over that skill's subtopics. Live rounds: the round records
+     the lesson account saves (lv_r_), matched to this student by name, weight of a learning part. */
+  let LIVE = null;
+  function liveRecords() {
+    if (!LIVE) LIVE = (async () => { const out = [];
+      for (const id of await lessonIds()) { const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
+        const B = await SITE.unsealBlob(g.data.data).catch(() => ({}));
+        for (const [k, r] of Object.entries(B)) if (k.indexOf("lv_r_") === 0 && r && r.v != null) { try { out.push(JSON.parse(r.v)); } catch (e) { /* broken */ } } }
+      return out.sort((a, b) => (a.at || 0) - (b.at || 0)); })().catch(() => { LIVE = null; return []; });
+    return LIVE;
+  }
+  async function liveOf(s) {
+    const key = (n) => (window.FORMKIT ? FORMKIT.key(n) : String(n).toLowerCase());
+    return (await liveRecords()).map((rec) => ({ rec, me: (rec.students || []).find((st) => key(st.name) === s.key) })).filter((x) => x.me);
+  }
+  async function progExtra(s, TAGS) {
+    const obs = [], tags = {};
+    if (!SITE.adminKey()) return { obs, tags };
+    const [sh, cat, lv] = await Promise.all([window.BBSHARE ? bbShares(s).catch(() => []) : [], SITE.json("bluebook").catch(() => null), liveOf(s).catch(() => [])]);
+    if (cat) for (const d of sh) for (const [sec, x] of Object.entries(d.sections)) {
+      const T = cat.tests[x.test], lists = T && T[sec] ? [T[sec].m1, T[sec][x.route]] : null; if (!lists || !lists[0] || !lists[1]) continue;
+      const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m]));
+      lists.forEach((ids, mi) => ids.forEach((cid, qi) => {
+        const it = cat.items[cid] || {}, m = miss.get(`${mi + 1}.${qi + 1}`);
+        let id = (it.c || []).find((r) => TAGS[r]);
+        if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
+        obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
+          ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
+      }));
+    }
+    for (const { rec, me } of lv) (rec.items || []).forEach((it, i) => {
+      const a = (me.ans || {})[i + 1]; if (!a) return;
+      const id = it.ref && TAGS[it.ref] ? it.ref : `LV.${rec.round}.${i + 1}`;
+      if (!TAGS[id] && it.sk && !tags[id]) { const tg = PROGRESS.tagFromSkill(it.sk); if (tg) tags[id] = tg; }
+      obs.push({ id, t: rec.at, x: a[1] ? 1 : 0, blank: false, sec: it.sec || "rw", level: it.d || "M", type: it.type === "mc" ? "mc" : "spr",
+        ctx: "learn", src: "live", part: `live|${rec.round}`, attempt: 1, chosen: /^[A-D]$/.test(a[0] || "") ? a[0] : "", second: null, secs: 0 });
+    });
+    return { obs, tags };
+  }
+  const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"]];
   async function progMount(s) {
     const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
     const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
-    const res = PROGRESS.compute(progObs(s, TAGS), tags); D.prog = { key: s.key, res };
-    PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); } });   // «Похожие» on a subtopic or a trap
+    const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
+    Object.assign(tags, extra.tags);
+    const all = [...progObs(s, TAGS), ...extra.obs], counts = {}; all.forEach((o) => (counts[o.src] = (counts[o.src] || 0) + 1));
+    // which sources count, remembered per student (Nurassyl's own account: homework off, it was only testing the site)
+    const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
+    const draw = () => {
+      const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
+      PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); },   // «Похожие» on a subtopic or a trap
+        sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
+          set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); } } });
+    };
+    draw();
+    liveMount(s).catch(() => { /* no lesson account */ });
+  }
+  // «Уроки · живая практика»: the rounds this student answered on lessons
+  async function liveMount(s) {
+    const box = $("st-live"); if (!box || !SITE.adminKey()) return;
+    const lv = await liveOf(s); if ($("st-live") !== box || D.student !== s.key || !lv.length) return;
+    const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+    box.innerHTML = `<div class="card"><span class="label">Уроки · живая практика</span><p class="hint">Раунды на уроках, где ученик отвечал со своего устройства (сохраняет аккаунт урока после каждого раунда).</p>
+      ${table(["Дата", "Раунд", "Отвечено", "Верно"], lv.slice().reverse().map(({ rec, me }) => { const a = Object.values(me.ans || {}); return { cells: [esc(day(rec.at)), esc(rec.title || "Раунд"), `${a.length}/${(rec.items || []).length}`, `${a.filter((x) => x[1]).length}`] }; }), { num: [2, 3] })}</div>`;
   }
   // «PDF-отчёт»: what the report shows for one student (report.js); only the student's own submissions, no internal index
   async function reportData(s) {

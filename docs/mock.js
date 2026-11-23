@@ -81,7 +81,7 @@
       if (!T.mock) throw Error("Выберите пробный тест.");
       const section = fmt() === "math" ? "math" : "rw";
       const data = await bundle(section);
-      return { title: T.mock.title + " · " + SEC[section] + " · Модуль 1", questions: LiveRound.workbook(data.mods.m1) };
+      return { title: T.mock.title + " · " + SEC[section] + " · Модуль 1", ref: `${T.mock.id}.${section}.m1`, sec: section, math: section === "math", questions: LiveRound.workbook(data.mods.m1) };
     });
     $("go").disabled = !($("student").value.trim().length >= 2 && T.mock);
   }
@@ -169,7 +169,7 @@
     $("wrap").classList.toggle("one", sec === "math");
     if (window.BBTools) { if (!$("t-tools").childElementCount) BBTools.mount($("t-tools")); BBTools.show(sec === "math"); }
     LiveRound.mount("next", () => ({
-      title: T.mock.title + " · " + SEC[curSec()] + " · " + T.st.mod,
+      title: T.mock.title + " · " + SEC[curSec()] + " · " + T.st.mod, ref: `${T.mock.id}.${curSec()}.${T.st.mod}`, sec: curSec(), math: curSec() === "math",
       questions: LiveRound.workbook(items())
     }));
     show("m-test"); render();
