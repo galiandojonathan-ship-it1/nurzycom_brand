@@ -220,5 +220,5 @@ window.PVIEW = (() => {
     };
     draw();
   }
-  return { render, NAME, TRAP };
+  return { render, NAME, TRAP, DOMN, line, spark, day };   // line/spark/day also draw the group block (teacher.js)
 })();

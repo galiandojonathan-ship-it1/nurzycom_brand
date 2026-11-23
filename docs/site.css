@@ -1063,3 +1063,11 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .live-practice .live-qgrid button.done { background: #ECE9E2; }
 .live-practice .live-qgrid button[aria-current=true] { background: #0F0F0F; color: #fff; border-color: #0F0F0F; }
 .live-practice .live-qgrid button[aria-current=true] small { color: #ddd; }
+
+/* «Прогресс группы» (2026-11-23) */
+.gp .gp-who { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.gp .gp-st small { opacity: .7; margin-left: 4px; }
+.gp .gp-st.out { opacity: .5; text-decoration: line-through; }
+.gp .gp-top { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; margin: 10px 0; }
+.gp .gp-sub tr.gp-weak td:first-child { color: #A63328; font-weight: 600; }
+@media (max-width: 700px) { .gp .gp-top { grid-template-columns: 1fr; } }

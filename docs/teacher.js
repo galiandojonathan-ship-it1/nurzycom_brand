@@ -723,6 +723,83 @@
     return Object.values(Q);
   }
   const trapOf = (q) => { const e = Object.entries(q.picks).filter(([o]) => /^[A-D]$/.test(o)).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 && e[1] / q.wrong >= 0.6 ? e : null; };
+  // «Прогресс группы» (2026-11-23, Nurassyl: «полный анализ всей группы… выделяй outliers, их не включай, например, Шахсанам.
+  // Бери общую массу»): the index model of every member (same sources as their card), outliers left out by a robust rule
+  // (median ± 2.5 robust deviations of the index; too few answers), each switchable by hand; then the bulk: index by week
+  // (median and the middle half), subtopics (median mastery, how many are weak, change over 4 weeks), levels, traps.
+  const gmed = (a) => { const v = a.filter((x) => x != null && !isNaN(x)).sort((x, y) => x - y); if (!v.length) return null; const m = v.length / 2; return v.length % 2 ? v[m | 0] : (v[m - 1] + v[m]) / 2; };
+  const quant = (a, q) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); if (!v.length) return null; const i = (v.length - 1) * q, lo = Math.floor(i); return v[lo] + (v[Math.ceil(i)] - v[lo]) * (i - lo); };
+  async function gpMount(grp) {
+    const box = $("ga-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
+    const studs = D.students.filter((st) => !grp || grp.keys.has(st.key));
+    if (studs.length < 2) { box.innerHTML = ""; return; }
+    const gid = grp ? grp.id : "all", token = (D.gpTok = (D.gpTok || 0) + 1);
+    box.innerHTML = `<div class="card gp"><span class="label">Прогресс группы</span><p class="hint">Считаю индекс каждого ученика (${studs.length})…</p></div>`;
+    D.gpRes = D.gpRes || {};
+    const rows = [];
+    for (const st of studs) {
+      let res = D.gpRes[st.key]; if (!res) { res = await progData(st).catch(() => null); if (res) D.gpRes[st.key] = res; }
+      if (D.gpTok !== token || $("ga-prog") !== box) return;
+      const S = res ? res.snaps : [], last = S[S.length - 1];
+      rows.push({ st, res, idx: last && last.nAns >= PROGRESS.MIN_IX ? last.index : null, n: last ? last.nAns : 0 });
+    }
+    // outliers: a robust z from the median and the median absolute deviation of the index
+    const NOTST = (r) => (window.FORMKIT && r.st.key === FORMKIT.key(store("hw_student") || "")) || /^(claude|урок|urok|lesson|student|demo|тест|test)\b/i.test(r.st.name || "");
+    const vals = rows.filter((r) => r.idx != null && !NOTST(r)).map((r) => r.idx), med = gmed(vals), mad = gmed(vals.map((v) => Math.abs(v - med))) || 0;
+    // not students: the teacher's own account and service or test logins (they would pull the median)
+    const meKey = window.FORMKIT ? FORMKIT.key(store("hw_student") || "") : "", SERVICE = /^(claude|урок|urok|lesson|student|demo|тест|test)\b/i;
+    const auto = (r) => (r.st.key === meKey ? "ваш аккаунт" : SERVICE.test(r.st.name || "") ? "служебный или тестовый аккаунт" : r.idx == null ? `мало данных: ${r.n} ответов` : vals.length >= 4 && (mad > 0 ? Math.abs(0.6745 * (r.idx - med) / mad) > 2 : Math.abs(r.idx - med) > 20)
+      ? `индекс ${r.idx}: значительно ${r.idx > med ? "выше" : "ниже"} группы (медиана ${Math.round(med)})` : "");
+    let over = {}; try { over = JSON.parse(store("gp_ex_" + gid) || "{}"); } catch (e) { over = {}; }
+    rows.forEach((r) => { r.why = auto(r); r.out = over[r.st.key] != null ? !!over[r.st.key] : !!r.why; });
+    const inc = rows.filter((r) => !r.out && r.res), WEEK = 6048e5;
+    const draw = () => {
+      if (!inc.length) { box.innerHTML = `<div class="card gp"><span class="label">Прогресс группы</span><p class="hint">Нет учеников с данными для общего анализа.</p>${chipsHTML()}</div>`; wire(); return; }
+      // index by week on one calendar: each student's latest point at or before the week
+      const t1 = Math.max(...inc.map((r) => r.res.snaps[r.res.snaps.length - 1].t)), t0 = Math.min(...inc.map((r) => (r.res.snaps.find((x) => x.index != null && x.nAns >= PROGRESS.MIN_IX) || r.res.snaps[r.res.snaps.length - 1]).t));
+      const weeks = []; for (let t = t0; t <= t1 + 1; t += WEEK) weeks.push(t); if (weeks[weeks.length - 1] < t1) weeks.push(t1);
+      const at = (r, t) => { let v = null; for (const x of r.res.snaps) { if (x.t > t + 1) break; if (x.index != null && x.nAns >= PROGRESS.MIN_IX) v = x.index; } return v; };
+      const grid = weeks.map((t) => inc.map((r) => at(r, t)));
+      const mid = grid.map((v) => (v.filter((x) => x != null).length >= 2 ? gmed(v) : null)), q1 = grid.map((v) => (v.filter((x) => x != null).length >= 3 ? quant(v, 0.25) : null)), q3 = grid.map((v) => (v.filter((x) => x != null).length >= 3 ? quant(v, 0.75) : null));
+      // subtopics: median mastery now and 4 weeks ago, weak = under 45%
+      const subs = {}; inc.forEach((r) => { const n = r.res.snaps.length, back = Math.max(0, n - 5); r.res.subs.forEach((x) => { if (x.n < 3 || x.series[n - 1] == null) return;
+        const g = (subs[x.k] = subs[x.k] || { k: x.k, sec: x.sec, now: [], was: [], ans: 0 }); g.now.push(x.series[n - 1]); if (x.series[back] != null) g.was.push(x.series[back]); g.ans += x.n; }); });
+      const S = Object.values(subs).filter((g) => g.now.length >= 2).map((g) => ({ ...g, med: gmed(g.now), ch: g.was.length >= 2 ? gmed(g.now) - gmed(g.was) : null, weak: g.now.filter((v) => v < 0.45).length }))
+        .sort((a, b) => a.med - b.med);
+      // levels: median expected accuracy by level, per section
+      const lv = {}; inc.forEach((r) => { const L = r.res.snaps[r.res.snaps.length - 1].diff || {}; for (const sec in L) for (const d in L[sec]) ((lv[sec] = lv[sec] || {})[d] = (lv[sec][d] || [])).push(L[sec][d]); });
+      // traps: how often the bulk picks each kind of trap now
+      const tr = {}; inc.forEach((r) => (r.res.traps || []).forEach((x) => { (tr[x.trap] = tr[x.trap] || []).push(x.now); }));
+      const TR = Object.entries(tr).filter(([, v]) => v.length >= 2).map(([k, v]) => ({ k, med: gmed(v), n: v.length })).sort((a, b) => b.med - a.med).slice(0, 6);
+      const P = (v) => (v == null ? "—" : Math.round(v * 100) + "%"), NM = PVIEW.NAME || {}, TN = PVIEW.TRAP || {}, SEC = { rw: "Reading and Writing", math: "Math" }, LVN = { E: "Лёгкие", M: "Средние", H: "Трудные" };
+      const now = mid.filter((x) => x != null), first = now[0], lastI = now[now.length - 1];
+      box.innerHTML = `<div class="card gp"><span class="label">Прогресс группы · без выбросов</span>
+        <p class="hint">Общая масса группы: медиана учеников, которые учтены. Выбросы и ученики с малым числом ответов не входят; их можно включить или исключить вручную.</p>
+        ${chipsHTML()}
+        <div class="gp-top"><div><div class="pg-big">${lastI != null ? Math.round(lastI) : "—"}</div><div class="hint">медиана индекса · ${inc.length} ${pl(inc.length, "ученик", "ученика", "учеников")}${first != null && now.length > 1 ? ` · ${lastI - first >= 0 ? "+" : "−"}${Math.abs(Math.round(lastI - first))} с ${esc(PVIEW.day(weeks[mid.findIndex((x) => x != null)]))}` : ""}</div></div>
+          <div class="gp-chart"><b>Индекс группы по неделям</b><div id="gp-ix"></div><p class="hint">Чёрная линия — медиана, тонкие — границы средней половины группы.</p></div></div>
+        <h3>Подтемы: где проседает общая масса</h3>
+        <div class="tw"><table class="dt gp-sub"><thead><tr><th>Подтема</th><th>Раздел</th><th class="num">Медиана</th><th class="num">За 4 недели</th><th class="num">Слабо у</th><th class="num">Учеников</th></tr></thead><tbody>
+        ${S.map((g) => `<tr${g.med < 0.45 ? ' class="gp-weak"' : ""}><td>${esc(NM[g.k] || g.k)}</td><td>${g.sec === "rw" ? "RW" : "Math"}</td><td class="num"><b>${P(g.med)}</b></td><td class="num">${g.ch == null ? "—" : `${g.ch >= 0 ? "+" : "−"}${Math.abs(Math.round(g.ch * 100))}`}</td><td class="num">${g.weak} из ${g.now.length}</td><td class="num">${g.now.length}</td></tr>`).join("") || '<tr><td colspan="6" class="hint">Мало размеченных ответов.</td></tr>'}
+        </tbody></table></div>
+        <div class="pg-grid2"><section><h3>Сложность вопросов</h3>${Object.entries(lv).map(([sec, L]) => `<p><b>${SEC[sec]}</b>: ${["E", "M", "H"].filter((d) => L[d] && L[d].length >= 2).map((d) => `${LVN[d]} ${P(gmed(L[d]))}`).join(" · ") || "мало данных"}</p>`).join("") || '<p class="hint">Мало данных.</p>'}<p class="hint">Медиана ожидаемой доли верных ответов на каждом уровне.</p></section>
+          <section><h3>Общие ловушки</h3>${TR.length ? TR.map((x) => `<p>${esc(TN[x.k] || x.k)}: <b>${P(x.med)}</b> <span class="hint">· у ${x.n} учеников</span></p>`).join("") : '<p class="hint">Мало данных.</p>'}<p class="hint">Как часто ученики выбирают ловушку, когда она есть (медиана).</p></section></div></div>`;
+      PVIEW.line($("gp-ix"), { series: [{ v: q1, color: "#77736D", label: "25%", w: 1.2, nolabel: true, dash: true }, { v: q3, color: "#77736D", label: "75%", w: 1.2, nolabel: true, dash: true }, { v: mid, color: "#0F0F0F", label: "Медиана", w: 3 }], times: weeks, h: 200, dots: true });
+      wire();
+    };
+    function chipsHTML() {
+      return `<div class="gp-who">${rows.slice().sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1)).map((r) => `<button type="button" class="chip gp-st${r.out ? " out" : ""}" data-gp="${esc(r.st.key)}" aria-pressed="${!r.out}" title="${esc(r.why || "в общей массе")}">${esc(r.st.name)} <small>${r.idx ?? "—"}</small></button>`).join("")}</div>
+        ${rows.some((r) => r.out) ? `<p class="hint gp-outs">Не учтены: ${rows.filter((r) => r.out).map((r) => `${esc(r.st.name)} (${esc(r.why || "исключён вручную")})`).join("; ")}.</p>` : ""}`;
+    }
+    function wire() {
+      box.querySelectorAll("[data-gp]").forEach((b) => (b.onclick = () => {
+        const r = rows.find((x) => x.st.key === b.dataset.gp); if (!r) return;
+        r.out = !r.out; over[r.st.key] = r.out; try { store("gp_ex_" + gid, JSON.stringify(over)); } catch (e) { /* private mode */ }
+        inc.splice(0, inc.length, ...rows.filter((x) => !x.out && x.res)); draw();
+      }));
+    }
+    draw();
+  }
   async function groupView() {
     const box = $("v-group");
     box.innerHTML = '<h2>Анализ группы</h2><p class="hint">Загружаю группы из кабинета и считаю ответы…</p>';
@@ -751,7 +828,8 @@
       ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
     html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
       ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
-    if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); return; }
+    html += '<div id="ga-prog"></div>';
+    if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); gpMount(grp).catch(() => {}); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
     html += `<div id="ga-rv"></div><h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
     html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
@@ -773,6 +851,7 @@
     hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
+    gpMount(grp).catch(() => { const b = $("ga-prog"); if (b) b.innerHTML = ""; });
     rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, ranked, top, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
       note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") });
     gaBind(box);
