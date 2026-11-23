@@ -979,3 +979,5 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
   .rp-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .bbs-resent { font-size: 12px; color: #A63328; border: 1px solid #A63328; border-radius: 999px; padding: 1px 8px; }
+.bb-st { margin: 10px 0 6px; font-size: 15px; }
+.bb-st.ok { color: #1F5E2A; font-weight: 600; }

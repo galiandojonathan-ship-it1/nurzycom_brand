@@ -203,54 +203,73 @@
   }
   function clear() { revision++; last = null; result.replaceChildren(); status.textContent = initial; }
 
-  // the share block under a preview: explicit confirmation, one key per attempt, only with the student's own login
-  function shareBox() {
-    const box = el("div", null, "bb-share"); result.append(box);
-    const me = window.SITE && SITE.me ? SITE.me() : "";
-    if (!me || /^lesson(-|$)/.test(me)) { box.append(el("p", "Чтобы поделиться результатом с преподавателем, войдите на сайт под своим логином.", "hint")); return; }
-    const ask = el("button", "Поделиться с преподавателем", "btn"); ask.type = "button"; box.append(ask);
-    const note = el("p", "", "hint"); note.setAttribute("role", "status"); box.append(note);
-    ask.onclick = async () => {
-      ask.disabled = true; await SITE.syncNow().catch(() => false); ask.disabled = false;   // see the teacher's latest change (a removal) first
+  // «Отправить преподавателю» (2026-11-23, Nurassyl: «одним кликом… вставил — проверилось само — отправилось»): the button is the
+  // student's deliberate action; the note under it says what is sent. One key per attempt, only with the student's own login.
+  const go = document.getElementById("bb-go"), noteEl = document.getElementById("bb-note");
+  const canSend = () => { const me = window.SITE && SITE.me ? SITE.me() : ""; return !!me && !/^lesson(-|$)/.test(me); };
+  // «Уже отправлены преподавателю» (Nurassyl: «чтобы ученик не путался, какой пробный отправлял»): the shares on this account
+  // (synced keys bb_share_, removed ones skipped), newest first, also counted in the import heading
+  const sentBox = document.getElementById("bb-sent"), sumN = document.getElementById("bb-sum-n");
+  function renderSent() {
+    if (!sentBox) return;
+    const list = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf("bb_share_") !== 0) continue;
+      try { const d = JSON.parse(localStorage.getItem(k)); if (d && d.sections && !d.deleted) list.push(d); } catch (e) { /* not a share */ } }
+    list.sort((a, b) => (b.taken || b.at || 0) - (a.taken || a.at || 0));
+    const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    sumN.textContent = list.length ? `отправлено: ${list.length}` : "";
+    sentBox.hidden = !list.length; sentBox.replaceChildren();
+    if (!list.length) return;
+    sentBox.append(el("b", "Уже отправлены преподавателю"));
+    const ul = el("ul");
+    for (const d of list) { const name = Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "Пробник Bluebook";
+      const li = el("li", name); li.append(el("small", d.taken ? `пройден ${day(d.taken)}` : `отправлен ${day(d.at)}`)); ul.append(li); }
+    sentBox.append(ul);
+  }
+  async function send() {
+    const say = (t, cls) => { status.textContent = t; status.className = "bb-st" + (cls ? " " + cls : ""); };
+    go.disabled = true; say("Отправляю…");
+    try {
+      await SITE.syncNow().catch(() => false);   // see the teacher's latest change (a removal) first
       const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
       // a removed attempt (the teacher's mark) may be sent again (Nurassyl: «I may change my mind»); the teacher sees it was resent
       let removed = null;
       if (was) { let at = ""; try { const w = JSON.parse(was); if (w.deleted) removed = w.at || Date.now(); at = new Date(w.at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
-        if (!removed) { note.textContent = `Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`; return; } }
+        if (!removed) { say(`Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`, "ok"); return; } }
       if (removed) Object.assign(data, { resent: 1, removedAt: removed });
-      ask.hidden = true;
-      const c = el("div", null, "bb-confirm");
-      c.append(el("p", "Преподаватель увидит: какой это тест и модули, номера ошибок и пропусков, ваш выбор и правильный ответ, навыки. Текст вопросов и ваш аккаунт College Board не передаются."));
-      const yes = el("button", "Отправить", "btn"), no = el("button", "Отмена", "btn ghost"); yes.type = no.type = "button";
-      const row = el("div", null, "row"); row.append(yes, no); c.append(row); box.insertBefore(c, note); yes.focus();
-      no.onclick = () => { c.remove(); ask.hidden = false; note.textContent = "Не отправлено."; };
-      yes.onclick = async () => {
-        yes.disabled = no.disabled = true; note.textContent = "Отправляю…";
-        localStorage.setItem(key, JSON.stringify(data));   // synced with the account (auth.js SYNC: bb_share_)
-        const saved = await SITE.syncNow().catch(() => false);
-        c.remove();
-        note.textContent = saved ? "Отправлено. Преподаватель увидит ошибки в своём кабинете и сможет разобрать их на уроке." : "Сохранено на этом устройстве. Отправится само, когда будет связь.";
-      };
-    };
+      localStorage.setItem(key, JSON.stringify(data));   // synced with the account (auth.js SYNC: bb_share_)
+      const saved = await SITE.syncNow().catch(() => false);
+      renderSent();
+      say(saved ? "Отправлено ✓ Преподаватель увидит ошибки в своём кабинете и разберёт их на уроке." : "Сохранено на этом устройстве. Отправится само, когда будет связь.", "ok");
+    } finally { go.disabled = false; }
   }
   async function check() {
     const req = ++revision;
     let rows; const meta = parseMeta(input.value);
-    try { rows = parse(input.value); } catch (e) { result.replaceChildren(); status.textContent = e.message; return; }
+    status.className = "bb-st";
+    try { rows = parse(input.value); } catch (e) { result.replaceChildren(); status.textContent = e.message; status.className = "bb-st bb-warn"; return false; }
     render(rows, null, meta);
     const misses = rows.filter((r) => r.status !== "correct").length, summary = `Прочитано ${rows.length} строк. Ошибок и пропусков: ${misses}.`;
     status.textContent = summary + " Определяем тест и модули…";
     const data = await loadCatalog();
-    if (req !== revision) return;
+    if (req !== revision) return false;
     if (data) { fillKeys(rows, data); render(rows, data, meta); }
-    last = { rows, cat: data, meta }; shareBox();
-    status.textContent = data ? summary : summary + " Навыки пока недоступны: нажмите «Проверить таблицу» ещё раз, когда будет связь.";
+    last = { rows, cat: data, meta };
+    status.textContent = summary + (canSend() ? " Всё прочитано: нажмите «Отправить преподавателю»." : data ? "" : " Навыки пока недоступны: проверьте ещё раз, когда будет связь.");
+    return true;
   }
 
-  SITE.ready.then(() => { details.hidden = false; });
-  details.addEventListener("toggle", () => { if (details.open) loadCatalog(); });
+  SITE.ready.then(() => { details.hidden = false; renderSent(); setTimeout(renderSent, 3000);   // again after the account sync of this page load
+    if (!canSend()) { go.textContent = "Проверить таблицу"; noteEl.textContent = "Чтобы отправить результат преподавателю, войдите на сайт под своим логином. Проверить таблицу можно и так."; } });
+  details.addEventListener("toggle", () => { if (details.open) { loadCatalog(); renderSent(); } });
+  addEventListener("storage", (e) => { if (!e.key || e.key.indexOf("bb_share_") === 0) renderSent(); });
   form.addEventListener("input", clear);
   form.addEventListener("reset", clear);
   input.addEventListener("paste", () => setTimeout(check, 0));   // checks at once after pasting
-  form.addEventListener("submit", (e) => { e.preventDefault(); check(); });
+  form.addEventListener("submit", async (e) => {   // one click: checks first if needed, then sends; a broken table is never sent
+    e.preventDefault();
+    if (go.disabled) return;
+    const ok = last ? true : await check();
+    if (ok && last && canSend()) await send();
+  });
 })();

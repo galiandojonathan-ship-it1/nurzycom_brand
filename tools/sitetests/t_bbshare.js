@@ -16,27 +16,27 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   // Ayana shares
   const a = await student("ayana");
   await a.goto(B + "mock.html", { waitUntil: "load" }); await a.waitForSelector("#bb-import:not([hidden])", { timeout: 15000 });
-  await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
-  await a.waitForSelector(".bb-share button", { timeout: 8000 });
-  ok(/Поделиться с преподавателем/.test(await a.textContent(".bb-share")), "after the preview the student sees «Поделиться с преподавателем»");
-  await a.click(".bb-share button"); await a.waitForSelector(".bb-confirm");
-  const conf = await a.textContent(".bb-confirm");
-  ok(/Текст вопросов и ваш аккаунт College Board не передаются/.test(conf), "the confirmation says what is sent and what is not");
-  await a.click('.bb-confirm button:has-text("Отмена")');
-  ok(/Не отправлено/.test(await a.textContent(".bb-share")) && !(await a.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("bb_share_")))), "«Отмена» sends nothing and stores nothing");
-  await a.click('.bb-share button:has-text("Поделиться")'); await a.click('.bb-confirm button:has-text("Отправить")');
-  await a.waitForFunction(() => /Отправлено|Сохранено/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
-  ok(/Отправлено\./.test(await a.textContent(".bb-share")), "«Отправить» saves it on the account at once: " + (await a.textContent(".bb-share [role=status]")));
-  await a.click('.bb-share button:has-text("Поделиться")'); await a.waitForFunction(() => /уже отправлен/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 }).catch(() => {});
-  ok(/уже отправлен/.test(await a.textContent(".bb-share")), "sharing the same table again: «уже отправлен», no second record");
-  // the same table pasted again on another page load is still one record
-  await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
-  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")'); await a.waitForFunction(() => /уже отправлен/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 }).catch(() => {});
-  ok(/уже отправлен/.test(await a.textContent(".bb-share")), "after a reload the same attempt is still recognised as sent");
+  const st = () => a.textContent("#bb-status"), waitSt = (re) => a.waitForFunction((r) => new RegExp(r).test(document.getElementById("bb-status").textContent), re.source, { timeout: 15000 }).catch(() => {});
+  ok(/Отправить преподавателю/.test(await a.textContent("#bb-go")) && /Текст вопросов и ваш аккаунт College Board не передаются/.test(await a.textContent("#bb-note")), "the button says «Отправить преподавателю», the note under it says what is sent");
+  await a.click("#bb-import summary"); await a.focus("#bb-text");
+  await a.evaluate((t) => { const el = document.getElementById("bb-text"); el.value = t; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("paste", { bubbles: true })); }, text);
+  await waitSt(/Всё прочитано/);
+  ok(/Всё прочитано: нажмите «Отправить преподавателю»/.test(await st()) && !(await a.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("bb_share_")))), "pasting checks at once and sends nothing by itself");
+  await a.click("#bb-go"); await waitSt(/Отправлено|Сохранено/);
+  ok(/Отправлено ✓/.test(await st()), "one click on «Отправить преподавателю» saves it on the account: " + (await st()));
+  ok(/Уже отправлены преподавателю/.test(await a.textContent("#bb-sent")) && /SAT Practice Test 2/.test(await a.textContent("#bb-sent")) && /отправлено: 1/.test(await a.textContent("#bb-import summary")), "a visible list «Уже отправлены преподавателю» shows the test, and the heading counts it");
+  await a.click("#bb-go"); await waitSt(/уже отправлен/);
+  ok(/уже отправлен/.test(await st()), "sending the same table again: «уже отправлен», no second record");
+  await a.reload(); await a.waitForSelector("#bb-import:not([hidden])");
+  ok(/SAT Practice Test 2/.test(await a.textContent("#bb-sent")), "after a reload the list still shows what was sent");
+  await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-go"); await waitSt(/уже отправлен/);
+  ok(/уже отправлен/.test(await st()), "after a reload the same attempt is still recognised as sent (one click checks, then refuses the duplicate)");
+  // a broken table is never sent
+  await a.fill("#bb-text", text.split("\r\n").slice(0, 30).join("\n")); await a.click("#bb-go"); await a.waitForTimeout(600);
+  ok(/View: All|Скопируйте/.test(await st()) && !/Отправлено/.test(await st()), "a partial table is not sent; the message says what to do");
   // a later attempt (SAT3 shares module 1 with SAT2) with the same RW question missed again
-  await a.fill("#bb-text", tableOf(synthetic(), "SAT3", { rw: "m2e", math: "m2h" }, "tab", ["rw.1.9"])); await a.click("#bb-form button[type=submit]");
-  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")'); await a.click('.bb-confirm button:has-text("Отправить")');
-  await a.waitForFunction(() => /Отправлено|Сохранено/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
+  await a.fill("#bb-text", tableOf(synthetic(), "SAT3", { rw: "m2e", math: "m2h" }, "tab", ["rw.1.9"])); await a.click("#bb-go"); await waitSt(/Отправлено|Сохранено/);
+  ok(/SAT Practice Test 2/.test(await a.textContent("#bb-sent")) && /SAT Practice Test 3/.test(await a.textContent("#bb-sent")), "the list shows both sent tests");
   // access between accounts
   const d = await student("dias"); await d.goto(B + "mock.html", { waitUntil: "load" }); await d.waitForTimeout(1500);
   const cross = await d.evaluate(async () => { const me = await SITE.practiceIdentity(), other = await SITE.lid("ayana");
@@ -85,10 +85,8 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   ok(marks.length === 2 && marks.filter((m) => m.deleted).length === 1 && !JSON.stringify(marks.find((m) => m.deleted)).includes("miss"), "on the account: one record kept as a «removed» mark without data, the other untouched");
   await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.waitForTimeout(1500);
   await a.evaluate(() => SITE.syncNow()); await a.reload(); await a.waitForSelector("#bb-import:not([hidden])");
-  await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
-  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")');
-await a.waitForSelector(".bb-confirm"); await a.click('.bb-confirm button:has-text("Отправить")');
-  await a.waitForFunction(() => /Отправлено\./.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
+  await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-go");
+  await a.waitForFunction(() => /Отправлено ✓/.test(document.getElementById("bb-status").textContent), null, { timeout: 15000 });
   ok(true, "a removed attempt can be sent again (the teacher may change their mind)");
   await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
   await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);
