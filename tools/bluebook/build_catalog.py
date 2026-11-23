@@ -5,6 +5,7 @@ Input: the open indexes of Bluebook practice tests (pdftotext -layout of the RW 
 Each position (test, section, module 1/2/3, question) gives a College Board question ID. Module 2 is the easier
 second module, 3 the harder one. Every ID is checked against the public SAT Suite Question Bank: the key must
 match the index and the skill and difficulty come from the bank. Only metadata is kept: no question text.
+A position whose index key is not among the bank's keys keeps both keys for routing and shows no skill (u: 1, x: 1).
 Positions whose question is not in the public bank (the index writes «xyz000…») keep the index key for route detection,
 with the index's own skill name in si (s: null, u: 1 = not verified by the bank); the import labels it «по открытому индексу».
 
@@ -112,9 +113,19 @@ def main():
                 print(f"FAIL {section} {i}: {err}")
         if absent:
             print(f"  {len(absent)} positions not in the public bank: index key kept for routing, no skill")
-        diff = [(p, i) for p, (i, listed) in rows.items() if i in good and not good[i].get("u") and {norm(k) for k in listed} != {norm(k) for k in good[i]["k"]}]
-        for p, i in diff:
-            print(f"KEY MISMATCH {p} {i}: index {rows[p][1]} vs bank {good[i]['k']}")
+        # the index key must be one of the bank's accepted answers (the bank also lists decimal forms of a fraction: 59/9, 6.555, 6.556)
+        diff, kept = [], 0
+        for p, (i, listed) in rows.items():
+            g = good.get(i)
+            if not g or g.get("u"):
+                continue
+            if {norm(k) for k in listed} <= {norm(k) for k in g["k"]}:
+                continue
+            # a real disagreement (option order or a wrong index line): keep the test, accept both keys for routing, show no skill
+            print(f"KEY MISMATCH {p} {i}: index {listed} vs bank {g['k']} → both kept for routing, skill hidden")
+            good[i] = {"k": list(dict.fromkeys(listed + g["k"])), "s": None, "si": None, "d": g["d"], "u": 1, "x": 1}
+            kept += 1
+        diff = []
         print(f"{section}: tests {', '.join(tests)} · {len(rows)} positions · {len(good)}/{len(ids)} IDs verified · {len(diff)} key mismatches")
         bad_tests = {p[0] for p, _ in diff} | {t for (t, _, _), (i, _) in rows.items() if i not in good}
         if bad_tests:

@@ -23,6 +23,9 @@ for (const t of tests) for (const rr of ["m2e", "m2h"]) for (const rm of ["m2e",
 ok(allUnique, `every test and route is recognised uniquely from the keys alone (${det} section checks over ${tests.length} tests)`);
 { const rows = BB.parse(table(t0, { rw: "m2h", math: "m2h" })); rows.find((r) => r.section === "rw" && r.module === 2 && r.question === 5).answers = ["Z"];
   ok(BB.detect(rows, cat, "rw").match === null, "one changed key → the section is not matched, skills stay hidden"); }
+{ const rows = BB.parse(table(t0, { rw: "m2h", math: "m2h" })), typed = rows.filter((r) => r.section === "math" && !/^[A-D]$/.test(r.answers[0]));
+  typed.forEach((r) => { r.answers = r.answers.slice(0, 1).concat(["9999.9"]); });   // Score Details may list a typed key with extra forms
+  if (typed.length) ok(BB.detect(rows, cat, "math").match, `typed keys listed with extra or fewer forms still match (${typed.length} typed answers)`); }
 ok(BB.canon("441/100") === BB.canon("4.410") && BB.canon("4.4101") !== BB.canon("4.41") && BB.canon("-3/2") === BB.canon("−1.5") && BB.canon(".5") === BB.canon("1/2"), "exact numbers: 441/100 = 4.410 ≠ 4.4101, −3/2 = −1.5, .5 = 1/2");
 const err = (txt) => { try { BB.parse(txt); return ""; } catch (e) { return e.message; } };
 const full = table(t0, { rw: "m2h", math: "m2h" }).split("\r\n");
