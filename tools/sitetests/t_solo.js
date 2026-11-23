@@ -9,7 +9,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await pg.goto("http://127.0.0.1:8767/cabinet.html?view=results", { waitUntil: "networkidle" }); await pg.waitForTimeout(400);
   await pg.setInputFiles("#file", __dirname + "/solo.csv"); await pg.waitForTimeout(1000);
   await pg.click('#tabs .chip[data-v="students"]'); await pg.waitForTimeout(400);
-  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForTimeout(500);
+  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.click('[data-st="subs"]'); await pg.waitForTimeout(500);
   const hw = await pg.$$eval("#v-students .to-hw", (a) => a.length); ok(hw === 1, `${vp.width}: one «разбор →» link in Ayana's history (${hw})`);
   await pg.click("#v-students .to-hw"); await pg.waitForSelector("#hw-list details", { timeout: 15000 });
   const rv = await pg.evaluate(() => { const b = document.querySelector("#st-hw"); return { txt: b.innerText, n: b.querySelectorAll("#hw-list details").length, open: b.querySelectorAll("#hw-list details[open]").length,

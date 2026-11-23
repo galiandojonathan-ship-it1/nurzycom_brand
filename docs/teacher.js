@@ -171,16 +171,28 @@
     let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button>${window.REPORT ? '<button class="btn" id="st-pdf" type="button">PDF-отчёт</button>' : ""}</div><h2 style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
     const grp = (D.groups || []).find((g) => g.key === s.key), sps = grp ? Object.entries(grp.spellings) : [];
     const others = D.students.filter((x) => x.key !== s.key);
-    html += `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
+    const spellHTML = `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
       ${others.length ? `<div class="row" style="margin-top:10px"><select id="join-sel" aria-label="Присоединить другого ученика"><option value="">Присоединить: это тот же ученик…</option>${others.map((x) => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("")}</select><button class="btn ghost" id="join-go">Объединить</button></div>` : ""}
       ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
-    html += kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
+    const kpiHTML = kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
-    html += '<div id="st-prog"></div><div id="st-bb"></div><div id="st-live"></div><div id="st-rv"></div><div id="st-tw"></div>';
-    html += `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
-    html += `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    html += `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    const lesHTML = `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
+    const skHTML = `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
+    const hisHTML = `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    // tabs (Nurassyl, 2026-11-23: «сделай эргономичнее… вкладки "анализ", "графики", "сдачи"»); the choice is kept in this browser
+    const TABS = [["over", "Обзор"], ["charts", "Графики"], ["anal", "Анализ"], ["subs", "Сдачи"], ["fix", "Работа над ошибками"]];
+    const cur = TABS.some(([k]) => k === D.stTab) ? D.stTab : (localStorage.getItem("st_tab") || "over"), tab = TABS.some(([k]) => k === cur) ? cur : "over";
+    const pane = (k, inner) => `<section class="st-pane" data-pane="${k}"${k === tab ? "" : " hidden"}>${inner}</section>`;
+    html += `<div class="st-tabs" role="tablist" aria-label="Разделы карточки">${TABS.map(([k, t]) => `<button type="button" role="tab" class="st-tab" data-st="${k}" aria-selected="${k === tab}">${t}</button>`).join("")}</div>`;
+    html += pane("over", kpiHTML + lesHTML + spellHTML)
+      + pane("charts", '<div id="st-prog"></div>')
+      + pane("anal", skHTML)
+      + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
+      + pane("fix", '<div id="st-rv"></div><div id="st-tw"></div>');
     $("v-students").innerHTML = html;
+    $("v-students").querySelectorAll("[data-st]").forEach((b) => (b.onclick = () => { D.stTab = b.dataset.st; try { localStorage.setItem("st_tab", D.stTab); } catch (e) { /* private mode */ }
+      $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      $("v-students").querySelectorAll(".st-pane").forEach((p) => (p.hidden = p.dataset.pane !== D.stTab)); }));
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
@@ -279,7 +291,7 @@
     const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
     const draw = () => {
       const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
-      PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); },   // «Похожие» on a subtopic or a trap
+      PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
           set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); } } });
     };

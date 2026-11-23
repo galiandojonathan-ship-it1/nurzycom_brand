@@ -17,7 +17,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await pg.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await pg.waitForTimeout(2500);
   await pg.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "twins test"), CSV); await pg.waitForTimeout(800);
   await pg.click('#tabs [data-v="students"]'); await pg.waitForTimeout(400);
-  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForSelector("#st-tw .tw", { timeout: 15000 });
+  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.click('[data-st="fix"]'); await pg.waitForSelector("#st-tw .tw", { timeout: 15000 });
   ok(/Похожие вопросы · Gemini/.test(await pg.textContent("#st-tw")), "student card shows «Похожие вопросы · Gemini»");
   // picker: every first-attempt mistake is listed, nothing is sent until the teacher ticks
   await pg.waitForSelector("#st-tw .tw-list [data-twsel]", { timeout: 15000 });
@@ -67,7 +67,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await pg.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await pg.waitForTimeout(2500);
   await pg.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "twins test"), CSV); await pg.waitForTimeout(800);
   await pg.click('#tabs [data-v="students"]'); await pg.waitForTimeout(300);
-  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForSelector(".to-hw", { timeout: 8000 });
+  await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.click('[data-st="subs"]'); await pg.waitForSelector(".to-hw", { timeout: 8000 });
   await pg.click(".to-hw"); await pg.waitForSelector("#hw-tw", { timeout: 8000 });
   fs.unlinkSync(LOG); await pg.click("#hw-tw"); await pg.waitForSelector("#hw-twbox .tw-q", { timeout: 20000 });
   const g2 = fs.readFileSync(LOG, "utf8").trim().split("\n").map((l) => JSON.parse(l)).find((d) => d.mistakes);

@@ -26,7 +26,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await pg.click("#ga-send"); await pg.waitForFunction(() => /Отправлено/.test(document.getElementById("ga-send-st").textContent), null, { timeout: 20000 });
 
   // 2. one student: Ayana, a Math part and a test
-  await pg.click('#tabs .chip[data-v="students"]'); await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.waitForSelector("#st-rv .rv-card", { timeout: 30000 });
+  await pg.click('#tabs .chip[data-v="students"]'); await pg.click('#v-students tr.click:has-text("Ayana")'); await pg.click('[data-st="fix"]'); await pg.waitForSelector("#st-rv .rv-card", { timeout: 30000 });
   const sp = await pg.$$eval("#st-rv .rv-p span", (a) => a.map((x) => x.textContent)); console.log("student parts:", sp.join(" | "));
   ok(/все ошибки/.test(await pg.textContent("#st-send")), "student: nothing ticked → all mistakes");
   const mi = sp.findIndex((x) => /Math/.test(x)); ok(mi >= 0, "student has a Math part");
