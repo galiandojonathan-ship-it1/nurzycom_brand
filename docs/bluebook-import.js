@@ -223,6 +223,8 @@
   // «Уже отправлены преподавателю» (Nurassyl: «чтобы ученик не путался, какой пробный отправлял»): the shares on this account
   // (synced keys bb_share_, removed ones skipped), newest first, also counted in the import heading
   const sentBox = document.getElementById("bb-sent"), sumN = document.getElementById("bb-sum-n");
+  // «23 ноября в 14:05»: when a result was sent (the student asked to see the time, not only the day)
+  const sentAt = (t) => { const d = new Date(t); return `${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`; };
   function renderSent() {
     if (!sentBox) return;
     const list = [];
@@ -236,7 +238,7 @@
     sentBox.append(el("b", "Уже отправлены преподавателю"));
     const ul = el("ul");
     for (const d of list) { const name = Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "Пробник Bluebook";
-      const li = el("li", name); li.append(el("small", d.taken ? `пройден ${day(d.taken)}` : `отправлен ${day(d.at)}`)); ul.append(li); }
+      const li = el("li", name); li.append(el("small", `${d.taken ? `пройден ${day(d.taken)} · ` : ""}отправлен ${sentAt(d.at)}`)); ul.append(li); }
     sentBox.append(ul);
   }
   async function send() {
@@ -247,13 +249,15 @@
       const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
       // a removed attempt (the teacher's mark) may be sent again (Nurassyl: «I may change my mind»); the teacher sees it was resent
       let removed = null;
-      if (was) { let at = ""; try { const w = JSON.parse(was); if (w.deleted) removed = w.at || Date.now(); at = new Date(w.at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
-        if (!removed) { say(`Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`, "ok"); return; } }
+      if (was) { let at = "", what = ""; try { const w = JSON.parse(was); if (w.deleted) removed = w.at || Date.now(); at = w.at ? sentAt(w.at) : "";
+          const name = w.sections ? Object.values(w.sections).map((x) => x.label).find(Boolean) || w.title : w.title;
+          what = name ? `${name}${w.taken ? ` (пройден ${new Date(w.taken).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })})` : ""}` : ""; } catch (e) { /* old */ }
+        if (!removed) { say(`${what || "Этот результат"} уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`, "ok"); return; } }
       if (removed) Object.assign(data, { resent: 1, removedAt: removed });
       localStorage.setItem(key, JSON.stringify(data));   // synced with the account (auth.js SYNC: bb_share_)
       const saved = await SITE.syncNow().catch(() => false);
       renderSent();
-      say(saved ? "Отправлено ✓ Преподаватель увидит ошибки в своём кабинете и разберёт их на уроке." : "Сохранено на этом устройстве. Отправится само, когда будет связь.", "ok");
+      say(saved ? `Отправлено ${sentAt(data.at)} ✓ Преподаватель увидит ошибки в своём кабинете и разберёт их на уроке.` : "Сохранено на этом устройстве. Отправится само, когда будет связь.", "ok");
     } finally { go.disabled = false; }
   }
   async function check() {

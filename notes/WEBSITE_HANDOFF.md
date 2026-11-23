@@ -200,6 +200,11 @@ it gives each row its module by order of appearance (first № n of a section = 
 it, with a hint to click «Question» so numbers go 1, 2, 3…. The real copy now reads 98 rows, 76 correct, SAT 7 hard/hard, 22
 misses. Two attempts of the same test (24 March and 29 April) stay two records: the date is part of the attempt's identity.
 
+Time of sending (2026-11-23, Nurassyl: «добавь время отправки»): the duplicate note says which attempt and when it was sent
+(«SAT Practice Test 7 (пройден 24 марта 2025 г.) уже отправлен 23 ноября в 14:05»). The success line, the chips of «Уже
+отправлены преподавателю» («пройден … · отправлен 23 ноября в 14:05») and the teacher card heading («отправлено учеником … в …»)
+carry the time too (`sentAt` in bluebook-import.js, `dayTime` in bbshare.js).
+
 One click (2026-11-23, Nurassyl: «вставил — проверилось само — отправилось… вместо "проверить таблицу" — "отправить"»): the
 form button is «Отправить преподавателю» (`#bb-go`; «Проверить таблицу» without the student's own login). Pasting checks at once
 and sends nothing. The button checks first if needed and sends only a fully read table (a broken one shows what to fix). The
