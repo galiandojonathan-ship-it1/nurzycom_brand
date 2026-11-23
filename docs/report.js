@@ -31,6 +31,7 @@ window.REPORT = (() => {
       <p class="rp-hint">Доля вопросов домашних заданий, решённых с первой попытки, в среднем за неделю. Точек: ${pts.length}.</p>`;
   }
 
+  let cell = () => "—";
   function sheet(d, on, note, next) {
     const rows = d.rows.slice().sort((a, b) => a.t - b.t), hw = rows.filter((r) => r.kind === "hw");
     const first = rows[0], last = rows[rows.length - 1], days30 = new Set(rows.filter((r) => r.t > Date.now() - 30 * 864e5).map((r) => new Date(r.t).toDateString())).size;
@@ -50,8 +51,9 @@ window.REPORT = (() => {
         <div><h3>Над чем работаем</h3>${weak.length ? `<ul>${weak.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<p class="rp-hint">Явных слабых мест нет.</p>'}</div></div><p class="rp-hint">По разбору всех ответов ученика с учётом сложности вопросов.</p>` : "")}
       ${sec("mocks", "Пробные тесты на сайте", mocks.length ? `<table class="rp-t"><thead><tr><th>Дата</th><th>Тест и раздел</th><th class="n">Верно</th><th class="n">Примерный балл</th></tr></thead><tbody>${mocks.slice().reverse().map((r) =>
         `<tr><td>${esc(dShort(r.t))}</td><td>${esc(r.what)}</td><td class="n">${r.a}/${r.b}</td><td class="n">${r.est ? "≈ " + esc(r.est) : "—"}</td></tr>`).join("")}</tbody></table><p class="rp-hint">Примерный балл считается по шкале nurzycom (±40) и не является официальным результатом SAT.</p>` : "")}
+      ${(() => { cell = (x) => (!x ? "—" : x.skip && x.skip[0] && x.skip[1] ? "не решался" : `${x.tot[0] + x.tot[1]}/${x.n}`); return ""; })()}
       ${sec("bb", "Официальные пробники Bluebook", d.shares.length ? `<table class="rp-t"><thead><tr><th>Дата</th><th>Тест</th><th class="n">Reading and Writing</th><th class="n">Math</th></tr></thead><tbody>${d.shares.map((s) => { const rw = s.sections.rw, m = s.sections.math;
-        return `<tr><td>${esc(dShort(s.taken || s.at))}</td><td>${esc((rw && rw.label) || (m && m.label) || s.title || "Bluebook")}</td><td class="n">${rw ? `${rw.tot[0] + rw.tot[1]}/${rw.n}` : "—"}</td><td class="n">${m ? `${m.tot[0] + m.tot[1]}/${m.n}` : "—"}</td></tr>`; }).join("")}</tbody></table>
+        return `<tr><td>${esc(dShort(s.taken || s.at))}</td><td>${esc((rw && rw.label) || (m && m.label) || s.title || "Bluebook")}</td><td class="n">${cell(rw)}</td><td class="n">${cell(m)}</td></tr>`; }).join("")}</tbody></table>
         <p class="rp-hint">Число верных ответов из таблицы College Board My Practice, которую прислал ученик. Официальный балл смотрите в самом Bluebook.</p>` : "")}
       ${sec("recent", "Последние работы", rows.length ? `<table class="rp-t"><thead><tr><th>Дата</th><th>Работа</th><th class="n">Результат</th></tr></thead><tbody>${rows.slice(-10).reverse().map((r) =>
         `<tr><td>${esc(dShort(r.t))}</td><td>${esc(r.what)}</td><td class="n">${r.a}/${r.b}</td></tr>`).join("")}</tbody></table>` : "")}

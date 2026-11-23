@@ -44,6 +44,12 @@ const page = `<html><body><header><h1>My Practice</h1><p>Score Details · SAT Pr
   ok(/SAT Practice 2 · пройден 2 марта 2025/.test(mp), "the test name and the date taken are read from the page");
   ok(/Домены College Board: Information and Ideas 7\/7/.test(mp), "official domain scores are shown");
   ok(/Show Correct Answers» был выключен: правильные ответы взяты из справочника/.test(mp) && /М1, №9 · \w → \w/.test(mp), "switch off: keys of the misses filled in from the catalog");
+  // only Math solved: Reading and Writing is «не решался», its blanks are not listed as mistakes
+  const om = [...Array.from({ length: 27 }, (_, i) => `rw.1.${i + 1}o`), ...Array.from({ length: 27 }, (_, i) => `rw.2.${i + 1}o`), "math.1.3"];
+  await p.fill("#bb-text", tableOf(cat, "SAT2", { rw: "m2e", math: "m2h" }, "mp", om)); await p.click("#bb-go");
+  await p.waitForFunction(() => /не решался/.test(document.getElementById("bb-result").textContent), null, { timeout: 8000 });
+  const onlyM = (await p.textContent("#bb-result")).replace(/\s+/g, " ");
+  ok(/Reading and Writing · раздел не решался/.test(onlyM) && /не считаются ошибками/.test(onlyM) && !/М1, №1 · пропуск/.test(onlyM) && /Math · М1 21\/22/.test(onlyM), "only Math solved: RW «раздел не решался», no list of 54 blanks, Math shown as usual");
   // a lost row: the student sees what to do
   await p.fill("#bb-text", text.split("\r\n").filter((_, i) => i !== 30).join("\n")); await p.click("#bb-go");
   ok(/[Сс]копируйте/.test(await p.textContent("#bb-status")), "a lost row asks to copy again: " + (await p.textContent("#bb-status")).slice(0, 80));

@@ -90,6 +90,14 @@
     return out;
   }
 
+  /* a module the student did not do (Nurassyl: students may skip a whole section, e.g. solve only Math): 80% or more of it left
+     without an answer. Its blanks are not mistakes: they are not listed, not shared as misses and not analysed. */
+  const SKIP = 0.8;
+  function skipOf(sel, section) {
+    const om = [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "omitted").length);
+    return { om, skip: om.map((o) => o >= SIZES[section] * SKIP) };
+  }
+
   // ---- exact answer comparison ---------------------------------------------------------------------------------------
   function canon(answer) {
     const t = strip(answer).toUpperCase();
@@ -143,18 +151,19 @@
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
       const m = cat ? detect(rows, cat, section).match : null, items = (cat && cat.items) || {}, skills = {};
-      const itemOf = (r) => (m ? m.ids[r.module - 1][r.question - 1] : null);
-      if (m) sel.forEach((r) => { const it = items[itemOf(r)], k = it && (it.s || it.si); if (!k) return; const x = (skills[k] = skills[k] || [0, 0]); x[1]++; if (r.status !== "correct") x[0]++; });
+      const itemOf = (r) => (m ? m.ids[r.module - 1][r.question - 1] : null), sk = skipOf(sel, section), done = (r) => !sk.skip[r.module - 1];
+      if (m) sel.filter(done).forEach((r) => { const it = items[itemOf(r)], k = it && (it.s || it.si); if (!k) return; const x = (skills[k] = skills[k] || [0, 0]); x[1]++; if (r.status !== "correct") x[0]++; });
       out.sections[section] = { test: m ? m.test : null, label: m ? m.label : null, route: m ? m.route : null, n: sel.length,
         tot: [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length),
-        miss: sel.filter((r) => r.status !== "correct").map((r) => { const id = itemOf(r), it = items[id] || null;
+        ...(sk.skip[0] || sk.skip[1] ? { skip: sk.skip, om: sk.om } : {}),   // modules not done: their blanks are not misses
+        miss: sel.filter((r) => r.status !== "correct" && done(r)).map((r) => { const id = itemOf(r), it = items[id] || null;
           return [r.module, r.question, r.selected, r.answers, id, it ? it.s || it.si || null : null, it ? it.d || null : null, it && it.u ? 1 : 0]; }),
         skills, ...(meta.domains && meta.domains[section] ? { domains: meta.domains[section] } : {}) };
     }
     return out;
   }
 
-  if (typeof module !== "undefined") { module.exports = { parse, detect, canon, shareOf, parseMeta, fillKeys }; return; }
+  if (typeof module !== "undefined") { module.exports = { parse, detect, canon, shareOf, parseMeta, fillKeys, skipOf }; return; }
   window.BBIMPORT = { parse, detect, canon, shareOf, parseMeta, fillKeys };
 
   // ---- page ----------------------------------------------------------------------------------------------------------------
@@ -177,9 +186,12 @@
     if (rows.some((r) => r.nokey)) out.append(el("p", cat ? "«Show Correct Answers» был выключен: правильные ответы взяты из справочника." : "«Show Correct Answers» выключен: включите его над таблицей и скопируйте снова, чтобы увидеть правильные ответы.", "hint"));
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
-      const misses = sel.filter((r) => r.status !== "correct"), det = cat ? detect(rows, cat, section) : { matches: [] }, m = det.match;
+      const sk = skipOf(sel, section), misses = sel.filter((r) => r.status !== "correct" && !sk.skip[r.module - 1]), det = cat ? detect(rows, cat, section) : { matches: [] }, m = det.match;
       const tot = [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length);
-      out.append(el("h3", `${LABEL[section]} · М1 ${tot[0]}/${SIZES[section]} · М2 ${tot[1]}/${SIZES[section]}`));
+      out.append(el("h3", `${LABEL[section]} · ${sk.skip[0] && sk.skip[1] ? "раздел не решался" : `М1 ${sk.skip[0] ? "не решался" : `${tot[0]}/${SIZES[section]}`} · М2 ${sk.skip[1] ? "не решался" : `${tot[1]}/${SIZES[section]}`}`}`));
+      if (sk.skip[0] || sk.skip[1]) out.append(el("p", sk.skip[0] && sk.skip[1] ? `Без ответа ${sk.om[0] + sk.om[1]} из ${SIZES[section] * 2}: раздел не решался, его пропуски не считаются ошибками и в анализ не входят.`
+        : `Модуль ${sk.skip[0] ? 1 : 2} не решался (без ответа ${sk.om[sk.skip[0] ? 0 : 1]} из ${SIZES[section]}): его пропуски не считаются ошибками и в анализ не входят.`, "hint bb-skip"));
+      if (sk.skip[0] && sk.skip[1]) continue;
       if (m && meta.num && m.test !== "SAT" + meta.num) out.append(el("p", `В заголовке ${meta.title}, а ответы совпадают с ${m.label}. Проверьте, что скопирована страница нужного теста.`, "bb-warn"));
       const dm = meta.domains && meta.domains[section];
       if (dm) out.append(el("p", "Домены College Board: " + Object.entries(dm).map(([d, v]) => `${d} ${v[0]}/${v[1]}`).join(" · "), "hint"));

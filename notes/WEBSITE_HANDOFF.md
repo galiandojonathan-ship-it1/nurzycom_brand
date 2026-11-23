@@ -193,6 +193,13 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+Skipped sections (2026-11-23, Nurassyl: «students may deliberately skip a section… and do only math»): a module with 80% or
+more of its answers omitted is «не решался» (`skipOf`). Its blanks are not mistakes: the preview says «раздел не решался» or
+«модуль N не решался» and lists no blanks. The share record gets `skip: [m1, m2]` and `om`, with no misses from those modules,
+and skills count only modules that were done. The teacher card and the PDF report say «не решался». `progExtra` leaves those
+modules out of the analysis, as does the Gemini list (`BBSHARE.mistakes`). Records sent earlier get the same rule from their
+blanks. A few blanks in a module that was solved still count as misses.
+
 Sorted tables (2026-11-23, Nurassyl's real Practice 7 copy failed with «Порядок вопросов нарушен у Math №22»): My Practice
 lets the student sort the table, and a click on «Question» turns it over (Math module 2 22→1 first). `parse` now collects every
 row with its own text, then: if the order is not natural it tries the reversed list; if the numbers only go up (sorted by number)
