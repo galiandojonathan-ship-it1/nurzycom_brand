@@ -37,4 +37,23 @@ ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async (k
 const r2 = await buildTwins(req({ perMistake: 2, mistakes: [own, cb] }), { GEMINI_API_KEY: "x" }, async (k, i, d) => d.mistakes ? { questions: [good(1), good(1, { tag: "b" }), good(2), good(2, { tag: "d" })] } : { items: d.questions.map((q) => ({ answer: "ABCD"[q.options.indexOf("Nevertheless,")], sound: true })) });
 ok(r2.status === 200 && new Set(r2.questions.map((q) => q.answer)).size === 4 && r2.questions.every((q) => q.options["ABCD".indexOf(q.answer)] === "Nevertheless," && q.options["ABCD".indexOf(q.trap)] === "Likewise,"), "4 drafts all keyed B by the model come back keyed A, B, C and D, key and trap still right");
 ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async () => { throw Object.assign(new Error(), { status: 429 }); })).status === 429, "rate limit → 429");
+// «Контрольные» ~30%: the server picks the slots at random; a decoy only where planned; off switch
+{ const six = Array.from({ length: 6 }, () => ({ ...cb }));
+  const plan = (inp) => inp.mistakes.reduce((a, m) => a + (m.decoys || 0), 0);
+  const p1 = twinsInput({ perMistake: 2, mistakes: six }), p2 = twinsInput({ perMistake: 2, mistakes: six });
+  ok(plan(p1) === 4 && plan(twinsInput({ perMistake: 1, mistakes: six })) === 2 && plan(twinsInput({ perMistake: 3, mistakes: six.slice(0, 1) })) === 1, "about 30%: 12 → 4, 6 → 2, 3 → 1 control questions");
+  ok(plan(twinsInput({ perMistake: 2, mistakes: [cb] })) === 0 && plan(twinsInput({ perMistake: 1, mistakes: [cb] })) === 0, "a batch under 3 questions gets none");
+  ok(plan(twinsInput({ perMistake: 2, decoys: false, mistakes: six })) === 0, "the teacher can switch them off");
+  ok(p1.mistakes.every((m) => !m.decoys || m.decoys <= 2), "never more control questions than slots of a mistake");
+  let seq = 0; const r1 = twinsInput({ perMistake: 2, mistakes: six }, () => 0.1), r2 = twinsInput({ perMistake: 2, mistakes: six }, () => ((seq = (seq * 9301 + 49297) % 233280) / 233280));
+  ok(JSON.stringify(r1.mistakes.map((m) => m.decoys || 0)) !== JSON.stringify(r2.mistakes.map((m) => m.decoys || 0)) || plan(r1) === plan(r2), "the slots depend on the random draw");
+  const one = twinsInput({ perMistake: 3, mistakes: [own] }, () => 0); const d = one.mistakes[0].decoys;
+  const kept = checkedTwins({ questions: [good(1, { kind: "decoy" }), good(1, { kind: "target", tag: 2 }), good(1, { kind: "target", tag: 3 })] }, one);
+  ok(d === 1 && kept.filter((q) => q.kind === "decoy").length === 1 && kept.filter((q) => q.kind === "target").length === 2, "the decoy draft is kept and marked where one was planned");
+  const none = checkedTwins({ questions: [good(1, { kind: "decoy" }), good(2)] }, inp);
+  ok(!none.some((q) => q.kind === "decoy") && none.every((q) => q.kind === "target"), "a decoy where none was planned is dropped; drafts without kind count as normal");
+  let seen = null; const rr = await buildTwins(req({ perMistake: 3, mistakes: [own] }), { GEMINI_API_KEY: "x" }, async (k, instr, data, schema) => { if (data.mistakes) { seen = { instr, schema, data };
+      return { questions: [good(1, { kind: "decoy" }), good(1, { kind: "target", tag: "b" }), good(1, { kind: "target", tag: "c" })] }; }
+    return { items: data.questions.map((q) => ({ answer: "ABCD"[q.options.indexOf("Nevertheless,")], sound: true })) }; });
+  ok(rr.status === 200 && rr.decoys === 1 && /kind="decoy"/.test(seen.instr) && seen.schema.properties.questions.items.properties.kind && seen.data.mistakes[0].decoys === 1, "the prompt and schema ask for kind; the response counts the control questions"); }
 console.log(`ALL PASS (${n})`);

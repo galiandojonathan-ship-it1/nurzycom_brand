@@ -33,7 +33,7 @@ window.TWINS = (() => {
   function card(q, i, src) {
     return `<details class="tw-q" open><summary><label class="tw-pick"><input type="checkbox" data-twpick="${i}" checked> Задание ${i + 1}</label>
         <small>${esc(q.skill)} · ${esc(LEVEL[q.level] || q.level)} · на ошибку: ${esc(src ? src.title : "—")}${src && src.focus ? ` · ${esc(src.focus)}` : ""}${src && src.trapKind ? ` · ловушка ${esc(quo(src.trapKind))}` : ""}</small></summary>
-      <p class="tw-mech">Отрабатывает: ${esc(q.mechanism)}</p>
+      ${q.kind === "decoy" ? '<p class="tw-decb">Контрольное: похоже на слабое место, но верный ответ другого типа. Ученик видит его как обычное задание.</p>' : ""}<p class="tw-mech">Отрабатывает: ${esc(q.mechanism)}</p>
       <div class="tw-body" lang="en">${q.passage ? `<div class="qhtml">${rich(q.passage)}</div>` : ""}<div class="qhtml"><b>${rich(q.prompt)}</b></div>
         <ol class="tw-opts">${q.options.map((o, k) => { const L = "ABCD"[k]; return `<li class="${L === q.answer ? "ok" : L === q.trap ? "trap" : ""}"><b>${L}</b><span class="qhtml">${window.CTL ? CTL.inline(o) : esc(o)}</span>${L === q.answer ? "<em>верный</em>" : L === q.trap ? "<em>ловушка</em>" : ""}</li>`; }).join("")}</ol></div>
       <p class="tw-why"><b>Почему ${q.answer}.</b> ${esc(q.rationale)}</p><p class="tw-why"><b>Ловушка ${q.trap}.</b> ${esc(q.trapWhy)}</p></details>`;
@@ -51,7 +51,7 @@ window.TWINS = (() => {
        load?: (c) => Promise<m|null>             c + its decrypted question (item)
        quick?: () => [{ label, hint, f }]        picks from the analytics: f = { work, skill, focus, trap, days } } */
   function mount(box, o) {
-    const S = { per: 2, busy: false, out: null, list: null, pool: null, f: { work: "", skill: "", focus: "", trap: "", days: 0 }, sel: new Set(), note: "", msg: "" };
+    const S = { per: 2, decoys: (() => { try { return localStorage.getItem("tw_decoys") !== "0"; } catch (e) { return true; } })(), busy: false, out: null, list: null, pool: null, f: { work: "", skill: "", focus: "", trap: "", days: 0 }, sel: new Set(), note: "", msg: "" };
     const picker = !!o.pool;
     const shown = () => (S.pool || []).filter((c) => (!S.f.work || c.plabel === S.f.work) && (!S.f.skill || c.sk === S.f.skill) && (!S.f.focus || c.focus === S.f.focus) &&
       (!S.f.trap || c.trapKind === S.f.trap) && (!S.f.days || (c.ts || 0) >= Date.now() - S.f.days * DAY));
@@ -78,11 +78,13 @@ window.TWINS = (() => {
         <p class="hint">${picker ? "Выберите, на какие ошибки писать задания: по работе, навыку, подтеме или ловушке, или одной кнопкой из аналитики. " : ""}Gemini пишет новые задания на тот же навык, сложность и ловушку${o.scope ? ` (${esc(o.scope)})` : ""}; подтема и вид ловушки уходят в запрос. Ключ каждого задания проверяет второй, слепой вызов: непрошедшие отбрасываются. Имя ученика в Gemini не уходит, текст отправляется только для авторских вопросов nurzycom.</p>
         ${picker ? pickHTML() : ""}
         <div class="row tw-ctl"><label>Заданий на ошибку <select id="tw-per">${[1, 2, 3].map((k) => `<option${k === S.per ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+          <label class="tw-dec" title="Около 30% заданий похожи на слабое место, но верный ответ в них другого типа: ученик учится определять ответ по тексту, а не выбирать привычный"><input type="checkbox" id="tw-decoys"${S.decoys ? " checked" : ""}> Контрольные ~30%</label>
           <button class="btn" type="button" id="tw-go"${S.busy || !can ? " disabled" : ""}>${S.busy ? "Gemini пишет задания…" : S.out ? "Сгенерировать заново" : picker ? `Сгенерировать на выбранные (${S.sel.size})` : "Сгенерировать похожие"}</button></div>
         <p class="hint" role="status" id="tw-st">${esc(S.msg || (picker ? (S.pool && S.pool.length && !S.sel.size ? "Отметьте ошибки в списке." : "") : n === null ? "" : n ? `Ошибок для отработки: ${n}.` : "Ошибок с первой попытки нет: отрабатывать нечего."))}</p>
         <div id="tw-out">${S.out ? S.out.questions.map((q, i) => card(q, i, S.list[q.source - 1])).join("") : ""}</div>
         ${S.out ? `<div class="row"><button class="btn" type="button" id="tw-give">Задать ученику как «Мой тест»</button><button class="btn ghost" type="button" id="tw-save">Только сохранить в «Мои тесты»</button></div>` : ""}</div>`;
       box.querySelector("#tw-per").onchange = (e) => (S.per = +e.target.value);
+      box.querySelector("#tw-decoys").onchange = (e) => { S.decoys = e.target.checked; try { localStorage.setItem("tw_decoys", S.decoys ? "1" : "0"); } catch (x) { /* private mode */ } };
       box.querySelector("#tw-go").onclick = run;
       const give = box.querySelector("#tw-give"), save = box.querySelector("#tw-save");
       if (give) give.onclick = () => store(true);
@@ -119,14 +121,15 @@ window.TWINS = (() => {
         for (let b = 0; b < list.length; b += BATCH) {
           const part = list.slice(b, b + BATCH);
           S.msg = `Ошибок: ${list.length}. Gemini пишет и проверяет задания${list.length > BATCH ? `, часть ${b / BATCH + 1} из ${Math.ceil(list.length / BATCH)}` : ""}, это до минуты…`; draw();
-          const r = await SITE.api("admin/twins", { method: "POST", body: JSON.stringify({ perMistake: S.per, mistakes: part.map(payloadOf), ...(S.note.trim() ? { note: S.note.trim() } : {}) }) });
+          const r = await SITE.api("admin/twins", { method: "POST", body: JSON.stringify({ perMistake: S.per, decoys: S.decoys, mistakes: part.map(payloadOf), ...(S.note.trim() ? { note: S.note.trim() } : {}) }) });
           if (!r.ok) { errs.push((r.data && r.data.error) || (r.status === 403 ? "Нужен ключ администратора в этом браузере." : "Не получилось.")); continue; }
           r.data.questions.forEach((q) => out.questions.push({ ...q, source: q.source + b }));
           out.asked += r.data.asked; out.dropped += r.data.dropped || 0;
         }
         if (!out.questions.length) { S.msg = errs[0] || "Не получилось. Попробуйте ещё раз."; return; }
         S.out = out;
-        S.msg = `Готово: ${out.questions.length} из ${out.asked}${out.dropped ? ` · ${out.dropped} не прошли проверку ключа и убраны` : ""}${errs.length ? ` · часть не получилась: ${errs[0]}` : ""}. Снимите галочку с заданий, которые не нужны.`;
+        const dc = out.questions.filter((q) => q.kind === "decoy").length;
+        S.msg = `Готово: ${out.questions.length} из ${out.asked}${dc ? ` · контрольных: ${dc}` : ""}${out.dropped ? ` · ${out.dropped} не прошли проверку ключа и убраны` : ""}${errs.length ? ` · часть не получилась: ${errs[0]}` : ""}. Снимите галочку с заданий, которые не нужны.`;
       } catch (e) { S.msg = "Не удалось связаться с сервером. Попробуйте ещё раз."; }
       finally { S.busy = false; draw(); }
     }
@@ -137,7 +140,8 @@ window.TWINS = (() => {
       const t = CTL.newTest(), topics = [...new Set(picked.map((q) => (S.list[q.source - 1] || {}).focus || q.skill).filter(Boolean))];
       t.title = `Работа над ошибками · ${o.name}${topics.length === 1 ? ` · ${topics[0]}` : ""} · ${today()}`; t.src = "gemini";
       t.note = "Задания на ваши недавние ошибки. Решайте без подсказок и проверяйте каждый вариант.";
-      t.q = picked.map((q) => Object.assign(CTL.newQ("mc"), { passage: q.passage, stem: q.prompt, o: q.options.slice(), a: q.answer,
+      const mixed = picked.slice(); for (let i = mixed.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [mixed[i], mixed[j]] = [mixed[j], mixed[i]]; }   // decoys anywhere in the test
+      t.q = mixed.map((q) => Object.assign(CTL.newQ("mc"), { passage: q.passage, stem: q.prompt, o: q.options.slice(), a: q.answer,
         x: `${q.rationale}\n\nЛовушка ${q.trap}: ${q.trapWhy}`, skill: q.skill, level: q.level || "M" }));
       const bad = t.q.filter((q) => CTL.problems(q).length).length;
       if (bad) { S.msg = `Не готовы заданий: ${bad}. Сгенерируйте заново.`; draw(); return; }
