@@ -66,14 +66,15 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
   await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);
   await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300);
-  await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
+  await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.click('[data-st="subs"]'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
   const bbTxt = (await teacher.textContent("#st-bb")).replace(/\s+/g, " ");
   ok(/SAT Practice Test 2/.test(bbTxt) && /SAT Practice Test 3/.test(bbTxt), "the results card shows both shared Bluebook results");
   ok(/Повторные ошибки: \d/.test(bbTxt) && /Уже был: Пробный тест 1 · М1 · №3; Bluebook SAT Practice Test 2 · ✗/.test(bbTxt), "the later miss is flagged: it was in our PT1 and was missed in the earlier Bluebook attempt");
-  await teacher.waitForSelector("#st-tw [data-twsel]", { timeout: 15000 });
+  await teacher.click('[data-st="fix"]'); await teacher.waitForSelector("#st-tw [data-twsel]", { timeout: 15000 });
   const works = await teacher.$$eval('#st-tw [data-twf="work"] option', (o) => o.map((x) => x.textContent));
   ok(works.some((w) => /^Bluebook · SAT Practice Test 2 · 4$/.test(w)) && works.some((w) => /^Bluebook · SAT Practice Test 3 · 1$/.test(w)), "the Gemini picker offers the Bluebook misses as works: " + works.join(" | "));
   // remove in the results card: «Убрать» → «Вернуть» → «Убрать»; the record becomes a mark, the student cannot resend it
+  await teacher.click('[data-st="subs"]');
   const delBtn = () => teacher.$(`#st-bb .bbs-one:has(summary b:has-text("SAT Practice Test 2")) [data-bbdel]`);
   await (await delBtn()).click(); await teacher.waitForSelector("#bb-undo", { timeout: 10000 });
   const left = await teacher.$$eval("#st-bb .bbs-one summary b", (x) => x.map((e) => e.textContent)); console.log("left after removal:", left, "|", await teacher.textContent("#bb-del-st"));
@@ -92,7 +93,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
   await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);
   await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300);
-  await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
+  await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.click('[data-st="subs"]'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
   ok(/отправлен снова после удаления/.test(await teacher.textContent("#st-bb .bbs-one:has(summary b:has-text(\"SAT Practice Test 2\")) summary")), "the teacher sees it back with the mark «отправлен снова после удаления»");
   // remove in the cabinet
   await teacher.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await teacher.waitForSelector(".scard", { timeout: 20000 });

@@ -994,3 +994,12 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 #pg-domleg .pg-limp { color: #A63328; font-weight: 600; }
 .pg-dlb { font-weight: 700; }
 #pg-dom { max-width: 760px; }
+/* student card tabs (teacher results, 2026-11-23) */
+.st-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 8px; padding: 5px; background: var(--white, #fff); border: 1px solid #e3dccf; border-radius: 14px; }
+.st-tab { flex: 1 1 auto; font: 600 15px var(--sans); color: #5e5a54; background: transparent; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; white-space: nowrap; }
+.st-tab small { font-weight: 500; opacity: .7; margin-left: 4px; }
+.st-tab:hover { background: #f3eee5; color: #0f0f0f; }
+.st-tab[aria-selected="true"] { background: #0f0f0f; color: #fff; }
+.st-tab:focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
+.st-pane > h2:first-child, .st-pane > div:first-child > h2:first-child { margin-top: 10px; }
+@media (max-width: 640px) { .st-tabs { flex-wrap: nowrap; overflow-x: auto; } .st-tab { flex: 0 0 auto; padding: 9px 12px; font-size: 14px; } }

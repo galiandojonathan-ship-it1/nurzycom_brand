@@ -375,6 +375,10 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **Student card tabs (2026-11-23, Nurassyl: «эргономичнее… вкладки "анализ", "графики", "сдачи"»):** the results card in
+  `teacher.js` has tabs Обзор (KPIs, lesson heatmap, name spellings) · Графики (`#st-prog`) · Анализ (skills) · Сдачи (history,
+  Bluebook `#st-bb`, live rounds `#st-live`) · Работа над ошибками (`#st-rv`, Gemini `#st-tw`). Panes are rendered at once and
+  hidden; the tab is kept in `st_tab`. Tests that look inside the card click `[data-st="…"]` first.
 - **One browser, two accounts (fixed 2026-11-23):** synced keys sit in localStorage without an owner, so logging in as another
   student on the same browser uploaded the previous account's results into the new one (Nurassyl's 8 Bluebook tests showed up
   on Nurislam's account). `auth.js` now keeps `site_owner` (the login whose results the browser holds, kept through logout) and

@@ -32,8 +32,10 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   const open = async () => { await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
     await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "src test"), CSV); await teacher.waitForTimeout(600);
     await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300);
-    await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForSelector("#st-prog .pg-src", { timeout: 20000 }); };
+    await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.click('[data-st="charts"]'); await teacher.waitForSelector("#st-prog .pg-src", { timeout: 20000 }); };
   await open();
+  const tabs = await teacher.$$eval("[data-st]", (x) => x.map((b) => b.textContent.replace(/\s+/g, " ").trim())), vis = await teacher.$$eval(".st-pane", (x) => x.filter((p) => !p.hidden).map((p) => p.dataset.pane));
+  ok(tabs.length === 5 && tabs[3] === "Сдачи" && vis.join() === "charts", "the card has tabs Обзор · Графики · Анализ · Сдачи · Работа над ошибками, one pane shown: " + tabs.join(" | "));
   const chips = await teacher.$$eval("#st-prog .pg-src .chip", (x) => x.map((c) => c.textContent.replace(/\s+/g, " ").trim()));
   console.log("sources:", chips.join(" | "));
   ok(chips.some((c) => /^Домашние \d+$/.test(c)) && chips.some((c) => /^Bluebook 142$/.test(c)) && chips.some((c) => /^Уроки 4$/.test(c)), "source switches: homework, Bluebook (98 + 44: the Math-only attempt adds no Reading and Writing blanks), lessons (4 answers in the round)");
@@ -46,6 +48,10 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   // switch Bluebook off: the counts stay, the switch is remembered after reopening the card
   await teacher.click('#st-prog [data-src="bb"]'); await teacher.waitForTimeout(500);
   ok((await teacher.getAttribute('#st-prog [data-src="bb"]', "aria-pressed")) === "false", "«Bluebook» can be switched off");
+  await teacher.click('[data-st="anal"]'); await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
+  await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "src test"), CSV); await teacher.waitForTimeout(600);
+  await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300); await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForTimeout(400);
+  ok((await teacher.$$eval(".st-pane", (x) => x.filter((p) => !p.hidden).map((p) => p.dataset.pane))).join() === "anal", "the chosen tab is remembered when the card is opened again");
   await open();
   ok((await teacher.getAttribute('#st-prog [data-src="bb"]', "aria-pressed")) === "false", "the choice is remembered for this student");
   await teacher.click('#st-prog [data-src="bb"]'); await teacher.waitForTimeout(400);
@@ -53,11 +59,12 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await teacher.click('#st-prog [data-src="hw"]'); await teacher.waitForTimeout(300); await teacher.click('#st-prog [data-src="live"]'); await teacher.waitForTimeout(300); await teacher.click('#st-prog [data-src="bb"]'); await teacher.waitForTimeout(300);
   ok((await teacher.getAttribute('#st-prog [data-src="bb"]', "aria-pressed")) === "true", "at least one source always stays on");
   await teacher.click('#st-prog [data-src="hw"]'); await teacher.waitForTimeout(300); await teacher.click('#st-prog [data-src="live"]'); await teacher.waitForTimeout(300);
-  await teacher.waitForSelector("#st-live table", { timeout: 15000 });
+  await teacher.click('[data-st="subs"]'); await teacher.waitForSelector("#st-live table", { timeout: 15000 });
   const live = (await teacher.textContent("#st-live")).replace(/\s+/g, " ");
   ok(/Уроки · живая практика/.test(live) && /SAT Verbal · Урок 1 · Практика/.test(live) && /4\/4/.test(live), "«Уроки · живая практика» lists the round with her answers 4/4 and 3 right");
   if (dev === "phone") ok((await teacher.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone: no sideways scroll");
-  await (await teacher.$("#st-prog")).screenshot({ path: `${__dirname}/progsrc_${dev}.png` });
+  await teacher.click('[data-st="charts"]'); await (await teacher.$("#st-prog")).screenshot({ path: `${__dirname}/progsrc_${dev}.png` });
+  await teacher.click('[data-st="subs"]'); await teacher.waitForTimeout(300); await teacher.screenshot({ path: `${__dirname}/cardtabs_${dev}.png`, clip: await (await teacher.$(".st-tabs")).evaluate((e) => { const r = e.getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top + scrollY - 80), width: innerWidth, height: 620 }; }), fullPage: true });
   ok(!errs.length, "no page errors " + JSON.stringify(errs));
   await br.close(); console.log(fails ? `${fails} FAILED` : "ALL PASS"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.log("CRASH", e); process.exit(2); });
