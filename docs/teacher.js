@@ -434,7 +434,34 @@
         index = { now: last.index, first: W[0].index, from: W[0].t, at: last.t, nAns: last.nAns, weeks: W.map((x) => [x.t, x.index]), parts: last.parts || {}, parts0: W[0].parts || {}, start: SI ? +new Date(SI.date + "T00:00:00") : null }; }
       else index = { thin: true, nAns: S.length ? S[S.length - 1].nAns || 0 : 0, need: PROGRESS.MIN_IX };
     } catch (e) { index = { thin: true, nAns: 0, need: (window.PROGRESS && PROGRESS.MIN_IX) || 30 }; }
-    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
+    const skillmap = await skillMap(s).catch(() => null);
+    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, skillmap, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
+  }
+  // «Навыки: что усвоено и что добить» for the PDF (Nurassyl, 2026-11-23: «что именно надо добить по скиллам, какие хромают
+  // конкретно, а какие усвоились»): every subtopic with 3+ answers, its College Board skill, mastery now, the change since the
+  // start of work (else the last 4 weeks), and against the student's target when one is set; «добить» = the biggest gap × exam weight
+  async function skillMap(s) {
+    const res = await progData(s); if (!res || !res.subs || !res.snaps.length) return null;
+    await goalLoad(s).catch(() => null);
+    const NAME = (window.PVIEW && PVIEW.NAME) || {}, n = res.snaps.length - 1, SI = await startOf(s).catch(() => null);
+    const t0 = SI ? +new Date(SI.date + "T00:00:00") : null;
+    let i0 = Math.max(0, n - 4); if (t0) { i0 = 0; res.snaps.forEach((x, i) => { if (x.t <= t0 + 864e5) i0 = i; }); }
+    const need = goalNeeds(s), tgt = need ? PROGRESS.targetFor(res, need) : null, OM = res.omega || {};
+    const items = res.subs.filter((x) => x.n >= 3 && x.series[n] != null && NAME[x.k]).map((x) => {
+      const now = x.series[n], c = PROGRESS.change(res, x, i0, n), nk = tgt && tgt[PROGRESS.SEC_OF[x.k]] ? tgt[PROGRESS.SEC_OF[x.k]].sub[x.k] : null;
+      const falling = !!(c && c.z <= -PROGRESS.ZMIN), rising = !!(c && c.z >= PROGRESS.ZMIN);
+      let st; if (nk != null) st = PROGRESS.vsTarget(now, nk, x.n)[0] === "stuck" ? "weak" : "ok";
+      else st = now >= 0.75 && !falling ? "ok" : now < 0.5 || falling ? "weak" : "mid";
+      // the next realistic step: a subtopic far below first reaches 50%, then the level (75% or the target)
+      const goal = nk != null ? nk : 0.75, gap = Math.max(0, goal - now), step = now < 0.4 && goal > 0.5 ? 0.5 : goal;
+      const act = falling ? "просело: повторить правило и решить 8–10 вопросов на эту тему"
+        : x.n < 8 ? `мало ответов (${x.n}): решить ещё 10 вопросов, чтобы оценка стала точнее`
+        : `поднять с ${Math.round(now * 100)}% до ${Math.round(step * 100)}%${step < goal ? ` (первый шаг; цель ${Math.round(goal * 100)}%)` : ""}: 10–15 вопросов этой подтемы и разбор ошибок`;
+      return { k: x.k, name: NAME[x.k], skill: PROGRESS.SKILL_OF_SUB[x.k] || "", sec: PROGRESS.SEC_OF[x.k], now: Math.round(now * 100), need: nk != null ? Math.round(nk * 100) : null,
+        d: c ? Math.round(c.ch * 100) : null, falling, rising, n: x.n, st, act, prio: (OM[x.k] || 0) * (gap + (falling ? 0.1 : 0)) * (x.n < 8 ? 0.5 : 1) };   // few answers: less sure, ranked lower
+    });
+    const top = items.filter((x) => x.st !== "ok" && x.prio > 0).sort((a, b) => b.prio - a.prio).slice(0, 5);
+    return { items, top, target: !!tgt, since: t0 && i0 > 0 ? t0 : null, from: res.snaps[i0] ? res.snaps[i0].t : null };
   }
   // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
   function accountsByName() {

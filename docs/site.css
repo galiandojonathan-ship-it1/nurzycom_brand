@@ -969,6 +969,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .rp-chart { width: 100%; height: auto; display: block; }
 .rp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .rp-two ul { margin: 0; padding-left: 18px; }
+.rp-todo { margin: 0 0 10px; padding-left: 20px; } .rp-todo li { margin: 3px 0; }
 .rp-hint { font-size: 8.5pt; color: #5E5A54; margin: 4px 0 0; }
 .rp-sheet blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid #A63328; background: #F5F3EE; border-radius: 0 8px 8px 0; }
 .rp-foot { margin-top: 18px; padding-top: 8px; border-top: 1px solid #D9D5CD; font-size: 8.5pt; color: #5E5A54; display: grid; gap: 2px; }

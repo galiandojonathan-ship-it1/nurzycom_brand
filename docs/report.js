@@ -12,7 +12,7 @@ window.REPORT = (() => {
   const dShort = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
   const P = (x) => (x == null || isNaN(x) ? "—" : Math.round(x) + "%");
   const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
-  const SECTIONS = [["sum", "Главное", true], ["index", "Индекс прогресса", true], ["pred", "Ориентир на SAT", true], ["trend", "Динамика по неделям", true], ["skills", "Навыки", true], ["focus", "Сильные стороны и что подтянуть", true],
+  const SECTIONS = [["sum", "Главное", true], ["index", "Индекс прогресса", true], ["pred", "Ориентир на SAT", true], ["trend", "Динамика по неделям", true], ["skills", "Навыки", true], ["skillmap", "Навыки: что усвоено и что добить", true], ["focus", "Сильные стороны и что подтянуть", true],
     ["mocks", "Пробные тесты на сайте", true], ["bb", "Официальные пробники Bluebook", true], ["recent", "Последние работы", true], ["note", "Комментарий преподавателя", true]];
   const HEX = '<svg viewBox="0 0 48 52" width="34" height="37" aria-hidden="true"><path d="M24 2 45 14v24L24 50 3 38V14z" fill="none" stroke="#0F0F0F" stroke-width="1.4"/><text x="24" y="31" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="15" fill="#0F0F0F">NK</text></svg>';
 
@@ -101,6 +101,23 @@ window.REPORT = (() => {
       <p class="rp-hint">Примерный диапазон по ${p.n} полным пробным тестам (${p.bb} в Bluebook, ${p.n - p.bb} на сайте nurzycom); свежие тесты весят больше. Это оценка преподавателя, а не официальный балл College Board и не обещание результата.</p>`;
   }
   // «Главное»: 3–5 plain sentences a student, a parent and a manager read in half a minute
+  // «Навыки: что усвоено и что добить»: priorities first, then every limping and every learned subtopic with its College Board skill
+  function skillMapHTML(m) {
+    if (!m || !m.items.length) return '<p class="rp-hint">Пока мало ответов: подтема попадает сюда после трёх ответов с первой попытки.</p>';
+    const SEC = { rw: "RW", math: "Math" }, sgn = (v) => (v == null ? "—" : v > 0 ? "+" + v : v < 0 ? "−" + -v : "0");
+    const dTxt = (x) => (x.d == null ? "—" : `${sgn(x.d)}${x.falling ? " ↓" : x.rising ? " ↑" : ""}`);
+    const nm = (x) => `<b>${esc(x.name)}</b><div class="rp-hint">${esc(SEC[x.sec] || "")}${x.skill ? " · " + esc(x.skill) : ""}</div>`;
+    const tbl = (list, withNeed) => `<table class="rp-t"><thead><tr><th>Подтема · навык College Board</th><th>Сейчас</th>${withNeed ? '<th class="n">Нужно для цели</th>' : ""}<th class="n">Изменение</th><th class="n">Ответов</th></tr></thead><tbody>${list.map((x) =>
+      `<tr><td>${nm(x)}</td><td><span class="rp-meter"><i style="width:${x.now}%"></i></span> ${x.now}%</td>${withNeed ? `<td class="n">${x.need != null ? x.need + "%" : "—"}</td>` : ""}<td class="n">${dTxt(x)}</td><td class="n">${x.n}</td></tr>`).join("")}</tbody></table>`;
+    const weak = m.items.filter((x) => x.st === "weak").sort((a, b) => a.now - b.now), mid = m.items.filter((x) => x.st === "mid").sort((a, b) => a.now - b.now),
+      ok = m.items.filter((x) => x.st === "ok").sort((a, b) => b.now - a.now);
+    const from = m.since ? `с начала работы (${esc(dShort(m.since))})` : m.from ? `с ${esc(dShort(m.from))}` : "за период";
+    return `${m.top.length ? `<h3>Что добить в первую очередь</h3><ol class="rp-todo">${m.top.map((x) => `<li><b>${esc(x.name)}</b>${x.skill ? ` <span class="rp-hint">(${esc(x.skill)})</span>` : ""}: ${esc(x.act)}.</li>`).join("")}</ol>` : '<p><b>Срочно добивать нечего:</b> все подтемы с достаточным числом ответов на нужном уровне.</p>'}
+      <h3>Хромает (${weak.length})</h3>${weak.length ? tbl(weak, m.target) : '<p class="rp-hint">Нет подтем ниже уровня.</p>'}
+      ${mid.length ? `<h3>В процессе (${mid.length})</h3>${tbl(mid, false)}` : ""}
+      <h3>Усвоено (${ok.length})</h3>${ok.length ? tbl(ok, m.target) : '<p class="rp-hint">Пока ни одна подтема не дошла до уровня.</p>'}
+      <p class="rp-hint">«Сейчас» — оценка освоения подтемы по всем ответам ученика с учётом сложности вопросов (внутренняя мера nurzycom, не балл SAT). ${m.target ? "Хромает = ниже того, что нужно для целевого балла; усвоено = на уровне цели или выше." : "Усвоено = 75% и выше; хромает = ниже 50% или заметно просело."} «Изменение» — в процентных пунктах ${from}; ↑ ↓ — изменение больше случайного разброса. Порядок «добить» учитывает разрыв и вес подтемы на настоящем SAT.</p>`;
+  }
   function main(d, rows, hw, weak, on) {
     const out = [], now = Date.now(), D = 864e5;
     if (rows.length) { const d30 = rows.filter((r) => r.t > now - 30 * D).length;
@@ -115,8 +132,11 @@ window.REPORT = (() => {
       out.push(`<b>Индекс прогресса.</b> ${d.index.now} из 100${d.index.weeks.length > 1 ? `, ${dd >= 0 ? "+" : "−"}${Math.abs(dd)} с ${esc(dShort(d.index.from))}` : ""} (внутренняя мера nurzycom, не балл SAT).`); }
     if (on.pred && d.pred && d.pred.est && Object.keys(d.pred.est.sections).length) { const E = d.pred.est;
       out.push(`<b>Ориентир на SAT.</b> ${E.total ? rng(E.total) : Object.entries(E.sections).map(([k, x]) => `${NM[k]} ${rng(x)}`).join(", ")} по полным пробным тестам; это оценка, не официальный балл.`); }
-    if (d.strong.length) out.push(`<b>Получается.</b> ${esc(d.strong.slice(0, 3).join("; "))}.`);
-    if (weak.length) out.push(`<b>В работе.</b> ${esc(weak.slice(0, 3).join("; "))}.`);
+    const M = on.skillmap && d.skillmap && d.skillmap.items.length ? d.skillmap : null;
+    if (M) { const nOk = M.items.filter((x) => x.st === "ok").length, nW = M.items.filter((x) => x.st === "weak").length;
+      out.push(`<b>Навыки.</b> Усвоено ${nOk} из ${M.items.length} подтем, хромает ${nW}${M.top.length ? `; добить в первую очередь: ${esc(M.top.slice(0, 3).map((x) => x.name).join(", "))}` : ""}.`); }
+    else if (d.strong.length) out.push(`<b>Получается.</b> ${esc(d.strong.slice(0, 3).join("; "))}.`);
+    if (!M && weak.length) out.push(`<b>В работе.</b> ${esc(weak.slice(0, 3).join("; "))}.`);
     return out.map((x) => `<li>${x}</li>`).join("");
   }
 
@@ -138,6 +158,7 @@ window.REPORT = (() => {
       ${sec("trend", "Динамика по неделям", hw.length ? trendSVG(rows) : "")}
       ${sec("skills", "Навыки", sk.length ? `<table class="rp-t"><thead><tr><th>Навык College Board</th><th class="n">Вопросов</th><th>С первой попытки</th></tr></thead><tbody>${sk.slice().sort((a, b) => b.value - a.value).map((x) =>
         `<tr><td>${esc(x.label)}</td><td class="n">${x.n}</td><td><span class="rp-meter"><i style="width:${Math.round(x.value)}%"></i></span> ${P(x.value)}</td></tr>`).join("")}</tbody></table><p class="rp-hint">Навыки с тремя и более вопросами в домашних заданиях.</p>` : "")}
+      ${sec("skillmap", "Навыки: что усвоено и что добить", skillMapHTML(d.skillmap))}
       ${sec("focus", "Сильные стороны и что подтянуть", d.strong.length || weak.length ? `<div class="rp-two"><div><h3>Получается хорошо</h3>${d.strong.length ? `<ul>${d.strong.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<p class="rp-hint">Пока мало данных.</p>'}</div>
         <div><h3>Над чем работаем</h3>${weak.length ? `<ul>${weak.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<p class="rp-hint">Явных слабых мест нет.</p>'}</div></div><p class="rp-hint">По разбору всех ответов ученика с учётом сложности вопросов.</p>` : "")}
       ${sec("mocks", "Пробные тесты на сайте", mocks.length ? `<table class="rp-t"><thead><tr><th>Дата</th><th>Тест и раздел</th><th class="n">Верно</th><th class="n">Примерный балл</th></tr></thead><tbody>${mocks.slice().reverse().map((r) =>

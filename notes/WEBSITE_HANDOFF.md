@@ -156,6 +156,7 @@ latest work, and the teacher's comment with next steps. «Сохранить PDF
 `site.css`) keeps only the sheet, on white A4. No library, nothing is sent. The internal progress index is not printed. The footer
 carries contacts and a confidentiality line. Test: `t_report.js desktop|phone [csv] [name]` (sections, comment, print-only
 sheet, a real PDF via `page.pdf`, checked with pdfinfo/pdftotext).
+«Навыки: что усвоено и что добить» (2026-11-23, Nurassyl: «что именно надо добить по скиллам, какие хромают конкретно, а какие усвоились»): a PDF section, on by default, built from the progress subtopics with 3+ answers, each with its College Board skill. It lists «Что добить в первую очередь» (up to 5 subtopics, ranked by the gap times the subtopic's SAT weight, with fewer than 8 answers ranked lower), each with one concrete step. A subtopic far below the level gets 50% as its first step. Then the tables «Хромает», «В процессе» and «Усвоено» show the level now, the change since the start of work and the number of answers. With a target, the section compares against what the target needs; otherwise 75% or more is «усвоено», and under 50% or a clear drop is «хромает». «Главное» gets a «Навыки» line. `skillMap` in `teacher.js`, `skillMapHTML` in `report.js`.
 
 «Импорт результатов Bluebook» (2026-11-23; pilot by Codex from the handoff archive, generalised by Claude): on `mock.html`
 (`docs/bluebook-import.js`) a student pastes College Board My Practice → Score Details (the table, or the whole page with Ctrl+A,
