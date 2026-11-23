@@ -931,6 +931,9 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .bbs-sec { margin: 10px 0; }
 .bbs-t { width: 100%; margin: 6px 0; }
 .cb-h3 { font-size: 1rem; margin: 18px 0 6px; }
+.cb-foreign { border: 1px solid var(--oxide, #A63328); border-left-width: 4px; border-radius: 12px; background: #fff; padding: 12px 14px; margin: 0 0 16px; }
+.cb-foreign b { display: block; margin-bottom: 4px; }
+.cb-foreign p { margin: 4px 0 8px; }
 .bb-rep { color: #5E5A54; }
 /* «PDF-отчёт» (report.js, 2026-11-23): on screen a panel with settings and an A4 preview; in print only the sheet */
 #rp { position: fixed; inset: 0; z-index: 90; background: #ECE9E2; display: grid; grid-template-columns: minmax(260px, 340px) 1fr; overflow: hidden; }

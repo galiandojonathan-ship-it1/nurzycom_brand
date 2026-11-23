@@ -170,11 +170,12 @@
     const seen = new Set(), users = [];
     for (const x of r.data.users) { let me = { login: "?", name: "?" }; try { me = await SITE.nameOf(x.n); } catch (e) { /* unreadable */ } seen.add(x.id); users.push(Object.assign({ id: x.id, at: x.at }, me)); }
     try { for (const a of await SITE.accounts(await SITE.access())) if (!seen.has(a.id)) users.push(Object.assign({ old: true }, a)); } catch (e) { /* access.json is optional */ }
-    const me = SITE.me(); S.lsAcc = users.filter((u) => LSACC.test(u.login || "")); S.users = users.filter((u) => (!me || u.login !== me) && !LSACC.test(u.login || "")).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
+    const me = SITE.me(); S.meU = users.find((u) => me && u.login === me) || null; S.lsAcc = users.filter((u) => LSACC.test(u.login || "")); S.users = users.filter((u) => (!me || u.login !== me) && !LSACC.test(u.login || "")).sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));   // the teacher's own login is not a student
     await loadGroups();
     const pupils = activeUsers();
     let i = 0; const next = async () => { while (i < pupils.length) await fetchCopy(pupils[i++]); };
     await Promise.all(Array.from({ length: Math.min(5, pupils.length) }, next));
+    if (S.meU) await fetchCopy(S.meU);   // only to spot the teacher's own results in a student's copy (foreignOf)
     S.loaded = true;
   }
   const gate = (t) => `<div class="cb-gate">${sectionTitle("Добро пожаловать")}<p>${esc(t)}</p><a class="btn" href="cabinet.html?view=accounts#reg" data-cb-view="accounts">Настроить доступ <span class="arr">→</span></a></div>`;
@@ -337,11 +338,43 @@
             <span class="st">${it.res ? `<b>${esc(it.res)}</b>` : it.hand ? "отмечено" : ""}</span></li>`).join("")}</ul>
           <div class="row"><button class="btn ghost sm" type="button" data-stage="${esc(st.no)}">Отметить весь этап</button></div></details>`; }).join("")}`;
   }
+  // Another account's results inside this copy (2026-11-23: on a shared browser the next login uploaded the previous account's
+  // results, e.g. Nurassyl's Bluebook tests in a student's account). Bluebook records stamped with another account, records
+  // that are also in another account's copy, and results saved under another student's name.
+  function foreignOf(u) {
+    const others = [...S.users, ...(S.meU ? [S.meU] : [])].filter((x) => x.id !== u.id && x.B), out = [], seen = new Set();
+    const nameOf = (id) => (others.find((x) => x.id === id) || {}).name || "другой аккаунт";
+    for (const [k, r] of Object.entries(u.B || {})) {
+      if (!r || r.v == null) continue;
+      if (k.indexOf("bb_share_") === 0) {
+        let d; try { d = JSON.parse(r.v); } catch (e) { continue; } if (!d || !d.sections || d.deleted) continue;
+        const label = Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "Пробник Bluebook";
+        if (d.own && d.own !== u.id) { out.push({ key: k, v: r.v, what: label, who: nameOf(d.own) }); seen.add(k); continue; }
+        if (d.own) continue;
+        const twin = others.find((x) => x.B[k] && x.B[k].v != null && !/"deleted":1/.test(x.B[k].v));
+        if (twin) { out.push({ key: k, v: r.v, what: label, who: twin.name }); seen.add(k); }
+        continue;
+      }
+      for (const re of NAME_RE) { const m = re.exec(k); if (!m) continue;
+        const nk = FORMKIT.key(m[1]); if (m[1] === u.nm || nk === FORMKIT.key(u.name) || nk === FORMKIT.key(u.nm || "")) break;
+        const o = others.find((x) => FORMKIT.key(x.name) === nk); if (o) out.push({ key: k, v: r.v, what: "результат на имя «" + m[1] + "»", who: o.name });
+        break; }
+    }
+    return out;
+  }
+  function foreignBox(u) {
+    const F = foreignOf(u); if (!F.length) return "";
+    const bb = F.filter((x) => x.key.indexOf("bb_share_") === 0), res = F.length - bb.length, who = [...new Set(F.map((x) => x.who))].join(", ");
+    return `<div class="cb-foreign" role="note"><b>В копии ${esc(u.name)} есть данные другого аккаунта (${esc(who)})</b>
+      <p>${bb.length ? `Пробники Bluebook: ${esc(bb.map((x) => x.what).join(", "))}. ` : ""}${res ? `Результатов на чужое имя: ${res}. ` : ""}Так бывает, когда на одном устройстве входили в разные аккаунты: сайт загрузил результаты прошлого аккаунта в новый. Теперь при смене аккаунта сайт это чистит сам.</p>
+      <p class="hint">Если это не работы ${esc(u.name)}, удалите их здесь: у ${esc(who)} они останутся.</p>
+      <button class="btn sm" type="button" data-foreign>Удалить чужие данные (${F.length})</button></div>`;
+  }
   function results(u, I) {
     return `<p class="hint cb-lead">«Сбросить» убирает результат и счётчик попыток, и ученик решает эту работу заново как в первый раз. Ответы, уже отправленные в Google Form, остаются там.</p>
       ${I.R.length ? `<ul class="cb-rows cb-res">${I.R.map((r) => `<li><span>${esc(r.label)}<small>${esc(r.t ? new Date(r.t).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "")}</small></span>
           <b>${esc(r.score)}</b>${/^ct_last_.+_C[a-z0-9]{8}$/.test(r.key) ? `<button class="chip" type="button" data-ctrev="${esc(r.key.slice(-9))}">Разбор →</button>` : ""}<button class="chip" type="button" data-reset="${esc(r.key)}">Сбросить</button></li>`).join("")}</ul>` : '<p class="td-sub">Сдач пока нет.</p>'}
-      ${window.BBSHARE ? (() => { const sh = BBSHARE.fromCopy(u.B); return sh.length ? `<h3 class="cb-h3">Bluebook · отправлено учеником</h3>${BBSHARE.html(sh, { del: true, open: false })}` : ""; })() : ""}`;
+      ${window.BBSHARE ? (() => { const sh = BBSHARE.fromCopy(u.B, u.id); return sh.length ? `<h3 class="cb-h3">Bluebook · отправлено учеником</h3>${BBSHARE.html(sh, { del: true, open: false })}` : ""; })() : ""}`;
   }
   function tasks(u, I) {
     return `<div class="cb-bar">${archived(u) ? "" : '<button class="btn" type="button" data-new="1">Новое задание <span class="arr">+</span></button>'}
@@ -607,7 +640,7 @@
     else {
       const I = info(u);
       detail = profileHead(u, I) + `<div class="chips cb-tabs" role="tablist">${[["over", "Обзор"], ["plan", "План"], ["res", `Результаты · ${I.R.length}`], ["tasks", `Задания${I.open ? ` · ${I.open}` : ""}`]].map(([k, t]) => `<button class="chip" role="tab" type="button" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join("")}</div>
-        <div class="cb-body">${S.tab === "plan" ? plan(u, I) : S.tab === "res" ? results(u, I) : S.tab === "tasks" ? tasks(u, I) : over(u, I)}</div>`;
+        <div class="cb-body">${foreignBox(u)}${S.tab === "plan" ? plan(u, I) : S.tab === "res" ? results(u, I) : S.tab === "tasks" ? tasks(u, I) : over(u, I)}</div>`;
     }
     main.innerHTML = toolbar() + `<section class="cb-detail">${detail}</section>`;
     bind(u);
@@ -691,6 +724,10 @@
       on("[data-reset]", (b) => { const r = I.R.find((x) => x.key === b.dataset.reset); if (!r || !confirm(`Сбросить «${r.label}» (${r.score}) у ${u.name}? Ученик решит эту работу заново.`)) return;
         act(u, (B, set) => PLAN.resetKeys(nm, r.kind, r.rest).forEach((k) => set(k, null)), `Сброшено: ${r.label}`); });
       on("[data-new]", () => openAssign([u.id]));
+      on("[data-foreign]", () => {   // no dialog, «Вернуть» puts everything back (as with the other removals)
+        const F = foreignOf(u); if (!F.length) return;
+        act(u, (B, set) => F.forEach((x) => set(x.key, null)), `Удалено чужих записей: ${F.length}`, () => act(u, (B, set) => F.forEach((x) => set(x.key, x.v)), "Записи возвращены"));
+      });
       on("[data-bbdel]", (b) => {   // no dialog: it goes at once, «Вернуть» in the message puts it back (as with tasks)
         const key = b.dataset.bbdel, orig = I.get(key), d = (() => { try { return JSON.parse(orig); } catch (e) { return {}; } })();
         act(u, (B, set) => set(key, BBSHARE.tomb(d)), "Пробник Bluebook убран", () => act(u, (B, set) => set(key, orig), "Пробник возвращён"));

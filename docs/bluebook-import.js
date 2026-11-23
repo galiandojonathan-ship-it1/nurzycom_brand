@@ -237,11 +237,13 @@
   const sentBox = document.getElementById("bb-sent"), sumN = document.getElementById("bb-sum-n");
   // «23 ноября в 14:05»: when a result was sent (the student asked to see the time, not only the day)
   const sentAt = (t) => { const d = new Date(t); return `${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`; };
+  let me = "";   // this account's id: a record stamped with another account (a shared browser, before 2026-11-23) is not listed
+  const mine = (d) => !d.own || !me || d.own === me;
   function renderSent() {
     if (!sentBox) return;
     const list = [];
     for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf("bb_share_") !== 0) continue;
-      try { const d = JSON.parse(localStorage.getItem(k)); if (d && d.sections && !d.deleted) list.push(d); } catch (e) { /* not a share */ } }
+      try { const d = JSON.parse(localStorage.getItem(k)); if (d && d.sections && !d.deleted && mine(d)) list.push(d); } catch (e) { /* not a share */ } }
     list.sort((a, b) => (b.taken || b.at || 0) - (a.taken || a.at || 0));
     const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
     sumN.textContent = list.length ? `отправлено: ${list.length}` : "";
@@ -258,7 +260,9 @@
     go.disabled = true; say("Отправляю…");
     try {
       await SITE.syncNow().catch(() => false);   // see the teacher's latest change (a removal) first
-      const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
+      const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash;
+      if (me) data.own = me;
+      let was = localStorage.getItem(key); try { if (was && !mine(JSON.parse(was))) was = null; } catch (e) { /* old */ }
       // a removed attempt (the teacher's mark) may be sent again (Nurassyl: «I may change my mind»); the teacher sees it was resent
       let removed = null;
       if (was) { let at = "", what = ""; try { const w = JSON.parse(was); if (w.deleted) removed = w.at || Date.now(); at = w.at ? sentAt(w.at) : "";
@@ -288,7 +292,7 @@
     return true;
   }
 
-  SITE.ready.then(() => { details.hidden = false; renderSent(); setTimeout(renderSent, 3000);   // again after the account sync of this page load
+  SITE.ready.then(async () => { try { if (SITE.me()) me = await SITE.lid(SITE.me()); } catch (e) { /* no login */ } details.hidden = false; renderSent(); setTimeout(renderSent, 3000);   // again after the account sync of this page load
     if (!canSend()) { go.textContent = "Проверить таблицу"; noteEl.textContent = "Чтобы отправить результат преподавателю, войдите на сайт под своим логином. Проверить таблицу можно и так."; } });
   details.addEventListener("toggle", () => { if (details.open) { loadCatalog(); renderSent(); } });
   addEventListener("storage", (e) => { if (!e.key || e.key.indexOf("bb_share_") === 0) renderSent(); });
