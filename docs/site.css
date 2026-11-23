@@ -1036,3 +1036,7 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 /* «Контрольные» Gemini questions (2026-11-23) */
 .tw-dec { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
 .tw-decb { display: inline-block; margin: 0 0 6px; padding: 3px 10px; border-radius: 9px; background: #F1E7D6; color: #6A4A12; font-size: 13px; font-weight: 600; }
+
+.rp-ixw { break-inside: avoid; margin: 6px 0 2px; }
+.rp-ixw h3 { font-size: 13px; margin: 4px 0 0; }
+.rp-ixw h3 .rp-hint { font-weight: 400; margin-left: 6px; }

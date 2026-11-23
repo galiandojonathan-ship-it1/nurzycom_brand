@@ -38,18 +38,28 @@ window.REPORT = (() => {
   const PARTS = [["M", "Мастерство", "решает подтемы с учётом сложности"], ["X", "Перенос на экзамен", "результаты в полных пробниках"], ["R", "Удержание", "помнит решённое неделями позже"], ["P", "Темп", "укладывается во время"], ["C", "Исправление", "исправляет ошибки со второй попытки"]];
   function indexSVG(w) {
     if (w.length < 2) return "";
-    const W = 640, H = 150, L = 30, R = 50, T = 16, B = 24, x = (i) => L + (W - L - R) * i / (w.length - 1), y = (v) => T + (H - T - B) * (1 - v / 100);
+    const W = 640, H = 120, L = 30, R = 50, T = 16, B = 24, x = (i) => L + (W - L - R) * i / (w.length - 1), y = (v) => T + (H - T - B) * (1 - v / 100);
     const grid = [0, 50, 100].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#D9D5CD"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="#5E5A54">${v}</text>`).join("");
     const path = w.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(""), step = Math.ceil(w.length / 6);
     const labels = w.map((p, i) => (i % step === 0 || i === w.length - 1 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#5E5A54">${esc(dShort(p[0]))}</text>` : "")).join("");
     const last = w[w.length - 1];
     return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" role="img" aria-label="Индекс прогресса по неделям">${grid}<path d="${path}" fill="none" stroke="#0F0F0F" stroke-width="2"/><circle cx="${x(w.length - 1)}" cy="${y(last[1])}" r="4" fill="#A63328"/>${labels}<text x="${x(w.length - 1) + 8}" y="${y(last[1]) + 4}" font-size="11" font-weight="600" fill="#0F0F0F">${last[1]}</text></svg>`;
   }
+  // three windows, as in the card (Nurassyl, 2026-11-23: «three graphs for the last 4 weeks, 8 weeks and all time»)
+  function indexCharts(ix) {
+    const last = ix.weeks[ix.weeks.length - 1][0], WEEK = 6048e5;
+    return [["Последние 4 недели", 4], ["Последние 8 недель", 8], ["Всё время", 0]].map(([title, n]) => {
+      const w = n ? ix.weeks.filter(([t]) => t >= last - n * WEEK) : ix.weeks;
+      if (w.length < 2) return `<div class="rp-ixw"><h3>${title}</h3><p class="rp-hint">Пока одна точка: ${w.length ? w[0][1] : "—"}. Линия появится через неделю.</p></div>`;
+      const d = w[w.length - 1][1] - w[0][1];
+      return `<div class="rp-ixw"><h3>${title} <span class="rp-hint">${d >= 0 ? "+" : "−"}${Math.abs(d)} с ${esc(dShort(w[0][0]))} · было ${w[0][1]}, сейчас ${w[w.length - 1][1]}</span></h3>${indexSVG(w)}</div>`;
+    }).join("");
+  }
   function indexHTML(ix) {
     if (!ix || ix.thin) return `<p>Индекс пока не рассчитан: для него нужно около ${ix ? ix.need : 30} ответов с первой попытки в размеченных заданиях, сейчас ${ix ? ix.nAns : 0}. Он появится в следующих отчётах по мере выполнения домашних заданий и пробных тестов.</p><p class="rp-hint">Индекс nurzycom от 0 до 100 — внутренняя мера прогресса, а не балл SAT.</p>`;
     const d = ix.now - ix.first;
     return `<div class="rp-pred"><div class="rp-pred-big">${ix.now}<small style="font-size:14px;font-weight:500"> из 100</small></div><div>${ix.weeks.length > 1 ? `<b>${d >= 0 ? "+" : "−"}${Math.abs(d)}</b> с ${esc(dShort(ix.from))} (было ${ix.first})` : `на ${esc(dShort(ix.at))}`} · ответов в расчёте: ${ix.nAns}</div></div>
-      ${indexSVG(ix.weeks)}
+      ${indexCharts(ix)}
       <table class="rp-t"><thead><tr><th>Часть индекса</th><th>Что показывает</th><th class="n">Сейчас</th></tr></thead><tbody>${PARTS.map(([k, l, what]) => { const v = ix.parts[k], v0 = ix.parts0[k];
         return `<tr><td>${l}</td><td>${what}</td><td class="n">${v == null ? "мало данных" : Math.round(v) + (v0 != null && ix.weeks.length > 1 ? ` <span class="rp-hint">(${Math.round(v - v0) >= 0 ? "+" : "−"}${Math.abs(Math.round(v - v0))})</span>` : "")}</td></tr>`; }).join("")}</tbody></table>
       <p class="rp-hint">Индекс nurzycom от 0 до 100 по всем ответам ученика с первой попытки с учётом сложности вопросов: около 0 — ответы наугад, 100 — уверенное решение на уровне экзамена. Это внутренняя мера прогресса, а не балл SAT.</p>`;

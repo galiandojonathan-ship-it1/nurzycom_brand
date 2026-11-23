@@ -379,6 +379,8 @@ Tests to run by area:
   `report.js` section «Индекс прогресса» (on by default, can be unticked): the index out of 100, the change since the first
   week with enough answers, the weekly line, the five parts (Мастерство, Перенос на экзамен, Удержание, Темп, Исправление)
   with what each shows, and the line «внутренняя мера nurzycom, не балл SAT»; «Главное» opens with it too. `teacher.js`
+  Three charts of the weekly index (same day, Nurassyl: «three graphs for the last 4 weeks, 8 weeks and all time»), each
+  with its own change («+3 с 1 нояб. 2026 · было 20, сейчас 23»); a window with one point says the line comes next week.
   `progData(s)` computes the same index as the card (same source switches) when the PDF is opened before the card's block
   is ready. With fewer than `PROGRESS.MIN_IX` (30) answers the section says how many there are and how many are needed.
 - **«Контрольные» Gemini questions (2026-11-23, Nurassyl: «рандомные 30% вопросов with an intentional off-topic answer… чтобы
