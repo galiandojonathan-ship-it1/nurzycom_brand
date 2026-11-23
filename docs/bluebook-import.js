@@ -299,6 +299,19 @@
   form.addEventListener("input", clear);
   form.addEventListener("reset", clear);
   input.addEventListener("paste", () => setTimeout(check, 0));   // checks at once after pasting
+  // a PDF of Score Details (phones where the page cannot be copied whole): bbpdf.js reads its text in the browser
+  const file = document.getElementById("bb-file");
+  if (file) file.addEventListener("change", async () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    clear(); status.className = "bb-st"; status.textContent = "Читаю PDF…";
+    try {
+      if (!window.BBPDF) throw new Error("Не удалось открыть чтение PDF. Обновите страницу.");
+      if (f.size > 15e6) throw new Error("Файл больше 15 МБ. Сохраните PDF только страницы Score Details.");
+      input.value = await BBPDF.text(f);
+      if (await check()) status.textContent = "PDF прочитан. " + status.textContent;
+    } catch (e) { status.textContent = (e && e.message) || "PDF не прочитался. Сохраните его со страницы Score Details ещё раз."; status.className = "bb-st bb-warn"; }
+    finally { file.value = ""; }
+  });
   form.addEventListener("submit", async (e) => {   // one click: checks first if needed, then sends; a broken table is never sent
     e.preventDefault();
     if (go.disabled) return;
