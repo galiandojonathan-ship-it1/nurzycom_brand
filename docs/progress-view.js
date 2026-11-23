@@ -26,7 +26,7 @@ window.PVIEW = (() => {
     wrong_quantity: "Нашёл не ту величину", operation: "Не то действие или формула", misread: "Неверно прочитал график или условие", other: "Другое" };
   const PARTS = [["M", "Мастерство"], ["X", "Перенос на экзамен"], ["R", "Удержание"], ["P", "Темп"], ["C", "Исправление"]];
   const NS = "http://www.w3.org/2000/svg", el = (n, a, p) => { const e = document.createElementNS(NS, n); for (const k in a || {}) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
-  const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");   // with the year (Nurassyl: «добавь года в датах»)
   let tip;
   function showTip(e, html) { if (!tip) { tip = document.createElement("div"); tip.className = "pg-tip"; tip.setAttribute("role", "status"); document.body.appendChild(tip); }
     tip.innerHTML = html; tip.style.opacity = 1; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px"; }
@@ -136,9 +136,16 @@ window.PVIEW = (() => {
       if (cur && cur.d) {
         const PAL = ["#2A7DB8", "#B5402F", "#3E8E41", "#C77C02", "#6E57C9", "#1B8A8A", "#B0397E", "#5E5A54"], N = res.snaps.length;
         const domNow = cur.d.dom[N - 1], sk = cur.d.skills.map((x, k) => ({ ...x, color: PAL[k % PAL.length], now: x.series[N - 1] })).sort((p, q) => (p.now ?? 9) - (q.now ?? 9));
-        box.querySelector("#pg-domleg").innerHTML = `<span><i style="background:#0F0F0F;height:4px"></i><b>${esc(DOMN[cur.sec][cur.i])} в целом</b></span>` + sk.map((x) => `<span${x.now != null && domNow != null && x.now < domNow - 0.05 ? ' class="pg-limp"' : ""}><i style="background:${x.color}"></i>${esc(x.skill)} <small>· ответов ${Math.round(x.n)}</small>${x.now != null && domNow != null && x.now < domNow - 0.05 ? " · хромает" : ""}</span>`).join("");
-        line(box.querySelector("#pg-dom"), { series: [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 },
-          ...sk.map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
+        const hid = (st.hide = st.hide || {}), off = (k) => !!hid[cur.id + "|" + k];   // lines switched off in the legend (all on by default)
+        const lg = (k, inner, cls) => `<button type="button" class="pg-lg${cls ? " " + cls : ""}" data-lg="${esc(k)}" aria-pressed="${!off(k)}" title="Показать или скрыть линию">${inner}</button>`;
+        box.querySelector("#pg-domleg").innerHTML = lg("dom", `<i style="background:#0F0F0F;height:4px"></i><b>${esc(DOMN[cur.sec][cur.i])} в целом</b>`) + sk.map((x) => lg(x.skill, `<i style="background:${x.color}"></i>${esc(x.skill)} <small>· ответов ${Math.round(x.n)}</small>${x.now != null && domNow != null && x.now < domNow - 0.05 ? " · хромает" : ""}`, x.now != null && domNow != null && x.now < domNow - 0.05 ? "pg-limp" : "")).join("")
+          + (Object.keys(hid).some((k) => k.startsWith(cur.id + "|") && hid[k]) ? '<button type="button" class="pg-lg pg-lg-all" data-lg-all>Показать все</button>' : "");
+        box.querySelectorAll("#pg-domleg [data-lg]").forEach((b) => (b.onclick = () => { const k = cur.id + "|" + b.dataset.lg, vis = 1 + sk.length - sk.filter((x) => off(x.skill)).length - (off("dom") ? 1 : 0);
+          if (!hid[k] && vis <= 1) return;   // the last visible line stays
+          hid[k] = !hid[k]; draw(); }));
+        const all = box.querySelector("#pg-domleg [data-lg-all]"); if (all) all.onclick = () => { Object.keys(hid).forEach((k) => { if (k.startsWith(cur.id + "|")) delete hid[k]; }); draw(); };
+        line(box.querySelector("#pg-dom"), { series: [...(off("dom") ? [] : [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 }]),
+          ...sk.filter((x) => !off(x.skill)).map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
           times: cut.map((q) => q.t), fmt: (v) => Math.round(v) + "%", h: 260 });
       }
       if (o.onTwins) { box.querySelectorAll("[data-twk]").forEach((b) => (b.onclick = () => o.onTwins({ focus: NAME[b.dataset.twk] || "" })));
