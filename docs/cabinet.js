@@ -177,6 +177,10 @@
     await Promise.all(Array.from({ length: Math.min(5, pupils.length) }, next));
     if (S.meU) await fetchCopy(S.meU);   // only to spot the teacher's own results in a student's copy (foreignOf)
     S.loaded = true;
+    // archived students too, in the background: a leaked record may come from any account (foreignOf)
+    (async () => { const rest = S.users.filter((u) => u.B === undefined); let j = 0;
+      await Promise.all(Array.from({ length: Math.min(4, rest.length) }, async () => { while (j < rest.length) await fetchCopy(rest[j++]); }));
+      if (rest.length && S.cur && !S.assign && !S.editG) render(); })();
   }
   const gate = (t) => `<div class="cb-gate">${sectionTitle("Добро пожаловать")}<p>${esc(t)}</p><a class="btn" href="cabinet.html?view=accounts#reg" data-cb-view="accounts">Настроить доступ <span class="arr">→</span></a></div>`;
 
