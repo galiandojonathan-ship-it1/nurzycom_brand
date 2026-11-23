@@ -44,6 +44,15 @@ ok(/не найдены/.test(err("hello\nworld")), "random text: «Строки
   ok(BB.detect(r2, cat, "rw").match && m2.every((r, i) => r.answers.length && BB.canon(r.answers[0]) === BB.canon(m1[i].answers[0])), "«Show Correct Answers» off: the test is still recognised and the keys of the misses come from the catalog");
   const h1 = await BB.shareOf(rows, cat, meta), h2 = await BB.shareOf(r2, cat, BB.parseMeta(off));
   ok(h1.hash === h2.hash && h1.taken === meta.taken && h1.sections.rw.domains, "the same attempt copied with the switch on or off is one record, with the date and domains");
+  // the page lets the student sort the table: «Question» once turns it over; sorted by number interleaves the modules
+  const lines = table(t0, { rw: "m2h", math: "m2e" }, "tab", mpMiss).split("\r\n"), want = BB.parse(lines.join("\n")).map((r) => `${r.section}${r.module}.${r.question}:${r.status}`).join();
+  const got = (l) => { try { return BB.parse(l.join("\n")).map((r) => `${r.section}${r.module}.${r.question}:${r.status}`).join(); } catch (e) { return e.message; } };
+  ok(got(lines.slice().reverse()) === want, "a table turned over (last question first) reads the same rows and modules");
+  const byNum = lines.map((l, i) => ({ l, i, q: +l.split("\t")[0] })).sort((x, y) => x.q - y.q || x.i - y.i).map((x) => x.l);
+  ok(got(byNum) === want, "a table sorted by question number (modules interleaved) reads the same rows and modules");
+  const mpRev = (() => { const head = mp.slice(0, mp.indexOf("\n1\t")), rowsTxt = mp.slice(mp.indexOf("\n1\t") + 1, mp.indexOf("\nTop")), tail = mp.slice(mp.indexOf("\nTop"));
+    const blocks = rowsTxt.split(/\n(?=\d+\t(?:Reading|Math))/); return head + "\n" + blocks.reverse().join("\n") + tail; })();
+  ok(got(mpRev.split("\n")) === want.replace(/./g, (c) => c) && BB.detect(BB.parse(mpRev), cat, "rw").match, "the real My Practice page turned over is read and recognised");
   const v10 = mp.split("\n").slice(0, mp.split("\n").findIndex((l) => /^11\t/.test(l))).join("\n");
   ok(/View: All/.test((() => { try { BB.parse(v10); return ""; } catch (e) { return e.message; } })()), "«View: 10» copy: the message says to choose View: All");
   console.log(fails ? `${fails} FAILED` : `ALL PASS (${n})`); process.exit(fails ? 1 : 0);
