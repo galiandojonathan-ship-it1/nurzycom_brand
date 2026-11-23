@@ -193,6 +193,15 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+Removing a shared practice test (2026-11-23, Nurassyl: «удалять практисы… если посчитаю нерелевантными», then «allow the
+student to send it again… just mark it for me»): «Убрать» in the results card (`teacher.js` `bbDelWire`/`bbSet`) and in the
+cabinet account card writes a mark `{ deleted: 1, at, hash, title, taken }` into the same `bb_share_<hash>` key, so the student's
+devices sync the removal instead of re-uploading the old record. «Вернуть» appears for 10 s (cabinet: in the toast).
+`BBSHARE.fromCopy` skips marks. The student may send the same attempt again: before the duplicate check the page syncs
+(`SITE.syncNow`). A key holding a mark is overwritten with the new record plus `resent: 1, removedAt`, and the teacher sees the
+red pill «отправлен снова после удаления <date>». Test: `t_bbshare.js` (remove, undo, remove, mark on the account, resend, pill,
+cabinet removal).
+
 Real My Practice copy (2026-11-23, Nurassyl pasted his own SAT Practice 4): steps on the page are «Show Correct Answers» on,
 «View: All», then Ctrl+A / Ctrl+C. Rows read «N⇥Section⇥» / key line / «Your answer; Status». The parser takes the status line on
 its own; whatever comes before it is the key. With the switch off the key line is empty: a correct row's key is its own answer,

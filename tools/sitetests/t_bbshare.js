@@ -27,11 +27,11 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await a.click('.bb-share button:has-text("Поделиться")'); await a.click('.bb-confirm button:has-text("Отправить")');
   await a.waitForFunction(() => /Отправлено|Сохранено/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
   ok(/Отправлено\./.test(await a.textContent(".bb-share")), "«Отправить» saves it on the account at once: " + (await a.textContent(".bb-share [role=status]")));
-  await a.click('.bb-share button:has-text("Поделиться")');
+  await a.click('.bb-share button:has-text("Поделиться")'); await a.waitForFunction(() => /уже отправлен/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 }).catch(() => {});
   ok(/уже отправлен/.test(await a.textContent(".bb-share")), "sharing the same table again: «уже отправлен», no second record");
   // the same table pasted again on another page load is still one record
   await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
-  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")');
+  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")'); await a.waitForFunction(() => /уже отправлен/.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 }).catch(() => {});
   ok(/уже отправлен/.test(await a.textContent(".bb-share")), "after a reload the same attempt is still recognised as sent");
   // a later attempt (SAT3 shares module 1 with SAT2) with the same RW question missed again
   await a.fill("#bb-text", tableOf(synthetic(), "SAT3", { rw: "m2e", math: "m2h" }, "tab", ["rw.1.9"])); await a.click("#bb-form button[type=submit]");
@@ -72,11 +72,36 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await teacher.waitForSelector("#st-tw [data-twsel]", { timeout: 15000 });
   const works = await teacher.$$eval('#st-tw [data-twf="work"] option', (o) => o.map((x) => x.textContent));
   ok(works.some((w) => /^Bluebook · SAT Practice Test 2 · 4$/.test(w)) && works.some((w) => /^Bluebook · SAT Practice Test 3 · 1$/.test(w)), "the Gemini picker offers the Bluebook misses as works: " + works.join(" | "));
+  // remove in the results card: «Убрать» → «Вернуть» → «Убрать»; the record becomes a mark, the student cannot resend it
+  const delBtn = () => teacher.$(`#st-bb .bbs-one:has(summary b:has-text("SAT Practice Test 2")) [data-bbdel]`);
+  await (await delBtn()).click(); await teacher.waitForSelector("#bb-undo", { timeout: 10000 });
+  const left = await teacher.$$eval("#st-bb .bbs-one summary b", (x) => x.map((e) => e.textContent)); console.log("left after removal:", left, "|", await teacher.textContent("#bb-del-st"));
+  ok(!left.some((t) => /Practice Test 2\b/.test(t)) && /убран/.test(await teacher.textContent("#bb-del-st")), "«Убрать» in the results card removes the attempt at once and offers «Вернуть»");
+  await teacher.click("#bb-undo"); await teacher.waitForFunction(() => /возвращён/.test((document.getElementById("bb-del-st") || {}).textContent || ""), null, { timeout: 10000 });
+  ok(/SAT Practice Test 2/.test(await teacher.textContent("#st-bb")), "«Вернуть» puts it back");
+  await (await delBtn()).click(); await teacher.waitForSelector("#bb-undo", { timeout: 10000 });
+  const marks = await teacher.evaluate(async () => { const id = await SITE.lid("ayana"), g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)), Bx = await SITE.unsealBlob(g.data.data);
+    return Object.keys(Bx).filter((k) => k.startsWith("bb_share_")).map((k) => JSON.parse(Bx[k].v)); });
+  ok(marks.length === 2 && marks.filter((m) => m.deleted).length === 1 && !JSON.stringify(marks.find((m) => m.deleted)).includes("miss"), "on the account: one record kept as a «removed» mark without data, the other untouched");
+  await a.reload(); await a.waitForSelector("#bb-import:not([hidden])"); await a.waitForTimeout(1500);
+  await a.evaluate(() => SITE.syncNow()); await a.reload(); await a.waitForSelector("#bb-import:not([hidden])");
+  await a.click("#bb-import summary"); await a.fill("#bb-text", text); await a.click("#bb-form button[type=submit]");
+  await a.waitForSelector(".bb-share button"); await a.click('.bb-share button:has-text("Поделиться")');
+await a.waitForSelector(".bb-confirm"); await a.click('.bb-confirm button:has-text("Отправить")');
+  await a.waitForFunction(() => /Отправлено\./.test(document.querySelector(".bb-share").textContent), null, { timeout: 15000 });
+  ok(true, "a removed attempt can be sent again (the teacher may change their mind)");
+  await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
+  await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "bb test"), CSV); await teacher.waitForTimeout(600);
+  await teacher.click('#tabs [data-v="students"]'); await teacher.waitForTimeout(300);
+  await teacher.click('#v-students tr.click:has-text("Ayana")'); await teacher.waitForSelector("#st-bb .bbs", { timeout: 15000 });
+  ok(/отправлен снова после удаления/.test(await teacher.textContent("#st-bb .bbs-one:has(summary b:has-text(\"SAT Practice Test 2\")) summary")), "the teacher sees it back with the mark «отправлен снова после удаления»");
   // remove in the cabinet
   await teacher.goto(B + "cabinet.html?view=students", { waitUntil: "load" }); await teacher.waitForSelector(".scard", { timeout: 20000 });
   await teacher.click(`.scard:has(.sc-nm:text-is("Ayana Seitkali")) .sc-open`); await teacher.waitForSelector(".cb-head"); await teacher.click('[data-tab="res"]');
-  await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500); await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500);
-  ok(!/Bluebook · отправлено/.test(await teacher.textContent(".cb-body")), "«Убрать» removes them from the account");
+  await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500);
+  ok(/Вернуть/.test(await teacher.textContent("#cb-toast")), "cabinet «Убрать»: the message offers «Вернуть»");
+  await teacher.click("[data-bbdel]"); await teacher.waitForTimeout(1500);
+  ok(!/Bluebook · отправлено/.test(await teacher.textContent(".cb-body")), "cabinet «Убрать» removes them from the account");
   if (dev === "phone") ok((await a.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone: no sideways scroll on the student page");
   ok(!a.errs.length && !d.errs.length, "no page errors " + JSON.stringify([...a.errs, ...d.errs]));
   await br.close(); console.log(fails ? `${fails} FAILED` : "ALL PASS"); process.exit(fails ? 1 : 0);
