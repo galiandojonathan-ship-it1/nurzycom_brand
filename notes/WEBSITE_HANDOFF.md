@@ -414,6 +414,16 @@ Tests to run by area:
   ~30%» (on by default, kept as `tw_decoys`) sends `decoys`; each control card has a label for the teacher; the status line
   counts them; on saving, the questions are shuffled so the control ones sit anywhere. The student's test does not mark them.
   Tests: `t_twins_lib.mjs` (plan size, off switch, kind checks), `t_twins.js` (fake Gemini emits decoys).
+- **«Прогресс группы» (2026-11-23, Nurassyl: «полный анализ всей группы… выделяй outliers, их не включай, например,
+  Шахсанам. Бери общую массу»):** at the top of «Анализ группы» (`teacher.js` `gpMount`) for the chosen cabinet group: each
+  member's index model (`progData`, same sources as the card). Left out automatically, with the reason shown: the teacher's
+  own account (`hw_student`), service and test logins (Claude, Урок, Student, Demo, test), fewer than 30 answers, and outliers
+  of the index (robust z > 2 from the median and MAD, from 4 students up). Every name is a chip that includes or excludes the
+  student by hand (kept per group in `gp_ex_<group id>`). On the bulk: the median index by week with the middle half (25–75%,
+  dashed), the subtopic table weakest first (median mastery, change over 4 weeks, how many are under 45%), the median accuracy
+  by level and the most common traps. On «Все ученики» the spread is wide (23–80), so a strong student such as Шахсанам (79)
+  is not an outlier there; within her own group the rule or one click leaves her out. `t_group.js` times out at
+  `networkidle` on main too (old issue), `t_group_cb.js` passes.
 - **Live practice: remove a participant, question row (2026-11-23, Nurassyl: «позволь мне удалять участников… быстро списком
   перемещаться по вопросам при нестрогом раунде»):** in «Ответы группы» each name has «✕» (first click «Удалить?», second
   removes; labels drawn by CSS so the cell text stays the name) and a duplicated name is marked «два входа»; API `remove`
