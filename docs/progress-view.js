@@ -52,7 +52,7 @@ window.PVIEW = (() => {
     while (b - a < span) { if (a > lo) a -= step; if (b - a < span && b < hi) b += step; if (a <= lo && b >= hi) break; }
     return [Math.max(lo, a), Math.min(hi, b)];
   }
-  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220, note = null, dots = false }) {
+  function line(box, { series, times, ymax = 100, fmt = (v) => v, marks = [], h = 220, note = null, dots = false, vline = null }) {
     box.innerHTML = ""; const W = 720, P = { l: 34, r: 92, t: 10, b: 26 }, n = times.length; if (!n) return;
     const svg = el("svg", { viewBox: `0 0 ${W} ${h}`, role: "img", "aria-label": series.map((s) => s.label).join(", ") }, box);
     const [y0, y1] = zoom(series.flatMap((s) => s.v), { hi: ymax, span: Math.max(10, ymax / 10), step: 5 });
@@ -60,6 +60,12 @@ window.PVIEW = (() => {
     const ax = el("g", { class: "pg-axis" }, svg);
     const tk = y1 - y0 <= 20 ? 5 : y1 - y0 <= 50 ? 10 : 25;   // round ticks: 15 20 25 30, not 15 19 23 26 30
     for (let v = y0; v <= y1 + 0.001; v += tk) { el("line", { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v) }, ax); el("text", { x: P.l - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = fmt(v); }
+    if (vline && n > 1 && vline.t <= times[n - 1]) {   // the day work began (teacher.js «Начало работы»); earlier than the chart: at its left edge
+      const before = vline.t < times[0]; let i = 0; while (i < n - 2 && times[i + 1] < vline.t) i++;
+      const xv = before ? x(0) : x(i) + (x(i + 1) - x(i)) * Math.min(1, Math.max(0, (vline.t - times[i]) / ((times[i + 1] - times[i]) || 1)));
+      el("line", { x1: xv, x2: xv, y1: P.t, y2: h - P.b, stroke: "#A63328", "stroke-width": 1.6, "stroke-dasharray": "4 4" }, svg);
+      el("text", { x: xv + 4, y: P.t + 10, "font-size": 11, fill: "#A63328", "font-weight": 600 }, svg).textContent = (before ? "← " : "") + vline.label;
+    }
     const step = Math.max(1, Math.ceil(n / 6));
     times.forEach((t, i) => { if (i % step === 0 || i === n - 1) el("text", { x: x(i), y: h - 6, "text-anchor": "middle" }, ax).textContent = day(t); });
     const ends = [];
@@ -100,22 +106,47 @@ window.PVIEW = (() => {
     // period: 8 weeks, or all the time when the last answers are older than that (practice tests taken long ago)
     const lastNew = (() => { const S = res.snaps; for (let i = S.length - 1; i > 0; i--) if (S[i].nAns > S[i - 1].nAns) return i; return 0; })();
     const st = { weeks: res.snaps.length - 1 - lastNew > 8 ? 99 : 8, sec: res.secs[0], dom: null };
+    const T0 = o.start && o.start.t ? o.start.t : null, VL = T0 ? { t: T0, label: "начало работы · " + day(T0) } : null;
+    if (T0 && res.snaps.some((x) => x.t >= T0)) st.weeks = -1;   // with a start date the block opens on «С начала работы»
     // which sources count (teacher.js): chips that stay even when the chosen sources give too few answers for an index
     const srcHTML = () => (o.sources && o.sources.list.length ? `<div class="chips pg-src" role="group" aria-label="Что учитывать">${o.sources.list.map((x) => `<button class="chip" type="button" data-src="${x.k}" aria-pressed="${x.on}">${esc(x.l)} <small>${x.n}</small></button>`).join("")}</div>` : "");
     const srcWire = () => { if (o.sources) box.querySelectorAll("[data-src]").forEach((b) => (b.onclick = () => {   // at least one source stays on
       const on = b.getAttribute("aria-pressed") !== "true"; if (!on && o.sources.list.filter((x) => x.on).length <= 1) return; o.sources.set(b.dataset.src, on); })); };
+    // «С начала работы» (2026-11-23, Nurassyl: «с какого момента начал работу… добавь глубинного анализа каждому»): the index then
+    // and now, the answers and active weeks since, the subtopics that grew most and the ones standing still, answers per week
+    function sinceHTML(S, n, k0) {
+      const after = S.filter((x) => x.t > T0), WK = 6048e5, weeks = after.length ? Math.floor((after[after.length - 1].t - T0 - 1) / WK) + 1 : 0;
+      if (!weeks) return `<section class="pg-since"><b>С начала работы · ${esc(day(T0))}</b><p class="hint">После этой даты ответов пока нет.</p></section>`;
+      const base = k0 >= 0 ? S[k0] : null, b0 = S.findIndex((x) => x.t >= (base ? base.t : T0) && x.index != null && x.nAns >= PROGRESS.MIN_IX);
+      const from = base && base.index != null && base.nAns >= PROGRESS.MIN_IX ? base : b0 >= 0 ? S[b0] : null, last = S[n - 1];
+      const ans = last.nAns - (base ? base.nAns : 0), per = Array(weeks).fill(0); let prev = base ? base.nAns : 0;
+      for (const x of after) { per[Math.floor((x.t - T0 - 1) / WK)] += x.nAns - prev; prev = x.nAns; }   // weeks counted from the start date
+      const active = per.filter((v) => v > 0).length, mxp = Math.max(1, ...per);
+      const ki = from ? S.indexOf(from) : -1;
+      const ch = ki < 0 ? [] : res.subs.filter((x) => x.n >= 3 && x.series[n - 1] != null && x.series[ki] != null).map((x) => ({ k: x.k, d: x.series[n - 1] - x.series[ki], now: x.series[n - 1] })).sort((p, q) => q.d - p.d);
+      const up = ch.filter((x) => x.d > 0.02).slice(0, 3), flat = ch.slice().reverse().filter((x) => x.d <= 0.02).slice(0, 3);
+      const d = from ? last.index - from.index : null;
+      return `<section class="pg-since"><b>С начала работы · ${esc(day(T0))}</b>${o.start.from ? ` <span class="hint">(${esc(o.start.from)})</span>` : ""}
+        <div class="pg-since-row"><div><span class="hint">индекс</span><div class="n">${from ? `${from.index} → ${last.index}` : "—"}${d != null ? ` <small class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : "−"}${Math.abs(d)}</small>` : ""}</div>${from && from !== base ? '<div class="hint">точка отсчёта: первая неделя с достаточным числом ответов</div>' : ""}</div>
+          <div><span class="hint">ответов с первой попытки</span><div class="n">${ans}</div></div>
+          <div><span class="hint">недель с работой</span><div class="n">${active} из ${weeks}</div></div></div>
+        <div class="pg-weeks" aria-label="Ответы по неделям">${per.map((v, i) => `<i style="height:${Math.round(4 + 40 * v / mxp)}px" title="неделя с ${esc(day(T0 + i * WK))}: ${v} ответов"${v ? "" : ' class="zero"'}></i>`).join("")}</div>
+        <div class="pg-grid2"><div><span class="hint">Выросло больше всего</span>${up.length ? `<ul>${up.map((x) => `<li>${esc(NAME[x.k] || x.k)} <b class="up">+${pct(x.d)}</b> <span class="hint">· сейчас ${pct(x.now)}%</span></li>`).join("")}</ul>` : `<p class="hint">${ch.length ? "Пока нет заметного роста." : "Мало данных по подтемам."}</p>`}</div>
+          <div><span class="hint">Стоит на месте или просело</span>${flat.length ? `<ul>${flat.map((x) => `<li>${esc(NAME[x.k] || x.k)} <b class="${x.d < -0.02 ? "down" : ""}">${x.d >= 0 ? "+" : "−"}${pct(Math.abs(x.d))}</b> <span class="hint">· сейчас ${pct(x.now)}%</span></li>`).join("")}</ul>` : ch.length ? '<p class="hint">Всё растёт.</p>' : '<p class="hint">Мало данных по подтемам.</p>'}</div></div></section>`;
+    }
     const draw = () => {
       const S = res.snaps, n = S.length, start = S.findIndex((s) => s.nAns >= PROGRESS.MIN_IX && s.index != null), last = S[n - 1];
       // weeks resting on fewer than MIN_IX answers are not drawn: there the start value of the model, not the student, sets the line
       if (start < 0) { const na = last ? last.nAns : 0, c = (last && last.cnt) || {}, by = Object.keys(c).map((k) => `${k === "rw" ? "Reading and Writing" : "Math"}: ${Object.values(c[k]).reduce((x, y) => x + y[1], 0)}`).join(", ");
         box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика</span>${srcHTML()}<p class="hint">${na < PROGRESS.MIN_IX ? `Мало ответов для расчёта: ${na} из ${PROGRESS.MIN_IX}.` : `Ни в одном разделе пока нет ${PROGRESS.MIN_SEC} ответов (${by}).`} Индекс появится, когда ответов с первой попытки будет ${PROGRESS.MIN_IX}, из них ${PROGRESS.MIN_SEC} в одном разделе.</p></div>`; srcWire(); return; }
-      const a = Math.max(start, n - 1 - st.weeks), cut = S.slice(a), first = cut[0];
+      let k0 = -1; if (T0) S.forEach((x, i) => { if (x.t <= T0 + 864e5) k0 = i; });
+      const a = st.weeks === -1 ? Math.max(start, Math.max(0, k0)) : Math.max(start, n - 1 - st.weeks), cut = S.slice(a), first = cut[0];
       const NOISE = noiseOf((last.nAns - first.nAns) / Math.max(1, (last.t - first.t) / 6048e5)), d = last.index - first.index, slope = cut.length > 1 ? (last.index - cut[Math.max(0, cut.length - 4)].index) / Math.min(3, cut.length - 1) : 0;
       const drv = PROGRESS.drivers(res, a, n - 1).slice(0, 6), mx = Math.max(1e-6, ...drv.map((x) => Math.abs(x.v)));
       box.innerHTML = `<div class="card pg"><div class="pg-top"><div><span class="label">Прогресс ученика · индекс</span>
           <p class="hint">Внутренняя аналитика по ответам с первой попытки и разметке подтем. Не балл SAT и не для публикации.</p></div>
           ${srcHTML()}
-          <div class="chips" role="group" aria-label="Период">${[[4, "4 недели"], [8, "8 недель"], [99, "Всё время"]].map(([v, l]) => `<button class="chip" type="button" data-pw="${v}" aria-pressed="${st.weeks === v}">${l}</button>`).join("")}</div></div>
+          <div class="chips" role="group" aria-label="Период">${[...(T0 ? [[-1, "С начала работы"]] : []), [4, "4 недели"], [8, "8 недель"], [99, "Всё время"]].map(([v, l]) => `<button class="chip" type="button" data-pw="${v}" aria-pressed="${st.weeks === v}">${l}</button>`).join("")}</div></div>
         <div class="pg-grid">
           <section class="pg-hero">${o.target && Object.keys(o.target).length ? `<div class="pg-goal">${Object.entries(o.target).map(([sec, t]) => { const ms = res.subs.filter((x) => x.sec === sec && x.n >= 3 && x.series[S.length - 1] != null), cur = ms.length ? ms.reduce((q, x) => q + x.series[S.length - 1], 0) / ms.length : null, below = ms.filter((x) => (t.sub[x.k] ?? t.mastery) - x.series[S.length - 1] > 0.05).length;
             if (t.current && t.current >= t.score) return `<div><b>Цель ${sec === "rw" ? "RW" : "Math"} ${t.score}</b> (ориентир сейчас ≈ ${t.current}): уже на уровне цели, её можно поднять.</div>`;
@@ -125,6 +156,7 @@ window.PVIEW = (() => {
           <section class="pg-chart"><b>Индекс по неделям</b><div id="pg-ix"></div></section></div>
         <div class="pg-parts">${PARTS.map(([k, l]) => { const v = cut.map((s) => s.parts[k]), now = last.parts[k], was = first.parts[k];
           return `<div class="pg-part" data-pp="${k}"><div class="l">${l}</div><div class="n">${now == null ? "—" : Math.round(now)}${now != null && was != null ? ` <small class="${now >= was ? "up" : "down"}">${now >= was ? "+" : ""}${Math.round(now - was)}</small>` : ""}</div><div class="w">${now == null ? "мало данных" : "вес " + String(PROGRESS.W[k]).replace(".", ",")}</div></div>`; }).join("")}</div>
+        ${T0 ? sinceHTML(S, n, k0) : ""}
         <div class="pg-grid2"><section><b>Откуда рост за период</b><p class="hint">Только изменения больше шума.</p><ul class="pg-drv">${drv.length ? drv.map((x) => `<li><div><span>${esc(NAME[x.k] || x.k)}</span><div class="pg-bar"><i style="width:${Math.abs(x.v) / mx * 100}%;background:${x.v >= 0 ? "#0F0F0F" : "#A63328"}"></i></div></div><b class="${x.v >= 0 ? "up" : "down"}">${x.v >= 0 ? "+" : ""}${x.v.toFixed(1)}</b></li>`).join("") : '<li class="hint">За период нет изменений больше шума. По 4–5 ответам в неделю на подтему рост виден через 3–4 недели.</li>'}</ul></section>
           <section><b>Сложность вопросов</b>${res.secs.length > 1 ? `<div class="chips">${res.secs.map((s) => `<button class="chip" type="button" data-ps="${s}" aria-pressed="${st.sec === s}">${s === "rw" ? "Reading and Writing" : "Math"}</button>`).join("")}</div>` : ""}
             <p class="hint">Ожидаемая доля верных ответов, угадывание учтено. Линия уровня появляется после ${PROGRESS.MIN_LV} ответов этого уровня.</p><div class="pg-legend"><span><i style="background:#2A7DB8"></i>Лёгкие</span><span><i style="background:#6E57C9"></i>Средние</span><span><i style="background:#B5402F"></i>Трудные</span></div><div id="pg-df"></div></section></div>
@@ -134,11 +166,11 @@ window.PVIEW = (() => {
           <div id="pg-mapctl"></div><div class="tw"><table class="dt pg-map"><thead><tr><th>Подтема</th><th style="width:26%">Мастерство</th><th class="num">Сейчас</th><th class="num">Изм.</th><th>По неделям</th><th class="num">Ответов</th><th>Статус</th>${o.onTwins ? "<th><span class=\"sr-only\">Gemini</span></th>" : ""}</tr></thead><tbody id="pg-rows"></tbody></table></div></section>
         <div class="pg-grid2"><section><b>Ловушки</b><p class="hint">Как часто выбирает ловушку, когда она есть: начало → сейчас. Меньше — лучше.</p><div id="pg-tr"></div></section>
           <section><b>Привычки</b><div id="pg-hb"></div></section></div></div>`;
-      line(box.querySelector("#pg-ix"), { series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t), dots: true,
+      line(box.querySelector("#pg-ix"), { vline: VL, series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t), dots: true,
         marks: cut.map((s, i) => (res.mocks.some((t) => t <= s.t && t > (cut[i - 1] ? cut[i - 1].t : 0)) ? i : -1)).filter((i) => i >= 0) });
       const ds = cut.map((s) => s.diff[st.sec] || {});
       const TG = o.target && o.target[st.sec];
-      line(box.querySelector("#pg-df"), { series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].flatMap(([k, c, l]) => [{ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l },
+      line(box.querySelector("#pg-df"), { vline: VL, series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].flatMap(([k, c, l]) => [{ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l },
           ...(TG && ds.some((x) => x[k] != null) ? [{ v: ds.map(() => TG.acc[k] * 100), color: c, label: `цель ${l.toLowerCase()}`, w: 1.4, dash: true }] : [])]),
         times: cut.map((s) => s.t), fmt: (v) => Math.round(v) + "%", h: 240,
         note: (i) => { const c = (cut[i].cnt || {})[st.sec] || {}, f = [["E", "лёгкие"], ["M", "средние"], ["H", "трудные"]].filter(([k]) => c[k]).map(([k, l]) => `${l} ${c[k][0]}/${c[k][1]}`); return f.length ? `<br><span class="pg-tipn">Факт к этой дате: ${f.join(" · ")}</span>` : ""; } });
@@ -209,7 +241,7 @@ window.PVIEW = (() => {
           hid[k] = !hid[k]; draw(); }));
         const all = box.querySelector("#pg-domleg [data-lg-all]"); if (all) all.onclick = () => { Object.keys(hid).forEach((k) => { if (k.startsWith(cur.id + "|")) delete hid[k]; }); draw(); };
         const TD = o.target && o.target[cur.sec];
-        line(box.querySelector("#pg-dom"), { series: [...(TD ? [{ v: cur.d.dom.slice(a).map(() => TD.mastery * 100), color: "#A63328", label: "Нужно для цели", w: 1.4, dash: true }] : []),
+        line(box.querySelector("#pg-dom"), { vline: VL, series: [...(TD ? [{ v: cur.d.dom.slice(a).map(() => TD.mastery * 100), color: "#A63328", label: "Нужно для цели", w: 1.4, dash: true }] : []),
           ...(off("dom") ? [] : [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 }]),
           ...sk.filter((x) => !off(x.skill)).map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
           times: cut.map((q) => q.t), fmt: (v) => Math.round(v) + "%", h: 260 });

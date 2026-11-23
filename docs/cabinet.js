@@ -65,7 +65,7 @@
     if (Array.isArray(loc)) loc = { groups: loc, at: 0 };   // older format: a bare list
     const pick = srv && Array.isArray(srv.groups) && (!loc || !Array.isArray(loc.groups) || (srv.at || 0) >= (loc.at || 0)) ? srv : loc && Array.isArray(loc.groups) ? loc : null;
     const G = pick ? pick.groups : [{ id: newId(), name: "Группа", kind: "group", color: "blue", members: [] }, { id: newId(), name: "Индивидуальные ученики", kind: "solo", color: "green", members: [] }];
-    S.groups = G.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || "Группа").slice(0, 60), kind: g.kind === "solo" ? "solo" : "group", color: GCOL[g.color] ? g.color : "blue", members: Array.isArray(g.members) ? g.members.map(String) : [] }));
+    S.groups = G.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || "Группа").slice(0, 60), kind: g.kind === "solo" ? "solo" : "group", color: GCOL[g.color] ? g.color : "blue", members: Array.isArray(g.members) ? g.members.map(String) : [], ...(/^\d{4}-\d{2}-\d{2}$/.test(g.start || "") ? { start: g.start } : {}) }));   // start: the day the teacher began with the group (teacher.js «Анализ группы»)
     S.archived = new Set(Array.isArray(pick?.archived) ? pick.archived.map(String) : []);
     S.groupsAt = pick ? pick.at || 0 : 0;
     if (pick && pick === loc && r.status !== 0 && r.status !== 503 && (r.ok || r.status === 404)) saveGroups("Группы из этого браузера сохранены на сервере", true);

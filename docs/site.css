@@ -1071,3 +1071,18 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .gp .gp-top { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; margin: 10px 0; }
 .gp .gp-sub tr.gp-weak td:first-child { color: #A63328; font-weight: 600; }
 @media (max-width: 700px) { .gp .gp-top { grid-template-columns: 1fr; } }
+
+/* «С начала работы» (2026-11-23) */
+.pg-since { margin: 14px 0; padding: 12px 14px; border: 1px solid #E3C9C3; border-radius: 14px; background: #FFFDFB; }
+.pg-since-row { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 8px 0; }
+.pg-since-row .n { font: 700 22px var(--sans); } .pg-since-row small { font-size: 13px; }
+.pg-since .up { color: #2F7A33; } .pg-since .down { color: #A63328; }
+.pg-since ul { margin: 4px 0 0; padding-left: 18px; }
+.pg-weeks { display: flex; align-items: flex-end; gap: 3px; height: 48px; margin: 6px 0 10px; }
+.pg-weeks i { flex: 1; max-width: 22px; background: #0F0F0F; border-radius: 3px 3px 0 0; } .pg-weeks i.zero { background: #D9D5CD; }
+.ga-start { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0; }
+.ga-start input { padding: 6px 8px; border: 1px solid #d9d5cd; border-radius: 9px; font: inherit; }
+.gp .up { color: #2F7A33; } .gp .down { color: #A63328; }
+.gp .gp-grow tr.gp-thin td { color: #77736D; }
+.gp .gp-hmap td.gp-hm { text-align: center; color: #fff; font-size: 12px; min-width: 34px; }
+.gp .gp-hmap td.gp-hm[style*="rgba(15,15,15,0)"] { color: transparent; border: 1px solid #ECE9E2; }

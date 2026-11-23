@@ -297,6 +297,8 @@
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
     const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
     await goalLoad(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
+    const SI = await startOf(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
+    const START = SI ? { t: +new Date(SI.date + "T00:00:00"), from: SI.from === "ученик" ? "" : SI.from } : null;
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
     const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
     Object.assign(tags, extra.tags);
@@ -305,7 +307,7 @@
     const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
     const draw = () => {
       const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
-      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
+      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
           set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
     };
@@ -323,7 +325,7 @@
     let goal = null, acct = ids[0] || null;
     for (const id of ids) { const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
       const B = await SITE.unsealBlob(g.data.data).catch(() => null), r = B && B.goal_target; if (r && r.v) { try { goal = JSON.parse(r.v); acct = id; break; } catch (e) { /* bad record */ } } }
-    D.goal = { key: s.key, acct, g: goal };
+    D.goal = { key: s.key, acct, g: goal && (goal.rw || goal.math) ? goal : null, start: goal && /^\d{4}-\d{2}-\d{2}$/.test(goal.start || "") ? goal.start : null, raw: goal };
     return D.goal;
   }
   const goalNeeds = (s) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
@@ -339,36 +341,40 @@
     const box = $("st-goal"); if (!box) return;
     const G = await goalLoad(s); if ($("st-goal") !== box || D.student !== s.key) return;
     if (!G.acct) { box.innerHTML = '<div class="st-goal hint">Цель можно задать, когда у ученика есть свой аккаунт на сайте.</div>'; return; }
-    const g = G.g || {}, exam = g.exam ? new Date(g.exam + "T00:00:00") : null, days = exam ? Math.ceil((exam - Date.now()) / 864e5) : null;
+    const g = G.raw || {}, exam = g.exam ? new Date(g.exam + "T00:00:00") : null, days = exam ? Math.ceil((exam - Date.now()) / 864e5) : null;
     const tot = g.rw && g.math ? +g.rw + +g.math : null, P = D.pred && D.pred.key === s.key && D.pred.est ? D.pred.est : null;
     const secs = P ? ["rw", "math"].filter((k) => g[k] && P.sections[k]) : [], now = secs.length ? secs.reduce((a, k) => a + P.sections[k].mid, 0) : null;
     const want = secs.length ? secs.reduce((a, k) => a + +g[k], 0) : null, weeks = days != null ? Math.max(1, days / 7) : null;
     const pace = now != null && want ? `${want - now > 0 ? `до цели ≈ +${want - now}` : "ориентир уже на уровне цели"}${weeks && want - now > 0 ? ` · нужно ≈ +${Math.round((want - now) / weeks)} в неделю` : ""}` : "";
+    const SI = await startOf(s).catch(() => null); if ($("st-goal") !== box || D.student !== s.key) return;
+    const startTxt = SI ? ` · <span title="${SI.from === "ученик" ? "дата этого ученика" : "дата группы"}">начало работы ${esc(dayLabel(SI.date))}${SI.from === "ученик" ? "" : ` (${esc(SI.from)})`}</span>` : "";
     if (!edit && G.g) {
-      box.innerHTML = `<div class="st-goal"><b>Цель:</b> ${[g.rw ? `RW ${g.rw}` : "", g.math ? `Math ${g.math}` : "", tot ? `всего ${tot}` : ""].filter(Boolean).join(" · ")}${exam ? ` · экзамен ${esc(exam.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }))}${days >= 0 ? ` (через ${days} дн.)` : ""}` : ""}${pace ? ` · <span class="hint">${esc(pace)}</span>` : ""}
+      box.innerHTML = `<div class="st-goal"><b>Цель:</b> ${[g.rw ? `RW ${g.rw}` : "", g.math ? `Math ${g.math}` : "", tot ? `всего ${tot}` : ""].filter(Boolean).join(" · ")}${exam ? ` · экзамен ${esc(exam.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }))}${days >= 0 ? ` (через ${days} дн.)` : ""}` : ""}${pace ? ` · <span class="hint">${esc(pace)}</span>` : ""}${startTxt}
         <button class="chip" type="button" id="goal-edit">Изменить</button><span class="hint"> Цель видит и ученик на странице «Сегодня».</span>${G.msg ? `<span class="hint" role="status"> ${esc(G.msg)}</span>` : ""}</div>`;
       $("goal-edit").onclick = () => goalMount(s, true); return;
     }
-    if (!edit) { box.innerHTML = `<div class="st-goal">${G.msg ? `<span class="hint" role="status">${esc(G.msg)}</span> ` : ""}<b>Цель не задана.</b> <button class="chip" type="button" id="goal-edit">Задать цель</button> <span class="hint">Целевой балл ученика: анализ покажет, где он ниже цели.</span></div>`; $("goal-edit").onclick = () => goalMount(s, true); return; }
+    if (!edit) { box.innerHTML = `<div class="st-goal">${G.msg ? `<span class="hint" role="status">${esc(G.msg)}</span> ` : ""}<b>Цель не задана.</b>${startTxt} <button class="chip" type="button" id="goal-edit">Задать цель или дату начала</button> <span class="hint">Целевой балл ученика: анализ покажет, где он ниже цели.</span></div>`; $("goal-edit").onclick = () => goalMount(s, true); return; }
     const opt = SAT_DATES.map(([v, l]) => `<option value="${v}"${g.exam === v ? " selected" : ""}>${l}</option>`).join("");
     box.innerHTML = `<form class="st-goal st-goal-f" id="goal-f"><b>Цель</b>
       <label>RW <input type="number" id="goal-rw" min="200" max="800" step="10" value="${g.rw || ""}" placeholder="—"></label>
       <label>Math <input type="number" id="goal-m" min="200" max="800" step="10" value="${g.math || ""}" placeholder="—"></label>
       <label>Экзамен <select id="goal-ex"><option value="">—</option>${opt}${g.exam && !SAT_DATES.some(([v]) => v === g.exam) ? `<option value="${esc(g.exam)}" selected>${esc(g.exam)}</option>` : ""}<option value="other">другая дата…</option></select></label>
       <input type="date" id="goal-ex2" hidden>
+      <label>Начало работы <input type="date" id="goal-start" value="${esc(G.start || "")}" title="С этого дня считаются результаты ученика; пусто — дата его группы"></label>
       <button class="btn sm" type="submit">Сохранить</button>${G.g ? '<button class="chip" type="button" id="goal-del">Убрать цель</button>' : ""}<button class="chip" type="button" id="goal-cancel">Отмена</button>
       <span class="hint" id="goal-st">Реалистичная цель: обычно не больше +100–150 к нынешнему ориентиру за 2–3 месяца.</span></form>`;
     $("goal-ex").onchange = () => { $("goal-ex2").hidden = $("goal-ex").value !== "other"; };
     $("goal-cancel").onclick = () => goalMount(s, false);
-    const after = async (goal, msg) => { D.goal = { key: s.key, acct: G.acct, g: goal, msg }; await goalMount(s, false); progMount(s).catch(() => {}); predMount(s).catch(() => {}); };
-    if ($("goal-del")) $("goal-del").onclick = async () => { try { await goalSave(G.acct, null); await after(null, "Цель убрана."); } catch (e) { $("goal-st").textContent = "Не сохранилось: " + e.message; } };
+    const after = async (goal, msg) => { D.goal = { key: s.key, acct: G.acct, g: goal && (goal.rw || goal.math) ? goal : null, start: goal && goal.start || null, raw: goal, msg }; await goalMount(s, false); progMount(s).catch(() => {}); predMount(s).catch(() => {}); };
+    if ($("goal-del")) $("goal-del").onclick = async () => { const keep = G.start ? { start: G.start, at: Date.now() } : null; try { await goalSave(G.acct, keep); await after(keep, "Цель убрана."); } catch (e) { $("goal-st").textContent = "Не сохранилось: " + e.message; } };
     $("goal-f").onsubmit = async (e) => {
       e.preventDefault();
       const n = (id) => { const v = $(id).value.trim(); if (!v) return null; const x = Math.round(+v / 10) * 10; return x >= 200 && x <= 800 ? x : NaN; };
       const rw = n("goal-rw"), math = n("goal-m"), exam = $("goal-ex").value === "other" ? $("goal-ex2").value : $("goal-ex").value;
       if (Number.isNaN(rw) || Number.isNaN(math)) { $("goal-st").textContent = "Балл раздела — от 200 до 800."; return; }
-      if (!rw && !math) { $("goal-st").textContent = "Впишите цель хотя бы по одному разделу."; return; }
-      const goal = { ...(rw ? { rw } : {}), ...(math ? { math } : {}), ...(exam ? { exam } : {}), at: Date.now() };
+      const start = $("goal-start").value;
+      if (!rw && !math && !start) { $("goal-st").textContent = "Впишите цель хотя бы по одному разделу или дату начала работы."; return; }
+      const goal = { ...(rw ? { rw } : {}), ...(math ? { math } : {}), ...(exam ? { exam } : {}), ...(/^\d{4}-\d{2}-\d{2}$/.test(start) ? { start } : {}), at: Date.now() };
       try { await goalSave(G.acct, goal); await after(goal, "Цель сохранена."); } catch (x) { $("goal-st").textContent = "Не сохранилось: " + x.message; }
     };
   }
@@ -424,7 +430,8 @@
     let index = null;
     try { const res = await progData(s), S = res ? res.snaps : [], from = S.findIndex((x) => x.nAns >= PROGRESS.MIN_IX && x.index != null);
       if (from >= 0) { const W = S.slice(from).filter((x) => x.index != null), last = W[W.length - 1];
-        index = { now: last.index, first: W[0].index, from: W[0].t, at: last.t, nAns: last.nAns, weeks: W.map((x) => [x.t, x.index]), parts: last.parts || {}, parts0: W[0].parts || {} }; }
+        const SI = await startOf(s).catch(() => null);
+        index = { now: last.index, first: W[0].index, from: W[0].t, at: last.t, nAns: last.nAns, weeks: W.map((x) => [x.t, x.index]), parts: last.parts || {}, parts0: W[0].parts || {}, start: SI ? +new Date(SI.date + "T00:00:00") : null }; }
       else index = { thin: true, nAns: S.length ? S[S.length - 1].nAns || 0 : 0, need: PROGRESS.MIN_IX };
     } catch (e) { index = { thin: true, nAns: 0, need: (window.PROGRESS && PROGRESS.MIN_IX) || 30 }; }
     return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
@@ -672,6 +679,23 @@
   // group»): members are account ids; their account names are matched to the form's merged names (FORMKIT.key, same rule as the
   // cabinet's import). Needs the admin key in this browser, like the cabinet.
   const GCOLT = { blue: "#1F4FA3", green: "#2B6E2F", amber: "#8A5300", violet: "#6A3D9E", teal: "#165F6E", rose: "#9E2456" };
+  async function groupStartSave(gid, date) {
+    const g = await SITE.api("admin/groups"); if (!g.ok) throw new Error(`Сервер ответил ${g.status}.`);
+    const saved = await SITE.unsealBlob(g.data.data); const grp = (saved.groups || []).find((x) => String(x.id) === String(gid)); if (!grp) throw new Error("Группа не найдена.");
+    if (date) grp.start = date; else delete grp.start;
+    saved.at = Math.max(Date.now(), (saved.at || 0) + 1);
+    const p = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(saved) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
+    try { store("cb_groups", JSON.stringify(saved)); } catch (e) { /* private mode */ }
+    D.cbg = null; D.gpRes = {};
+  }
+  // a student's start: their own date (work_start in their copy, set in the card) or their cabinet group's date
+  const dayLabel = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
+  async function startOf(s) {
+    const G = await goalLoad(s).catch(() => null), own = G && G.start;
+    if (own) return { date: own, from: "ученик" };
+    const CB = await gaGroups().catch(() => ({ groups: [] })), grp = (CB.groups || []).find((g) => g.keys.has(s.key) && g.start);
+    return grp ? { date: grp.start, from: `группа «${grp.name}»` } : null;
+  }
   async function gaGroups() {
     if (D.cbg) return D.cbg;
     if (!SITE.adminKey()) return (D.cbg = { err: "nokey", groups: [] });
@@ -689,7 +713,8 @@
     const archived = new Set(Array.isArray(saved?.archived) ? saved.archived : []);
     const groups = (saved?.groups || []).filter((x) => x && x.id && Array.isArray(x.members)).map((x) => {
       const names = x.members.filter((id) => !archived.has(id)).map((id) => users[id]?.name).filter(Boolean);
-      return { id: String(x.id), name: String(x.name || "Группа"), kind: x.kind === "solo" ? "solo" : "group", color: GCOLT[x.color] || GCOLT.blue, names, keys: new Set(names.map((n) => FORMKIT.key(n)).filter(Boolean)) };
+      return { id: String(x.id), name: String(x.name || "Группа"), kind: x.kind === "solo" ? "solo" : "group", color: GCOLT[x.color] || GCOLT.blue, names, keys: new Set(names.map((n) => FORMKIT.key(n)).filter(Boolean)),
+        start: /^\d{4}-\d{2}-\d{2}$/.test(x.start || "") ? x.start : null };
     }).filter((x) => x.names.length);
     return (D.cbg = { groups });
   }
@@ -699,7 +724,8 @@
     const o = opt || {}, now = Date.now(), seen = new Set(), Q = {};
     const grp = !o.keys && GA.gid && D.cbg && D.cbg.groups.find((g) => g.id === GA.gid);
     const days = o.keys ? 0 : GA.days, secF = o.keys ? "all" : GA.sec, kindF = o.keys ? "all" : GA.kind;
-    const rows = D.rows.filter((r) => (!days || (r.ts && now - r.ts < days * DAY)) && "VMDUAP".includes(r.kind) && (o.keys ? o.keys.has(r.key) : !grp || grp.keys.has(r.key)));
+    const from = !o.keys && grp && grp.start ? +new Date(grp.start + "T00:00:00") : 0;   // «Работаю с группой с»: earlier results do not count
+    const rows = D.rows.filter((r) => (!days || (r.ts && now - r.ts < days * DAY)) && (!from || (r.ts && +r.ts >= from)) && "VMDUAP".includes(r.kind) && (o.keys ? o.keys.has(r.key) : !grp || grp.keys.has(r.key)));
     for (const r of rows) {
       const mock = r.kind === "P", sec = mock ? (/·Math$/.test(r.lesson) ? "math" : "rw") : r.lesson[0] === "V" || r.lesson[0] === "A" ? "rw" : "math";
       if (secF !== "all" && secF !== sec) continue;
@@ -752,12 +778,13 @@
       ? `индекс ${r.idx}: значительно ${r.idx > med ? "выше" : "ниже"} группы (медиана ${Math.round(med)})` : "");
     let over = {}; try { over = JSON.parse(store("gp_ex_" + gid) || "{}"); } catch (e) { over = {}; }
     rows.forEach((r) => { r.why = auto(r); r.out = over[r.st.key] != null ? !!over[r.st.key] : !!r.why; });
-    const inc = rows.filter((r) => !r.out && r.res), WEEK = 6048e5;
+    const inc = rows.filter((r) => !r.out && r.res), WEEK = 6048e5, T0 = grp && grp.start ? +new Date(grp.start + "T00:00:00") : null;
     const draw = () => {
       if (!inc.length) { box.innerHTML = `<div class="card gp"><span class="label">Прогресс группы</span><p class="hint">Нет учеников с данными для общего анализа.</p>${chipsHTML()}</div>`; wire(); return; }
       // index by week on one calendar: each student's latest point at or before the week
       const t1 = Math.max(...inc.map((r) => r.res.snaps[r.res.snaps.length - 1].t)), t0 = Math.min(...inc.map((r) => (r.res.snaps.find((x) => x.index != null && x.nAns >= PROGRESS.MIN_IX) || r.res.snaps[r.res.snaps.length - 1]).t));
-      const weeks = []; for (let t = t0; t <= t1 + 1; t += WEEK) weeks.push(t); if (weeks[weeks.length - 1] < t1) weeks.push(t1);
+      const tb = T0 ? Math.min(T0 - WEEK, t0) : t0;   // the chart opens a week before the group's start, so the start line is inside it
+      const weeks = []; for (let t = tb; t <= t1 + 1; t += WEEK) weeks.push(t); if (weeks[weeks.length - 1] < t1) weeks.push(t1);
       const at = (r, t) => { let v = null; for (const x of r.res.snaps) { if (x.t > t + 1) break; if (x.index != null && x.nAns >= PROGRESS.MIN_IX) v = x.index; } return v; };
       const grid = weeks.map((t) => inc.map((r) => at(r, t)));
       const mid = grid.map((v) => (v.filter((x) => x != null).length >= 2 ? gmed(v) : null)), q1 = grid.map((v) => (v.filter((x) => x != null).length >= 3 ? quant(v, 0.25) : null)), q3 = grid.map((v) => (v.filter((x) => x != null).length >= 3 ? quant(v, 0.75) : null));
@@ -782,11 +809,45 @@
         <div class="tw"><table class="dt gp-sub"><thead><tr><th>Подтема</th><th>Раздел</th><th class="num">Медиана</th><th class="num">За 4 недели</th><th class="num">Слабо у</th><th class="num">Учеников</th></tr></thead><tbody>
         ${S.map((g) => `<tr${g.med < 0.45 ? ' class="gp-weak"' : ""}><td>${esc(NM[g.k] || g.k)}</td><td>${g.sec === "rw" ? "RW" : "Math"}</td><td class="num"><b>${P(g.med)}</b></td><td class="num">${g.ch == null ? "—" : `${g.ch >= 0 ? "+" : "−"}${Math.abs(Math.round(g.ch * 100))}`}</td><td class="num">${g.weak} из ${g.now.length}</td><td class="num">${g.now.length}</td></tr>`).join("") || '<tr><td colspan="6" class="hint">Мало размеченных ответов.</td></tr>'}
         </tbody></table></div>
+        ${deepHTML()}
         <div class="pg-grid2"><section><h3>Сложность вопросов</h3>${Object.entries(lv).map(([sec, L]) => `<p><b>${SEC[sec]}</b>: ${["E", "M", "H"].filter((d) => L[d] && L[d].length >= 2).map((d) => `${LVN[d]} ${P(gmed(L[d]))}`).join(" · ") || "мало данных"}</p>`).join("") || '<p class="hint">Мало данных.</p>'}<p class="hint">Медиана ожидаемой доли верных ответов на каждом уровне.</p></section>
           <section><h3>Общие ловушки</h3>${TR.length ? TR.map((x) => `<p>${esc(TN[x.k] || x.k)}: <b>${P(x.med)}</b> <span class="hint">· у ${x.n} учеников</span></p>`).join("") : '<p class="hint">Мало данных.</p>'}<p class="hint">Как часто ученики выбирают ловушку, когда она есть (медиана).</p></section></div></div>`;
-      PVIEW.line($("gp-ix"), { series: [{ v: q1, color: "#77736D", label: "25%", w: 1.2, nolabel: true, dash: true }, { v: q3, color: "#77736D", label: "75%", w: 1.2, nolabel: true, dash: true }, { v: mid, color: "#0F0F0F", label: "Медиана", w: 3 }], times: weeks, h: 200, dots: true });
+      PVIEW.line($("gp-ix"), { vline: T0 ? { t: T0, label: "начало работы · " + PVIEW.day(T0) } : null, series: [{ v: q1, color: "#77736D", label: "25%", w: 1.2, nolabel: true, dash: true }, { v: q3, color: "#77736D", label: "75%", w: 1.2, nolabel: true, dash: true }, { v: mid, color: "#0F0F0F", label: "Медиана", w: 3 }], times: weeks, h: 200, dots: true });
       wire();
     };
+    // since the group's start (or the first week shown): each student's growth, subtopic growth, students × weeks
+    function deepHTML() {
+      const from = T0 || Math.min(...inc.map((r) => (r.res.snaps.find((x) => x.index != null && x.nAns >= PROGRESS.MIN_IX) || r.res.snaps[0]).t));
+      const lab = T0 ? `с ${esc(PVIEW.day(T0))}` : "за всё время";
+      const per = inc.map((r) => { const S = r.res.snaps, n = S.length; let k = -1; S.forEach((x, i) => { if (x.t <= from + 864e5) k = i; });
+        const b = (k >= 0 && S[k].index != null && S[k].nAns >= PROGRESS.MIN_IX ? k : S.findIndex((x) => x.t >= from && x.index != null && x.nAns >= PROGRESS.MIN_IX));
+        // answers per week, in weeks counted from the start date (the model also has extra points inside the last week)
+        const after = S.filter((x) => x.t > from); let prev = k >= 0 ? S[k].nAns : 0; const byW = {};
+        after.forEach((x) => { const w = Math.floor((x.t - from - 1) / WEEK); byW[w] = (byW[w] || 0) + (x.nAns - prev); prev = x.nAns; });
+        const top = after.length ? Math.floor((after[after.length - 1].t - from - 1) / WEEK) : -1, wk = [];
+        for (let w = 0; w <= top; w++) wk.push([from + w * WEEK, byW[w] || 0]);
+        return { r, b, then: b >= 0 ? S[b].index : null, now: S[n - 1].index, ans: S[n - 1].nAns - (k >= 0 ? S[k].nAns : 0), wk, active: wk.filter((w) => w[1] > 0).length, n };
+      });
+      const withD = per.filter((x) => x.then != null && x.now != null).map((x) => ({ ...x, d: x.now - x.then })).sort((a, b) => b.d - a.d);
+      const md = gmed(withD.map((x) => x.d));
+      // subtopics: the median change of the students who have the subtopic both then and now
+      const sd = {}; per.forEach((x) => { if (x.b < 0) return; x.r.res.subs.forEach((g) => { if (g.n < 3 || g.series[x.n - 1] == null || g.series[x.b] == null) return; (sd[g.k] = sd[g.k] || []).push(g.series[x.n - 1] - g.series[x.b]); }); });
+      const SD = Object.entries(sd).filter(([, v]) => v.length >= 2).map(([k, v]) => ({ k, d: gmed(v), n: v.length })).sort((a, b) => b.d - a.d);
+      const NM = PVIEW.NAME || {}, sgn = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}`, P = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v * 100))}`;
+      // students × weeks: answers per week since the start
+      const wkT = [...new Set(per.flatMap((x) => x.wk.map((w) => w[0])))].sort((a, b) => a - b).slice(-12), mx = Math.max(1, ...per.flatMap((x) => x.wk.map((w) => w[1])));
+      const cell = (x, t) => { const w = x.wk.find((y) => y[0] === t), v = w ? w[1] : 0; return `<td class="gp-hm" style="background:rgba(15,15,15,${v ? (0.12 + 0.78 * v / mx).toFixed(2) : 0})" title="${esc(x.r.st.name)} · ${esc(PVIEW.day(t))}: ${v} ответов">${v || ""}</td>`; };
+      return `<h3>Рост ${lab}</h3>
+        <p class="hint">Индекс каждого ученика в начале и сейчас. Медиана роста группы: <b>${md == null ? "—" : sgn(md)}</b>. Отставание видно сразу: кто занимается, но не растёт, и кто перестал заниматься.</p>
+        <div class="tw"><table class="dt gp-grow"><thead><tr><th>Ученик</th><th class="num">Было</th><th class="num">Сейчас</th><th class="num">Рост</th><th class="num">Ответов</th><th class="num">Недель с работой</th><th>Вывод</th></tr></thead><tbody>
+        ${withD.map((x) => { const weeks = x.wk.length || 1, lazy = x.active / weeks < 0.5, flat = x.d < 3;
+          const note = lazy && flat ? "мало занимается и не растёт" : lazy ? "растёт, но занимается редко" : flat ? "занимается, но не растёт: поменять подход" : x.d >= (md || 0) + 8 ? "растёт быстрее группы" : "в темпе группы";
+          return `<tr><td>${esc(x.r.st.name)}</td><td class="num">${x.then}</td><td class="num">${x.now}</td><td class="num"><b class="${x.d >= 0 ? "up" : "down"}">${sgn(x.d)}</b></td><td class="num">${x.ans}</td><td class="num">${x.active} из ${x.wk.length}</td><td>${note}</td></tr>`; }).join("") || '<tr><td colspan="7" class="hint">Пока нет учеников с индексом и в начале, и сейчас.</td></tr>'}
+        ${per.filter((x) => x.then == null || x.now == null).map((x) => `<tr class="gp-thin"><td>${esc(x.r.st.name)}</td><td class="num">—</td><td class="num">${x.now ?? "—"}</td><td class="num">—</td><td class="num">${x.ans}</td><td class="num">${x.active} из ${x.wk.length}</td><td>мало ответов до или после начала</td></tr>`).join("")}</tbody></table></div>
+        <div class="pg-grid2"><section><h3>Подтемы: выросли больше всего ${lab}</h3>${SD.filter((x) => x.d > 0.01).slice(0, 5).map((x) => `<p>${esc(NM[x.k] || x.k)} <b class="up">${P(x.d)}</b> <span class="hint">· у ${x.n} учеников</span></p>`).join("") || `<p class="hint">${SD.length ? "Пока нет заметного роста." : "Мало данных по подтемам."}</p>`}</section>
+          <section><h3>Подтемы: стоят на месте или просели</h3>${SD.slice().reverse().filter((x) => x.d <= 0.01).slice(0, 5).map((x) => `<p>${esc(NM[x.k] || x.k)} <b class="${x.d < -0.01 ? "down" : ""}">${P(x.d)}</b> <span class="hint">· у ${x.n} учеников</span></p>`).join("") || `<p class="hint">${SD.length ? "Всё растёт." : "Мало данных по подтемам."}</p>`}<p class="hint">Медиана изменения мастерства подтемы у тех, у кого она была и в начале, и сейчас.</p></section></div>
+        ${wkT.length ? `<h3>Кто как занимается: ответы по неделям</h3><div class="tw"><table class="dt gp-hmap"><thead><tr><th>Ученик</th>${wkT.map((t) => `<th class="num">${esc(PVIEW.day(t).replace(/ \d{4}$/, ""))}</th>`).join("")}</tr></thead><tbody>${per.slice().sort((a, b) => b.ans - a.ans).map((x) => `<tr><td>${esc(x.r.st.name)}</td>${wkT.map((t) => cell(x, t)).join("")}</tr>`).join("")}</tbody></table></div><p class="hint">Число ответов с первой попытки за неделю; темнее — больше. Пустая клетка — неделя без работы.</p>` : ""}`;
+    }
     function chipsHTML() {
       return `<div class="gp-who">${rows.slice().sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1)).map((r) => `<button type="button" class="chip gp-st${r.out ? " out" : ""}" data-gp="${esc(r.st.key)}" aria-pressed="${!r.out}" title="${esc(r.why || "в общей массе")}">${esc(r.st.name)} <small>${r.idx ?? "—"}</small></button>`).join("")}</div>
         ${rows.some((r) => r.out) ? `<p class="hint gp-outs">Не учтены: ${rows.filter((r) => r.out).map((r) => `${esc(r.st.name)} (${esc(r.why || "исключён вручную")})`).join("; ")}.</p>` : ""}`;
@@ -823,7 +884,9 @@
       : CB.err ? '<p class="hint">Не удалось загрузить группы из кабинета. Пока показаны все ученики; обновите страницу позже.</p>'
       : !CB.groups.length ? '<p class="hint">В кабинете пока нет групп с учениками. Показаны все ученики.</p>'
       : grp ? `<p class="hint">В группе «${esc(grp.name)}» ${grp.names.length} ${pl(grp.names.length, "ученик", "ученика", "учеников")}; в ответах формы найдены: ${found.length ? esc(found.join(", ")) : "никто"}.${lost.length ? ` Нет ответов в форме: ${esc(lost.join(", "))} (не сдавали или подписывались другим именем: объедините написания на вкладке «Ученики»).` : ""}</p>` : "";
-    let html = `<h2>Анализ группы</h2>${gchips}${gnote}<p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
+    const gstart = grp ? `<div class="ga-start"><label>Работаю с группой с <input type="date" id="ga-start" value="${esc(grp.start || "")}"></label><button class="btn sm" type="button" id="ga-start-save">Сохранить</button>${grp.start ? '<button class="chip" type="button" id="ga-start-del">Убрать дату</button>' : ""}
+      <span class="hint" id="ga-start-st">${grp.start ? `Результаты до ${esc(dayLabel(grp.start))} не учитываются; дата отмечена на графиках учеников группы.` : "Укажите, с какого дня учитывать результаты группы: эта дата будет отмечена на графиках учеников."}</span></div>` : "";
+    let html = `<h2>Анализ группы</h2>${gchips}${gnote}${gstart}<p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
       <div class="row t-filters">${chips("ga-sec", GA.sec, [["all", "Всё"], ["rw", "Reading and Writing"], ["math", "Math"]])}${chips("ga-kind", GA.kind, [["all", "ДЗ и тесты"], ["hw", "Только уроки и ДЗ"], ["mk", "Только пробные тесты"]])}
       ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
     html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
@@ -1076,6 +1139,10 @@
     }
   }
   function gaBind(box) {
+    const sv = box.querySelector("#ga-start-save"), dl = box.querySelector("#ga-start-del"), st = box.querySelector("#ga-start-st");
+    const put = async (date) => { try { await groupStartSave(GA.gid, date); render(); } catch (e) { if (st) st.textContent = "Не сохранилось: " + e.message; } };
+    if (sv) sv.onclick = () => { const v = box.querySelector("#ga-start").value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { st.textContent = "Выберите дату."; return; } put(v); };
+    if (dl) dl.onclick = () => put(null);
     [["ga-grp", "gid"], ["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
   }
   async function gaOpen(d, q) {
