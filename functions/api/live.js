@@ -196,6 +196,25 @@ export async function onRequest({ env, request }) {
     const result = await update.run();
     return result.meta.changes ? reply({ ok: true }) : error(409, "Вопрос уже изменился. Обновите раунд.");
   }
+  // jump to any question in a teacher-led round without the strict clock (Nurassyl, 2026-11-23: «быстро списком перемещаться по
+  // вопросам при нестрогом раунде»)
+  if (action === "goto" && host) {
+    if (strict || selfPaced || started === null || now < started || finished || data.number !== config.current) return error(409, "Обновите состояние раунда.");
+    if (!Number.isInteger(data.target) || data.target < 1 || data.target > total) return error(409, "Вопрос недоступен.");
+    const next = JSON.stringify({ ...config, current: data.target, questionStartedAt: now });
+    const result = await db.prepare("UPDATE live_rounds SET set_id = ? WHERE id = ? AND set_id = ? AND closed_at IS NULL").bind(next, id, round.set_id).run();
+    return result.meta.changes ? reply({ ok: true }) : error(409, "Вопрос уже изменился. Обновите раунд.");
+  }
+  // remove a participant (2026-11-23: «иногда заходят с другого девайса и их двое становится»): the row and its answers go;
+  // that device can no longer answer and sees «Доступ закрыт»
+  if (action === "remove" && host) {
+    if (!validToken(data.participant)) return error(400, "Неверный участник.");
+    await db.batch([
+      db.prepare(`DELETE FROM ${answerTable} WHERE round_id = ? AND participant_id = ?`).bind(id, data.participant),
+      db.prepare("DELETE FROM live_participants WHERE round_id = ? AND id = ?").bind(id, data.participant)
+    ]);
+    return reply({ ok: true });
+  }
   if (action === "close" && host) {
     await db.prepare("UPDATE live_rounds SET closed_at = ? WHERE id = ? AND closed_at IS NULL").bind(now, id).run();
     return reply({ ok: true });

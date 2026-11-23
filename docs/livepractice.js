@@ -14,7 +14,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
   let sealedSet = null, displayedSet = null, receivedAt = 0;
-  let hideCorrect = false, studentNumber = 1, hostPreview = null, tools, studentNav;
+  let hideCorrect = false, studentNumber = 1, hostPreview = null, hostPick = null, tools, studentNav;
   const drafts = new Map();
   const submissions = new Map();
 
@@ -181,9 +181,23 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     const tbody = table.createTBody();
     const byStudent = new Map(state.students.map((student) => [student.id, new Map()]));
     for (const answer of state.answers) byStudent.get(answer.participant_id)?.set(answer.question_number, answer);
+    const norm = (n) => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const seen = {}; state.students.forEach((x) => { seen[norm(x.display_name)] = (seen[norm(x.display_name)] || 0) + 1; });
     for (const student of state.students) {
-      const row = tbody.insertRow(), answers = byStudent.get(student.id);
-      row.insertCell().textContent = student.display_name;
+      const row = tbody.insertRow(), answers = byStudent.get(student.id), who = row.insertCell();
+      who.className = "live-who";
+      who.append(student.display_name);
+      if (seen[norm(student.display_name)] > 1) { const tag = document.createElement("small"); tag.className = "live-dup"; tag.title = "два входа"; who.append(tag); }
+      // remove (a second device of the same student): the first click asks, the second removes; no dialog
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "live-del";   // label drawn by CSS, so the cell text stays the name
+      del.setAttribute("aria-label", "Удалить участника " + student.display_name); del.title = "Удалить участника";
+      del.onclick = async () => {
+        if (!del.dataset.sure) { del.dataset.sure = "1"; del.setAttribute("aria-label", "Точно удалить " + student.display_name + "?"); setTimeout(() => { if (del.isConnected) delete del.dataset.sure; }, 4000); return; }
+        del.disabled = true;
+        try { await api("remove", { participant: student.id }); await refresh(); } catch { del.disabled = false; delete del.dataset.sure; }
+      };
+      who.append(del);
       for (let number = 1; number <= (state.total || 10); number++) {
         const answer = answers.get(number);
         const cell = row.insertCell();
@@ -293,9 +307,14 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     }
     const previous = step("← Назад", -1), next = step("Далее →", 1);
     select.onchange = () => go(Number(select.value));
-    nav.append(previous, select, next);
+    // all questions at a glance: answered ones are filled, a click goes straight there
+    const grid = document.createElement("div");
+    grid.className = "live-qgrid";
+    for (let i = 1; i <= state.total; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = String(i); b.dataset.q = String(i);
+      b.setAttribute("aria-label", "Вопрос " + i); b.onclick = () => go(i); grid.append(b); }
+    nav.append(previous, select, next, grid);
     panel.insertBefore(nav, content);
-    return { nav, select, previous, next };
+    return { nav, select, previous, next, grid };
   }
 
   async function saveAnswer(number, value) {
@@ -348,6 +367,8 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
           (number === state.total && document.activeElement === next)) select.focus();
       previous.disabled = number === 1;
       next.disabled = number === state.total;
+      const done = new Set((state.answers || []).map((a) => a.question_number));
+      studentNav.grid.querySelectorAll("[data-q]").forEach((b) => { const q = Number(b.dataset.q); b.classList.toggle("done", done.has(q)); b.setAttribute("aria-current", q === number ? "true" : "false"); });
     }
     if (state.calculator && !tools) {
       tools = document.createElement("div");
@@ -470,12 +491,37 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         currentQuestion.className = "live-host-question qhtml";
         currentQuestion.dataset.currentQuestion = "";
         currentQuestion.hidden = true;
-        content.append(heading(state.title), link, copy, launch, previous, next, close, currentQuestion, answers);
+        const jump = document.createElement("div");
+        jump.className = "live-qgrid live-jump"; jump.dataset.jump = ""; jump.setAttribute("aria-label", "Перейти к вопросу");
+        content.append(heading(state.title), link, copy, launch, previous, next, jump, close, currentQuestion, answers);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
       if (hostPreview !== null && hostPreview >= number) hostPreview = null;
-      const displayed = hostPreview ?? number;
+      if (!state.selfPaced) hostPick = null;
+      const displayed = (state.selfPaced ? hostPick : null) ?? hostPreview ?? number;
+      // question numbers: in a teacher-led round without the strict clock a click moves the class; in a self-paced round it only
+      // shows that question here; the small number is how many have answered it
+      const jump = content.querySelector("[data-jump]"), canJump = !!number && !ended && !strict;
+      jump.hidden = !canJump;
+      if (canJump) {
+        const counts = {}; for (const a of state.answers) counts[a.question_number] = (counts[a.question_number] || 0) + 1;
+        const sig = JSON.stringify([state.total, displayed, counts, state.selfPaced]);
+        if (jump.dataset.sig !== sig) {
+          jump.dataset.sig = sig; jump.replaceChildren();
+          for (let i = 1; i <= state.total; i++) {
+            const b = document.createElement("button"); b.type = "button"; b.dataset.q = String(i);
+            b.innerHTML = `${i}<small>${counts[i] || 0}</small>`; b.setAttribute("aria-label", `Вопрос ${i}, ответили ${counts[i] || 0}`);
+            b.setAttribute("aria-current", i === displayed ? "true" : "false");
+            b.onclick = async () => {
+              if (state.selfPaced) { hostPick = i; render(set); return; }
+              if (i === state.current) return;
+              b.disabled = true; try { await api("goto", { number: state.current, target: i }); } catch { /* refreshed below */ } await refresh();
+            };
+            jump.append(b);
+          }
+        }
+      }
       const back = content.querySelector("[data-back]");
       back.hidden = !number || ended || displayed <= 1 || (strict && !state.editable);
       const advance = content.querySelector("[data-advance]");
