@@ -168,7 +168,7 @@
     const per = hw.filter((r) => r.sec > 0 && r.b).map((r) => r.sec / r.b);
     const used = D.lessons.filter((l) => s.rows.some((r) => r.lesson === l.tag));
     const rowsOf = (tag, pid) => s.rows.filter((r) => r.lesson === tag && r.pid === pid);
-    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button></div><h2 style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
+    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button>${window.REPORT ? '<button class="btn" id="st-pdf" type="button">PDF-отчёт</button>' : ""}</div><h2 style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
     const grp = (D.groups || []).find((g) => g.key === s.key), sps = grp ? Object.entries(grp.spellings) : [];
     const others = D.students.filter((x) => x.key !== s.key);
     html += `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
@@ -190,6 +190,7 @@
           const item = await teacherReviewItem(c.q); return item ? { ...c, sk: c.sk || item.sk, d: c.d || item.d, item } : null; } }); }).catch(() => { /* the card works without it */ });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
+    if ($("st-pdf")) $("st-pdf").onclick = async () => { const b = $("st-pdf"); b.disabled = true; try { REPORT.open(await reportData(s)); } finally { b.disabled = false; } };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
     if ($("join-go")) $("join-go").onclick = () => { const k = $("join-sel").value, o = D.students.find((x) => x.key === k); if (!o) return;
       new Set(o.rows.map((r) => r.raw)).forEach((sp) => (D.aliases[sp] = s.key)); relink(); };
@@ -225,6 +226,20 @@
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
     const res = PROGRESS.compute(progObs(s, TAGS), tags); D.prog = { key: s.key, res };
     PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) D.tw.preset(f); } });   // «Похожие» on a subtopic or a trap
+  }
+  // «PDF-отчёт»: what the report shows for one student (report.js); only the student's own submissions, no internal index
+  async function reportData(s) {
+    const hw = s.rows.filter((r) => "VM".includes(r.kind)), NAME = (window.PVIEW && PVIEW.NAME) || {};
+    const rows = s.rows.map((r) => ({ t: +r.ts, what: whatOf(r), a: r.a, b: r.b, pct: r.pct, lesson: r.lesson, kind: "VM".includes(r.kind) ? "hw" : r.kind === "P" ? "mock" : "other",
+      est: r.kind === "P" && window.SATSCALE ? SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a) : null }));
+    const strong = [], weak = [];
+    if (D.prog && D.prog.key === s.key) {
+      const res = D.prog.res, n = res.snaps.length - 1, subs = res.subs.filter((x) => x.n >= 3 && x.series[n] != null && NAME[x.k]);
+      subs.filter((x) => x.series[n] >= 0.75).sort((a, b) => b.series[n] - a.series[n]).slice(0, 4).forEach((x) => strong.push(NAME[x.k]));
+      subs.filter((x) => { const c = PROGRESS.change(res, x, 0, n); return x.series[n] < 0.5 || (c && c.z <= -PROGRESS.ZMIN); }).sort((a, b) => a.series[n] - b.series[n]).slice(0, 4).forEach((x) => weak.push(NAME[x.k]));
+    }
+    const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
+    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares };
   }
   // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
   let ACCT = null;

@@ -932,3 +932,49 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .bbs-t { width: 100%; margin: 6px 0; }
 .cb-h3 { font-size: 1rem; margin: 18px 0 6px; }
 .bb-rep { color: #5E5A54; }
+/* «PDF-отчёт» (report.js, 2026-11-23): on screen a panel with settings and an A4 preview; in print only the sheet */
+#rp { position: fixed; inset: 0; z-index: 90; background: #ECE9E2; display: grid; grid-template-columns: minmax(260px, 340px) 1fr; overflow: hidden; }
+#rp .rp-bar { overflow-y: auto; background: #F5F3EE; border-right: 1px solid #D9D5CD; }
+#rp .rp-bar-in { padding: 18px; display: grid; gap: 12px; }
+#rp .rp-opts { display: grid; gap: 6px; font-size: 14px; }
+#rp .rp-ta { display: grid; gap: 4px; font-size: 13px; color: #5E5A54; }
+#rp .rp-ta textarea { font: inherit; font-size: 14px; color: #0F0F0F; padding: 8px 10px; border: 1px solid #D9D5CD; border-radius: 9px; background: #fff; resize: vertical; }
+#rp .rp-paper { overflow-y: auto; padding: 24px; }
+.rp-sheet { background: #fff; color: #0F0F0F; width: 210mm; max-width: 100%; min-height: 297mm; margin: 0 auto; padding: 16mm 15mm; box-shadow: 0 2px 18px rgba(15, 15, 15, .12); font-size: 11pt; line-height: 1.45; }
+.rp-head { display: flex; gap: 14px; align-items: flex-start; border-bottom: 1px solid #0F0F0F; padding-bottom: 10px; margin-bottom: 14px; }
+.rp-brand { font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; color: #5E5A54; }
+.rp-head h1 { font-size: 20pt; line-height: 1.15; margin: 2px 0 4px; font-weight: 600; }
+.rp-head h1::after { content: ""; display: block; width: 64px; height: 3px; background: #A63328; margin-top: 6px; border-radius: 2px; }
+.rp-meta { font-size: 9.5pt; color: #5E5A54; }
+.rp-sec { margin: 0 0 14px; break-inside: avoid; }
+.rp-sec h2 { font-size: 12.5pt; margin: 0 0 6px; font-weight: 600; }
+.rp-sec h3 { font-size: 10.5pt; margin: 6px 0 4px; font-weight: 600; }
+.rp-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rp-kpi { border: 1px solid #D9D5CD; border-radius: 10px; padding: 8px 10px; }
+.rp-kpi b { display: block; font-size: 17pt; font-weight: 600; }
+.rp-kpi span { font-size: 9pt; color: #5E5A54; }
+.rp-t { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.rp-t th { text-align: left; font-weight: 600; color: #5E5A54; border-bottom: 1px solid #0F0F0F; padding: 4px 6px; }
+.rp-t td { border-bottom: 1px solid #ECE9E2; padding: 4px 6px; vertical-align: top; }
+.rp-t .n { text-align: right; white-space: nowrap; }
+.rp-meter { display: inline-block; width: 90px; height: 7px; background: #ECE9E2; border-radius: 4px; vertical-align: middle; overflow: hidden; }
+.rp-meter i { display: block; height: 100%; background: #0F0F0F; }
+.rp-chart { width: 100%; height: auto; display: block; }
+.rp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.rp-two ul { margin: 0; padding-left: 18px; }
+.rp-hint { font-size: 8.5pt; color: #5E5A54; margin: 4px 0 0; }
+.rp-sheet blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid #A63328; background: #F5F3EE; border-radius: 0 8px 8px 0; }
+.rp-foot { margin-top: 18px; padding-top: 8px; border-top: 1px solid #D9D5CD; font-size: 8.5pt; color: #5E5A54; display: grid; gap: 2px; }
+.rp-foot b { color: #0F0F0F; }
+.rp-conf { font-style: italic; }
+@media (max-width: 800px) { #rp { display: block; overflow-y: auto; } #rp .rp-bar { border-right: 0; border-bottom: 1px solid #D9D5CD; overflow: visible; } #rp .rp-paper { padding: 10px; overflow: visible; } .rp-sheet { padding: 8mm 6mm; min-height: 0; } .rp-kpis { grid-template-columns: 1fr 1fr; } .rp-two { grid-template-columns: 1fr; } }
+@media print {
+  @page { size: A4; margin: 0; }
+  body.rp-on > :not(#rp) { display: none !important; }
+  html:has(body.rp-on), body.rp-on { background: #fff !important; }
+  #rp { position: static; display: block; background: #fff; overflow: visible; }
+  #rp .rp-bar { display: none; }
+  #rp .rp-paper { padding: 0; overflow: visible; }
+  .rp-sheet { box-shadow: none; width: auto; min-height: 0; margin: 0; padding: 14mm 14mm; }
+  .rp-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
