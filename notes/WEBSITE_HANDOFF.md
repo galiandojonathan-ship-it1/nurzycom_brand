@@ -398,6 +398,14 @@ Tests to run by area:
   table to the copy-paste parser, so test, routes, misses and date work the same. Nothing is uploaded. A PDF without text (a
   picture) gets a message on how to save it from the page. Nurassyl's real iPhone PDF of SAT Practice 7 reads 98 rows, 13
   misses, SAT7 hard modules in both sections. Test: `t_bbpdf.js desktop|phone [real.pdf]` (Chromium prints a synthetic page).
+  Android fix (same day, a student's Chrome-on-Android PDF of SAT Practice 8 failed with «Порядок вопросов нарушен у Math №35»):
+  that layout adds a «Domain» column, repeats the header on every page and wraps a typed answer above and below the row
+  («57.27;» / «Incorrect»), so reading line by line glued cells of different rows. Rows are now read by column (`grid`): the
+  header words give the column x on each page (split into words with estimated x, since some PDFs keep «Question Section» in
+  one item; the two-line «Correct / Answer» sits up to 12 pt off the «Question» line), each number in the Question column
+  starts a row, and every piece of text joins the nearest row within 0.62 of the median row gap. The line reading stays as a
+  fallback when no header is found. That PDF now reads 98 rows, 14 misses (page: 14 incorrect), SAT8 hard routes; the iPhone
+  PDF still reads 98 / 13. `t_bbpdf.js` also prints an Android-like page (header per page, Domain column, wrapped answers).
 - **«Ориентир на SAT», legend toggles, years in dates (2026-11-23, Nurassyl: «predict the possible score… PDF summary concise
   for students, parents and my manager… выбирать какую линию скрыть… добавь года в датах»):** `docs/predict.js` (pure, tested by
   `t_predict.mjs`) reads only full practice-test sections: the site's tests (form rows, `scale.js`) and shared Bluebook records
