@@ -193,6 +193,13 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+Sorted tables (2026-11-23, Nurassyl's real Practice 7 copy failed with «Порядок вопросов нарушен у Math №22»): My Practice
+lets the student sort the table, and a click on «Question» turns it over (Math module 2 22→1 first). `parse` now collects every
+row with its own text, then: if the order is not natural it tries the reversed list; if the numbers only go up (sorted by number)
+it gives each row its module by order of appearance (first № n of a section = module 1). Only a really lost or doubled row stops
+it, with a hint to click «Question» so numbers go 1, 2, 3…. The real copy now reads 98 rows, 76 correct, SAT 7 hard/hard, 22
+misses. Two attempts of the same test (24 March and 29 April) stay two records: the date is part of the attempt's identity.
+
 One click (2026-11-23, Nurassyl: «вставил — проверилось само — отправилось… вместо "проверить таблицу" — "отправить"»): the
 form button is «Отправить преподавателю» (`#bb-go`; «Проверить таблицу» without the student's own login). Pasting checks at once
 and sends nothing. The button checks first if needed and sends only a fully read table (a broken one shows what to fix). The

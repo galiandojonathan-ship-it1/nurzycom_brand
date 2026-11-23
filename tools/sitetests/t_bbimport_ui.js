@@ -46,7 +46,7 @@ const page = `<html><body><header><h1>My Practice</h1><p>Score Details · SAT Pr
   ok(/Show Correct Answers» был выключен: правильные ответы взяты из справочника/.test(mp) && /М1, №9 · \w → \w/.test(mp), "switch off: keys of the misses filled in from the catalog");
   // a lost row: the student sees what to do
   await p.fill("#bb-text", text.split("\r\n").filter((_, i) => i !== 30).join("\n")); await p.click("#bb-go");
-  ok(/Скопируйте таблицу/.test(await p.textContent("#bb-status")), "a lost row asks to copy again: " + (await p.textContent("#bb-status")).slice(0, 80));
+  ok(/[Сс]копируйте/.test(await p.textContent("#bb-status")), "a lost row asks to copy again: " + (await p.textContent("#bb-status")).slice(0, 80));
   if (dev === "phone") ok((await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, "phone: no sideways scroll");
   await p.fill("#bb-text", text); await p.click("#bb-go"); await p.waitForTimeout(400);
   await (await p.$("#bb-import")).screenshot({ path: `${__dirname}/bbimport_${dev}.png` });

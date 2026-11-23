@@ -20,16 +20,29 @@
     const rowStart = /^[ \t]*(\d{1,2})[ \t]*(?:\t|\n|[ \t]{1,})[ \t]*(Reading (?:and|&) Writing|Math)\b[ \t]*/gim;
     const starts = [...text.matchAll(rowStart)];
     if (!starts.length) throw new Error("Строки таблицы не найдены. Откройте Score Details и скопируйте таблицу вопросов целиком.");
+    // every row with its own text first; then the order: the page lets the student sort the table (a click on «Question» turns
+    // it over, 2026-11-23 real copy of Practice 7), so a reversed table is turned back and a table sorted by number gets its
+    // modules from the order of appearance (first № n of a section = module 1)
+    let items = starts.map((entry, idx) => ({ section: /math/i.test(entry[2]) ? "math" : "rw", q: +entry[1],
+      body: text.slice(entry.index + entry[0].length, starts[idx + 1] ? starts[idx + 1].index : text.length) }));
+    const natural = (list) => { const n = { rw: [], math: [] }; for (const it of list) { const p = n[it.section]; if (it.q === 1) p.push(0); if (!p.length || p.length > 2 || it.q !== p[p.length - 1] + 1) return false; p[p.length - 1]++; } return true; };
+    if (!natural(items)) {
+      const rev = items.slice().reverse();
+      if (natural(rev)) items = rev;
+      else if (items.every((it, i) => !i || it.q >= items[i - 1].q)) {
+        const seen = {}; items.forEach((it) => { const k = it.section + it.q; it.mod = (seen[k] = (seen[k] || 0) + 1); });
+        items = ["rw", "math"].flatMap((sec) => [1, 2].flatMap((m) => items.filter((it) => it.section === sec && it.mod === m)));
+      }
+    }
     const rows = [], modules = { rw: [], math: [] };
-    starts.forEach((entry, idx) => {
-      const section = /math/i.test(entry[2]) ? "math" : "rw", question = +entry[1], parts = modules[section];
+    items.forEach((item) => {
+      const section = item.section, question = item.q, parts = modules[section];
       if (question === 1) parts.push([]);
       const cur = parts[parts.length - 1];
       if (!cur || parts.length > 2 || question !== cur.length + 1 || question > SIZES[section]) {
-        throw new Error(`Порядок вопросов нарушен у ${LABEL[section]} №${question}. Скопируйте таблицу заново, целиком и по порядку.`);
+        throw new Error(`Порядок вопросов нарушен у ${LABEL[section]} №${question}. Похоже, строка потерялась или таблица отсортирована необычно: нажмите на заголовок «Question», чтобы номера шли 1, 2, 3…, и скопируйте страницу снова.`);
       }
-      const end = starts[idx + 1] ? starts[idx + 1].index : text.length;
-      let body = text.slice(entry.index + entry[0].length, end);
+      let body = item.body;
       const st = body.match(STATUS);
       if (!st) throw new Error(`У ${LABEL[section]} №${question} не найден результат (Correct / Incorrect / Omitted).`);
       body = body.slice(0, st.index + st[0].length);   // drops «Review» and any page text after the status
