@@ -24,6 +24,10 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   const a = await sctx.newPage(); await a.goto(B + "mock.html", { waitUntil: "load" }); await a.waitForSelector("#bb-import:not([hidden])", { timeout: 15000 });
   await a.click("#bb-import summary"); await a.fill("#bb-text", tableOf(synthetic(), "SAT2", { rw: "m2h", math: "m2e" }, "mp", ["rw.1.9", "math.2.8"])); await a.click("#bb-go");
   await a.waitForFunction(() => /Отправлено/.test(document.getElementById("bb-status").textContent), null, { timeout: 15000 });
+  // a second attempt where she solved only Math: its Reading and Writing blanks must not enter the analysis
+  const om = [...Array.from({ length: 27 }, (_, i) => `rw.1.${i + 1}o`), ...Array.from({ length: 27 }, (_, i) => `rw.2.${i + 1}o`)];
+  await a.fill("#bb-text", tableOf(synthetic(), "SAT3", { rw: "m2e", math: "m2h" }, "tab", om)); await a.click("#bb-go");
+  await a.waitForFunction(() => /Отправлено/.test(document.getElementById("bb-status").textContent) && /SAT Practice Test 3/.test(document.getElementById("bb-sent").textContent), null, { timeout: 15000 });
   // the teacher's card
   const open = async () => { await teacher.goto(B + "cabinet.html?view=results", { waitUntil: "load" }); await teacher.waitForTimeout(2500);
     await teacher.evaluate((csv) => window.TeacherWorkspace.useFile(csv, "src test"), CSV); await teacher.waitForTimeout(600);
@@ -32,7 +36,7 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   await open();
   const chips = await teacher.$$eval("#st-prog .pg-src .chip", (x) => x.map((c) => c.textContent.replace(/\s+/g, " ").trim()));
   console.log("sources:", chips.join(" | "));
-  ok(chips.some((c) => /^Домашние \d+$/.test(c)) && chips.some((c) => /^Bluebook 98$/.test(c)) && chips.some((c) => /^Уроки 4$/.test(c)), "source switches: homework, Bluebook (98 answers of the shared test), lessons (4 answers in the round)");
+  ok(chips.some((c) => /^Домашние \d+$/.test(c)) && chips.some((c) => /^Bluebook 142$/.test(c)) && chips.some((c) => /^Уроки 4$/.test(c)), "source switches: homework, Bluebook (98 + 44: the Math-only attempt adds no Reading and Writing blanks), lessons (4 answers in the round)");
   const idx1 = (await teacher.textContent("#st-prog .pg-big")).trim();
   ok(/^\d+$/.test(idx1), "with Bluebook the index has enough answers to be drawn: " + idx1);
   ok(await teacher.$("#st-prog #pg-dom svg") && /в целом/.test(await teacher.textContent("#pg-domleg")), "the domain chart is drawn with the domain line in its legend");

@@ -53,6 +53,14 @@ ok(/не найдены/.test(err("hello\nworld")), "random text: «Строки
   const mpRev = (() => { const head = mp.slice(0, mp.indexOf("\n1\t")), rowsTxt = mp.slice(mp.indexOf("\n1\t") + 1, mp.indexOf("\nTop")), tail = mp.slice(mp.indexOf("\nTop"));
     const blocks = rowsTxt.split(/\n(?=\d+\t(?:Reading|Math))/); return head + "\n" + blocks.reverse().join("\n") + tail; })();
   ok(got(mpRev.split("\n")) === want.replace(/./g, (c) => c) && BB.detect(BB.parse(mpRev), cat, "rw").match, "the real My Practice page turned over is read and recognised");
+  // a student who solves only Math: every Reading and Writing answer omitted. Those blanks are not mistakes
+  { const onlyMath = table(t0, { rw: "m2e", math: "m2h" }, "tab", [...Array.from({ length: 27 }, (_, i) => `rw.1.${i + 1}o`), ...Array.from({ length: 27 }, (_, i) => `rw.2.${i + 1}o`), "math.1.3"]);
+    const rows = BB.parse(onlyMath), sk = BB.skipOf(rows.filter((r) => r.section === "rw"), "rw"), sh = await BB.shareOf(rows, cat, {});
+    ok(sk.skip[0] && sk.skip[1] && sh.sections.rw.skip && sh.sections.rw.miss.length === 0 && (!hasM || sh.sections.math.miss.length === 1), "only Math solved: Reading and Writing is marked «не решался», its 54 blanks are not shared as misses; the Math miss stays");
+    const half = table(t0, { rw: "m2h", math: "m2e" }, "tab", ["rw.1.5", ...Array.from({ length: 25 }, (_, i) => `rw.2.${i + 1}o`)]), sh2 = await BB.shareOf(BB.parse(half), cat, {});
+    ok(sh2.sections.rw.skip && !sh2.sections.rw.skip[0] && sh2.sections.rw.skip[1] && sh2.sections.rw.miss.length === 1, "module 2 left blank (25 of 27): only that module is «не решался», the module 1 miss stays");
+    const few = table(t0, { rw: "m2h", math: "m2e" }, "tab", ["rw.2.1o", "rw.2.2o", "rw.2.3o"]), sh3 = await BB.shareOf(BB.parse(few), cat, {});
+    ok(!sh3.sections.rw.skip && sh3.sections.rw.miss.length === 3, "a few blanks in a module that was solved still count (3 omitted = 3 misses)"); }
   const v10 = mp.split("\n").slice(0, mp.split("\n").findIndex((l) => /^11\t/.test(l))).join("\n");
   ok(/View: All/.test((() => { try { BB.parse(v10); return ""; } catch (e) { return e.message; } })()), "«View: 10» copy: the message says to choose View: All");
   console.log(fails ? `${fails} FAILED` : `ALL PASS (${n})`); process.exit(fails ? 1 : 0);

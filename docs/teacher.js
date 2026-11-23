@@ -246,14 +246,16 @@
     const [sh, cat, lv] = await Promise.all([window.BBSHARE ? bbShares(s).catch(() => []) : [], SITE.json("bluebook").catch(() => null), liveOf(s).catch(() => [])]);
     if (cat) for (const d of sh) for (const [sec, x] of Object.entries(d.sections)) {
       const T = cat.tests[x.test], lists = T && T[sec] ? [T[sec].m1, T[sec][x.route]] : null; if (!lists || !lists[0] || !lists[1]) continue;
-      const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m]));
-      lists.forEach((ids, mi) => ids.forEach((cid, qi) => {
+      const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m])), size = sec === "rw" ? 27 : 22;
+      // a module the student did not do: marked by the import (skip), or, in records sent before 2026-11-23, 80%+ blanks among the misses
+      const skip = x.skip || [1, 2].map((k) => x.miss.filter((m) => m[0] === k && m[2] == null).length >= size * 0.8);
+      lists.forEach((ids, mi) => { if (skip[mi]) return; ids.forEach((cid, qi) => {
         const it = cat.items[cid] || {}, m = miss.get(`${mi + 1}.${qi + 1}`);
         let id = (it.c || []).find((r) => TAGS[r]);
         if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
         obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
-      }));
+      }); });
     }
     for (const { rec, me } of lv) (rec.items || []).forEach((it, i) => {
       const a = (me.ans || {})[i + 1]; if (!a) return;
