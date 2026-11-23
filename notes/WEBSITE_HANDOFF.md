@@ -159,7 +159,7 @@ the Dropbox PDFs linked in the handoff) and checks every College Board ID agains
 match, and the skill and difficulty come from the bank. No question text is kept. Questions missing from the bank (placeholders
 «xyz…»/«abcd…», and all of SAT 11, which has no IDs yet) keep the index key for routing, with the index skill labelled «по
 открытому индексу». Seal it with `datafile.mjs seal`. Built 2026-11-23: Reading and Writing of SAT Practice Tests 4–11, 648
-positions, 641 items, 0 key mismatches. Math waits for the Math index PDF (the handoff's Math link opens a Dropbox login).
+positions, 641 items, 0 key mismatches. Math was added the same day from the PDF Nurassyl sent (see below).
 Tests: `t_bbimport.js [opened catalog]` (formats, Ctrl+A page, unique test and route for every test, exact numbers, errors),
 `t_bbimport_ui.js desktop|phone` (a real Ctrl+A copy of a Score Details-shaped HTML page pasted into the site; fixture from
 `mkfx.mjs`, which seals the synthetic catalog of `bbsynth.cjs`).
@@ -183,6 +183,12 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+Math added 2026-11-23 (Nurassyl sent the Math index PDF; the handoff's Math Dropbox link was broken): 8 tests × 3 modules × 22,
+513 IDs verified. The bank lists decimal forms of typed answers (59/9, 6.555, 6.556), so an index key counts as verified when it
+is one of the bank's accepted answers. 4 positions disagree for real (SAT6 M1 №19, SAT8 M2 №16, SAT9 M1 №3, SAT10 M2 №3): both keys
+are kept for routing and the skill is hidden (u: 1, x: 1). On the page a question fits when the table and the catalog share an
+accepted answer (`meets`), so a typed key listed with more or fewer forms still matches. The catalog now holds 1,154 items; 591 of
+the 984 bank questions are also in the course (RW 348, Math 243: mostly PT13–19, 4 in Math lessons, a few in PT1–4/11/12).
 
 «Прогресс ученика · индекс» (2026-11-22): in the cabinet's results, a student card (`#st-prog`, `progMount` / `progObs` in
 `teacher.js`) runs `docs/progress.js` (engine, `PROGRESS.compute`) and draws it with `docs/progress-view.js` (`PVIEW.render`; styles `.pg-*`).

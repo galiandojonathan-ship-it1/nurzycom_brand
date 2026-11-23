@@ -71,14 +71,15 @@
     return a ? `${n / a}/${d / a}` : "0/1";
   }
   const same = (x, y) => canon(x) === canon(y);
-  const sig = (answers) => JSON.stringify([...new Set(answers.map(canon))].sort());
 
   // ---- which test and route --------------------------------------------------------------------------------------------
   function detect(rows, catalog, section) {
     const sel = rows.filter((r) => r.section === section);
     if (!sel.length || !catalog || !catalog.tests) return { matches: [] };
     const m1 = sel.filter((r) => r.module === 1), m2 = sel.filter((r) => r.module === 2), items = catalog.items || {};
-    const fits = (ids, part) => ids && ids.length === part.length && part.every((r, i) => items[ids[i]] && sig(items[ids[i]].k) === sig(r.answers));
+    // a question fits when the table and the catalog share an accepted answer (typed answers may be listed with or without decimal forms)
+    const meets = (k, answers) => { const c = new Set(answers.map(canon)); return k.some((x) => c.has(canon(x))); };
+    const fits = (ids, part) => ids && ids.length === part.length && part.every((r, i) => items[ids[i]] && meets(items[ids[i]].k, r.answers));
     const matches = [];
     for (const [test, t] of Object.entries(catalog.tests)) {
       const s = t[section]; if (!s || !fits(s.m1, m1)) continue;
