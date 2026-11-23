@@ -691,7 +691,10 @@
       on("[data-reset]", (b) => { const r = I.R.find((x) => x.key === b.dataset.reset); if (!r || !confirm(`Сбросить «${r.label}» (${r.score}) у ${u.name}? Ученик решит эту работу заново.`)) return;
         act(u, (B, set) => PLAN.resetKeys(nm, r.kind, r.rest).forEach((k) => set(k, null)), `Сброшено: ${r.label}`); });
       on("[data-new]", () => openAssign([u.id]));
-      on("[data-bbdel]", (b) => act(u, (B, set) => set(b.dataset.bbdel, null), "Результат Bluebook убран"));
+      on("[data-bbdel]", (b) => {   // no dialog: it goes at once, «Вернуть» in the message puts it back (as with tasks)
+        const key = b.dataset.bbdel, orig = I.get(key), d = (() => { try { return JSON.parse(orig); } catch (e) { return {}; } })();
+        act(u, (B, set) => set(key, BBSHARE.tomb(d)), "Пробник Bluebook убран", () => act(u, (B, set) => set(key, orig), "Пробник возвращён"));
+      });
       on("[data-deltask]", (b) => {   // no confirm dialog (Nurassyl, 2026-11-12): the task goes at once, «Вернуть» in the message puts it back
         const L0 = (() => { try { return JSON.parse(I.get("tasks") || "[]"); } catch (e) { return []; } })(), orig = L0.find((t) => t.id === b.dataset.deltask); if (!orig) return;
         const rd = (get) => { try { return JSON.parse(get("tasks") || "[]"); } catch (e) { return []; } };

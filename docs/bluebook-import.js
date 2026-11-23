@@ -211,9 +211,13 @@
     const ask = el("button", "Поделиться с преподавателем", "btn"); ask.type = "button"; box.append(ask);
     const note = el("p", "", "hint"); note.setAttribute("role", "status"); box.append(note);
     ask.onclick = async () => {
+      ask.disabled = true; await SITE.syncNow().catch(() => false); ask.disabled = false;   // see the teacher's latest change (a removal) first
       const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
-      if (was) { let at = ""; try { at = new Date(JSON.parse(was).at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
-        note.textContent = `Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`; return; }
+      // a removed attempt (the teacher's mark) may be sent again (Nurassyl: «I may change my mind»); the teacher sees it was resent
+      let removed = null;
+      if (was) { let at = ""; try { const w = JSON.parse(was); if (w.deleted) removed = w.at || Date.now(); at = new Date(w.at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
+        if (!removed) { note.textContent = `Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`; return; } }
+      if (removed) Object.assign(data, { resent: 1, removedAt: removed });
       ask.hidden = true;
       const c = el("div", null, "bb-confirm");
       c.append(el("p", "Преподаватель увидит: какой это тест и модули, номера ошибок и пропусков, ваш выбор и правильный ответ, навыки. Текст вопросов и ваш аккаунт College Board не передаются."));

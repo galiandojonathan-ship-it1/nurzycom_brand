@@ -254,7 +254,8 @@
   async function bbRender(s, all) {
     if (!window.BBSHARE || !SITE.adminKey()) return;
     const [sh, cat] = await Promise.all([bbShares(s).catch(() => []), SITE.json("bluebook").catch(() => null)]);
-    const b = $("st-bb"); if (!b || D.student !== s.key || !sh.length) return;
+    const b = $("st-bb"); if (!b || D.student !== s.key) return;
+    if (!sh.length) { b.innerHTML = b.innerHTML ? '<div class="card"><span class="label">Bluebook · отправлено учеником</span><p class="hint" role="status" id="bb-del-st"></p><p class="hint">Отправленных пробников нет.</p></div>' : ""; return; }
     const byId = new Map(all.map((q) => [q.id, q])); let again = 0;
     const rep = (id, d) => {
       const it = cat && cat.items[id], parts = [];
@@ -262,14 +263,36 @@
       for (const e of sh) if ((e.taken || e.at) < (d.taken || d.at)) for (const x of Object.values(e.sections)) if (x.miss.some((m) => m[4] === id)) { parts.push(`Bluebook ${esc(x.label || "")} · ✗`); again++; }
       return parts.length ? `<br><small class="bb-rep">Уже был: ${parts.join("; ")}</small>` : "";
     };
-    const body = BBSHARE.html(sh, { open: true, rep });
-    b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span>${again ? `<p class="hint"><b>Повторные ошибки: ${again}.</b> Эти вопросы ученик уже решал в курсе или в прошлом пробнике и ошибся снова (✗).</p>` : ""}${body}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`;
+    const body = BBSHARE.html(sh, { open: true, rep, del: true });
+    b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span><p class="hint">«Убрать» удаляет пробник из кабинета и подсказок Gemini. Сразу после удаления можно вернуть. Если ученик отправит его снова, он появится с пометкой «отправлен снова после удаления».</p><p class="hint" role="status" id="bb-del-st"></p>${again ? `<p class="hint"><b>Повторные ошибки: ${again}.</b> Эти вопросы ученик уже решал в курсе или в прошлом пробнике и ошибся снова (✗).</p>` : ""}${body}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`;
+    bbDelWire(s, all, sh);
+  }
+  // remove a shared Bluebook result (or put it back): rewrite one key on the student's synced copy, newest change wins
+  async function bbSet(acct, key, value) {
+    const url = "admin/progress?id=" + encodeURIComponent(acct), g = await SITE.api(url); if (!g.ok) throw new Error(`Сервер ответил ${g.status}.`);
+    const B = await SITE.unsealBlob(g.data.data); B[key] = { v: value, t: Date.now() };
+    const p = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(B) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
+  }
+  function bbDelWire(s, all, sh) {
+    const box = $("st-bb"); if (!box) return;
+    box.querySelectorAll("[data-bbdel]").forEach((btn) => (btn.onclick = async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const d = sh.find((x) => x.key === btn.dataset.bbdel), st = $("bb-del-st"); if (!d) return;
+      const orig = JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => k !== "key" && k !== "acct")));
+      btn.disabled = true;
+      try { await bbSet(d.acct, d.key, BBSHARE.tomb(d)); } catch (err) { st.textContent = "Не удалось убрать: " + err.message; btn.disabled = false; return; }
+      await bbRender(s, all);
+      const st2 = $("bb-del-st"); if (!st2) return;
+      st2.innerHTML = `Пробник «${esc(d.title || Object.values(d.sections).map((x) => x.label).find(Boolean) || "Bluebook")}» убран. <button class="chip" type="button" id="bb-undo">Вернуть</button>`;
+      const timer = setTimeout(() => { if ($("bb-undo")) st2.textContent = "Пробник убран."; }, 10000);
+      $("bb-undo").onclick = async () => { clearTimeout(timer); try { await bbSet(d.acct, d.key, orig); await bbRender(s, all); const st3 = $("bb-del-st"); if (st3) st3.textContent = "Пробник возвращён."; } catch (err) { st2.textContent = "Не удалось вернуть: " + err.message; } };
+    }));
   }
   async function bbShares(s) {
     const out = [];
     for (const id of (await accountsByName()).get(s.key) || []) {
       const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
-      out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null)));
+      out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null)).map((x) => Object.assign(x, { acct: id })));
     }
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }

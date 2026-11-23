@@ -20,13 +20,14 @@ window.BBSHARE = (() => {
   const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   function fromCopy(B) {
     return Object.entries(B || {}).filter(([k, r]) => k.indexOf("bb_share_") === 0 && r && r.v != null)
-      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections ? Object.assign(d, { key: k }) : null; } catch (e) { return null; } })
+      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections && !d.deleted ? Object.assign(d, { key: k }) : null; } catch (e) { return null; } })
       .filter(Boolean).sort((a, b) => (b.taken || b.at || 0) - (a.taken || a.at || 0));   // by the date the test was taken
   }
   function html(shares, o = {}) {
     if (!shares.length) return o.empty ? `<p class="hint">${esc(o.empty)}</p>` : "";
-    return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(d.title || "")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
+    return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(d.title || Object.values(d.sections).map((x) => x.label).find(Boolean) || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
         <small>${Object.entries(d.sections).map(([s, x]) => `${SEC[s]} ${x.tot[0] + x.tot[1]}/${x.n}`).join(" · ")} · отправлено учеником${d.taken ? ` ${esc(day(d.at))}` : ""}</small>
+        ${d.resent ? `<span class="bbs-resent">отправлен снова после удаления${d.removedAt ? ` ${esc(day(d.removedAt))}` : ""}</span>` : ""}
         ${o.del ? `<button class="chip" type="button" data-bbdel="${esc(d.key)}">Убрать</button>` : ""}</summary>
       ${Object.entries(d.sections).map(([s, x]) => {
         const sk = Object.entries(x.skills || {}).filter(([, v]) => v[0]).sort((a, b) => b[1][0] / b[1][1] - a[1][0] / a[1][1] || b[1][0] - a[1][0]);
@@ -37,6 +38,8 @@ window.BBSHARE = (() => {
             `<tr><td>М${m[0]}</td><td class="num">${m[1]}</td><td>${m[2] == null ? "пропуск" : esc(m[2])} → ${esc((m[3] || []).join(", "))}</td><td>${m[5] ? esc(m[5]) + (m[7] ? " <small>(по открытому индексу)</small>" : "") : '<span class="hint">не подтверждён</span>'}${o.rep && m[4] ? o.rep(m[4], d, m) : ""}</td></tr>`).join("")}</tbody></table>` : '<p class="hint">Без ошибок.</p>'}</div>`; }).join("")}
       <p class="hint">Источник: College Board My Practice → Score Details, вставлено учеником. Навык задания взят из банка College Board; причину ошибки уточните в разборе с учеником.</p></details>`).join("")}</div>`;
   }
+  // a removed share stays as a mark (not deleted), so the student's devices do not bring it back and the same attempt cannot be resent
+  const tomb = (d) => JSON.stringify({ v: 1, deleted: 1, at: Date.now(), hash: d.hash, title: d.title || null, taken: d.taken || null });
   function mistakes(shares) {
     const out = [];
     for (const d of shares) for (const [s, x] of Object.entries(d.sections)) {
@@ -46,5 +49,5 @@ window.BBSHARE = (() => {
     }
     return out;
   }
-  return { fromCopy, html, mistakes, refLabel, ownMock };
+  return { fromCopy, html, mistakes, refLabel, ownMock, tomb };
 })();
