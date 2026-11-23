@@ -107,6 +107,7 @@
         nx = { th: f.th + J * (nx.th - f.th), v: Math.max(1e-6, f.v + J * J * (nx.v - vp)) }; put(snaps[i], nx);
       }
     }
+    let lastLv = null;   // the last week's section levels and subtopic offsets (for the target comparison)
     function finish() {
       if (!opts.noSmooth) { for (const sec of secs) smooth((s) => s.ab[sec], (s, v) => (s.ab[sec] = v)); for (const k in S) smooth((s) => s.st[k], (s, v) => (s.st[k] = v)); }
       for (const s of snaps) {
@@ -125,6 +126,7 @@
         // a level from MIN_LV answers of that level, so the prior never draws a line by itself
         for (const sec of secs) { const c = s.cnt[sec] || {}, tot = LV.reduce((a, d) => a + (c[d] ? c[d][1] : 0), 0), g = sec === "rw" ? 0.25 : 0.18;
           s.diff[sec] = tot < MIN_SEC ? {} : Object.fromEntries(LV.filter((d) => c[d] && c[d][1] >= MIN_LV).map((d) => [d, g + (1 - g) * sig(s.ab[sec].th - B[d])])); }
+        if (s === snaps[snaps.length - 1]) lastLv = { sec: JSON.parse(JSON.stringify(s.ab || {})), sub: JSON.parse(JSON.stringify(s.st || {})) };
         delete s.ab; delete s.st;
       }
     }
@@ -172,7 +174,7 @@
       const rate = (a) => (a.reduce((x, y) => x + y.pick, 0) + 0.5) / (a.length + 2);
       return { trap, n: L.length, was: rate(L.slice(0, h)), now: rate(L.slice(-h)) };
     }).filter((x) => x.n >= 4).sort((a, b) => b.now - a.now);
-    return { snaps, subs, traps, secs, n: obs.length, tagged, omega: OMEGA,
+    return { snaps, subs, traps, secs, n: obs.length, tagged, omega: OMEGA, lv: lastLv,
       habits: { slip: slip.n >= 5 ? slip.miss / slip.n : null, slipExpected: slip.n >= 5 ? slip.exp / slip.n : null, blank: blanks.n ? blanks.b / blanks.n : null },
       mocks: [...new Set(obs.filter((o) => o.ctx === "mock").map((o) => o.part))].map((p) => partStats[p].t) };
   }
@@ -213,6 +215,60 @@
     return !ks.length ? null : ks.length === 1 ? { p: ks[0], s: [], t: {} } : { p: null, s: ks.slice(), sw: 1 / ks.length, t: {} };
   }
   function bankFreq(tags) { const f = {}; for (const id in tags) { const k = tags[id] && tags[id].p; if (k) f[k] = (f[k] || 0) + 1; } return f; }
-  const api = { compute, drivers, change, ZMIN, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
+  // «Цель ученика» (Nurassyl, 2026-11-23: «вписать target score… чтобы графики и анализ показали, где у него проседает
+  // относительно его target score»). A section target score → the raw count it needs on the hard route (scale.js, nurzycom's
+  // table) → the level θ at which a student would expect that raw count on a full section of the real difficulty mix (module 1
+  // a third each, hard module 2 30% medium / 70% hard: 9/17/28 of 54 in RW, 7/14/23 of 44 in Math; Math a quarter typed answers
+  // with no guessing) → the accuracy needed on easy, medium and hard questions (guessing included, as in the difficulty chart)
+  // and the mastery a subtopic needs (same form as the mastery column: mean σ(θ − b) over E, M, H). An estimate, like the table.
+  const MIX = { rw: { n: 54, lv: { E: 9, M: 17, H: 28 }, typed: 0 }, math: { n: 44, lv: { E: 7, M: 14, H: 23 }, typed: 0.25 } };
+  function rawNeeded(sec, score, scale) {
+    const n = MIX[sec].n; for (let r = 0; r <= n; r++) if (scale.section(sec, true, r) >= score) return r; return n;
+  }
+  function expectedRaw(sec, th) {
+    const m = MIX[sec]; let e = 0;
+    for (const d of LV) { const pi = sig(th - B[d]); e += m.lv[d] * ((1 - m.typed) * (0.25 + 0.75 * pi) + m.typed * pi); }
+    return e;
+  }
+  function levelOf(sec, score, scale) {
+    const raw = Math.min(MIX[sec].n - 0.3, rawNeeded(sec, score, scale));
+    let lo = -4, hi = 5; for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (expectedRaw(sec, mid) < raw) lo = mid; else hi = mid; }
+    return { th: (lo + hi) / 2, raw: Math.round(raw) };
+  }
+  // current: { rw, math } the ориентир's middle score now. With it the target is a shift (delta) from where the student is, applied
+  // to the model's own section level, so both sides of the comparison are on the same, cautious scale; without it, the absolute level.
+  function targetNeeds(target, scale, current) {
+    const out = {};
+    for (const sec of ["rw", "math"]) {
+      const score = target && +target[sec]; if (!score || !scale) continue;
+      const L = levelOf(sec, score, scale), cur = current && +current[sec] ? levelOf(sec, +current[sec], scale) : null;
+      const acc = {}, g = MIX[sec].typed;
+      for (const d of LV) { const pi = sig(L.th - B[d]); acc[d] = (1 - g) * (0.25 + 0.75 * pi) + g * pi; }
+      out[sec] = { score, raw: L.raw, th: L.th, delta: cur ? L.th - cur.th : null, current: cur ? +current[sec] : null, acc, mastery: LV.reduce((a, d) => a + sig(L.th - B[d]), 0) / 3 };
+    }
+    return out;
+  }
+  // what the target asks of this student, on the model's scale: the needed section level, the needed accuracy by difficulty
+  // (as the difficulty chart draws it) and the needed mastery of each subtopic (same cautious form as its mastery column)
+  function targetFor(res, need) {
+    if (!need || !res || !res.lv) return null;
+    const out = {};
+    for (const [sec, t] of Object.entries(need)) {
+      const A = res.lv.sec[sec]; if (!A) continue;
+      const thNeed = t.delta != null ? A.th + t.delta : t.th, g = sec === "rw" ? 0.25 : 0.18, acc = {}, sub = {};
+      for (const d of LV) acc[d] = g + (1 - g) * sig(thNeed - B[d]);
+      for (const k in OMEGA0) if (SEC_OF[k] === sec) { const dk = res.lv.sub[k] || { th: 0, v: VD }, vt = A.v + dk.v, th = thNeed - 0.5 * Math.sqrt(vt);
+        sub[k] = LV.reduce((a, d) => a + sig(th - B[d]), 0) / 3; }
+      const all = Object.values(sub); out[sec] = { ...t, thNeed, acc, sub, mastery: all.reduce((a, b) => a + b, 0) / (all.length || 1) };
+    }
+    return out;
+  }
+  // a subtopic against the target: below / at / above, with a margin so a tiny gap is not called a problem
+  function vsTarget(now, need, n) {
+    if (n < 3 || now == null || need == null) return ["thin", "мало данных"];
+    const gap = need - now;
+    return gap > 0.05 ? ["stuck", "ниже цели"] : gap < -0.05 ? ["ok", "выше цели"] : ["grow", "на уровне цели"];
+  }
+  const api = { compute, drivers, change, ZMIN, targetNeeds, targetFor, vsTarget, MIX, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
   if (typeof module !== "undefined") module.exports = api; else root.PROGRESS = api;
 })(typeof window !== "undefined" ? window : globalThis);

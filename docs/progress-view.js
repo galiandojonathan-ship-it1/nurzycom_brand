@@ -65,8 +65,8 @@ window.PVIEW = (() => {
     const ends = [];
     series.forEach((s) => {
       const pts = s.v.map((v, i) => (v == null ? null : [x(i), y(v)])).filter(Boolean); if (!pts.length) return;
-      if (dots || s.w >= 3) pts.forEach((p) => el("circle", { cx: p[0], cy: p[1], r: s.w >= 3 ? 3 : 2.2, fill: s.color }, svg));
-      el("path", { d: curve(pts), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dim ? { opacity: 0.85 } : {}) }, svg);
+      if (!s.dash && (dots || s.w >= 3)) pts.forEach((p) => el("circle", { cx: p[0], cy: p[1], r: s.w >= 3 ? 3 : 2.2, fill: s.color }, svg));
+      el("path", { d: curve(pts), ...(s.dash ? { "stroke-dasharray": "6 5" } : {}), fill: "none", stroke: s.color, "stroke-width": s.w || 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dim ? { opacity: 0.85 } : {}) }, svg);
       const lv = s.v[s.v.length - 1]; if (lv != null && !s.nolabel) ends.push({ y: y(lv) + 4, t: `${s.label} ${fmt(lv)}`, bold: s.w >= 3 });
     });
     ends.sort((a, b) => a.y - b.y); for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;   // end labels never overlap
@@ -96,6 +96,7 @@ window.PVIEW = (() => {
   const noiseOf = (perWeek) => Math.min(25, 7 * Math.sqrt(72 / Math.max(10, perWeek)));
   // box: container; res: PROGRESS.compute result; o: { name }
   function render(box, res, o = {}) {
+    if (o.target && window.PROGRESS && PROGRESS.targetFor) o = { ...o, target: PROGRESS.targetFor(res, o.target) };
     // period: 8 weeks, or all the time when the last answers are older than that (practice tests taken long ago)
     const lastNew = (() => { const S = res.snaps; for (let i = S.length - 1; i > 0; i--) if (S[i].nAns > S[i - 1].nAns) return i; return 0; })();
     const st = { weeks: res.snaps.length - 1 - lastNew > 8 ? 99 : 8, sec: res.secs[0], dom: null };
@@ -116,7 +117,9 @@ window.PVIEW = (() => {
           ${srcHTML()}
           <div class="chips" role="group" aria-label="Период">${[[4, "4 недели"], [8, "8 недель"], [99, "Всё время"]].map(([v, l]) => `<button class="chip" type="button" data-pw="${v}" aria-pressed="${st.weeks === v}">${l}</button>`).join("")}</div></div>
         <div class="pg-grid">
-          <section class="pg-hero"><div class="pg-big">${last.index}</div><div class="pg-delta ${Math.abs(d) < NOISE ? "pg-noise" : d >= 0 ? "up" : "down"}">${d >= 0 ? "▲ +" : "▼ "}${d} <span>с ${day(first.t)}${Math.abs(d) < NOISE ? ` · в пределах шума (±${Math.round(NOISE)})` : ""}</span></div>
+          <section class="pg-hero">${o.target && Object.keys(o.target).length ? `<div class="pg-goal">${Object.entries(o.target).map(([sec, t]) => { const ms = res.subs.filter((x) => x.sec === sec && x.n >= 3 && x.series[S.length - 1] != null), cur = ms.length ? ms.reduce((q, x) => q + x.series[S.length - 1], 0) / ms.length : null, below = ms.filter((x) => (t.sub[x.k] ?? t.mastery) - x.series[S.length - 1] > 0.05).length;
+            if (t.current && t.current >= t.score) return `<div><b>Цель ${sec === "rw" ? "RW" : "Math"} ${t.score}</b> (ориентир сейчас ≈ ${t.current}): уже на уровне цели, её можно поднять.</div>`;
+            return `<div><b>Цель ${sec === "rw" ? "RW" : "Math"} ${t.score}</b>${t.current ? ` (ориентир сейчас ≈ ${t.current})` : ""} · нужно мастерство ${pct(t.mastery)}%${cur != null ? `, сейчас в среднем ${pct(cur)}%` : ""} · трудные вопросы: нужно ${pct(t.acc.H)}% · ниже цели: ${below} из ${ms.length} подтем</div>`; }).join("")}${Object.values(o.target).some((t) => !t.current) ? '<div class="hint">Без пробного теста цель сравнивается по шкале nurzycom напрямую и получается строже; после первого полного пробника сравнение идёт от ориентира ученика.</div>' : ""}</div>` : ""}<div class="pg-big">${last.index}</div><div class="pg-delta ${Math.abs(d) < NOISE ? "pg-noise" : d >= 0 ? "up" : "down"}">${d >= 0 ? "▲ +" : "▼ "}${d} <span>с ${day(first.t)}${Math.abs(d) < NOISE ? ` · в пределах шума (±${Math.round(NOISE)})` : ""}</span></div>
             <div class="pg-kv"><span>Скорость <b>${slope >= 0 ? "+" : ""}${slope.toFixed(1)}</b> в неделю</span><span>Ответов <b>${res.n}</b>, размечено <b>${res.tagged}</b></span></div>${start > 0 ? `<p class="hint">Недели до ${day(S[start].t)} не показаны: меньше ${PROGRESS.MIN_IX} ответов.</p>` : ""}
             <p class="hint">Собран из ${last.used} частей из 5${last.used < 5 ? ": для остальных пока мало данных" : ""}. Около 0 — ответы наугад, 100 — уверенное решение на экзаменационном уровне.</p></section>
           <section class="pg-chart"><b>Индекс по неделям</b><div id="pg-ix"></div></section></div>
@@ -134,7 +137,9 @@ window.PVIEW = (() => {
       line(box.querySelector("#pg-ix"), { series: [{ v: cut.map((s) => s.index), color: "#0F0F0F", label: "Индекс", w: 2.5 }], times: cut.map((s) => s.t), dots: true,
         marks: cut.map((s, i) => (res.mocks.some((t) => t <= s.t && t > (cut[i - 1] ? cut[i - 1].t : 0)) ? i : -1)).filter((i) => i >= 0) });
       const ds = cut.map((s) => s.diff[st.sec] || {});
-      line(box.querySelector("#pg-df"), { series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].map(([k, c, l]) => ({ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l })),
+      const TG = o.target && o.target[st.sec];
+      line(box.querySelector("#pg-df"), { series: [["E", "#2A7DB8", "Лёгкие"], ["M", "#6E57C9", "Средние"], ["H", "#B5402F", "Трудные"]].flatMap(([k, c, l]) => [{ v: ds.map((x) => (x[k] == null ? null : x[k] * 100)), color: c, label: l },
+          ...(TG && ds.some((x) => x[k] != null) ? [{ v: ds.map(() => TG.acc[k] * 100), color: c, label: `цель ${l.toLowerCase()}`, w: 1.4, dash: true }] : [])]),
         times: cut.map((s) => s.t), fmt: (v) => Math.round(v) + "%", h: 240,
         note: (i) => { const c = (cut[i].cnt || {})[st.sec] || {}, f = [["E", "лёгкие"], ["M", "средние"], ["H", "трудные"]].filter(([k]) => c[k]).map(([k, l]) => `${l} ${c[k][0]}/${c[k][1]}`); return f.length ? `<br><span class="pg-tipn">Факт к этой дате: ${f.join(" · ")}</span>` : ""; } });
       box.querySelectorAll("[data-pp]").forEach((elx) => elx.appendChild(spark(cut.map((s) => (s.parts[elx.dataset.pp] == null ? null : s.parts[elx.dataset.pp] / 100)), "#0F0F0F", 140, 28)));
@@ -142,24 +147,26 @@ window.PVIEW = (() => {
       // here»); the choice is kept in this browser for every student
       const MK = "pg_map", mp = (() => { try { return Object.assign({ g: "dom", f: "all", s: "order", closed: {} }, JSON.parse(localStorage.getItem(MK) || "{}")); } catch (e) { return { g: "dom", f: "all", s: "order", closed: {} }; } })();
       const saveMap = () => { try { localStorage.setItem(MK, JSON.stringify(mp)); } catch (e) { /* private mode */ } };
-      const ST_ORDER = [["stuck", "Требуют внимания"], ["grow", "Растут"], ["", "Держатся"], ["ok", "Освоено"], ["thin", "Мало данных"]];
+      const HAS_T = !!(o.target && Object.keys(o.target).length);
+      const ST_ORDER = HAS_T ? [["stuck", "Ниже цели"], ["grow", "На уровне цели"], ["ok", "Выше цели"], ["thin", "Мало данных"]] : [["stuck", "Требуют внимания"], ["grow", "Растут"], ["", "Держатся"], ["ok", "Освоено"], ["thin", "Мало данных"]];
       const all = [];
       res.secs.forEach((sec) => PROGRESS.DOMAINS[sec].forEach(([, list], gi) => res.subs.filter((x) => x.sec === sec && list.includes(x.k) && x.n > 0).forEach((x) => {
         const thin = x.n < 3, c = thin ? null : PROGRESS.change(res, x, a, n - 1), b0 = c ? c.from : n - 1, now = x.series[n - 1] ?? 0, was = x.series[b0] ?? now, ch = c ? c.ch : 0, sig = c && Math.abs(c.z) >= PROGRESS.ZMIN, late = !!c && b0 > a;   // change from the first reliable value; sig: above the noise
-        const stt = thin ? ["thin", "мало данных"] : now >= 0.8 ? ["ok", "освоено"] : sig && ch > 0 ? ["grow", "растёт"] : sig && ch < 0 ? ["stuck", "просело"] : now < 0.45 ? ["stuck", "слабое место"] : ["", "держится"];
-        all.push({ x, sec, gi, thin, c, b0, now, was, ch, sig, late, stt });
+        const need = o.target && o.target[sec] ? o.target[sec].sub[x.k] ?? o.target[sec].mastery : null;
+        const stt = need != null ? PROGRESS.vsTarget(thin ? null : now, need, x.n) : thin ? ["thin", "мало данных"] : now >= 0.8 ? ["ok", "освоено"] : sig && ch > 0 ? ["grow", "растёт"] : sig && ch < 0 ? ["stuck", "просело"] : now < 0.45 ? ["stuck", "слабое место"] : ["", "держится"];
+        all.push({ x, sec, gi, thin, c, b0, now, was, ch, sig, late, stt, need, gap: need != null ? need - now : null });
       })));
       const SECN = { rw: "Reading and Writing", math: "Math" };
       const groupOf = (r) => mp.g === "dom" ? [`d:${r.sec}:${r.gi}`, DOMN[r.sec][r.gi], `${r.sec}${r.gi}`] : mp.g === "status" ? [`s:${r.stt[0]}`, ST_ORDER.find(([k]) => k === r.stt[0])[1], String(ST_ORDER.findIndex(([k]) => k === r.stt[0]))] : mp.g === "sec" ? [`c:${r.sec}`, SECN[r.sec], r.sec === "rw" ? "0" : "1"] : ["all", "", "0"];
       const keep = (r) => mp.f === "all" || (mp.f === "attn" ? r.stt[0] === "stuck" : r.stt[0] === mp.f);
-      const sorter = mp.s === "low" ? (p, q) => (p.thin - q.thin) || p.now - q.now : mp.s === "change" ? (p, q) => (p.thin - q.thin) || p.ch - q.ch : mp.s === "n" ? (p, q) => q.x.n - p.x.n : () => 0;
+      const sorter = mp.s === "gap" ? (p, q) => (p.thin - q.thin) || (q.gap ?? -9) - (p.gap ?? -9) : mp.s === "low" ? (p, q) => (p.thin - q.thin) || p.now - q.now : mp.s === "change" ? (p, q) => (p.thin - q.thin) || p.ch - q.ch : mp.s === "n" ? (p, q) => q.x.n - p.x.n : () => 0;
       const shown = all.filter(keep), G = new Map();
       for (const r of shown) { const [id, title, ord] = groupOf(r); if (!G.has(id)) G.set(id, { id, title, ord, rows: [] }); G.get(id).rows.push(r); }
       const cnt = (f) => (f === "all" ? all.length : all.filter((r) => (f === "attn" ? r.stt[0] === "stuck" : r.stt[0] === f)).length);
       const chip = (attr, v, cur, label) => `<button class="chip" type="button" data-${attr}="${v}" aria-pressed="${cur === v}">${label}</button>`;
       box.querySelector("#pg-mapctl").innerHTML = `<div class="pg-mapctl"><span class="hint">Группировать</span><div class="chips" role="group" aria-label="Группировать">${[["dom", "по доменам"], ["status", "по статусу"], ["sec", "по разделу"], ["none", "без групп"]].map(([v, l]) => chip("mg", v, mp.g, l)).join("")}</div></div>
-        <div class="pg-mapctl"><span class="hint">Показать</span><div class="chips" role="group" aria-label="Показать">${[["all", "все"], ["attn", "требуют внимания"], ["grow", "растут"], ["", "держатся"], ["ok", "освоено"], ["thin", "мало данных"]].filter(([v]) => v === "all" || cnt(v)).map(([v, l]) => chip("mf", v, mp.f, `${l} <small>${cnt(v)}</small>`)).join("")}</div></div>
-        <div class="pg-mapctl"><span class="hint">Сортировать</span><div class="chips" role="group" aria-label="Сортировать">${[["order", "как в SAT"], ["low", "слабые сверху"], ["change", "просели сверху"], ["n", "больше ответов"]].map(([v, l]) => chip("ms", v, mp.s, l)).join("")}</div></div>`;
+        <div class="pg-mapctl"><span class="hint">Показать</span><div class="chips" role="group" aria-label="Показать">${(HAS_T ? [["all", "все"], ["attn", "ниже цели"], ["grow", "на уровне цели"], ["ok", "выше цели"], ["thin", "мало данных"]] : [["all", "все"], ["attn", "требуют внимания"], ["grow", "растут"], ["", "держатся"], ["ok", "освоено"], ["thin", "мало данных"]]).filter(([v]) => v === "all" || cnt(v)).map(([v, l]) => chip("mf", v, mp.f, `${l} <small>${cnt(v)}</small>`)).join("")}</div></div>
+        <div class="pg-mapctl"><span class="hint">Сортировать</span><div class="chips" role="group" aria-label="Сортировать">${[["order", "как в SAT"], ...(HAS_T ? [["gap", "дальше от цели сверху"]] : []), ["low", "слабые сверху"], ["change", "просели сверху"], ["n", "больше ответов"]].map(([v, l]) => chip("ms", v, mp.s, l)).join("")}</div></div>`;
       const tb = box.querySelector("#pg-rows"), cols = o.onTwins ? 8 : 7;
       if (!shown.length) tb.innerHTML = `<tr><td colspan="${cols}" class="hint">Нет подтем с таким статусом.</td></tr>`;
       [...G.values()].sort((p, q) => (p.ord < q.ord ? -1 : p.ord > q.ord ? 1 : 0)).forEach((g) => {
@@ -169,7 +176,7 @@ window.PVIEW = (() => {
         g.rows.slice().sort(sorter).forEach((r) => {
           const { x, thin, c, b0, now, was, ch, sig, late, stt } = r;
           const tr = document.createElement("tr"); if (thin) tr.className = "pg-thin";
-          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em></div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b></td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>${o.onTwins ? `<td><button class="pg-tw" type="button" data-twk="${x.k}" title="Похожие вопросы на ошибки этой подтемы">Похожие</button></td>` : ""}`;
+          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em>${r.need != null ? `<u class="pg-need" style="left:calc(${pct(r.need)}% - 1px)" title="нужно для цели ${pct(r.need)}%"></u>` : ""}</div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b>${r.need != null && !thin ? `<div class="hint">нужно ${pct(r.need)}%</div>` : ""}</td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>${o.onTwins ? `<td><button class="pg-tw" type="button" data-twk="${x.k}" title="Похожие вопросы на ошибки этой подтемы">Похожие</button></td>` : ""}`;
           tr.querySelector(".sp").appendChild(spark(x.series.slice(a).map((v, j) => (a + j < b0 ? null : v)), thin ? "#D9D5CD" : "#0F0F0F"));
           tb.appendChild(tr);
         });
@@ -201,7 +208,9 @@ window.PVIEW = (() => {
           if (!hid[k] && vis <= 1) return;   // the last visible line stays
           hid[k] = !hid[k]; draw(); }));
         const all = box.querySelector("#pg-domleg [data-lg-all]"); if (all) all.onclick = () => { Object.keys(hid).forEach((k) => { if (k.startsWith(cur.id + "|")) delete hid[k]; }); draw(); };
-        line(box.querySelector("#pg-dom"), { series: [...(off("dom") ? [] : [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 }]),
+        const TD = o.target && o.target[cur.sec];
+        line(box.querySelector("#pg-dom"), { series: [...(TD ? [{ v: cur.d.dom.slice(a).map(() => TD.mastery * 100), color: "#A63328", label: "Нужно для цели", w: 1.4, dash: true }] : []),
+          ...(off("dom") ? [] : [{ v: cur.d.dom.slice(a).map((v) => (v == null ? null : v * 100)), color: "#0F0F0F", label: "Домен", w: 3.5 }]),
           ...sk.filter((x) => !off(x.skill)).map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
           times: cut.map((q) => q.t), fmt: (v) => Math.round(v) + "%", h: 260 });
       }
