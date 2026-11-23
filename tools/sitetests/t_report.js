@@ -6,7 +6,8 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
 const CSV = process.argv[3] ? fs.readFileSync(process.argv[3], "utf8") : "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n" +
   "03/11/2026 10:00:00,Ayana Seitkali,V01,p1 · Практика · экран · 2-я: 4/4,1:A>C 2:A 3:B>A 4:A,2/4,\"1,3\",300,1\n" +
   "12/11/2026 10:00:00,Ayana Seitkali,V01,p1 · Практика · экран · 2-я: 4/4,1:C 2:A 3:A 4:A,4/4,,200,2\n" +
-  "20/11/2026 11:00:00,Ayana Seitkali,V01,p2 · Практика · экран,1:A 2:B 3:C 4:D,3/4,4,250,1\n";
+  "20/11/2026 11:00:00,Ayana Seitkali,V01,p2 · Практика · экран,1:A 2:B 3:C 4:D,3/4,4,250,1\n" +
+  "21/11/2026 12:00:00,Ayana Seitkali,PT2,RW · M1 20/27 · M2 сложный 22/27,1.1:A,42/54,,3800,1\n";
 (async () => {
   const br = await chromium.launch(), ctx = await br.newContext(dev === "phone" ? { ...devices["iPhone 13"] } : { viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript((A) => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.setItem("hw_student", "Loop Test"); localStorage.setItem("admin_key", A); }, ADMIN);
@@ -17,8 +18,10 @@ const CSV = process.argv[3] ? fs.readFileSync(process.argv[3], "utf8") : "Timest
   await p.click(`#v-students tr.click:has-text("${WHO}")`); await p.waitForSelector("#st-pdf", { timeout: 15000 }); await p.waitForTimeout(1500);
   await p.click("#st-pdf"); await p.waitForSelector("#rp .rp-sheet", { timeout: 10000 });
   const txt = async () => (await p.textContent("#rp-sheet")).replace(/\s+/g, " ");
-  let t = await txt(); console.log("sheet:", t.slice(0, 300));
-  ok(/Отчёт об учёбе:/.test(t) && /Сводка/.test(t) && /работ сдано/.test(t), "the report opens with the student's name and the summary");
+  let t = await txt(); console.log("sheet:", t.slice(0, 900));
+  ok(/Отчёт об учёбе:/.test(t) && /Главное/.test(t) && /работ сдано/.test(t), "the report opens with the student's name and «Главное»");
+  ok(/Активность\. Всего сдано \d+/.test(t) && /Точность\./.test(t), "«Главное»: activity and accuracy in plain sentences");
+  ok(/Ориентир на SAT\. .{0,40}\d{3}–\d{3}/.test(t) && /не официальный балл College Board и не обещание/.test(t) && /20\d\d/.test(t), "the SAT range is a range with its basis, not a promise; dates with the year");
   ok(/Конфиденциально/.test(t) && /Telegram @nurzycom/.test(t), "footer: contacts and the confidentiality line");
   ok(!/индекс/i.test(t), "the internal progress index is not in the report");
   await p.uncheck('[data-rps="recent"]'); t = await txt();

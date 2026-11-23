@@ -8,10 +8,10 @@
 window.REPORT = (() => {
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const dLong = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-  const dShort = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  const dShort = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
   const P = (x) => (x == null || isNaN(x) ? "—" : Math.round(x) + "%");
   const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
-  const SECTIONS = [["sum", "Сводка", true], ["trend", "Динамика по неделям", true], ["skills", "Навыки", true], ["focus", "Сильные стороны и что подтянуть", true],
+  const SECTIONS = [["sum", "Главное", true], ["pred", "Ориентир на SAT", true], ["trend", "Динамика по неделям", true], ["skills", "Навыки", true], ["focus", "Сильные стороны и что подтянуть", true],
     ["mocks", "Пробные тесты на сайте", true], ["bb", "Официальные пробники Bluebook", true], ["recent", "Последние работы", true], ["note", "Комментарий преподавателя", true]];
   const HEX = '<svg viewBox="0 0 48 52" width="34" height="37" aria-hidden="true"><path d="M24 2 45 14v24L24 50 3 38V14z" fill="none" stroke="#0F0F0F" stroke-width="1.4"/><text x="24" y="31" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="15" fill="#0F0F0F">NK</text></svg>';
 
@@ -31,6 +31,32 @@ window.REPORT = (() => {
       <p class="rp-hint">Доля вопросов домашних заданий, решённых с первой попытки, в среднем за неделю. Точек: ${pts.length}.</p>`;
   }
 
+  const NM = { rw: "Reading and Writing", math: "Math" };
+  const rng = (x) => `${x.lo}–${x.hi}`;
+  // a range, never one number; always with what it rests on and that it is not an official score and not a promise (hard rules 2, 6)
+  function predHTML(p) {
+    if (!p || !p.est || !Object.keys(p.est.sections).length) return "";
+    const E = p.est, S = E.sections;
+    return `<div class="rp-pred">${E.total ? `<div class="rp-pred-big">${rng(E.total)}</div>` : ""}
+      <div>${Object.entries(S).map(([k, x]) => `<div><b>${NM[k]}</b> ${rng(x)} <span class="rp-hint">· ${x.n} ${x.n === 1 ? "тест" : x.n < 5 ? "теста" : "тестов"}, последний ${esc(dShort(x.last))}${x.weak ? " · мало свежих данных" : ""}</span></div>`).join("")}</div></div>
+      <p class="rp-hint">Примерный диапазон по ${p.n} полным пробным тестам (${p.bb} в Bluebook, ${p.n - p.bb} на сайте nurzycom); свежие тесты весят больше. Это оценка преподавателя, а не официальный балл College Board и не обещание результата.</p>`;
+  }
+  // «Главное»: 3–5 plain sentences a student, a parent and a manager read in half a minute
+  function main(d, rows, hw, weak, on) {
+    const out = [], now = Date.now(), D = 864e5;
+    if (rows.length) { const d30 = rows.filter((r) => r.t > now - 30 * D).length;
+      out.push(`<b>Активность.</b> Всего сдано ${rows.length} ${rows.length % 10 === 1 && rows.length % 100 !== 11 ? "работа" : [2, 3, 4].includes(rows.length % 10) && ![12, 13, 14].includes(rows.length % 100) ? "работы" : "работ"}, за последние 30 дней ${d30}.${d30 === 0 ? " Последний месяц без сданных работ." : ""}`); }
+    const pts = hw.filter((r) => r.pct != null);
+    if (pts.length >= 4) { const k = Math.max(2, Math.floor(pts.length / 3)), a = mean(pts.slice(0, k).map((r) => r.pct)), b = mean(pts.slice(-k).map((r) => r.pct)), dd = Math.round(b - a);
+      out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(a)} в начале, ${P(b)} в последних работах (${dd >= 0 ? "+" : "−"}${Math.abs(dd)} п.).`); }
+    else if (pts.length) out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(mean(pts.map((r) => r.pct)))}.`);
+    if (on.pred && d.pred && d.pred.est && Object.keys(d.pred.est.sections).length) { const E = d.pred.est;
+      out.push(`<b>Ориентир на SAT.</b> ${E.total ? rng(E.total) : Object.entries(E.sections).map(([k, x]) => `${NM[k]} ${rng(x)}`).join(", ")} по полным пробным тестам; это оценка, не официальный балл.`); }
+    if (d.strong.length) out.push(`<b>Получается.</b> ${esc(d.strong.slice(0, 3).join("; "))}.`);
+    if (weak.length) out.push(`<b>В работе.</b> ${esc(weak.slice(0, 3).join("; "))}.`);
+    return out.map((x) => `<li>${x}</li>`).join("");
+  }
+
   let cell = () => "—";
   function sheet(d, on, note, next) {
     const rows = d.rows.slice().sort((a, b) => a.t - b.t), hw = rows.filter((r) => r.kind === "hw");
@@ -43,7 +69,8 @@ window.REPORT = (() => {
     const weak = d.weak.length ? d.weak : d.skills.filter((x) => x.n >= 5 && x.value < 70).sort((a, b) => a.value - b.value).slice(0, 3).map((x) => `${x.label} (${P(x.value)} с первой попытки)`);
     return `<header class="rp-head">${HEX}<div><div class="rp-brand">nurzycom · подготовка к SAT</div><h1>Отчёт об учёбе: ${esc(d.name)}</h1>
         <div class="rp-meta">${first ? `Период: ${esc(dLong(first.t))} — ${esc(dLong(last.t))}` : "Работ пока нет"} · составлен ${esc(dLong(Date.now()))}</div></div></header>
-      ${sec("sum", "Сводка", `<div class="rp-kpis">${kpi(rows.length, "работ сдано")}${kpi(lessons, "уроков с домашним заданием")}${kpi(P(mean(hw.map((r) => r.pct))), "домашних заданий с первой попытки")}${kpi(days30, "дней с работами за 30 дней")}</div>`)}
+      ${sec("sum", "Главное", `<ul class="rp-main">${main(d, rows, hw, weak, on)}</ul><div class="rp-kpis">${kpi(rows.length, "работ сдано")}${kpi(lessons, "уроков с домашним заданием")}${kpi(P(mean(hw.map((r) => r.pct))), "домашних заданий с первой попытки")}${kpi(days30, "дней с работами за 30 дней")}</div>`)}
+      ${sec("pred", "Ориентир на SAT", predHTML(d.pred))}
       ${sec("trend", "Динамика по неделям", hw.length ? trendSVG(rows) : "")}
       ${sec("skills", "Навыки", sk.length ? `<table class="rp-t"><thead><tr><th>Навык College Board</th><th class="n">Вопросов</th><th>С первой попытки</th></tr></thead><tbody>${sk.slice().sort((a, b) => b.value - a.value).map((x) =>
         `<tr><td>${esc(x.label)}</td><td class="n">${x.n}</td><td><span class="rp-meter"><i style="width:${Math.round(x.value)}%"></i></span> ${P(x.value)}</td></tr>`).join("")}</tbody></table><p class="rp-hint">Навыки с тремя и более вопросами в домашних заданиях.</p>` : "")}

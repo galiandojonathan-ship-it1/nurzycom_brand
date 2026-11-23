@@ -375,6 +375,17 @@ Tests to run by area:
 - **Hidden controls** must stay usable by keyboard (the «Скрыть» timer button is kept 1 px for keyboards only).
 - **KV:** a task given to a student who never saved anything creates a record without an owner until their first visit (known limit).
 - **The old GitHub Pages branch** serves an outdated site if you forget the fast-forward.
+- **«Ориентир на SAT», legend toggles, years in dates (2026-11-23, Nurassyl: «predict the possible score… PDF summary concise
+  for students, parents and my manager… выбирать какую линию скрыть… добавь года в датах»):** `docs/predict.js` (pure, tested by
+  `t_predict.mjs`) reads only full practice-test sections: the site's tests (form rows, `scale.js`) and shared Bluebook records
+  (raw = both modules, route from the record; skipped sections left out). Newer tests weigh more (half-weight after 45 days),
+  Bluebook ×1.25. The result is always a range: ±max(40, spread), ±60 with one test, wider when the last test is older than 60
+  or 180 days, capped at ±120; the total adds the two halves in quadrature. It follows the progress block's source switches.
+  Shown in the card's «Графики» tab (`#st-pred`, with the list of tests it rests on) and in the PDF as «Главное» (3–5 plain
+  sentences: activity, accuracy then and now, the range, strong points, what we work on) plus a «Ориентир на SAT» section that
+  the teacher can untick. Wording everywhere: an estimate, not an official College Board score and not a promise (hard rules 2
+  and 6). The domain chart legend is clickable: each line hides or shows, «Показать все» resets, the last line cannot be hidden.
+  Dates in the progress view, the card and the PDF carry the year.
 - **Student card tabs (2026-11-23, Nurassyl: «эргономичнее… вкладки "анализ", "графики", "сдачи"»):** the results card in
   `teacher.js` has tabs Обзор (KPIs, lesson heatmap, name spellings) · Графики (`#st-prog`) · Анализ (skills) · Сдачи (history,
   Bluebook `#st-bb`, live rounds `#st-live`) · Работа над ошибками (`#st-rv`, Gemini `#st-tw`). Panes are rendered at once and

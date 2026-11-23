@@ -41,6 +41,17 @@ const CSV = "Timestamp,Student,Lesson,Part,Answers,Score,Wrong,Seconds,Attempt\n
   ok(chips.some((c) => /^Домашние \d+$/.test(c)) && chips.some((c) => /^Bluebook 142$/.test(c)) && chips.some((c) => /^Уроки 4$/.test(c)), "source switches: homework, Bluebook (98 + 44: the Math-only attempt adds no Reading and Writing blanks), lessons (4 answers in the round)");
   const idx1 = (await teacher.textContent("#st-prog .pg-big")).trim();
   ok(/^\d+$/.test(idx1), "with Bluebook the index has enough answers to be drawn: " + idx1);
+  await teacher.waitForSelector("#st-pred .pred-big", { timeout: 15000 });
+  const pred = (await teacher.textContent("#st-pred")).replace(/\s+/g, " "); console.log("pred:", pred.slice(0, 240));
+  ok(/\d{3,4}–\d{3,4}/.test(pred) && /не официальный балл/.test(pred) && /20\d\d/.test(pred), "«Ориентир на SAT» shows a range, says it is not an official score, dates carry the year");
+  const nLines = async () => teacher.$$eval("#pg-dom svg path", (x) => x.filter((p) => (p.getAttribute("fill") || "") === "none").length);
+  const L0 = await nLines(), legs = await teacher.$$("#pg-domleg [data-lg]");
+  await legs[1].click(); await teacher.waitForTimeout(300);
+  const L1 = await nLines();
+  ok(L1 < L0 && (await teacher.getAttribute(`#pg-domleg [data-lg]:nth-child(2)`, "aria-pressed")) === "false" && !!(await teacher.$("#pg-domleg [data-lg-all]")), `a click on a legend line hides it (${L0} → ${L1} paths), «Показать все» appears`);
+  await teacher.click("#pg-domleg [data-lg-all]"); await teacher.waitForTimeout(300);
+  ok((await nLines()) === L0, "«Показать все» brings every line back");
+  ok(/20\d\d/.test(await teacher.textContent("#st-prog")), "progress dates show the year");
   ok(await teacher.$("#st-prog #pg-dom svg") && /в целом/.test(await teacher.textContent("#pg-domleg")), "the domain chart is drawn with the domain line in its legend");
   const doms = await teacher.$$eval("#st-prog [data-pd]", (x) => x.map((b) => b.textContent)); ok(doms.length === 8, "8 domains to choose (both sections): " + doms.join(", "));
   await teacher.click('#st-prog [data-pd="math:0"]'); await teacher.waitForTimeout(300);

@@ -185,7 +185,7 @@
     const pane = (k, inner) => `<section class="st-pane" data-pane="${k}"${k === tab ? "" : " hidden"}>${inner}</section>`;
     html += `<div class="st-tabs" role="tablist" aria-label="Разделы карточки">${TABS.map(([k, t]) => `<button type="button" role="tab" class="st-tab" data-st="${k}" aria-selected="${k === tab}">${t}</button>`).join("")}</div>`;
     html += pane("over", kpiHTML + lesHTML + spellHTML)
-      + pane("charts", '<div id="st-prog"></div>')
+      + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
       + pane("anal", skHTML)
       + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
       + pane("fix", '<div id="st-rv"></div><div id="st-tw"></div>');
@@ -196,6 +196,7 @@
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
+    predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
     gaCollect({ keys: new Set([s.key]) }).then((all) => { bbRender(s, all); if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
       if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
         load: async (c) => { if (c.bb) return { ...c, item: { t: /^[A-D]$/.test(c.bb.keys[0] || "") ? "mc" : "spr", ans: c.bb.keys[0], acc: c.bb.keys, sk: c.sk, d: c.d } };   // Bluebook: no text, key and skill only
@@ -293,10 +294,34 @@
       const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
       PVIEW.render(box, res, { name: s.name, onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
-          set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); } } });
+          set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
     };
     draw();
     liveMount(s).catch(() => { /* no lesson account */ });
+  }
+  // «Ориентир на SAT» (predict.js): a range from the full practice-test sections, site tests and shared Bluebook tests;
+  // follows the «Пробные на сайте» / «Bluebook» source switches of the progress block. Internal: an estimate, not a result.
+  async function predData(s) {
+    if (!window.PREDICT || !window.SATSCALE) return null;
+    const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
+    let sel = {}; try { sel = JSON.parse(localStorage.getItem("pg_src_" + s.key) || "{}"); } catch (e) { sel = {}; }
+    const tests = PREDICT.collect(s.rows, shares, SATSCALE).filter((x) => sel[x.src] !== false);
+    return { tests, est: PREDICT.estimate(tests) };
+  }
+  const dY = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
+  async function predMount(s) {
+    const box = $("st-pred"); if (!box) return;
+    const P = await predData(s); if ($("st-pred") !== box || D.student !== s.key) return;
+    D.pred = { key: s.key, ...(P || {}) };
+    if (!P || !P.tests.length) { box.innerHTML = '<div class="card pred"><span class="label">Ориентир на SAT</span><p class="hint">Появится после первого полного пробного теста (на сайте или в Bluebook).</p></div>'; return; }
+    const E = P.est, S = E.sections, NM = { rw: "Reading and Writing", math: "Math" };
+    const big = E.total ? `${E.total.lo}–${E.total.hi}` : Object.keys(S).map((k) => `${S[k].lo}–${S[k].hi}`).join(" · ");
+    const secLine = Object.entries(S).map(([k, x]) => `<div class="pred-sec"><b>${NM[k]}</b><span class="pred-r">${x.lo}–${x.hi}</span><small>${x.n} ${x.n === 1 ? "тест" : x.n < 5 ? "теста" : "тестов"} · последний ${dY(x.last)}${x.trend != null ? ` · с первого ${x.trend >= 0 ? "+" : "−"}${Math.abs(x.trend)}` : ""}${x.weak ? " · мало свежих данных" : ""}</small></div>`).join("");
+    const list = P.tests.slice().sort((a, b) => b.t - a.t).map((x) => `<li>${dY(x.t)} · ${x.src === "bb" ? "Bluebook" : "сайт"} · ${esc(x.label)} · ${NM[x.sec]} ≈ ${x.score}</li>`).join("");
+    box.innerHTML = `<div class="card pred"><span class="label">Ориентир на SAT · примерный диапазон</span>
+      <div class="pred-top"><div class="pred-big">${big}${E.total ? '<small>сумма двух разделов</small>' : `<small>${Object.keys(S).map((k) => NM[k]).join(" · ")}</small>`}</div><div class="pred-secs">${secLine}</div></div>
+      <p class="hint">Оценка по полным пробным тестам: свежие весят больше, Bluebook чуть больше пробников сайта. Это не официальный балл College Board и не обещание результата; чем больше свежих полных пробников, тем уже диапазон. Учитывает переключатели источников ниже.</p>
+      <details><summary>На чём основано · ${P.tests.length}</summary><ul class="pred-list">${list}</ul></details></div>`;
   }
   // «Уроки · живая практика»: the rounds this student answered on lessons
   async function liveMount(s) {
@@ -318,7 +343,8 @@
       subs.filter((x) => { const c = PROGRESS.change(res, x, 0, n); return x.series[n] < 0.5 || (c && c.z <= -PROGRESS.ZMIN); }).sort((a, b) => a.series[n] - b.series[n]).slice(0, 4).forEach((x) => weak.push(NAME[x.k]));
     }
     const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
-    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares };
+    const pred = D.pred && D.pred.key === s.key && D.pred.est ? D.pred : await predData(s).catch(() => null);
+    return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
   }
   // Bluebook results the student shared from their own login (bb_share_ keys), found by matching account names to this form student
   let ACCT = null;

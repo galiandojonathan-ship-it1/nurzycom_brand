@@ -953,6 +953,10 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .rp-sec h2 { font-size: 12.5pt; margin: 0 0 6px; font-weight: 600; }
 .rp-sec h3 { font-size: 10.5pt; margin: 6px 0 4px; font-weight: 600; }
 .rp-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rp-main { margin: 0 0 12px; padding-left: 18px; line-height: 1.5; }
+.rp-main li { margin-bottom: 4px; }
+.rp-pred { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.rp-pred-big { font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
 .rp-kpi { border: 1px solid #D9D5CD; border-radius: 10px; padding: 8px 10px; }
 .rp-kpi b { display: block; font-size: 17pt; font-weight: 600; }
 .rp-kpi span { font-size: 9pt; color: #5E5A54; }
@@ -992,6 +996,12 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .pg-domain .chips { margin: 6px 0; flex-wrap: wrap; }
 #pg-domleg { flex-wrap: wrap; gap: 6px 14px; }
 #pg-domleg .pg-limp { color: #A63328; font-weight: 600; }
+#pg-domleg .pg-lg { display: inline-flex; align-items: center; gap: 6px; font: inherit; color: inherit; background: none; border: 1px solid transparent; border-radius: 9px; padding: 3px 8px; cursor: pointer; text-align: left; }
+#pg-domleg .pg-lg:hover { border-color: #d9d5cd; background: #fff; }
+#pg-domleg .pg-lg[aria-pressed="false"] { opacity: .42; text-decoration: line-through; }
+#pg-domleg .pg-lg[aria-pressed="false"] i { background: #b9b4ab !important; }
+#pg-domleg .pg-lg-all { border-color: #d9d5cd; font-weight: 600; }
+#pg-domleg .pg-lg:focus-visible { outline: 2px solid var(--oxide); outline-offset: 1px; }
 .pg-dlb { font-weight: 700; }
 #pg-dom { max-width: 760px; }
 /* student card tabs (teacher results, 2026-11-23) */
@@ -1003,3 +1013,13 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .st-tab:focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
 .st-pane > h2:first-child, .st-pane > div:first-child > h2:first-child { margin-top: 10px; }
 @media (max-width: 640px) { .st-tabs { flex-wrap: nowrap; overflow-x: auto; } .st-tab { flex: 0 0 auto; padding: 9px 12px; font-size: 14px; } }
+/* «Ориентир на SAT» (teacher card, 2026-11-23) */
+.pred .pred-top { display: flex; flex-wrap: wrap; gap: 18px 36px; align-items: flex-end; margin: 8px 0 6px; }
+.pred .pred-big { font: 700 44px/1 var(--sans); letter-spacing: -.02em; }
+.pred .pred-big small { display: block; font: 500 13px var(--sans); color: #5E5A54; letter-spacing: 0; margin-top: 6px; }
+.pred .pred-secs { display: grid; gap: 6px; }
+.pred .pred-sec { display: grid; grid-template-columns: 170px 110px; column-gap: 12px; align-items: baseline; }
+.pred .pred-sec small { grid-column: 1 / -1; color: #5E5A54; }
+.pred .pred-r { font-weight: 700; font-size: 18px; }
+.pred .pred-list { margin: 6px 0 0; padding-left: 18px; color: #5E5A54; font-size: 14px; }
+@media (max-width: 640px) { .pred .pred-big { font-size: 34px; } .pred .pred-sec { grid-template-columns: 1fr auto; } }
