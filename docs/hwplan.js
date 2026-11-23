@@ -126,7 +126,16 @@
       }
       return { qs: trim(qs, hw.size), asked, dropped };
     }
+    // Gemini overloaded (503 «high demand», 429): wait and try the same request again, up to 3 times
     async function call(part, note) {
+      for (let i = 0; ; i++) {
+        const r = await call1(part, note);
+        if (r.ok || i >= 3 || !/недоступен|Лимит|Gemini 503|Gemini 429/.test(r.err || "")) return r;
+        S.msg = `Gemini перегружен, жду ${20 * (i + 1)} с и пробую снова…`; draw();
+        await new Promise((res) => setTimeout(res, 20000 * (i + 1)));
+      }
+    }
+    async function call1(part, note) {
       const r = await SITE.api("admin/twins", { method: "POST", body: JSON.stringify({ perMistake: PER, decoys: S.decoys, note, mistakes: (await Promise.all(part.map((c) => o.load(c).catch(() => null)))).filter(Boolean).map((m) => o.payloadOf(m)) }) });
       if (!r.ok) return { ok: false, err: (r.data && r.data.error) || (r.status === 403 ? "Нужен ключ администратора в этом браузере." : `Сервер ответил ${r.status}.`) };
       return { ok: true, q: r.data.questions, asked: r.data.asked, dropped: r.data.dropped || 0 };

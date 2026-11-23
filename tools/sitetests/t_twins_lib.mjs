@@ -50,7 +50,7 @@ ok((await buildTwins(req({ mistakes: [own] }), { GEMINI_API_KEY: "x" }, async ()
   const one = twinsInput({ perMistake: 3, mistakes: [own] }, () => 0); const d = one.mistakes[0].decoys;
   const kept = checkedTwins({ questions: [good(1, { kind: "decoy" }), good(1, { kind: "target", tag: 2 }), good(1, { kind: "target", tag: 3 })] }, one);
   ok(d === 1 && kept.filter((q) => q.kind === "decoy").length === 1 && kept.filter((q) => q.kind === "target").length === 2, "the decoy draft is kept and marked where one was planned");
-  const none = checkedTwins({ questions: [good(1, { kind: "decoy" }), good(2)] }, inp);
+  const none = checkedTwins({ questions: [good(1, { kind: "decoy" }), good(2)] }, { ...inp, mistakes: inp.mistakes.map(({ decoys, ...m }) => m) });   // no decoys planned (inp's plan is random)
   ok(!none.some((q) => q.kind === "decoy") && none.every((q) => q.kind === "target"), "a decoy where none was planned is dropped; drafts without kind count as normal");
   let seen = null; const rr = await buildTwins(req({ perMistake: 3, mistakes: [own] }), { GEMINI_API_KEY: "x" }, async (k, instr, data, schema) => { if (data.mistakes) { seen = { instr, schema, data };
       return { questions: [good(1, { kind: "decoy" }), good(1, { kind: "target", tag: "b" }), good(1, { kind: "target", tag: "c" })] }; }
