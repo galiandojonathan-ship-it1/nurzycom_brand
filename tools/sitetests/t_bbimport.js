@@ -34,4 +34,17 @@ ok(/Порядок/.test(err([full[1], full[0], ...full.slice(2)].join("\n"))), 
 ok(/не найдены/.test(err("hello\nworld")), "random text: «Строки таблицы не найдены»");
 { const rw = table(t0, { rw: "m2h", math: "m2h" }).split("\r\n").slice(0, 54).join("\n"); const rows = BB.parse(rw);
   ok(rows.length === 54 && BB.detect(rows, cat, "rw").match, "a Reading and Writing-only test (54 rows) is read and recognised"); }
-console.log(fails ? `${fails} FAILED` : `ALL PASS (${n})`); process.exit(fails ? 1 : 0);
+// the real My Practice page (header with test and date, totals, domains), and the same page with «Show Correct Answers» off
+(async () => {
+  const mpMiss = misses.filter((m) => !m.endsWith("o")), mp = table(t0, { rw: "m2h", math: "m2e" }, "mp", mpMiss), off = table(t0, { rw: "m2h", math: "m2e" }, "mp-off", mpMiss);
+  const meta = BB.parseMeta(mp), rows = BB.parse(mp);
+  ok(meta.num === +t0.slice(3) && new Date(meta.taken).getFullYear() === 2025 && meta.total === rows.length && meta.correct === rows.length - mpMiss.filter((m) => hasM || m.startsWith("rw")).length, `My Practice page: test ${meta.title}, date, totals ${meta.correct}/${meta.total} match the rows`);
+  ok(meta.domains && meta.domains.rw["Expression of Ideas"].join("/") === "5/7" && meta.domains.math["Geometry and Trigonometry"].join("/") === "6/7", "official domain scores are read (Knowledge and Skills)");
+  const r2 = BB.fillKeys(BB.parse(off), cat), m1 = rows.filter((r) => r.status !== "correct"), m2 = r2.filter((r) => r.status !== "correct");
+  ok(BB.detect(r2, cat, "rw").match && m2.every((r, i) => r.answers.length && BB.canon(r.answers[0]) === BB.canon(m1[i].answers[0])), "«Show Correct Answers» off: the test is still recognised and the keys of the misses come from the catalog");
+  const h1 = await BB.shareOf(rows, cat, meta), h2 = await BB.shareOf(r2, cat, BB.parseMeta(off));
+  ok(h1.hash === h2.hash && h1.taken === meta.taken && h1.sections.rw.domains, "the same attempt copied with the switch on or off is one record, with the date and domains");
+  const v10 = mp.split("\n").slice(0, mp.split("\n").findIndex((l) => /^11\t/.test(l))).join("\n");
+  ok(/View: All/.test((() => { try { BB.parse(v10); return ""; } catch (e) { return e.message; } })()), "«View: 10» copy: the message says to choose View: All");
+  console.log(fails ? `${fails} FAILED` : `ALL PASS (${n})`); process.exit(fails ? 1 : 0);
+})();

@@ -259,7 +259,7 @@
     const rep = (id, d) => {
       const it = cat && cat.items[id], parts = [];
       for (const ref of (it && it.c) || []) { const q = byId.get(ref); parts.push(`${BBSHARE.refLabel(ref)}${q ? (q.wrong ? ` · ✗ ${esc((q.mine || [])[0] || "")}` : " · ✓") : ""}`); if (q && q.wrong) again++; }
-      for (const e of sh) if (e.at < d.at) for (const x of Object.values(e.sections)) if (x.miss.some((m) => m[4] === id)) { parts.push(`Bluebook ${esc(x.label || "")} · ✗`); again++; }
+      for (const e of sh) if ((e.taken || e.at) < (d.taken || d.at)) for (const x of Object.values(e.sections)) if (x.miss.some((m) => m[4] === id)) { parts.push(`Bluebook ${esc(x.label || "")} · ✗`); again++; }
       return parts.length ? `<br><small class="bb-rep">Уже был: ${parts.join("; ")}</small>` : "";
     };
     const body = BBSHARE.html(sh, { open: true, rep });
