@@ -22,9 +22,14 @@ function tableOf(cat, test, routes, fmt = "tab", miss = []) {
       const wrong = /^[A-D]$/.test(k[0]) ? L.find((x) => !k.includes(x)) : "999";
       const mine = omit ? "—; Omitted" : isMiss ? `${wrong}; Incorrect` : `${k[0]}; Correct`;
       const label = sec === "rw" ? "Reading and Writing" : "Math";
+      if (fmt === "mp" || fmt === "mp-off") { out.push(`${q + 1}\t${label}\t\n${fmt === "mp-off" ? "" : k.join(", ")}\n${mine}\n`); return; }   // My Practice (real copy, 2026-11-23)
       out.push(fmt === "lines" ? `${q + 1}\n${label}\n${k.join(", ")}\n${mine}\nReview` : fmt === "md" ? `${q + 1}\t${label}\t\\\n${k.join(", ")}\\\n${mine}\\\n\\`
         : fmt === "nbsp" ? `${q + 1} \t${label}\t${k.join(", ")}\t${mine.replace(" ", " ")}\tReview` : `${q + 1}\t${label}\t${k.join(", ")}\t${mine}\tReview`);
     }));
+  }
+  if (fmt === "mp" || fmt === "mp-off") {   // the page around the table, as College Board My Practice shows it
+    const n = out.length, wrong = miss.length;
+    return `Skip to Content\nThe College Board\nHi, Student\nSAT Level Practice\nHome\n\nScore Details\nSAT Practice ${test.slice(3)} - March 2, 2025\nMy Tests\nActive Page:SAT Practice ${test.slice(3)} - March 2, 2025\nKnowledge and Skills\nView your performance across the 8 content domains measured on the SAT.\n\nReading and Writing\nInformation and Ideas\n\n(26% of test section, 12 - 14 questions)\n\n7 out of 7\nExpression of Ideas\n\n(20% of test section, 8 - 12 questions)\n\n5 out of 7\nCraft and Structure\n\n(28% of test section, 13 - 15 questions)\n\n6 out of 7\nStandard English Conventions\n\n(26% of test section, 11 - 15 questions)\n\n5 out of 7\nMath\nAlgebra\n\n(35% of test section, 13 - 15 questions)\n\n7 out of 7\nAdvanced Math\n\n(35% of test section, 13 - 15 questions)\n\n7 out of 7\nProblem-Solving and Data Analysis\n\n(15% of test section, 5 - 7 questions)\n\n6 out of 7\nGeometry and Trigonometry\n\n(15% of test section, 5 - 7 questions)\n\n6 out of 7\nQuestions Overview\nReview your results for each question from this practice test.\n\n${n}\n\nTotal Questions\n\n${n - wrong}\n\nCorrect Answers\n\n${wrong}\n\nIncorrect Answers\n\n\nShow Correct Answers\nView:||\nQuestion\nSection\tCorrect Answer\t\nYour Answer\nActions\n` + out.join("\n") + "\nTop\nPrograms\n© 2026 College Board";
   }
   return out.join(fmt === "lines" ? "\n" : "\r\n");
 }

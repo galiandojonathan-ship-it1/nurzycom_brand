@@ -193,6 +193,16 @@ Verbal lesson parts (those 78 are no longer new in the official tests). On «П�
 practice-test run (`mk_done_<name>_<PT>`, `BBSHARE.ownMock`). A section summary counts them. Teacher card (`bbRender`): «Уже был: …»
 per miss, with ✗/✓ from the form answers of this student and from earlier shared Bluebook attempts, plus «Повторные ошибки: N».
 Rebuild order: build_catalog → fingerprints → link_course → seal.
+Real My Practice copy (2026-11-23, Nurassyl pasted his own SAT Practice 4): steps on the page are «Show Correct Answers» on,
+«View: All», then Ctrl+A / Ctrl+C. Rows read «N⇥Section⇥» / key line / «Your answer; Status». The parser takes the status line on
+its own; whatever comes before it is the key. With the switch off the key line is empty: a correct row's key is its own answer,
+and wrong rows get the catalog key after a single match (`fillKeys`, mark `nokey`; detection needs 60% known keys per module).
+`parseMeta` reads «SAT Practice N - Month D, YYYY» (title, `taken`), «Total Questions / Correct Answers / Incorrect Answers» (a
+mismatch with the rows says «View: All»), and the 8 «Knowledge and Skills» domains («n out of m»). A share record now holds
+`taken`, `title` and per-section `domains`. Its hash is the test, date and the student's own answers, so a copy with the switch
+on and one with it off are one record. The teacher card, the report and repeats use the date taken. His real copy reads 98
+rows, SAT 4 hard/hard, 15 misses, 11 of them in the course.
+
 Math added 2026-11-23 (Nurassyl sent the Math index PDF; the handoff's Math Dropbox link was broken): 8 tests × 3 modules × 22,
 513 IDs verified. The bank lists decimal forms of typed answers (59/9, 6.555, 6.556), so an index key counts as verified when it
 is one of the bank's accepted answers. 4 positions disagree for real (SAT6 M1 №19, SAT8 M2 №16, SAT9 M1 №3, SAT10 M2 №3): both keys

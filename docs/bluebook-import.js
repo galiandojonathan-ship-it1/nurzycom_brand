@@ -34,28 +34,47 @@
       if (!st) throw new Error(`У ${LABEL[section]} №${question} не найден результат (Correct / Incorrect / Omitted).`);
       body = body.slice(0, st.index + st[0].length);   // drops «Review» and any page text after the status
       const status = /^correct$/i.test(st[1]) ? "correct" : /^incorrect$/i.test(st[1]) ? "incorrect" : "omitted";
-      const fields = body.slice(0, st.index).split(/\t+|\n+| {2,}/).map((f) => f.trim()).filter(Boolean);
-      // fields: [correct answer(s), your answer;] — the answer may share the field with «;» or stand alone
-      let correct = fields[0] || "", mine = fields.slice(1).join(" ").replace(/[;,]\s*$/, "").trim();
-      if (fields.length === 1 && /;/.test(correct)) { [correct, mine] = correct.split(/;(.*)/s).map((x) => x.trim()); }
-      const answers = correct.split(",").map(strip).filter(Boolean);
+      // the status cell is «Your answer; Status» on its own line (or the last tab/space-separated cell); what comes before is the key
+      const nl = body.lastIndexOf("\n", st.index); let line = body.slice(nl + 1), before = body.slice(0, nl + 1);
+      const cells = line.split(/\t+| {2,}/); if (cells.length > 1) { line = cells.pop(); before += " " + cells.join(" "); }
+      const mine = line.slice(0, line.search(STATUS)).replace(/[;,]\s*$/, "").trim(), keyText = before.replace(/\s+/g, " ").trim();
       const selected = status === "omitted" || !mine || /^[—-]$/.test(mine) ? null : strip(mine);
-      if (!answers.length) throw new Error(`У ${LABEL[section]} №${question} нет правильного ответа.`);
-      if ((status === "correct" && selected && /^[A-D]$/i.test(selected) && !answers.includes(selected.toUpperCase())) ||
+      // «Show Correct Answers» off: no key column. A correct answer is its own key; a wrong one is filled in from the catalog later
+      let answers = keyText ? keyText.split(",").map(strip).filter(Boolean) : [], inferred = false;
+      if (!answers.length && status === "correct" && selected) { answers = [selected]; inferred = true; }
+      if (keyText && (status === "correct" && selected && /^[A-D]$/i.test(selected) && !answers.includes(selected.toUpperCase())) ||
           (status === "incorrect" && selected && answers.some((a) => same(a, selected)))) {
         throw new Error(`Данные вопроса ${LABEL[section]} №${question} противоречат друг другу. Скопируйте таблицу заново.`);
       }
-      const row = { section, module: parts.length, question, answers, selected, status };
+      const row = { section, module: parts.length, question, answers, selected, status, ...(inferred || !answers.length ? { nokey: 1 } : {}) };
       cur.push(row); rows.push(row);
     });
     for (const s of Object.keys(SIZES)) {
       const p = modules[s];
       if (p.length && (p.length !== 2 || p.some((m) => m.length !== SIZES[s]))) {
-        throw new Error(`${LABEL[s]}: прочитано ${p.map((m) => m.length).join(" + ")} из ${SIZES[s]} + ${SIZES[s]} вопросов. Скопируйте таблицу целиком.`);
+        throw new Error(`${LABEL[s]}: прочитано ${p.map((m) => m.length).join(" + ")} из ${SIZES[s]} + ${SIZES[s]} вопросов. Над таблицей выберите «View: All», затем снова Ctrl+A и Ctrl+C.`);
       }
     }
     if (!modules.rw.length && !modules.math.length) throw new Error("Данные неполные.");
     return rows;
+  }
+
+  // ---- what else the copied page says: test name and date, totals, official domain scores (Knowledge and Skills) ------
+  const DOMAINS = { rw: ["Information and Ideas", "Craft and Structure", "Expression of Ideas", "Standard English Conventions"],
+    math: ["Algebra", "Advanced Math", "Problem-Solving and Data Analysis", "Geometry and Trigonometry"] };
+  function parseMeta(source) {
+    const text = String(source || "").replace(/\r\n?/g, "\n").replace(/\u00a0/g, " "), out = {};
+    const h = text.match(/\b(SAT|PSAT\/NMSQT|PSAT 10|PSAT 8\/9)\s+Practice\s+(?:Test\s+)?(\d+)\s*[-–—]\s*([A-Z][a-z]+\.? \d{1,2},? \d{4})/);
+    if (h) { out.program = h[1]; out.num = +h[2]; const t = Date.parse(h[3].replace(/\./, "")); if (!isNaN(t)) out.taken = t; out.title = `${h[1]} Practice ${h[2]}`; }
+    const num = (label) => { const m = text.match(new RegExp("(\\d+)\\s*\\n\\s*" + label)); return m ? +m[1] : null; };
+    out.total = num("Total Questions"); out.correct = num("Correct Answers"); out.incorrect = num("Incorrect Answers");
+    const dom = {};
+    for (const [sec, list] of Object.entries(DOMAINS)) for (const d of list) {
+      const m = text.match(new RegExp("(?:^|\\n)" + d.replace(/[-/]/g, "\\$&") + "\\s*\\n[^]*?(\\d+) out of (\\d+)"));
+      if (m) (dom[sec] = dom[sec] || {})[d] = [+m[1], +m[2]];
+    }
+    if (Object.keys(dom).length) out.domains = dom;
+    return out;
   }
 
   // ---- exact answer comparison ---------------------------------------------------------------------------------------
@@ -79,7 +98,9 @@
     const m1 = sel.filter((r) => r.module === 1), m2 = sel.filter((r) => r.module === 2), items = catalog.items || {};
     // a question fits when the table and the catalog share an accepted answer (typed answers may be listed with or without decimal forms)
     const meets = (k, answers) => { const c = new Set(answers.map(canon)); return k.some((x) => c.has(canon(x))); };
-    const fits = (ids, part) => ids && ids.length === part.length && part.every((r, i) => items[ids[i]] && meets(items[ids[i]].k, r.answers));
+    // rows without a key (copied with «Show Correct Answers» off) are skipped, but most of each module must be known
+    const fits = (ids, part) => ids && ids.length === part.length && part.filter((r) => r.answers.length).length >= part.length * 0.6 &&
+      part.every((r, i) => items[ids[i]] && (!r.answers.length || meets(items[ids[i]].k, r.answers)));
     const matches = [];
     for (const [test, t] of Object.entries(catalog.tests)) {
       const s = t[section]; if (!s || !fits(s.m1, m1)) continue;
@@ -88,14 +109,24 @@
     return { matches, match: matches.length === 1 ? matches[0] : null };
   }
 
+  // after a single match, a row copied without its key gets the catalog key (and keeps the mark nokey)
+  function fillKeys(rows, cat) {
+    for (const section of Object.keys(SIZES)) {
+      const m = detect(rows, cat, section).match; if (!m) continue;
+      rows.filter((r) => r.section === section && r.nokey).forEach((r) => { const it = cat.items[m.ids[r.module - 1][r.question - 1]]; if (it) r.answers = it.k.slice(0, 3); });
+    }
+    return rows;
+  }
+
   /* «Поделиться с преподавателем»: what the teacher gets. Only numbers, letters and skills: no question text, no College Board
      account. One attempt = one key bb_share_<hash of the rows>, so sharing the same table twice changes nothing.
      sec: { test, label, route, n, tot: [m1, m2], miss: [[module, q, chosen|null, keys, id|null, skill|null, level|null, unverified]],
             skills: { skill: [wrong, total] } }   (skills only with a single exact route match) */
-  async function shareOf(rows, cat) {
-    const enc = new TextEncoder().encode(rows.map((r) => `${r.section}.${r.module}.${r.question}:${r.answers.join("|")}:${r.selected || ""}:${r.status}`).join(";"));
+  async function shareOf(rows, cat, meta = {}) {
+    // the attempt's identity: its test, date and the student's own answers (not the key column, which may be switched off)
+    const enc = new TextEncoder().encode((meta.title || "") + "|" + (meta.taken || "") + "|" + rows.map((r) => `${r.section}.${r.module}.${r.question}:${r.selected || ""}:${r.status}`).join(";"));
     const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc))].slice(0, 6).map((b) => b.toString(16).padStart(2, "0")).join("");
-    const out = { v: 1, src: "bluebook", at: Date.now(), hash, sections: {} };
+    const out = { v: 1, src: "bluebook", at: Date.now(), hash, sections: {}, ...(meta.taken ? { taken: meta.taken } : {}), ...(meta.title ? { title: meta.title } : {}) };
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
       const m = cat ? detect(rows, cat, section).match : null, items = (cat && cat.items) || {}, skills = {};
@@ -105,13 +136,13 @@
         tot: [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length),
         miss: sel.filter((r) => r.status !== "correct").map((r) => { const id = itemOf(r), it = items[id] || null;
           return [r.module, r.question, r.selected, r.answers, id, it ? it.s || it.si || null : null, it ? it.d || null : null, it && it.u ? 1 : 0]; }),
-        skills };
+        skills, ...(meta.domains && meta.domains[section] ? { domains: meta.domains[section] } : {}) };
     }
     return out;
   }
 
-  if (typeof module !== "undefined") { module.exports = { parse, detect, canon, shareOf }; return; }
-  window.BBIMPORT = { parse, detect, canon, shareOf };
+  if (typeof module !== "undefined") { module.exports = { parse, detect, canon, shareOf, parseMeta, fillKeys }; return; }
+  window.BBIMPORT = { parse, detect, canon, shareOf, parseMeta, fillKeys };
 
   // ---- page ----------------------------------------------------------------------------------------------------------------
   const details = document.getElementById("bb-import"); if (!details) return;
@@ -126,13 +157,19 @@
   }
   function el(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
 
-  function render(rows, cat) {
+  function render(rows, cat, meta = {}) {
     const out = document.createDocumentFragment();
+    if (meta.title || meta.taken) out.append(el("p", `${meta.title || "Пробник Bluebook"}${meta.taken ? " · пройден " + new Date(meta.taken).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : ""}`, "bb-title"));
+    if (meta.total && meta.total !== rows.length) out.append(el("p", `На странице ${meta.total} вопросов, прочитано ${rows.length}. Над таблицей выберите «View: All» и скопируйте снова.`, "bb-warn"));
+    if (rows.some((r) => r.nokey)) out.append(el("p", cat ? "«Show Correct Answers» был выключен: правильные ответы взяты из справочника." : "«Show Correct Answers» выключен: включите его над таблицей и скопируйте снова, чтобы увидеть правильные ответы.", "hint"));
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
       const misses = sel.filter((r) => r.status !== "correct"), det = cat ? detect(rows, cat, section) : { matches: [] }, m = det.match;
       const tot = [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length);
       out.append(el("h3", `${LABEL[section]} · М1 ${tot[0]}/${SIZES[section]} · М2 ${tot[1]}/${SIZES[section]}`));
+      if (m && meta.num && m.test !== "SAT" + meta.num) out.append(el("p", `В заголовке ${meta.title}, а ответы совпадают с ${m.label}. Проверьте, что скопирована страница нужного теста.`, "bb-warn"));
+      const dm = meta.domains && meta.domains[section];
+      if (dm) out.append(el("p", "Домены College Board: " + Object.entries(dm).map(([d, v]) => `${d} ${v[0]}/${v[1]}`).join(" · "), "hint"));
       out.append(el("p", m ? `${m.label} · модуль 2 ${ROUTE[m.route]}. Ошибок и пропусков: ${misses.length}.`
         : cat ? (det.matches.length > 1 ? "Таблица подходит к нескольким тестам: навыки скрыты." : "Тест не найден в справочнике (сейчас: SAT Practice Tests 4–11). Ошибки видны, навыки скрыты.")
           : `Ошибок и пропусков: ${misses.length}. Навыки загружаются…`, "hint"));
@@ -174,7 +211,7 @@
     const ask = el("button", "Поделиться с преподавателем", "btn"); ask.type = "button"; box.append(ask);
     const note = el("p", "", "hint"); note.setAttribute("role", "status"); box.append(note);
     ask.onclick = async () => {
-      const data = await shareOf(last.rows, last.cat), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
+      const data = await shareOf(last.rows, last.cat, last.meta), key = "bb_share_" + data.hash, was = localStorage.getItem(key);
       if (was) { let at = ""; try { at = new Date(JSON.parse(was).at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }); } catch (e) { /* old */ }
         note.textContent = `Этот результат уже отправлен${at ? " " + at : ""}. Повторно отправлять не нужно.`; return; }
       ask.hidden = true;
@@ -194,15 +231,15 @@
   }
   async function check() {
     const req = ++revision;
-    let rows;
+    let rows; const meta = parseMeta(input.value);
     try { rows = parse(input.value); } catch (e) { result.replaceChildren(); status.textContent = e.message; return; }
-    render(rows);
+    render(rows, null, meta);
     const misses = rows.filter((r) => r.status !== "correct").length, summary = `Прочитано ${rows.length} строк. Ошибок и пропусков: ${misses}.`;
     status.textContent = summary + " Определяем тест и модули…";
     const data = await loadCatalog();
     if (req !== revision) return;
-    if (data) render(rows, data);
-    last = { rows, cat: data }; shareBox();
+    if (data) { fillKeys(rows, data); render(rows, data, meta); }
+    last = { rows, cat: data, meta }; shareBox();
     status.textContent = data ? summary : summary + " Навыки пока недоступны: нажмите «Проверить таблицу» ещё раз, когда будет связь.";
   }
 
