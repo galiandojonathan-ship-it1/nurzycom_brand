@@ -45,6 +45,16 @@ const mockgloss = { words: { curators: { w: "curator", pos: "n", en: "a person i
 fs.writeFileSync(path.join(out, "data/lessons.bin"), await seal(lessons));
 fs.writeFileSync(path.join(out, "data/vocab.bin"), await seal(vocab));
 fs.writeFileSync(path.join(out, "data/mockgloss.bin"), await seal(mockgloss));
+{ // «nurzycom bank»: four synthetic questions (one hard, one control, one Math typed answer)
+  const nq = (id, sub, sec, skill, level, extra) => Object.assign({ id, sub, sec, skill, level, kind: "target", hard: false, pattern: "", theme: "ecology", type: "mc",
+    passage: "Synthetic passage about a wetland whose __reeds__ shelter herons; the survey ______ the old estimate.", stem: "Which choice completes the text with the most logical and precise word or phrase?",
+    options: ["confirmed", "ignored", "inflated", "restored"], key: "A", traps: { B: "off_topic", C: "reversed", D: "wrong_sense" },
+    explanation_ru: "Синтетическое объяснение: опрос подтвердил прежнюю оценку, поэтому верен A.", trap_ru: "C переворачивает смысл.", words: [{ w: "reeds", lemma: "reed", def: "a tall water grass", ru: "тростник", src: "topic" }] }, extra);
+  fs.writeFileSync(path.join(out, "data/nbank.bin"), await seal({ version: 1, at: "2026-11-23", questions: [
+    nq("NB-wic_precise-001", "wic_precise", "rw", "Words in Context", "E"),
+    nq("NB-wic_precise-002", "wic_precise", "rw", "Words in Context", "H", { hard: true, theme: "astronomy", key: "C", traps: { A: "too_strong", B: "off_topic", D: "reversed" } }),
+    nq("NB-t_contrast-001", "t_contrast", "rw", "Transitions", "M", { kind: "control", ctrl_note: "the key is a cause word", theme: "music", stem: "Which choice completes the text with the most logical transition?", options: ["However,", "As a result,", "For example,", "Similarly,"], key: "B", traps: { A: "wrong_relation", C: "wrong_relation", D: "wrong_relation" } }),
+    nq("NB-alg_linfunc-001", "alg_linfunc", "math", "Linear functions", "M", { type: "spr", passage: "", stem: "The function f is defined by f(x) = 3x + 2. What is f(4)?", options: undefined, key: "14", accept: ["14"], words: [], theme: "engineering" })] })); }
 { const { createRequire } = await import("node:module"); const { synthetic } = createRequire(import.meta.url)("./bbsynth.cjs");
   fs.writeFileSync(path.join(out, "data/bluebook.bin"), await seal(synthetic())); }   // Bluebook import: synthetic catalog, no real keys
 // synthetic hard set X01 (practice.bin) for live-round tests: 10 made-up questions, key B for odd, D for even
