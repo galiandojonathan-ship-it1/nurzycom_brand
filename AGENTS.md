@@ -35,3 +35,6 @@ The full list, with the reasons, is `notes/WEBSITE_HANDOFF.md` → «5. Rules fo
 - Commit messages: a short summary line, then what changed and why. No model names in commits or pull requests.
 - Check your work in a browser (Playwright is fine) before opening the pull request, and say in the pull request what
   you tested.
+
+## «nurzycom bank» question writing
+See `notes/CODEX_BANK_HANDOFF.md` (rules, files in `tools/bank/`, the sealed inbox, the paste-ready prompt).

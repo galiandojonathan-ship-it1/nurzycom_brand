@@ -16,3 +16,6 @@ tools/cab-*.png
 # fake classes built from the real keys (mkgroupcsv.mjs) and stray screenshots: never commit
 tools/sitetests/group*.csv
 tools/*.png
+
+# nurzycom bank: Codex keeps plain-text question drafts here, never committed (only sealed notes/bank-inbox/*.bin)
+tools/bank/work/
