@@ -79,7 +79,7 @@ def check(path):
         else: P.append(f"{t}: type")
         if sub in RW:
             wc = words(q.get("passage", "")); lv = q.get("level")
-            lo = {"E": 35, "M": 60, "H": 90}.get(lv, 35)
+            lo = ({"E": 30, "M": 45, "H": 60} if sub[:2] in ("b_", "f_", "t_") else {"E": 35, "M": 60, "H": 90}).get(lv, 35)   # grammar/transition passages are short on the real SAT
             if wc < lo and "•" not in q.get("passage", ""): P.append(f"{t}: passage {wc} words, short for {lv}")
             if wc > 260: P.append(f"{t}: passage {wc} words, too long")
             if not q.get("words"): P.append(f"{t}: no vocabulary")
