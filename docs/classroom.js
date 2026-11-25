@@ -16,7 +16,7 @@
   const time = (t) => new Date(t).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const initials = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase() + ".").join(" ");
   const store = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], uploadStatus: "locked", lastUpload: null, deckBusy: false };
+  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], uploadStatus: "locked", lastUpload: null, deckBusy: false, nowHTML: null };
 
   function sessions() {
     const out = [];
@@ -34,19 +34,29 @@
   // ---------- Сейчас
   function now() {
     const S = window.LESSON && LESSON.session(), box = $("cr-now");
+    const update = (html) => {
+      if (C.nowHTML === html) return;
+      const focused = document.activeElement;
+      const identity = focused?.tagName === "BUTTON" && box.contains(focused) ? Object.entries(focused.dataset) : [];
+      C.nowHTML = html;
+      box.innerHTML = html;
+      if (identity.length) {
+        [...box.querySelectorAll("button")].find((button) => identity.every(([key, value]) => button.dataset[key] === value))?.focus({ preventScroll: true });
+      }
+    };
     if (S) {
       const m = Math.max(0, Math.round((Date.now() - S.t0) / 60000)), marks = S.ev.filter((e) => e.k !== "at").length;
       const rv = reviews().find((r) => r.group.trim().toLowerCase() === S.group.trim().toLowerCase());
-      box.innerHTML = `<span class="live"><i aria-hidden="true"></i>Идёт урок · ${esc(S.group)} · ${m} мин · отметок: ${marks}</span>
+      update(`<span class="live"><i aria-hidden="true"></i>Идёт урок · ${esc(S.group)} · ${m} мин · отметок: ${marks}</span>
         ${rv ? `<button type="button" class="cr-chip main" data-rv="${esc(rv.id)}">Разбор ошибок: ${rv.qs.length} ${pl(rv.qs.length, "вопрос", "вопроса", "вопросов")}</button>` : ""}
-        <button type="button" class="cr-chip" data-end="1">Завершить урок</button>`;
+        <button type="button" class="cr-chip" data-end="1">Завершить урок</button>`);
       return;
     }
     const names = [], seen = new Set(), add = (v, label) => { const k = v.trim().toLowerCase(); if (!v || seen.has(k)) return; seen.add(k); names.push([v, label]); };
     reviews().forEach((r) => add(r.group, shown(r)));
     ((window.LESSON && LESSON.groups()) || []).slice(0, 6).forEach((g) => add(g, g));
-    box.innerHTML = `${names.slice(0, 8).map(([v, label]) => `<button type="button" class="cr-chip" data-start="${esc(v)}">Начать: ${esc(label)}</button>`).join("")}
-      <button type="button" class="cr-chip main" data-ask="1">${names.length ? "Другой урок…" : "Начать урок"}</button>`;
+    update(`${names.slice(0, 8).map(([v, label]) => `<button type="button" class="cr-chip" data-start="${esc(v)}">Начать: ${esc(label)}</button>`).join("")}
+      <button type="button" class="cr-chip main" data-ask="1">${names.length ? "Другой урок…" : "Начать урок"}</button>`);
   }
 
   // ---------- the page
@@ -55,19 +65,20 @@
     const rv = reviews(), ss = sessions().filter((s) => s.t1).slice(0, 6);
     const body = $("cr-body");
     body.innerHTML = `<div class="cr-grid">
-      <div class="cr-card" id="cr-rv"><h2>Разбор ошибок</h2><p class="cr-sub">Разборы, подготовленные на странице преподавателя. Нажмите, чтобы открыть на весь экран.</p>
-        ${rv.length ? `<ul class="cr-list">${rv.map((r) => `<li><button type="button" class="cr-item" data-rv="${esc(r.id)}"><span><span class="cr-kind">${r.mode === "verbal" ? "Урок SAT Verbal" : r.mode === "solo" ? "Индивидуальный разбор" : "Группа"}</span><b>${esc(r.mode === "verbal" ? r.title : shown(r))}</b>
-          <small>${esc((r.parts || []).slice(0, 2).join(", "))}${(r.parts || []).length > 2 ? ` и ещё ${r.parts.length - 2}` : ""} · ${esc(day(r.at))}</small></span><span class="r">${r.qs.length}</span></button></li>`).join("")}</ul>`
-          : '<p class="cr-empty">Пока пусто. На своём устройстве откройте страницу преподавателя: «Анализ группы» для группы или карточку ученика, затем «Подготовить урок».</p>'}</div>
-      <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Слова, отмеченные на уроках. Раз в два дня они получают определение и перевод и подчёркиваются на сайте, как слова курса.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
-      <div class="cr-card cr-wide" id="cr-lessons"><h2>Презентации и материалы</h2><p class="cr-sub">Выберите урок: его презентация, части рабочей тетради и слова.</p>
+      <section class="cr-card cr-wide" id="cr-lessons" aria-labelledby="cr-lessons-title"><h2 id="cr-lessons-title">Презентации и материалы</h2><p class="cr-sub">Выберите урок, чтобы открыть презентацию и задания.</p>
         ${C.uploadStatus === "locked" ? '<p class="cr-note">Для доступа к загруженным презентациям войдите с ключом администратора в <a href="cabinet.html?view=accounts#reg">кабинете преподавателя</a>.</p>' : ""}
         ${C.uploadStatus === "error" ? '<p class="cr-note" role="status">Не удалось загрузить список презентаций. Обновите страницу или проверьте доступ в <a href="cabinet.html?view=accounts#reg">кабинете преподавателя</a>.</p>' : ""}
-        ${SITE.adminKey() ? '<div class="cr-acts cr-import"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><button type="button" id="cr-zip-replace">Заменить из ZIP</button><span>PDF с кодом урока в имени, например V01_v4.pdf.</span></div><input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
-        <div class="cr-tabs" role="group" aria-label="Курс"><button type="button" data-course="V" aria-pressed="${C.course === "V"}">SAT Verbal</button><button type="button" data-course="M" aria-pressed="${C.course === "M"}">SAT Math</button></div>
+        <div class="cr-catalog-controls"><div class="cr-tabs" role="group" aria-label="Курс"><button type="button" data-course="V" aria-pressed="${C.course === "V"}">SAT Verbal</button><button type="button" data-course="M" aria-pressed="${C.course === "M"}">SAT Math</button></div>
+          ${SITE.adminKey() ? '<details class="cr-manage"><summary>Импорт презентаций</summary><div class="cr-acts"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><button type="button" id="cr-zip-replace">Заменить из ZIP</button></div><p class="cr-note">Укажите код урока в имени PDF, например V01_v4.pdf.</p></details>' : ""}</div>
+        ${SITE.adminKey() ? '<input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
         <input id="cr-deck-file" type="file" hidden>
-        <p class="cr-note" id="cr-deck-msg" role="status"></p></div>
+        <p class="cr-note" id="cr-deck-msg" role="status"></p></section>
+      <div class="cr-card" id="cr-rv"><h2>Разбор ошибок</h2><p class="cr-sub">Разборы, подготовленные на странице преподавателя.</p>
+        ${rv.length ? `<ul class="cr-list">${rv.map((r) => `<li><button type="button" class="cr-item" data-rv="${esc(r.id)}"><span><span class="cr-kind">${r.mode === "verbal" ? "Урок SAT Verbal" : r.mode === "solo" ? "Индивидуальный разбор" : "Группа"}</span><b>${esc(r.mode === "verbal" ? r.title : shown(r))}</b>
+          <small>${esc((r.parts || []).slice(0, 2).join(", "))}${(r.parts || []).length > 2 ? ` и ещё ${r.parts.length - 2}` : ""} · ${esc(day(r.at))}</small></span><span class="r">${r.qs.length}</span></button></li>`).join("")}</ul>`
+          : '<p class="cr-empty">В кабинете преподавателя откройте «Анализ группы» или карточку ученика и нажмите «Подготовить урок».</p>'}</div>
+      <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Отметки с уроков и переход в словарь.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
       <div class="cr-card cr-wide" id="cr-ct"><h2>Тесты преподавателя</h2><p class="cr-sub">Ваши тесты из «Мои тесты», сверху задания Gemini на ошибки учеников. «Решать вместе» — тест на общем экране; «Живая практика» — класс решает на своих устройствах, вы видите ответы.</p><div id="cr-ct-list"><p class="cr-empty">Загружаю тесты…</p></div></div>
       <div class="cr-card cr-wide"><h2>Прошлые уроки</h2>${ss.length ? `<ul class="cr-list">${ss.map((s) => { const parts = [...new Set(s.ev.filter((e) => e.k === "at" && e.q && e.ti).map((e) => e.ti.replace(/^Разбор ошибок · /, "")))];
           const n = (k) => s.ev.filter((e) => e.k === k).length;
@@ -108,7 +119,7 @@
   function tiles() {
     const ls = C.lessons.filter((l) => l.tag[0] === C.course), box = $("cr-tiles"); if (!box) return;
     box.innerHTML = ls.length ? ls.map((l) => { const d = deckFor(l.tag), no = /^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))) : l.tag.slice(1);
-      return `<button type="button" class="cr-tile" data-l="${esc(l.tag)}" aria-expanded="${C.open === l.tag}"><span class="no">${esc(no)}</span><span class="nm">${esc(String(l.title).split(" · ").slice(2).join(" · ") || l.title)}</span>
+      return `<button type="button" class="cr-tile" data-l="${esc(l.tag)}" aria-controls="cr-panel" aria-expanded="${C.open === l.tag}"><span class="no">${esc(no)}</span><span class="nm">${esc(String(l.title).split(" · ").slice(2).join(" · ") || l.title)}</span>
         <span class="st${d ? " ok" : ""}">${d ? `презентация · ${d.n} ${pl(d.n, "слайд", "слайда", "слайдов")}` : C.uploadStatus === "locked" ? "требуется доступ" : C.uploadStatus === "error" ? "список недоступен" : "презентация скоро"}</span></button>`; }).join("") : '<p class="cr-empty">Уроки не загрузились. Обновите страницу.</p>';
     panel();
   }
@@ -116,17 +127,21 @@
     document.querySelectorAll("#cr-zip-upload, #cr-zip-replace").forEach((button) => { button.disabled = C.deckBusy; });
     const box = $("cr-panel"), l = C.lessons.find((x) => x.tag === C.open); if (!box) return;
     if (!l) { box.innerHTML = ""; return; }
-    const d = deckFor(l.tag);
-    box.innerHTML = `<div class="cr-panel"><h3>${esc(l.title)}</h3><div class="cr-acts">
+    const d = deckFor(l.tag), admin = SITE.adminKey();
+    const manageOpen = box.querySelector("[data-manage-lesson][open]")?.dataset.manageLesson === l.tag;
+    box.innerHTML = `<section class="cr-panel" aria-labelledby="cr-selected-lesson"><div class="cr-panel-heading"><h3 id="cr-selected-lesson" tabindex="-1">${esc(l.title)}</h3><a href="#cr-tiles" data-return-lessons>К списку уроков</a></div><div class="cr-acts">
         ${d ? `<button type="button" class="main" data-deck="${esc(d.id)}">Открыть презентацию · ${d.n} ${pl(d.n, "слайд", "слайда", "слайдов")}</button>` : ""}
-        ${SITE.adminKey() ? `<button type="button" data-deck-upload="pdf"${C.deckBusy ? " disabled" : ""}>${d ? "Заменить PDF" : "Загрузить PDF"}</button>
+        ${admin && (window.LessonPracticeHost?.coldPart(l) || d?.uploaded) ? '<button type="button" data-deck-cold>Холодный старт · 4 вопроса</button>' : ""}
+        </div>
+        <div class="cr-materials"><h4>Задания и словарь</h4><div class="cr-acts">
+          ${l.parts.map((p) => `<a href="./?l=${encodeURIComponent(l.tag)}&p=${encodeURIComponent(p.id)}">${esc(p.title)}</a>`).join("")}
+          <a href="vocab.html?l=${encodeURIComponent(l.tag)}">${C.course === "V" ? "Слова урока" : "Термины урока"}</a></div></div>
+        ${admin ? `<details class="cr-manage" data-manage-lesson="${esc(l.tag)}"${manageOpen ? " open" : ""}><summary>Управление презентацией</summary><div class="cr-acts">
+        <button type="button" data-deck-upload="pdf"${C.deckBusy ? " disabled" : ""}>${d ? "Заменить PDF" : "Загрузить PDF"}</button>
         <button type="button" data-deck-upload="json"${C.deckBusy ? " disabled" : ""}>${d ? "Заменить из JSON" : "Загрузить JSON"}</button>
-        ${d?.uploaded ? `<button type="button" data-deck-export="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Скачать текст в JSON</button>` : ""}` : '<a href="cabinet.html?view=accounts#reg">Настроить доступ к презентациям</a>'}
-        ${d?.uploaded && SITE.adminKey() ? `<button type="button" class="cr-remove" data-deck-delete="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Удалить презентацию</button>` : ""}
-        ${SITE.adminKey() && (window.LessonPracticeHost?.coldPart(l) || d?.uploaded) ? '<button type="button" data-deck-cold>Холодный старт · 4 вопроса</button>' : ""}
-        ${l.parts.map((p) => `<a href="./?l=${encodeURIComponent(l.tag)}&p=${encodeURIComponent(p.id)}">${esc(p.title)}</a>`).join("")}
-        <a href="vocab.html?l=${encodeURIComponent(l.tag)}">${C.course === "V" ? "Слова урока" : "Термины урока"}</a></div>
-      ${SITE.adminKey() ? '<p class="cr-note">Словарь открывается при выделении слов в PDF с текстовым слоем и на JSON-слайдах. Чтобы отредактировать текст, скачайте JSON, внесите правки и загрузите его обратно. JSON использует шаблон сайта.</p>' : ""}</div>`;
+        ${d?.uploaded ? `<button type="button" data-deck-export="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Скачать текст в JSON</button>
+        <button type="button" class="cr-remove" data-deck-delete="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Удалить презентацию</button>` : ""}
+        </div><p class="cr-note">PDF сохраняет исходное оформление. JSON подходит для редактирования текста.</p></details>` : ""}</section>`;
   }
   function words() {
     const box = $("cr-words"); if (!box) return;
@@ -367,7 +382,10 @@
   function finishDeckChange(id) {
     C.deckBusy = false;
     tiles();
-    if (C.open === id) $("cr-panel").querySelector("[data-deck], [data-deck-upload]")?.focus({ preventScroll: true });
+    if (C.open === id) {
+      const panelRoot = $("cr-panel");
+      (panelRoot.querySelector("[data-manage-lesson][open] > summary") || panelRoot.querySelector("[data-deck]"))?.focus({ preventScroll: true });
+    }
   }
 
   async function deleteDeck(id) {
@@ -405,12 +423,16 @@
   async function openDeck(id, coldStart = false, resumeAt = null) {
     const d = deckFor(id); if (!d || DK.box) return;
     const canMark = d.uploaded && SITE.adminKey();
+    DK.opener = document.activeElement;
     DK.prev = { lq: document.body.dataset.lq, lt: document.body.dataset.lt };
     DK.box = document.createElement("div"); DK.box.className = "dk"; DK.box.setAttribute("role", "dialog"); DK.box.setAttribute("aria-label", "Презентация");
-    DK.box.innerHTML = `<div class="dk-bar"><b>${esc(d.title)}</b><button type="button" data-k="prev" aria-label="Предыдущий слайд">←</button><span class="dk-pos" id="dk-pos" aria-live="polite">Загружаю…</span><button type="button" data-k="next" aria-label="Следующий слайд">→</button>
+    DK.background = [...document.querySelectorAll("body > .skip, body > .top, body > main, body > .foot")].filter((node) => !node.inert);
+    DK.background.forEach((node) => { node.inert = true; });
+    DK.box.innerHTML = `<div class="dk-bar"><b>${esc(d.title)}</b><div class="dk-actions" role="group" aria-label="Слайды"><button type="button" data-k="prev" aria-label="Предыдущий слайд">←</button><span class="dk-pos" id="dk-pos" aria-live="polite">Загружаю…</span><button type="button" data-k="next" aria-label="Следующий слайд">→</button></div>
+      <div class="dk-actions" role="group" aria-label="Инструменты презентации">
       ${id.startsWith("M") ? '<button type="button" data-k="calc" aria-controls="dk-calc" aria-pressed="false">Desmos</button>' : ""}
       ${canMark ? '<button type="button" data-annotation-edit disabled>Пометки</button><button type="button" data-annotation-next hidden></button><button type="button" data-annotation-hide hidden>Скрыть пометки</button>' : ""}
-      <button type="button" data-k="draw" aria-pressed="false">Рисовать</button><button type="button" data-k="fs">Во весь экран</button><button type="button" data-k="x" aria-label="Закрыть презентацию">✕</button></div>
+      <button type="button" data-k="draw" aria-pressed="false">Рисовать</button><button type="button" data-k="fs">Во весь экран</button></div><button type="button" data-k="x" aria-label="Закрыть презентацию">✕</button></div>
       <div class="dk-workspace"><div class="dk-stage"><div class="dk-frame" style="--ar:${d.w && d.h ? d.w / d.h : 16 / 9}"><img alt="" hidden>
         <div class="dk-native" hidden lang="en"></div><button type="button" class="dk-nav prev" data-k="prev" tabindex="-1">Назад</button><button type="button" class="dk-nav next" data-k="next" tabindex="-1">Далее</button>
         <div class="dk-text"></div><div class="dk-draw"></div></div></div>
@@ -436,10 +458,8 @@
     };
     window.LessonPracticeHost?.attach(DK.box, d, lesson, () => DK.i, readText, readSlide, (index) => go(index, false));
     go(resumeAt ?? Math.min(d.n - 1, Math.max(0, Number(store("dk_pos_" + id)) || 0)), !coldStart && resumeAt === null);
-    if (resumeAt !== null) {
-      const next = DK.box.querySelector(".lp-control [data-lp-deck-advance]:not([hidden])");
-      (next || DK.box.querySelector('[data-k="next"]')).focus();
-    }
+    const next = resumeAt !== null ? DK.box.querySelector("[data-lp-deck-advance]:not([hidden]):not(:disabled)") : null;
+    (next || DK.box.querySelector('.dk-bar [data-k="x"]')).focus({ preventScroll: true });
     if (coldStart) window.LessonPracticeHost?.startCold(lesson, d, readText, readSlide, () => DK.d === d);
   }
   // one encrypted image per slide (tools/private/deckpack.mjs), fetched when shown; the next one is fetched ahead
@@ -560,10 +580,19 @@
     const drawing = DK.box.classList.contains("drawing");
     if (drawing && (e.ctrlKey || e.metaKey) && /^[zyя]$/i.test(e.key)) { e.preventDefault(); if (DK.board) (e.key.toLowerCase() === "y" || e.shiftKey) ? DK.board.redo() : DK.board.undo(); return; }
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key) && !(["Enter", " "].includes(e.key) && e.target.tagName === "BUTTON")) { e.preventDefault(); go(DK.i + 1); }
+    if (e.key !== "Escape" && e.target.closest?.("input, select, textarea, [contenteditable]")) return;
+    if ((e.key === "Enter" || e.key === " ") && e.target.closest?.("button, a[href], summary")) return;
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); go(DK.i + 1); }
     else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); go(DK.i - 1); }
     else if (e.key === "Home") { e.preventDefault(); go(0); } else if (e.key === "End") { e.preventDefault(); go(DK.d ? DK.d.n - 1 : 0); }
-    else if (e.key === "Escape" && !document.fullscreenElement) { e.preventDefault(); if (drawing) toggleDraw(); else if (DK.box.classList.contains("with-calc")) toggleCalc(); else closeDeck(); }
+    else if (e.key === "Escape" && !document.fullscreenElement) {
+      e.preventDefault();
+      const preparation = DK.box.querySelector(".dk-prep[open]");
+      if (preparation) { preparation.open = false; preparation.querySelector("summary").focus(); }
+      else if (drawing) toggleDraw();
+      else if (DK.box.classList.contains("with-calc")) toggleCalc();
+      else closeDeck();
+    }
   }
   function closeDeck() {
     if (!DK.box) return; if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -571,19 +600,32 @@
     DK.annotations?.destroy(); DK.annotations = null;
     DK.slides.forEach((p) => p && p.then(({ url }) => { if (url) URL.revokeObjectURL(url); }).catch(() => {})); DK.slides = [];
     window.LessonPracticeHost?.detach(DK.box); DK.box.remove(); DK.box = null; DK.d = null; DK.uploaded = null; DK.current = null; document.documentElement.style.overflow = ""; document.removeEventListener("keydown", onKey);
+    DK.background.forEach((node) => { node.inert = false; }); DK.background = [];
     const p = DK.prev || {}; if (p.lq) document.body.dataset.lq = p.lq; else delete document.body.dataset.lq; if (p.lt) document.body.dataset.lt = p.lt; else delete document.body.dataset.lt;
-    const t = document.querySelector(`.cr-acts [data-deck]`); if (t) t.focus();
+    const opener = DK.opener?.isConnected && DK.opener !== document.body ? DK.opener : document.querySelector("#cr-panel [data-deck]");
+    DK.opener = null;
+    opener?.focus();
   }
 
   // ---------- events and start
   document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-deck],[data-deck-upload],[data-deck-delete],[data-deck-export],[data-deck-cold]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
+    const b = e.target.closest("[data-start],[data-ask],[data-end],[data-rv],[data-course],[data-l],[data-return-lessons],[data-deck],[data-deck-upload],[data-deck-delete],[data-deck-export],[data-deck-cold]"); if (!b || !window.LESSON || (DK.box && DK.box.contains(b))) return;
     if (b.dataset.start) LESSON.begin(b.dataset.start, true);
     else if (b.dataset.ask) LESSON.ask();
     else if (b.dataset.end) LESSON.end();
     else if (b.dataset.rv) LESSON.openMist(b.dataset.rv);
     else if (b.dataset.course) { C.course = b.dataset.course; C.open = null; try { localStorage.setItem("cr_course", C.course); } catch (x) { /* blocked */ } document.querySelectorAll("[data-course]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.course === C.course))); tiles(); }
-    else if (b.dataset.l) { C.open = C.open === b.dataset.l ? null : b.dataset.l; document.querySelectorAll(".cr-tile").forEach((x) => x.setAttribute("aria-expanded", String(x.dataset.l === C.open))); panel(); }
+    else if (b.dataset.l) {
+      C.open = C.open === b.dataset.l ? null : b.dataset.l;
+      document.querySelectorAll(".cr-tile").forEach((x) => x.setAttribute("aria-expanded", String(x.dataset.l === C.open)));
+      panel();
+      const heading = $("cr-selected-lesson");
+      if (heading) { heading.focus({ preventScroll: true }); heading.scrollIntoView({ block: "nearest" }); }
+    }
+    else if (b.hasAttribute("data-return-lessons")) {
+      e.preventDefault();
+      $("cr-tiles").querySelector("[aria-expanded=true]")?.focus();
+    }
     else if (b.hasAttribute("data-deck-cold")) {
       const lesson = C.lessons.find((l) => l.tag === C.open);
       if (deckFor(C.open)?.uploaded) openDeck(C.open, true);

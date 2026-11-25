@@ -327,17 +327,19 @@ window.LessonPracticeHost = (() => {
     if (!root || !SITE.adminKey()) return;
     root.hidden = false;
     root.innerHTML = `<section class="cr-card">
-      <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p>${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Раздайте одну ссылку. Откройте презентацию и нажмите «Показать с этого слайда»."}</p>
+      <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p class="cr-sub">${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Откройте практику, чтобы получить ссылку для класса."}</p>
       <p data-lp-current role="status" hidden></p>
       <div class="lp-control"><button class="btn" type="button" data-lp-new>Открыть практику</button>
         <button class="btn ghost" type="button" data-lp-retry hidden>Повторить восстановление</button>
         <div data-lp-panels class="lp-control" hidden>
-          <button class="btn" data-lp-return type="button" hidden></button>
-          <button class="btn ghost" data-lp-advance type="button" hidden></button>
-          <a class="btn ghost" data-lp-link></a>
-          <button class="btn ghost" data-lp-copy type="button">Копировать ссылку</button>
-          <a class="btn ghost" data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a>
-          <button class="btn ghost" data-lp-finish type="button">Завершить и запустить анализ</button></div></div>
+          <div class="lp-home-actions" role="group" aria-label="Ход практики">
+            <button class="btn" data-lp-return type="button" hidden></button>
+            <button class="btn ghost" data-lp-advance type="button" hidden></button></div>
+          <div class="lp-home-actions" role="group" aria-label="Ссылка и монитор">
+            <a class="btn ghost" data-lp-link></a>
+            <button class="btn ghost" data-lp-copy type="button">Копировать ссылку</button>
+            <a class="btn ghost" data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a></div>
+          <button class="btn ghost lp-home-end" data-lp-finish type="button">Завершить и запустить анализ</button></div></div>
       <p data-lp-view-notice hidden></p><p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
     panels = root.querySelector("[data-lp-panels]"); status = root.querySelector("[data-lp-status]"); roster = root.querySelector(".lp-roster");
     monitorLink = root.querySelector("[data-lp-monitor]"); studentLink = root.querySelector("[data-lp-link]");
@@ -905,19 +907,27 @@ window.LessonPracticeHost = (() => {
       links();
     }
   }
-  function attachQueue(box, bar, context) {
+  function attachQueue(box, preparation, bar, context) {
     const label = el("span"); label.className = "lp-queue-state"; label.setAttribute("role", "status");
     const controls = { ...context, box, label };
     controls.setup = action("План урока", () => editQueue(controls));
     controls.setup.setAttribute("aria-haspopup", "dialog");
     controls.prev = action("Назад по плану", () => changeStage(controls, -1));
     controls.next = action("Начать по плану", () => changeStage(controls, 1));
-    bar.append(controls.setup, controls.prev, controls.next, label);
+    preparation.append(controls.setup);
+    bar.append(controls.prev, controls.next, label);
     return controls;
   }
   function attach(box, deck, lesson, current, readText, readSlide, jump) {
     if (!lesson || !SITE.adminKey()) return;
-    const bar = el("div"); bar.className = "lp-control dk-bar";
+    const bar = el("div"); bar.className = "lp-control dk-bar dk-practice";
+    const questions = el("div"); questions.className = "dk-actions";
+    questions.setAttribute("role", "group"); questions.setAttribute("aria-label", "Вопросы для класса");
+    const connection = el("div"); connection.className = "dk-actions";
+    connection.setAttribute("role", "group"); connection.setAttribute("aria-label", "Связь с классом");
+    const preparation = el("details"); preparation.className = "dk-prep";
+    const prepActions = el("div"); prepActions.className = "dk-actions";
+    preparation.append(el("summary", "Подготовка"), prepActions);
     const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, readSlide, pick));
     pick.className = "lp-show-slide";
     const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
@@ -928,7 +938,8 @@ window.LessonPracticeHost = (() => {
     const monitor = el("a", "Монитор преподавателя"); monitor.target = "_blank"; monitor.rel = "noopener";
     const status = el("small"); status.setAttribute("role", "status");
     const state = el("small"); state.className = "lp-class-state"; state.setAttribute("role", "status");
-    bar.append(pick, manual);
+    questions.append(pick, next);
+    prepActions.append(manual);
     if (readSlide) {
       const material = action("Материал слайда", async () => {
         if (await SlideMaterialPreview.open(deck, current(), readSlide, readText, material)) {
@@ -940,7 +951,7 @@ window.LessonPracticeHost = (() => {
         material.focus();
       }));
       ready.setAttribute("aria-haspopup", "dialog");
-      bar.append(material, ready);
+      prepActions.append(material, ready);
     }
     if (coldPart(lesson) || deck.uploaded) {
       const start = action("Холодный старт · 4 вопроса", async () => {
@@ -948,10 +959,14 @@ window.LessonPracticeHost = (() => {
         try { await startCold(lesson, deck, readText, readSlide, () => box.isConnected); }
         finally { start.disabled = false; }
       });
-      bar.append(start);
+      questions.append(start);
     }
-    const queueControls = readSlide ? attachQueue(box, bar, { deck, lesson, readText, readSlide, jump }) : null;
-    bar.append(next, copy, monitor, state, status); box.querySelector(".dk-bar").after(bar);
+    const plan = el("div"); plan.className = "dk-actions dk-plan";
+    const queueControls = readSlide ? attachQueue(box, prepActions, plan, { deck, lesson, readText, readSlide, jump }) : null;
+    connection.append(copy, monitor);
+    bar.append(questions, connection, preparation);
+    if (queueControls) bar.append(plan);
+    bar.append(state, status); box.querySelector(".dk-bar").after(bar);
     deckUIs.set(box, { monitor, copy, status, state, advance: next, queue: queueControls });
     links();
   }
