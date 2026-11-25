@@ -16,7 +16,7 @@
   const time = (t) => new Date(t).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const initials = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase() + ".").join(" ");
   const store = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], lastUpload: null, deckBusy: false };
+  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], uploadStatus: "locked", lastUpload: null, deckBusy: false };
 
   function sessions() {
     const out = [];
@@ -61,6 +61,8 @@
           : '<p class="cr-empty">Пока пусто. На своём устройстве откройте страницу преподавателя: «Анализ группы» для группы или карточку ученика, затем «Подготовить урок».</p>'}</div>
       <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Слова, отмеченные на уроках. Раз в два дня они получают определение и перевод и подчёркиваются на сайте, как слова курса.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
       <div class="cr-card cr-wide" id="cr-lessons"><h2>Презентации и материалы</h2><p class="cr-sub">Выберите урок: его презентация, части рабочей тетради и слова.</p>
+        ${C.uploadStatus === "locked" ? '<p class="cr-note">Для доступа к загруженным презентациям войдите с ключом администратора в <a href="cabinet.html?view=accounts#reg">кабинете преподавателя</a>.</p>' : ""}
+        ${C.uploadStatus === "error" ? '<p class="cr-note" role="status">Не удалось загрузить список презентаций. Обновите страницу или проверьте доступ в <a href="cabinet.html?view=accounts#reg">кабинете преподавателя</a>.</p>' : ""}
         ${SITE.adminKey() ? '<div class="cr-acts cr-import"><button type="button" id="cr-zip-upload">Загрузить ZIP</button><button type="button" id="cr-zip-replace">Заменить из ZIP</button><span>PDF с кодом урока в имени, например V01_v4.pdf.</span></div><input id="cr-zip-file" type="file" accept=".zip,application/zip" hidden><p class="cr-note" id="cr-zip-msg" role="status"></p>' : ""}
         <div class="cr-tabs" role="group" aria-label="Курс"><button type="button" data-course="V" aria-pressed="${C.course === "V"}">SAT Verbal</button><button type="button" data-course="M" aria-pressed="${C.course === "M"}">SAT Math</button></div>
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
@@ -107,7 +109,7 @@
     const ls = C.lessons.filter((l) => l.tag[0] === C.course), box = $("cr-tiles"); if (!box) return;
     box.innerHTML = ls.length ? ls.map((l) => { const d = deckFor(l.tag), no = /^\D\d+$/.test(l.tag) ? String(Number(l.tag.slice(1))) : l.tag.slice(1);
       return `<button type="button" class="cr-tile" data-l="${esc(l.tag)}" aria-expanded="${C.open === l.tag}"><span class="no">${esc(no)}</span><span class="nm">${esc(String(l.title).split(" · ").slice(2).join(" · ") || l.title)}</span>
-        <span class="st${d ? " ok" : ""}">${d ? `презентация · ${d.n} ${pl(d.n, "слайд", "слайда", "слайдов")}` : "презентация скоро"}</span></button>`; }).join("") : '<p class="cr-empty">Уроки не загрузились. Обновите страницу.</p>';
+        <span class="st${d ? " ok" : ""}">${d ? `презентация · ${d.n} ${pl(d.n, "слайд", "слайда", "слайдов")}` : C.uploadStatus === "locked" ? "требуется доступ" : C.uploadStatus === "error" ? "список недоступен" : "презентация скоро"}</span></button>`; }).join("") : '<p class="cr-empty">Уроки не загрузились. Обновите страницу.</p>';
     panel();
   }
   function panel() {
@@ -611,7 +613,9 @@
       const lesson = new URLSearchParams(location.search).get("lesson");
       if (C.lessons.some((l) => l.tag === lesson)) { C.open = lesson; C.course = lesson[0]; }
       C.vocab = V; C.decks = (D && D.decks) || [];
-      C.uploaded = uploaded?.ok && Array.isArray(uploaded.data?.decks) ? uploaded.data.decks : [];
+      const loaded = uploaded?.ok && Array.isArray(uploaded.data?.decks);
+      C.uploaded = loaded ? uploaded.data.decks : [];
+      C.uploadStatus = loaded ? "ready" : SITE.adminKey() ? "error" : "locked";
       window.LessonPracticeHost?.mount($("lp-home"), (view) => {
         const deck = deckFor(view.id);
         return !!deck && (deck.revision || deck.at || null) === view.updated && deck.n === view.count &&

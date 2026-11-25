@@ -55,7 +55,7 @@ window.SlideMaterialPreview = (() => {
     const prompt = draft?.prompt || "";
     const labels = [];
     if (needsGraph(prompt)) labels.push("график");
-    if (needsUnderline(prompt)) labels.push("подчёркнутую фразу");
+    if (needsUnderline(prompt) && SlidePracticeContent.splitPrompt(prompt).underlineFrom === undefined) labels.push("подчёркнутую фразу");
     return labels.join(" и ");
   }
   const fingerprints = new WeakMap();
