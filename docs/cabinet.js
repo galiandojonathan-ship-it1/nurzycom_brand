@@ -15,6 +15,7 @@
   const COURSES = [["V", "Verbal"], ["M", "Math"], ["VM", "Verbal и Math"]];
   const S = { users: [], cur: null, tab: "over", q: "", lessons: [], assign: null, imp: null, loaded: false, groups: [], gview: "all", editG: null, focus: "", ct: false, archived: new Set(), view: "overview" };
   const VIEWS = ["overview", "students", "results", "archive", "tests", "bank", "lessons", "accounts", "forms"];
+  const PARENT_VIEW = { archive: "students", bank: "tests", forms: "results" };
   const ACCOUNT_BOOKMARKS = ["#reg", "#acc", "#pw", "#gh-set"];
   function viewFromURL() {
     const view = new URLSearchParams(location.search).get("view");
@@ -35,10 +36,11 @@
     $("cb").classList.toggle("hidden", external);
     $("teacher-results").classList.toggle("hidden", view !== "results");
     $("teacher-accounts").classList.toggle("hidden", view !== "accounts");
-    $("teacher-result-nav").classList.toggle("hidden", view !== "results" && view !== "forms");
-    document.querySelectorAll(".cb-nav [data-cb-view], #teacher-result-nav [data-cb-view]").forEach((link) => {
-      const current = link.dataset.cbView === view ||
-        (view === "forms" && link.dataset.cbView === "results" && link.closest(".cb-nav"));
+    const parent = PARENT_VIEW[view] || view;
+    $("teacher-result-nav").classList.toggle("hidden", parent !== "results");
+    document.querySelectorAll("[data-cb-context]").forEach((nav) => nav.classList.toggle("hidden", nav.dataset.cbContext !== parent));
+    document.querySelectorAll(".cb-nav [data-cb-view], #teacher-result-nav [data-cb-view], [data-cb-context] [data-cb-view]").forEach((link) => {
+      const current = link.dataset.cbView === (link.closest(".cb-nav") ? parent : view);
       if (current) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
@@ -225,8 +227,6 @@
     const overdue = stats.filter((x) => x.late).sort((a, b) => b.late - a.late);
     const quiet = stats.filter((x) => !x.last || Date.now() - x.last > 7 * DAY);
     const groupCount = S.groups.filter((g) => membersOf(g).length).length;
-    const tiles = [["students", "Активные ученики", pupils.length], ["students", "Группы с учениками", groupCount],
-      ["archive", "Бывшие ученики", S.users.length - pupils.length]];
     const people = (list, detail, empty) => list.length ? `<ul class="cb-rows">${list.slice(0, 5).map(({ u, ...I }) =>
       `<li><span><button class="tlink" type="button" data-u="${esc(u.id)}">${esc(u.name)}</button><small>${esc(detail(I))}</small></span></li>`).join("")}</ul>
       ${list.length > 5 ? `<button class="tlink cb-more" type="button" data-cb-view="students">Все ученики · ещё ${list.length - 5}</button>` : ""}` :
@@ -235,8 +235,8 @@
       .sort((a, b) => b.result.t - a.result.t);
     return `<div class="cb-dash-head">${sectionTitle("Добро пожаловать, Нурасыл")}<div class="cb-dash-actions"><button class="btn" type="button" data-bulk="1">Задать задание <span class="arr">+</span></button>
         <button class="tlink" type="button" id="cb-reload">Обновить</button></div></div>
-      <div class="cb-dash-stats">${tiles.map(([view, label, n]) => `<button class="cb-dash-stat" type="button" data-cb-view="${view}">
-        <span>${label}</span><b>${n}</b></button>`).join("")}</div>
+      <div class="cb-dash-stats"><button class="cb-dash-stat" type="button" data-cb-view="students">
+        <span>Активные ученики</span><b>${pupils.length}</b><small>Групп с учениками: ${groupCount}</small></button></div>
       <div class="cb-dash-columns">
         <section class="cb-dash-card"><h3>Последние сдачи</h3>${people(recent, (x) =>
           `${x.result.label} · ${x.result.score} · ${ago(x.result.t)}`, "Сдачи появятся после синхронизации результатов учеников.")}

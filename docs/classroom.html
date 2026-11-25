@@ -28,6 +28,8 @@
 @media(min-width:1000px){.cr-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}.cr-wide{grid-column:1/-1}}
 .cr-card{background:#fff;border:1.5px solid var(--studio);border-radius:var(--panel-radius);padding:20px 22px;min-width:0}
 .cr-card h2{font:600 22px/1.25 var(--sans);margin:0 0 4px}.cr-card .cr-sub{color:#5E5A54;font-size:15px;margin:0 0 14px}
+#cr-rv summary{cursor:pointer;font:600 16px/1.4 var(--sans);padding-block:5px;min-height:32px}
+#cr-rv[open]>ul{margin-top:10px}
 .cr-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .cr-item{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--paper);border:1.5px solid transparent;border-radius:var(--panel-radius);padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
 .cr-item:hover,.cr-item:focus-visible{border-color:var(--ink)}
@@ -62,10 +64,6 @@
 .cr-note{color:#5E5A54;font-size:14px;margin:10px 0 0}
 #cr-zip-msg{white-space:pre-line;overflow-wrap:anywhere;margin:0 0 14px}
 #cr-zip-msg:empty{margin:0}
-.cr-words{display:grid;gap:8px}
-.cr-w{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:baseline;border-bottom:1px solid var(--studio);padding:8px 0}
-.cr-w b{font:600 16px var(--sans)}.cr-w span{color:#5E5A54;font-size:14px}.cr-w small{font:500 12px var(--sans);white-space:nowrap}
-.cr-w small.ok{color:#1F5A33}.cr-w small.wait{color:#8A5300}
 .cr-empty{color:#5E5A54;font-size:15px;margin:0}
 .lp-home-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .lp-home-actions:not(:has(>:not([hidden]))){display:none}
@@ -165,8 +163,8 @@
 <script src="slide-question-match.js?v=202611251939"></script>
 <script src="slide-material-preview.js?v=202611251939"></script>
 <script src="slide-annotations.js?v=202611240557"></script>
-<script src="lesson-practice-host.js?v=202611252226"></script>
-<script src="classroom.js?v=202611252226"></script>
+<script src="lesson-practice-host.js?v=202611260010"></script>
+<script src="classroom.js?v=202611260010"></script>
 <script src="dict.js?v=202611240557" data-selection-scope=".qhtml,.dk-text,.dk-native"></script>
 </body>
 </html>

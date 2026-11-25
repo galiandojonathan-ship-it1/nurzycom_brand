@@ -41,7 +41,8 @@
       return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id.slice(1)}</span><span class="t">${esc(s.title)}</span>
         <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} ${pl(s.q.length, "вопрос", "вопроса", "вопросов")} · ${s.minutes} мин${nw ? ` · ${nw} из словаря курса` : ""}${last ? " · " + last : ""}</span></span></button>`;
     };
-    const groups = [["Разные темы", (s) => s.id < "X05"], ["Американская литература", (s) => s.id >= "X05"]];
+    const isLiterature = (s) => s.category ? s.category === "literature" : ["X05", "X06", "X07"].includes(s.id);
+    const groups = [["Разные темы", (s) => !isLiterature(s)], ["Американская литература", isLiterature]];
     $("sets").innerHTML = groups.map(([name, f]) => { const ss = st.data.sets.filter(f);
       return ss.length ? `<div class="course-h" style="grid-column:1/-1;margin-top:8px"><b>${name}</b><span class="label">${ss.length} ${ss.length > 4 ? "наборов" : "набора"}</span></div>${ss.map(card).join("")}` : ""; }).join("");
     $("sets").querySelectorAll(".set").forEach((b) => (b.onclick = () => {

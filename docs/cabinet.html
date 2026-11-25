@@ -154,7 +154,7 @@ em.late{font-style:normal;color:var(--oxide)}
 .cb-dash-actions .tlink{min-height:44px;text-decoration:underline;text-underline-offset:3px}
 .cb-dash-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-bottom:10px}
 .cb-dash-stats,.cb-dash-columns{display:grid;gap:12px;margin-bottom:14px}
-.cb-dash-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.cb-dash-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cb-dash-stats{grid-template-columns:1fr}.cb-dash-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
 .cb-dash-stat,.cb-dash-card{background:var(--white);border:1px solid var(--studio);border-radius:16px;min-width:0;padding:16px}
 .cb-dash-stat{font:500 15px var(--sans);color:var(--ink);text-align:left;cursor:pointer;display:grid;gap:8px}
 .cb-dash-stat:hover{border-color:var(--ink)}.cb-dash-stat b{font:600 32px/1 var(--sans)}
@@ -370,14 +370,20 @@ em.late{font-style:normal;color:var(--oxide)}
   <a class="cb-nav-link" href="cabinet.html" data-cb-view="overview">Обзор</a>
   <a class="cb-nav-link" href="cabinet.html?view=students" data-cb-view="students">Ученики</a>
   <a class="cb-nav-link" href="cabinet.html?view=results" data-cb-view="results">Результаты</a>
-  <a class="cb-nav-link" href="cabinet.html?view=archive" data-cb-view="archive">Бывшие ученики</a>
-  <a class="cb-nav-link" href="cabinet.html?view=tests" data-cb-view="tests" data-ct>Мои тесты</a>
-  <a class="cb-nav-link" href="cabinet.html?view=bank" data-cb-view="bank">nurzycom bank</a>
+  <a class="cb-nav-link" href="cabinet.html?view=tests" data-cb-view="tests" data-ct>Тесты и банк</a>
   <a class="cb-nav-link" href="cabinet.html?view=lessons" data-cb-view="lessons" data-ls>Уроки</a>
-  <a class="cb-nav-link" href="cabinet.html?view=accounts" data-cb-view="accounts">Аккаунты</a>
+  <a class="cb-nav-link" href="cabinet.html?view=accounts" data-cb-view="accounts">Настройки</a>
 </nav></header>
 
 <main id="main" tabindex="-1">
+  <nav class="teacher-subnav hidden" data-cb-context="students" aria-label="Ученики">
+    <a class="chip" href="cabinet.html?view=students" data-cb-view="students">Активные</a>
+    <a class="chip" href="cabinet.html?view=archive" data-cb-view="archive">Архив</a>
+  </nav>
+  <nav class="teacher-subnav hidden" data-cb-context="tests" aria-label="Тесты и банк">
+    <a class="chip" href="cabinet.html?view=tests" data-cb-view="tests" data-ct>Мои тесты</a>
+    <a class="chip" href="cabinet.html?view=bank" data-cb-view="bank">nurzycom bank</a>
+  </nav>
   <nav id="teacher-result-nav" class="teacher-subnav hidden" aria-label="Работа с результатами">
     <a class="chip" href="cabinet.html?view=results" data-cb-view="results">Аналитика</a>
     <a class="chip" href="cabinet.html?view=forms" data-cb-view="forms" data-imp>Перенос в аккаунты</a>
@@ -511,7 +517,7 @@ em.late{font-style:normal;color:var(--oxide)}
 <script src="progress-view.js?v=202611240557"></script>
 <script src="predict.js?v=202611240557"></script>
 <script src="teacher.js?v=202611240557"></script>
-<script src="cabinet.js?v=202611240557"></script>
+<script src="cabinet.js?v=202611260010"></script>
 <script src="dict.js?v=202611240557" data-selection-scope=".qhtml"></script>
 </body>
 </html>

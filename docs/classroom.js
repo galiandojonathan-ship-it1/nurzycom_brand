@@ -4,8 +4,6 @@
 //  · Разбор ошибок: the reviews prepared on the teacher page («Подготовить урок» / «Показать на уроке»), opened in lsmist.js.
 //  · Презентации и материалы: a tile per lesson; its presentation (a PDF imported by an administrator, or the existing data/decks.bin library),
 //    its workbook parts and its words. A presentation opens full screen with a board over the slide.
-//  · Слова с уроков: words marked in lessons and whether they are in the deck «VL» yet (filled every two days by /lesson-review).
-//  · Прошлые уроки: the last finished lessons of this account.
 // Students never see this page: it is not in the menu and it shows nothing without the lesson login.
 (function () {
   "use strict";
@@ -13,16 +11,10 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const pl = (n, a, b, c) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d > 1 && d < 5 ? b : c; };
   const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-  const time = (t) => new Date(t).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const initials = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase() + ".").join(" ");
   const store = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const C = { lessons: [], vocab: null, decks: [], course: store("cr_course") || "V", open: null, uploaded: [], uploadStatus: "locked", lastUpload: null, deckBusy: false, nowHTML: null };
+  const C = { lessons: [], decks: [], course: store("cr_course") || "V", open: null, uploaded: [], uploadStatus: "locked", lastUpload: null, deckBusy: false, nowHTML: null };
 
-  function sessions() {
-    const out = [];
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf("ls_s_") === 0) { try { const s = JSON.parse(localStorage.getItem(k)); if (s && Array.isArray(s.ev)) out.push(s); } catch (e) { /* not a session */ } } } } catch (e) { /* storage blocked */ }
-    return out.sort((a, b) => b.t0 - a.t0);
-  }
   function reviews() {
     let d = null; try { d = JSON.parse(store("ls_m") || "null"); } catch (e) { d = null; }
     const all = !d ? [] : Array.isArray(d.list) ? d.list : d.qs ? [Object.assign({ id: "r0", mode: "group" }, d)] : [];
@@ -62,7 +54,7 @@
   // ---------- the page
   function render() {
     now();
-    const rv = reviews(), ss = sessions().filter((s) => s.t1).slice(0, 6);
+    const rv = reviews();
     const body = $("cr-body");
     body.innerHTML = `<div class="cr-grid">
       <section class="cr-card cr-wide" id="cr-lessons" aria-labelledby="cr-lessons-title"><h2 id="cr-lessons-title">Презентации и материалы</h2><p class="cr-sub">Выберите урок, чтобы открыть презентацию и задания.</p>
@@ -74,17 +66,11 @@
         <div class="cr-tiles" id="cr-tiles"></div><div id="cr-panel"></div>
         <input id="cr-deck-file" type="file" hidden>
         <p class="cr-note" id="cr-deck-msg" role="status"></p></section>
-      <div class="cr-card" id="cr-rv"><h2>Разбор ошибок</h2><p class="cr-sub">Разборы, подготовленные на странице преподавателя.</p>
+      <details class="cr-card" id="cr-rv"><summary>Подготовленные разборы · ${rv.length}</summary>
         ${rv.length ? `<ul class="cr-list">${rv.map((r) => `<li><button type="button" class="cr-item" data-rv="${esc(r.id)}"><span><span class="cr-kind">${r.mode === "verbal" ? "Урок SAT Verbal" : r.mode === "solo" ? "Индивидуальный разбор" : "Группа"}</span><b>${esc(r.mode === "verbal" ? r.title : shown(r))}</b>
           <small>${esc((r.parts || []).slice(0, 2).join(", "))}${(r.parts || []).length > 2 ? ` и ещё ${r.parts.length - 2}` : ""} · ${esc(day(r.at))}</small></span><span class="r">${r.qs.length}</span></button></li>`).join("")}</ul>`
-          : '<p class="cr-empty">В кабинете преподавателя откройте «Анализ группы» или карточку ученика и нажмите «Подготовить урок».</p>'}</div>
-      <div class="cr-card" id="cr-words-card"><h2>Слова с уроков</h2><p class="cr-sub">Отметки с уроков и переход в словарь.</p><div id="cr-words"><p class="cr-empty">Загружаю…</p></div></div>
-      <div class="cr-card cr-wide" id="cr-ct"><h2>Тесты преподавателя</h2><p class="cr-sub">Ваши тесты из «Мои тесты», сверху задания Gemini на ошибки учеников. «Решать вместе» — тест на общем экране; «Живая практика» — класс решает на своих устройствах, вы видите ответы.</p><div id="cr-ct-list"><p class="cr-empty">Загружаю тесты…</p></div></div>
-      <div class="cr-card cr-wide"><h2>Прошлые уроки</h2>${ss.length ? `<ul class="cr-list">${ss.map((s) => { const parts = [...new Set(s.ev.filter((e) => e.k === "at" && e.q && e.ti).map((e) => e.ti.replace(/^Разбор ошибок · /, "")))];
-          const n = (k) => s.ev.filter((e) => e.k === k).length;
-          return `<li><div class="cr-item" style="cursor:default"><span><b>${esc(s.group)}</b><small>${esc(day(s.t0))}, ${esc(time(s.t0))} · ${Math.round((s.t1 - s.t0) / 60000)} мин${parts.length ? " · " + esc(parts.slice(0, 2).join(", ")) + (parts.length > 2 ? ` и ещё ${parts.length - 2}` : "") : ""}</small></span>
-            <small>слов: ${n("word")} · вопросов: ${n("flag")}</small></div></li>`; }).join("")}</ul>` : '<p class="cr-empty">Здесь появятся уроки после «Завершить».</p>'}
-        <p class="cr-note">Подробный разбор каждого урока: кабинет преподавателя → «Уроки».</p></div></div>`;
+          : '<p class="cr-empty">В кабинете преподавателя откройте «Анализ группы» или карточку ученика и нажмите «Подготовить урок».</p>'}</details>
+      <div class="cr-card" id="cr-ct"><h2>Тесты преподавателя</h2><div id="cr-ct-list"><p class="cr-empty">Загружаю…</p></div></div></div>`;
     $("cr-deck-file").onchange = (e) => {
       const file = e.target.files[0];
       e.target.value = "";
@@ -102,7 +88,7 @@
         replace = false;
       };
     }
-    tiles(); words(); customTests();
+    tiles(); customTests();
   }
   // ---------- «Тесты преподавателя»: the cabinet's tests (incl. Gemini drafts on students' mistakes) for the lesson screen
   async function customTests() {
@@ -113,7 +99,7 @@
       .sort((a, b) => (b.src === "gemini" || /^Работа над ошибками/.test(b.title || "")) - (a.src === "gemini" || /^Работа над ошибками/.test(a.title || "")) || (b.at || 0) - (a.at || 0)).slice(0, 12);
     box.innerHTML = tests.length ? `<ul class="cr-list cr-ct">${tests.map((t) => { const g = t.src === "gemini" || /^Работа над ошибками/.test(t.title || ""), href = `mytest.html?t=${encodeURIComponent(t.id)}`;
       return `<li><div class="cr-item" style="cursor:default"><span><span class="cr-kind">${g ? "Gemini · на ошибки" : "Мой тест"}</span><b>${esc(t.title || "Без названия")}</b><small>${t.q.length} ${pl(t.q.length, "вопрос", "вопроса", "вопросов")}${t.at ? " · " + esc(day(t.at)) : ""}</small></span>
-        <span class="cr-acts"><a class="cr-chip" href="${href}">Решать вместе</a><a class="cr-chip main" href="${href}&amp;live=1">Живая практика</a></span></div></li>`; }).join("")}</ul>`
+        <details class="cr-manage"><summary>Открыть тест</summary><div class="cr-acts"><a class="cr-chip" href="${href}">На общем экране</a><a class="cr-chip" href="${href}&amp;live=1">На устройствах учеников</a></div></details></div></li>`; }).join("")}</ul>`
       : '<p class="cr-empty">Тестов пока нет. В кабинете: «Результаты» → карточка ученика → «Похожие вопросы · Gemini» → «Задать» или «Только сохранить».</p>';
   }
   function tiles() {
@@ -143,20 +129,6 @@
         <button type="button" class="cr-remove" data-deck-delete="${esc(d.id)}"${C.deckBusy ? " disabled" : ""}>Удалить презентацию</button>` : ""}
         </div><p class="cr-note">PDF сохраняет исходное оформление. JSON подходит для редактирования текста.</p></details>` : ""}</section>`;
   }
-  function words() {
-    const box = $("cr-words"); if (!box) return;
-    const deck = C.vocab && C.vocab.lessons.find((l) => l.tag === "VL"), inDeck = {}, set = new Set(((deck && deck.skip) || []).map((x) => String(x.w).toLowerCase()));
-    ((deck && deck.groups[0].items) || []).forEach((it) => [it.en].concat(it.marked || []).forEach((w) => (inDeck[String(w).toLowerCase()] = it)));   // the marked form («interspersing») and the dictionary form
-    const course = new Set(); ((C.vocab && C.vocab.lessons) || []).filter((l) => l.tag !== "VL").forEach((l) => l.groups.forEach((g) => g.items.forEach((it) => course.add(String(it.en).toLowerCase()))));
-    const W = []; const seen = new Set();
-    sessions().forEach((s) => s.ev.filter((e) => e.k === "word").forEach((e) => { const k = e.w.toLowerCase(); if (seen.has(k)) return; seen.add(k); W.push(e.w); }));
-    if (!W.length) { box.innerHTML = '<p class="cr-empty">Пока нет. На уроке выделите слово в тексте или нажмите «Слово» на панели и затем само слово.</p>'; return; }
-    box.innerHTML = `<div class="cr-words">${W.slice(0, 30).map((w) => { const k = w.toLowerCase(), it = inDeck[k];
-      const st = it ? '<small class="ok">в словаре</small>' : course.has(k) ? '<small class="ok">уже в словаре курса</small>' : set.has(k) ? "<small>не берём</small>" : '<small class="wait">ждёт разбора</small>';
-      return `<div class="cr-w"><span><b lang="en">${esc(w)}</b>${it ? ` — ${esc(it.ru)}` : ""}</span>${st}</div>`; }).join("")}</div>
-      ${deck ? `<p class="cr-note"><a href="vocab.html?l=VL">Колода «Слова с уроков» · ${deck.groups[0].items.length} ${pl(deck.groups[0].items.length, "слово", "слова", "слов")}</a></p>` : ""}`;
-  }
-
   function deckFor(id) {
     const uploaded = C.uploaded.find((d) => d.id === id);
     if (!uploaded) return C.decks.find((d) => d.id === id);
@@ -647,14 +619,14 @@
       if (!/^lesson(-[a-z0-9]+)?$/.test(SITE.me() || "")) { $("cr-body").innerHTML = '<p class="cr-empty">Эта страница для аккаунта урока. Войдите на сайт под логином урока.</p>'; $("cr-now").innerHTML = ""; return; }
       for (let i = 0; i < 100 && !window.LESSON; i++) await new Promise((r) => setTimeout(r, 100));   // lesson.js is loaded by auth.js
       try { if (SITE.sync) await Promise.race([SITE.sync(), new Promise((r) => setTimeout(r, 4000))]); } catch (e) { /* offline */ }
-      const [L, V, D, uploaded] = await Promise.all([
-        SITE.json("lessons").catch(() => null), SITE.json("vocab").catch(() => null), SITE.json("decks").catch(() => null),
+      const [L, D, uploaded] = await Promise.all([
+        SITE.json("lessons").catch(() => null), SITE.json("decks").catch(() => null),
         SITE.adminKey() ? SITE.api("admin/decks").catch(() => null) : null
       ]);
       C.lessons = ((L && (L.lessons || L)) || []).filter((l) => l && l.tag && Array.isArray(l.parts) && /^[VM]/.test(l.tag));
       const lesson = new URLSearchParams(location.search).get("lesson");
       if (C.lessons.some((l) => l.tag === lesson)) { C.open = lesson; C.course = lesson[0]; }
-      C.vocab = V; C.decks = (D && D.decks) || [];
+      C.decks = (D && D.decks) || [];
       const loaded = uploaded?.ok && Array.isArray(uploaded.data?.decks);
       C.uploaded = loaded ? uploaded.data.decks : [];
       C.uploadStatus = loaded ? "ready" : SITE.adminKey() ? "error" : "locked";
