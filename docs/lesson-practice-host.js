@@ -418,9 +418,15 @@ window.LessonPracticeHost = (() => {
   const plain = (html) => new DOMParser().parseFromString(html || "", "text/html").body.textContent;
   const safeText = (text) => String(text).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
   const paragraphs = (text) => text.trim().split(/\n+/).filter(Boolean).map((line) => `<p>${safeText(line)}</p>`).join("");
-  function passageHTML(passage) {
+  function passageHTML(passage, { verse, title, underlineFrom }) {
     if (!passage) return "";
     const [first, ...rest] = passage.split("\n");
+    const attribution = title ? `<p>${safeText(first).replace(title, `<em>${title}</em>`)}</p>` : paragraphs(first);
+    if (verse) {
+      const lines = rest.map((line, i) => underlineFrom !== undefined && i >= underlineFrom ? `<u>${safeText(line)}</u>` : safeText(line));
+      return attribution + `<p>${lines.join("<br>")}</p>`;
+    }
+    if (title) return attribution + paragraphs(rest.join("\n"));
     if (rest.length && /^while researching\b/i.test(first)) {
       return paragraphs(first) + "<ul>" + rest.map((line) => `<li>${safeText(line.replace(/^[•●▪]\s+/, ""))}</li>`).join("") + "</ul>";
     }
@@ -435,8 +441,8 @@ window.LessonPracticeHost = (() => {
     return input;
   }
   function slideItem(index, draft, answer, material) {
-    const { passage, stem } = SlidePracticeContent.splitPrompt(draft.prompt);
-    return { t: "mc", n: index + 1, stim: material?.stim ?? passageHTML(passage), stem: material?.stem ?? paragraphs(stem),
+    const layout = SlidePracticeContent.splitPrompt(draft.prompt);
+    return { t: "mc", n: index + 1, stim: material?.stim ?? passageHTML(layout.passage, layout), stem: material?.stem ?? paragraphs(layout.stem),
       opts: draft.opts.map(safeText), ans: answer };
   }
   async function slidePayload(lesson, index, draft, answer, material) {
@@ -587,7 +593,7 @@ window.LessonPracticeHost = (() => {
         answer = SlidePracticeContent.nextKey(text, next, await readText(index + 2).catch(() => ""));
       }
     }
-    if (!answer) answer = SlideQuestionMatch.exactSlide(draft, await questionCandidates(lesson))?.question.ans;
+    if (!answer) answer = SlideQuestionMatch.exactSlide(draft, await questionCandidates(lesson))?.answer;
     return { text, draft, answer, material };
   }
   async function recognize(box, deck, lesson, current, readText, readSlide, button) {
@@ -651,7 +657,7 @@ window.LessonPracticeHost = (() => {
         const draft = material?.draft || slide.draft;
         if (draft) {
           const answer = SlidePracticeContent.answerKey(slide.text) || keys?.[slot - 1] ||
-            SlideQuestionMatch.exactSlide(draft, candidates)?.question.ans;
+            SlideQuestionMatch.exactSlide(draft, candidates)?.answer;
           return { ...slide, slot, draft, answer, material };
         }
         const match = SlideQuestionMatch.match(slide.text, candidates);

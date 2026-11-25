@@ -43,11 +43,18 @@ window.SlideQuestionMatch = (() => {
     // In grammar questions, punctuation and capitalization can be the only differences between options.
     const normalized = (text) => text.normalize("NFKC").replace(/\u00ad/g, "").replace(/\s+/g, " ").trim();
     const prompt = normalized(draft.prompt), options = draft.opts.map(normalized);
-    const matches = candidates.filter(({ question }) => question.t === "mc" && /^[A-D]$/.test(question.ans) &&
-      normalized(textOf(question.stim) + " " + textOf(question.stem)) === prompt &&
-      question.opts?.length === options.length &&
-      question.opts.every((option, i) => normalized(textOf(option)) === options[i]));
-    return matches.length && matches.every(({ question }) => question.ans === matches[0].question.ans) ? matches[0] : null;
+    if (options.length !== 4 || options.includes("") || new Set(options).size !== options.length) return null;
+    const matches = [];
+    for (const candidate of candidates) {
+      const { question } = candidate;
+      if (question.t !== "mc" || !/^[A-D]$/.test(question.ans) || question.opts?.length !== options.length ||
+          normalized(textOf(question.stim) + " " + textOf(question.stem)) !== prompt) continue;
+      const source = question.opts.map((option) => normalized(textOf(option)));
+      if (!options.every((option) => source.includes(option))) continue;
+      const correctText = source["ABCD".indexOf(question.ans)];
+      matches.push({ ...candidate, answer: "ABCD"[options.indexOf(correctText)] });
+    }
+    return matches.length && matches.every(({ answer }) => answer === matches[0].answer) ? matches[0] : null;
   }
   return { match, exactSlide };
 })();
