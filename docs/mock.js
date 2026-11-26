@@ -11,6 +11,7 @@
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
   const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   const SEC = { rw: "Reading and Writing", math: "Math" };
+  const MODULES = { m1: "Модуль 1", m2h: "Модуль 2 · сложный", m2e: "Модуль 2 · лёгкий" };
   const DOM = { CAS: "Craft and Structure", INI: "Information and Ideas", SEC: "Standard English Conventions", EOI: "Expression of Ideas",
     H: "Algebra", P: "Advanced Math", Q: "Problem-Solving and Data Analysis", S: "Geometry and Trigonometry" };
   const BREAK = 10 * 60;
@@ -58,13 +59,36 @@
   }
   const fmt = () => (T.mock && T.mock.only) || T.fmt;   // a Reading and Writing test has only one format
   function ready() {
-    LiveRound.mount("go", async () => {
-      if (!T.mock) throw Error("Выберите пробный тест.");
-      const section = fmt() === "math" ? "math" : "rw";
-      const data = await bundle(section);
-      return { title: T.mock.title + " · " + SEC[section] + " · Модуль 1", ref: `${T.mock.id}.${section}.m1`, sec: section, math: section === "math", questions: LiveRound.workbook(data.mods.m1) };
-    });
     $("go").disabled = !($("student").value.trim().length >= 2 && T.mock);
+    liveModules();
+  }
+  function liveModules() {
+    const select = $("mock-live-module");
+    const launch = LiveRound.mount("mock-live-module", async () => {
+      const mock = T.mock, [sec, mod] = select.value.split(".");
+      if (!mock?.sections.some((section) => section.k === sec) || !Object.hasOwn(MODULES, mod)) {
+        throw Error("Выберите тест и модуль.");
+      }
+      const data = await bundle(sec);
+      const items = data.mods?.[mod];
+      if (!items?.length) throw Error("В этом модуле нет вопросов.");
+      return { title: `${mock.title} · ${SEC[sec]} · ${MODULES[mod]}`, ref: `${mock.id}.${sec}.${mod}`, sec, math: sec === "math",
+        questions: LiveRound.workbook(items), defaultCount: items.length };
+    });
+    if (!launch) return;
+    $("mock-live").hidden = false;
+    select.disabled = launch.disabled = !T.mock;
+    if (!T.mock) return;
+    const previous = select.value;
+    select.replaceChildren(...T.mock.sections.map(({ k }) => {
+      const group = document.createElement("optgroup");
+      group.label = SEC[k];
+      group.append(...Object.entries(MODULES).map(([mod, label]) => new Option(label, `${k}.${mod}`)));
+      return group;
+    }));
+    const options = [...select.options];
+    select.value = options.some((o) => o.value === previous) ? previous
+      : options.find((o) => o.value === `${fmt()}.m1`)?.value || options[0]?.value || "";
   }
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); renderStart(); };
   $("formats").querySelectorAll(".pick").forEach((b) => (b.onclick = () => { T.fmt = b.dataset.f; renderStart(); }));
@@ -150,7 +174,7 @@
     $("wrap").classList.toggle("one", sec === "math");
     if (window.BBTools) { if (!$("t-tools").childElementCount) BBTools.mount($("t-tools")); BBTools.show(sec === "math"); }
     LiveRound.mount("next", () => ({
-      title: T.mock.title + " · " + SEC[curSec()] + " · " + T.st.mod, ref: `${T.mock.id}.${curSec()}.${T.st.mod}`, sec: curSec(), math: curSec() === "math",
+      title: `${T.mock.title} · ${SEC[curSec()]} · ${MODULES[T.st.mod]}`, ref: `${T.mock.id}.${curSec()}.${T.st.mod}`, sec: curSec(), math: curSec() === "math",
       questions: LiveRound.workbook(items())
     }));
     show("m-test"); render();

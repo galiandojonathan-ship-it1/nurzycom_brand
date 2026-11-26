@@ -28,6 +28,9 @@
 @media(min-width:700px){.formats{grid-template-columns:repeat(3,1fr)}}
 .formats .pick{flex-direction:column;align-items:flex-start;gap:2px}
 .formats .pick:disabled{opacity:.35;cursor:default}
+.mock-live{border-top:1px solid var(--studio);margin-top:20px;padding-top:14px}
+.mock-live select{min-width:0;max-width:100%;font:inherit;padding:8px;border:1px solid var(--studio);border-radius:var(--control-radius);background:var(--white)}
+.mock-live .hint:empty{display:none}
 .bb-import{margin:0 0 20px}
 .bb-import summary{font-weight:600;cursor:pointer;padding-block:10px}
 .bb-import textarea{display:block;width:100%;margin-top:6px;padding:10px;border:1px solid var(--studio);border-radius:var(--control-radius);font:inherit;resize:vertical}
@@ -171,6 +174,10 @@
       <p class="hint hidden" id="fmt-note">В тестах 5–8 только Reading and Writing: 2 модуля по 27 вопросов, 64 минуты.</p>
       <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button><button class="btn ghost hidden" id="open-res" type="button">Результат и разбор</button></div>
       <p class="hint" id="start-msg"></p>
+      <div class="mock-live" id="mock-live" hidden>
+        <label class="label" for="mock-live-module">Модуль для живой практики</label>
+        <div class="row"><select id="mock-live-module" disabled><option value="">Выберите пробный тест</option></select></div>
+      </div>
     </div>
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
       <p style="margin:8px 0 0">Таймер идёт, даже если закрыть страницу: тест продолжится с того же места. Когда время модуля заканчивается, модуль сдаётся сам. Внутри модуля можно возвращаться к вопросам, к прошлому модулю — нельзя. В конце — примерный балл (200–800 за раздел, до 1600 за весь тест), разбор по разделам, как в отчёте Bluebook, ваши слабые места с уроком для повторения и разбор каждого вопроса. Балл примерный: официальный считает только College Board.</p></div>
@@ -254,9 +261,9 @@
 <script src="tools.js?v=202611240557"></script>
 <script src="scale.js?v=202611240557"></script>
 <script src="gloss.js?v=202611240557"></script>
-<script src="liveround.js?v=202611240557"></script>
+<script src="liveround.js?v=202611261817"></script>
 <script src="numeric-answer.js?v=202611252226"></script>
-<script src="mock.js?v=202611261621"></script>
+<script src="mock.js?v=202611261817"></script>
 <script src="bbshare.js?v=202611240557"></script>
 <script src="bbpdf.js?v=202611240557"></script>
 <script src="bluebook-import.js?v=202611240557"></script>
