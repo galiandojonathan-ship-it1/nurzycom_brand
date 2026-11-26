@@ -326,10 +326,12 @@ window.LessonPracticeHost = (() => {
           <div class="lp-home-actions" role="group" aria-label="Ход практики">
             <button class="btn" data-lp-return type="button" hidden></button>
             <button class="btn ghost" data-lp-advance type="button" hidden></button></div>
-          <div class="lp-home-actions" role="group" aria-label="Ссылка и монитор">
-            <a class="btn ghost" data-lp-link></a>
-            <button class="btn ghost" data-lp-copy type="button">Копировать ссылку</button>
-            <a class="btn ghost" data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a></div>
+          <div class="lp-home-actions" role="group" aria-label="Подключение к практике">
+            <button class="btn ghost" data-lp-copy type="button">Копировать ссылку для учеников</button>
+            <details class="cr-manage"><summary>Открыть ссылки</summary>
+              <div class="cr-acts"><a data-lp-link></a>
+                <a data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a></div>
+            </details></div>
           <button class="btn ghost lp-home-end" data-lp-finish type="button">Завершить практику</button></div></div>
       <p data-lp-view-notice hidden></p><p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
     panels = root.querySelector("[data-lp-panels]"); status = root.querySelector("[data-lp-status]"); roster = root.querySelector(".lp-roster");
