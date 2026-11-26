@@ -83,18 +83,18 @@ Routes:
 
 The server never sees passwords or the master key: everything is encrypted in the browser.
 
-The lesson account can upload a PDF from its lesson card under «Пульт урока» using the administrator key. The browser converts it to slides
+The lesson account can upload a PDF from «Управление презентацией» on its lesson card under «Пульт урока» using the administrator key. The browser converts it to slides
 with the vendored PDF.js 4.10.38 distribution (Apache-2.0), seals them with the course key, and uses `GET admin/decks` to list and
 `GET/PUT/DELETE admin/deck?id=V01` to read, replace or delete an uploaded presentation. The PDF itself stays on the uploading device.
 New PDF imports save the text and coordinates alongside the images so the site dictionary works on selected words. Image-only decks
 need a fresh import from a PDF with embedded text. In Math lessons, the Desmos button opens the SAT graphing calculator next to the slides.
-«Загрузить ZIP» imports PDFs named with their lesson code, such as `Math/M01_v4.pdf`. It checks both the built-in library and the uploaded
+«Импорт презентаций» → «Загрузить ZIP» imports PDFs named with their lesson code, such as `Math/M01_v4.pdf`. It checks both the built-in library and the uploaded
 catalog, then sends conditional uploads for missing lessons. The browser extracts the archive and uses the same encrypted flow as individual PDF uploads.
 «Заменить из ZIP» asks for confirmation with the existing lesson codes before replacing them and adds any missing presentations from the same archive.
 PDF imports render the long edge at 2560 px, using WebP where the browser supports encoding. If the high-resolution deck exceeds
 the existing upload limit, the importer retries at 1600 px. Reimport the original PDF to upgrade a deck stored at the old resolution.
 
-For code edits, download the text as JSON from the lesson card, edit or reorder `slides`, and upload the result via «Заменить из JSON».
+For text edits, open «Управление презентацией», download the text as JSON, edit or reorder `slides`, and upload the result via «Заменить из JSON».
 The JSON renderer uses the site's slide template. PDF graphics and original formatting stay in the PDF. This example shows the source format.
 
 ```json
@@ -118,6 +118,8 @@ puts the passage and question side by side on desktop and stacks them on mobile.
 key on the slide, the matching solution or Cold Start recap, or an exact workbook match. Without a key, the teacher still
 sees the answer and elapsed time. The answer stays ungraded and the two-choice hint is unavailable. Image-only slides can
 still be mapped to a workbook question with the separate manual picker. Cold Start can open four numbered slides at once.
+The viewer keeps slide navigation and actions for the class visible. The «Подготовка» disclosure holds the manual picker,
+the materials preview, the readiness check, and the lesson plan editor.
 The question snapshot is encrypted as for workbook practice. The teacher advances the whole group
 under the same link, and automatic presentation actions preserve an active Cold Start across refreshes. The monitor keeps prior answers in a clickable matrix. Selected question and timing
 are server-side; only the teacher monitor sees the roster, grading and the saved encrypted notes. Hint permissions

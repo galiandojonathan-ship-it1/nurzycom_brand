@@ -41,7 +41,8 @@
       return `<button class="set" data-s="${s.id}" aria-pressed="false"><span class="no">${s.id.slice(1)}</span><span class="t">${esc(s.title)}</span>
         <span class="meta"><span class="label">${esc(s.en)}</span><span class="label">${s.q.length} ${pl(s.q.length, "вопрос", "вопроса", "вопросов")} · ${s.minutes} мин${nw ? ` · ${nw} из словаря курса` : ""}${last ? " · " + last : ""}</span></span></button>`;
     };
-    const groups = [["Разные темы", (s) => s.id < "X05"], ["Американская литература", (s) => s.id >= "X05"]];
+    const isLiterature = (s) => s.category ? s.category === "literature" : ["X05", "X06", "X07"].includes(s.id);
+    const groups = [["Разные темы", (s) => !isLiterature(s)], ["Американская литература", isLiterature]];
     $("sets").innerHTML = groups.map(([name, f]) => { const ss = st.data.sets.filter(f);
       return ss.length ? `<div class="course-h" style="grid-column:1/-1;margin-top:8px"><b>${name}</b><span class="label">${ss.length} ${ss.length > 4 ? "наборов" : "набора"}</span></div>${ss.map(card).join("")}` : ""; }).join("");
     $("sets").querySelectorAll(".set").forEach((b) => (b.onclick = () => {
@@ -57,7 +58,7 @@
 
   async function begin() {
     store("hw_student", $("student").value.trim());
-    st.ans = {}; st.out = {}; st.marked = new Set(); st.cur = 0;
+    st.ans = {}; st.out = {}; st.marked = new Set(); st.cur = 0; st.rev = null;
     $("t-title").textContent = `${st.set.id} · ${st.set.title}`;
     st.t0 = Date.now(); clearInterval(st.timer);
     st.timer = setInterval(tick, 1000); tick();
@@ -145,23 +146,41 @@
     $("tg").href = `https://t.me/${CFG.telegram || "nurzycom"}`;
     $("copy").onclick = async () => { try { await navigator.clipboard.writeText(code); $("copy").textContent = "Скопировано"; } catch (e) { $("copy").textContent = "Выделите код вручную"; } };
     show("p-result");
-    await renderReview();
     send(res);
+    await renderReview();
   }
   async function renderReview() {
-    const { ok } = st.rev, qs = st.set.q;
-    const info = {};
-    for (const q of qs) info[q.i] = await SITE.sealed(q.x);
-    $("rev").innerHTML = qs.map((q) => {
-      const mine = st.ans[q.i], inf = info[q.i];
+    const review = st.rev, { ok } = review, { q: qs, salt } = st.set, answers = st.ans;
+    const box = $("rev");
+    box.innerHTML = '<p class="hint">Загружаю разбор…</p>';
+    const info = await Promise.all(qs.map(async (q) => {
+      try {
+        const inf = await SITE.sealed(q.x);
+        if (typeof inf?.a === "string" && /^[A-D]$/.test(inf.a) && typeof inf.x === "string" &&
+            inf.x.trim() && (await sha(`${salt}:${q.i}:${inf.a}`)) === q.h) return inf;
+      } catch { /* keep the other questions available */ }
+      return null;
+    }));
+    if (st.rev !== review) return;
+    box.innerHTML = qs.map((q, index) => {
+      const mine = answers[q.i], inf = info[index];
       const opts = q.o.map((o, k) => { const c = "ABCD"[k]; const right = inf && inf.a === c;
         return `<div class="ropt${right ? " right" : ""}${mine === c ? " mine" : ""}"><span class="lt">${c}</span><span>${rich(o, true)}</span>${right ? '<span class="tg">верный</span>' : mine === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("");
-      return `<details><summary><span class="mk ${ok[q.i] ? "ok" : "no"}">${q.i}</span><span class="sm"><b>${ok[q.i] ? "Верно" : mine ? "Ошибка" : "Без ответа"}</b><small>Ваш ответ: ${mine || "—"}${inf ? ` · верный: ${inf.a} · ${esc(inf.t)}` : ""}</small></span><span class="ar">›</span></summary>
-        <div class="rbody"><div class="passage" style="padding:8px 0 4px">${blocks(q.b, true)}</div><p class="stem">${rich(q.s, true)}</p>${opts}${inf ? `<div class="expl"><span class="label">Разбор · ${esc(inf.t)}</span>${esc(inf.x)}</div>` : ""}${words(q)}</div></details>`;
+      const topic = inf?.t ? ` · ${esc(inf.t)}` : "";
+      return `<details><summary><span class="mk ${ok[q.i] ? "ok" : "no"}">${q.i}</span><span class="sm"><b>${ok[q.i] ? "Верно" : mine ? "Ошибка" : "Без ответа"}</b><small>Ваш ответ: ${mine || "—"}${inf ? ` · верный: ${inf.a}${topic}` : ""}</small></span><span class="ar">›</span></summary>
+        <div class="rbody"><div class="passage" style="padding:8px 0 4px">${blocks(q.b, true)}</div><p class="stem">${rich(q.s, true)}</p>${opts}
+        ${inf ? `<div class="expl"><span class="label">Разбор${topic}</span>${esc(inf.x)}${distractors(inf)}</div>` : '<p class="hint">Разбор этого вопроса недоступен.</p>'}${words(q)}</div></details>`;
     }).join("");
   }
+  function distractors(info) {
+    const options = [..."ABCD"].filter((letter) => letter !== info.a &&
+      typeof info.traps?.[letter] === "string" && info.traps[letter].trim());
+    if (!options.length) return "";
+    return `<details class="expl-traps"><summary>Почему другие варианты не подходят</summary><ul>${options.map((letter) =>
+      `<li><b>${letter}.</b> ${esc(info.traps[letter])}</li>`).join("")}</ul></details>`;
+  }
   function words(q) {
-    const ws = (q.w || []).map((k) => st.data.gloss[k]).filter(Boolean);
+    const ws = (q.w || []).map((k) => st.data.gloss?.[k]).filter(Boolean);
     return ws.length ? `<div class="wlist"><span class="label">Слова курса в вопросе</span>${ws.map((g) => `<div><b>${esc(g.en)}</b> — ${esc(g.ru)} <span class="label">${g.l}</span></div>`).join("")}</div>` : "";
   }
 

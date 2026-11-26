@@ -25,7 +25,7 @@ window.LessonPracticeHost = (() => {
     teachingView = { ...deckPosition(deck), index };
     if (!restoring) rememberView();
   }
-  let accounts, creating, autoReport = false, cold = 0, activeNumber, advancing = false, preparingCold = false;
+  let accounts, creating, cold = 0, activeNumber, advancing = false, preparingCold = false;
   let historyCurrent, historyRoom, attemptsByKey = new Map();
   const coldPart = (lesson) => lesson?.parts.find((p) => p.b && p.q?.length >= 4 && /холодн|cold[ -]+start/i.test(p.title));
   const deckUIs = new Map(), bundles = new Map(), coldDecks = new WeakMap();
@@ -110,7 +110,7 @@ window.LessonPracticeHost = (() => {
     }
     if (room && !closed) return room;
     creating ||= api("create", { title: title.slice(0, 160) }).then(({ room: id }) => {
-      room = id; remember(room); closed = false; cold = 0; activeNumber = null; sent = null; findings = new Map(); autoReport = false; signature = "";
+      room = id; remember(room); closed = false; cold = 0; activeNumber = null; sent = null; findings = new Map(); signature = "";
       activeLesson = window.LESSON?.session()?.id || "";
       rememberView();
       links(); notify("Практика открыта. Скопируйте ссылку для учеников.");
@@ -118,9 +118,9 @@ window.LessonPracticeHost = (() => {
     }).finally(() => { creating = null; });
     return creating;
   }
-  function newRoom(title, after) {
+  function newRoom(title) {
     const dialog = el("dialog"); dialog.className = "lp-dialog";
-    const form = el("form"), heading = el("h2", "Открыть практику"), label = el("label", "Название для учеников");
+    const form = el("form"), heading = el("h2", "Подготовить ссылку для учеников"), label = el("label", "Название для учеников");
     const input = el("input"); input.required = true; input.maxLength = 160; input.value = title;
     const message = el("p"); message.setAttribute("role", "status");
     const submit = el("button", "Создать ссылку"); submit.type = "submit"; submit.className = "btn";
@@ -129,7 +129,7 @@ window.LessonPracticeHost = (() => {
     dialog.addEventListener("close", () => dialog.remove(), { once: true });
     form.onsubmit = async (event) => {
       event.preventDefault(); submit.disabled = true;
-      try { await create(input.value); dialog.close(); if (after) after(); } catch (error) { message.textContent = error.message; submit.disabled = false; }
+      try { await create(input.value); dialog.close(); } catch (error) { message.textContent = error.message; submit.disabled = false; }
     };
     dialog.showModal();
   }
@@ -182,8 +182,8 @@ window.LessonPracticeHost = (() => {
     if (!room || closed || restoring) return;
     try {
       await api("close", {});
-      closed = true; cold = 0; autoReport = true; links();
-      notify("Практика завершена. Gemini анализирует ответы учеников.");
+      closed = true; cold = 0; links();
+      notify("Практика завершена.");
       refresh(true);
     } catch (error) { notify(error.message); }
   }
@@ -301,15 +301,6 @@ window.LessonPracticeHost = (() => {
         if (roomId !== room) return;
         renderMonitor(state, names);
       }
-      if (state.closed && autoReport) {
-        // One request at a time keeps each report within the same quota as a short lesson generation call.
-        autoReport = false;
-        const answered = new Set(state.attempts.filter((a) => a.correct != null).map((a) => a.account));
-        (async () => {
-          for (const m of state.members) if (answered.has(m.account) && !m.report) await report(m.account, roomId);
-          if (roomId === room) notify("Анализ завершён. Откройте отчёты в строках учеников.");
-        })();
-      }
     } catch (error) {
       if (roomId !== room) return;
       if (error.status === 404) {
@@ -327,17 +318,21 @@ window.LessonPracticeHost = (() => {
     if (!root || !SITE.adminKey()) return;
     root.hidden = false;
     root.innerHTML = `<section class="cr-card">
-      <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p>${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Раздайте одну ссылку. Откройте презентацию и нажмите «Показать с этого слайда»."}</p>
+      <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p class="cr-sub">${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Ссылка появится при отправке первого вопроса. Её можно подготовить заранее."}</p>
       <p data-lp-current role="status" hidden></p>
-      <div class="lp-control"><button class="btn" type="button" data-lp-new>Открыть практику</button>
+      <div class="lp-control"><button class="btn" type="button" data-lp-new>Подготовить ссылку заранее</button>
         <button class="btn ghost" type="button" data-lp-retry hidden>Повторить восстановление</button>
         <div data-lp-panels class="lp-control" hidden>
-          <button class="btn" data-lp-return type="button" hidden></button>
-          <button class="btn ghost" data-lp-advance type="button" hidden></button>
-          <a class="btn ghost" data-lp-link></a>
-          <button class="btn ghost" data-lp-copy type="button">Копировать ссылку</button>
-          <a class="btn ghost" data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a>
-          <button class="btn ghost" data-lp-finish type="button">Завершить и запустить анализ</button></div></div>
+          <div class="lp-home-actions" role="group" aria-label="Ход практики">
+            <button class="btn" data-lp-return type="button" hidden></button>
+            <button class="btn ghost" data-lp-advance type="button" hidden></button></div>
+          <div class="lp-home-actions" role="group" aria-label="Подключение к практике">
+            <button class="btn ghost" data-lp-copy type="button">Копировать ссылку для учеников</button>
+            <details class="cr-manage"><summary>Открыть ссылки</summary>
+              <div class="cr-acts"><a data-lp-link></a>
+                <a data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a></div>
+            </details></div>
+          <button class="btn ghost lp-home-end" data-lp-finish type="button">Завершить практику</button></div></div>
       <p data-lp-view-notice hidden></p><p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
     panels = root.querySelector("[data-lp-panels]"); status = root.querySelector("[data-lp-status]"); roster = root.querySelector(".lp-roster");
     monitorLink = root.querySelector("[data-lp-monitor]"); studentLink = root.querySelector("[data-lp-link]");
@@ -368,7 +363,9 @@ window.LessonPracticeHost = (() => {
       setTimeout(tick, document.hidden || closed ? 8000 : 2500);
     })();
     document.addEventListener("ls-change", () => {
-      if (activeLesson && !window.LESSON?.session()) { activeLesson = ""; finish(); }
+      const session = window.LESSON?.session();
+      if (activeLesson && !session) { activeLesson = ""; finish(); }
+      else if (!activeLesson && session && room && !closed && !restoring && !hostId) activeLesson = session.id;
     });
   }
   function key(deck) { return "lp-slide:" + deck.id + ":" + deck.n + ":" + (deck.revision || deck.at || ""); }
@@ -457,7 +454,7 @@ window.LessonPracticeHost = (() => {
   async function publishSlide(lesson, index, draft, answer, visible = () => true, material) {
     const payload = await slidePayload(lesson, index, draft, answer, material);
     if (!visible()) return;
-    const id = await create(lesson.title);
+    const id = await create(window.LESSON?.session()?.group || lesson.title);
     const revision = ++dispatchNumber;
     const send = dispatch.catch(() => {}).then(async () => {
       if (revision !== dispatchNumber || id !== room || !visible()) return;
@@ -544,10 +541,10 @@ window.LessonPracticeHost = (() => {
           dialog.close();
         } else if (currentQuestion) {
           const choice = { part: part.value, number: currentQuestion.n };
-          const show = () => { saveMapping(deck, index, choice); publish(deck, index, lesson, choice); };
+          await create(window.LESSON?.session()?.group || lesson.title);
+          saveMapping(deck, index, choice);
+          await publish(deck, index, lesson, choice);
           dialog.close();
-          if (!room || closed) newRoom(lesson.title, show);
-          else show();
         }
       } catch (error) { message.textContent = error.message; }
       finally { saving = false; update(); }
@@ -753,7 +750,7 @@ window.LessonPracticeHost = (() => {
       notify("Готовлю четыре вопроса холодного старта…");
       const questions = await coldPayload(lesson, deck, readText, readSlide);
       if (!visible()) return;
-      const id = await create(lesson.title);
+      const id = await create(window.LESSON?.session()?.group || lesson.title);
       const revision = ++dispatchNumber;
       const send = dispatch.catch(() => {}).then(async () => {
         if (revision !== dispatchNumber || id !== room || !visible()) return;
@@ -878,7 +875,7 @@ window.LessonPracticeHost = (() => {
         else { actionName = "show"; body = await exercisePayload(controls, slide); refs = [body.ref]; }
       }
       if (plan !== queue || !box.isConnected) return;
-      const id = await create(lesson.title);
+      const id = await create(window.LESSON?.session()?.group || lesson.title);
       if (plan !== queue || !box.isConnected) return;
       const revision = ++dispatchNumber;
       const send = dispatch.catch(() => {}).then(async () => {
@@ -905,19 +902,27 @@ window.LessonPracticeHost = (() => {
       links();
     }
   }
-  function attachQueue(box, bar, context) {
+  function attachQueue(box, preparation, bar, context) {
     const label = el("span"); label.className = "lp-queue-state"; label.setAttribute("role", "status");
     const controls = { ...context, box, label };
     controls.setup = action("План урока", () => editQueue(controls));
     controls.setup.setAttribute("aria-haspopup", "dialog");
     controls.prev = action("Назад по плану", () => changeStage(controls, -1));
     controls.next = action("Начать по плану", () => changeStage(controls, 1));
-    bar.append(controls.setup, controls.prev, controls.next, label);
+    preparation.append(controls.setup);
+    bar.append(controls.prev, controls.next, label);
     return controls;
   }
   function attach(box, deck, lesson, current, readText, readSlide, jump) {
     if (!lesson || !SITE.adminKey()) return;
-    const bar = el("div"); bar.className = "lp-control dk-bar";
+    const bar = el("div"); bar.className = "lp-control dk-bar dk-practice";
+    const questions = el("div"); questions.className = "dk-actions";
+    questions.setAttribute("role", "group"); questions.setAttribute("aria-label", "Вопросы для класса");
+    const connection = el("div"); connection.className = "dk-actions";
+    connection.setAttribute("role", "group"); connection.setAttribute("aria-label", "Связь с классом");
+    const preparation = el("details"); preparation.className = "dk-prep";
+    const prepActions = el("div"); prepActions.className = "dk-actions";
+    preparation.append(el("summary", "Подготовка"), prepActions);
     const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, readSlide, pick));
     pick.className = "lp-show-slide";
     const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
@@ -928,7 +933,8 @@ window.LessonPracticeHost = (() => {
     const monitor = el("a", "Монитор преподавателя"); monitor.target = "_blank"; monitor.rel = "noopener";
     const status = el("small"); status.setAttribute("role", "status");
     const state = el("small"); state.className = "lp-class-state"; state.setAttribute("role", "status");
-    bar.append(pick, manual);
+    questions.append(pick, next);
+    prepActions.append(manual);
     if (readSlide) {
       const material = action("Материал слайда", async () => {
         if (await SlideMaterialPreview.open(deck, current(), readSlide, readText, material)) {
@@ -940,7 +946,7 @@ window.LessonPracticeHost = (() => {
         material.focus();
       }));
       ready.setAttribute("aria-haspopup", "dialog");
-      bar.append(material, ready);
+      prepActions.append(material, ready);
     }
     if (coldPart(lesson) || deck.uploaded) {
       const start = action("Холодный старт · 4 вопроса", async () => {
@@ -948,10 +954,14 @@ window.LessonPracticeHost = (() => {
         try { await startCold(lesson, deck, readText, readSlide, () => box.isConnected); }
         finally { start.disabled = false; }
       });
-      bar.append(start);
+      questions.append(start);
     }
-    const queueControls = readSlide ? attachQueue(box, bar, { deck, lesson, readText, readSlide, jump }) : null;
-    bar.append(next, copy, monitor, state, status); box.querySelector(".dk-bar").after(bar);
+    const plan = el("div"); plan.className = "dk-actions dk-plan";
+    const queueControls = readSlide ? attachQueue(box, prepActions, plan, { deck, lesson, readText, readSlide, jump }) : null;
+    connection.append(copy, monitor);
+    bar.append(questions, connection, preparation);
+    if (queueControls) bar.append(plan);
+    bar.append(state, status); box.querySelector(".dk-bar").after(bar);
     deckUIs.set(box, { monitor, copy, status, state, advance: next, queue: queueControls });
     links();
   }

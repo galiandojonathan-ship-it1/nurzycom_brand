@@ -1,7 +1,7 @@
 // «Подготовить урок» (teacher.html) + «Пульт урока» (classroom.html): the parts submitted since the last lesson with a group are
 // ticked and sent; a second press finds nothing new; the lesson home page starts a lesson in one tap, lists the review, shows the
 // lesson tiles with a presentation (built here with deckpack.mjs into the local copy only), the presentation opens full screen,
-// moves with the keys, records the slides on the lesson timeline and takes drawings; the words card shows the deck «VL».
+// moves with the keys, records the slides on the lesson timeline and takes drawings; the vocabulary page shows the deck «VL».
 // Stand-in on 8768 with the REAL data copy; group2.csv as for t_lsmist.js.
 // usage: node t_classroom.js <real copy dir> <key.b64> [desktop|phone]
 const { chromium, devices } = require("playwright"); const { seed, page } = require("./cbseed"); const { execFileSync } = require("child_process");
@@ -47,9 +47,15 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   await lp.goto(B + "classroom.html", { waitUntil: "load" }); await lp.waitForSelector("#cr-tiles .cr-tile", { timeout: 30000 });
   const chips = await lp.$$eval("#cr-now .cr-chip", (a) => a.map((x) => x.textContent.trim()));
   ok(chips.some((c) => /Начать: SAT Verbal · вечер/.test(c)), "hero: one tap to start with the group · " + chips.join(" | "));
+  const other = lp.locator("#cr-now [data-cr-groups] summary");
+  const custom = lp.locator("#cr-now [data-ask]");
+  ok(await other.isVisible() && !(await custom.isVisible()), "other groups start collapsed");
+  await other.press("Enter");
+  ok(await custom.isVisible(), "keyboard opens the group choices");
+  await other.press("Enter");
   ok(/SAT Verbal · вечер/.test(await lp.textContent("#cr-rv")), "review card lists the prepared review");
-  const words = (await lp.textContent("#cr-words")).replace(/\s+/g, " ");
-  ok(/interspersing\s*— перемежать.*в словаре/.test(words) && /zephyrous\s*ждёт разбора/.test(words) && /Слова с уроков» · \d+ слов/.test(words), "words card: a defined word, a waiting word, the VL deck · " + words.slice(0, 160));
+  ok(!(await lp.$("#cr-words")), "the vocabulary page is the entry point for lesson words");
+  ok(await lp.getAttribute("#cr-rv", "open") === null, "prepared reviews are collapsed by default");
   ok(!(await lp.$(".ls-bar [data-a='home']")), "the bar has no «Пульт урока» button on the home page itself");
   await lp.click('#cr-now [data-start="SAT Verbal · вечер"]'); await lp.waitForSelector("#cr-now .live");
   ok(/Идёт урок · SAT Verbal · вечер/.test(await lp.textContent("#cr-now")), "lesson started from the hero");
@@ -80,11 +86,12 @@ let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); 
   // reopening goes back to the last slide
   await lp.click(".cr-panel [data-deck]"); await lp.waitForTimeout(800); ok((await lp.textContent("#dk-pos")).trim() === "3 / 3", "reopened at the last slide shown"); await lp.keyboard.press("Escape");
   // the review opens from the card, then the lesson ends from the hero
+  await lp.click('#cr-rv summary');
   await lp.click('#cr-rv [data-rv]'); await lp.waitForSelector(".lm .lm-card", { timeout: 15000 }); ok(/SAT Verbal · вечер/.test(await lp.textContent(".lm-h h2")), "review opens from the card");
   await lp.keyboard.press("Escape"); await lp.waitForTimeout(200);
   const ov = await lp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth); ok(ov <= 0, "no sideways scroll: " + ov);
   await lp.screenshot({ path: `classroom_${dev}.png`, fullPage: true });
-  await lp.click('#cr-now [data-end]'); await lp.click(".ls-pop .ls-go"); await lp.waitForSelector('#cr-now [data-ask]');
+  await lp.click('#cr-now [data-end]'); await lp.click(".ls-pop .ls-go"); await other.waitFor();
   ok(true, "lesson ended from the hero");
   // vocabulary page lists the new deck
   await lp.goto(B + "vocab.html?l=VL", { waitUntil: "load" }); await lp.waitForTimeout(1500);
