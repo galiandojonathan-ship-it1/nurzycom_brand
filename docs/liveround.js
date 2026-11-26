@@ -77,7 +77,7 @@
     const shuffle = fields.namedItem("shuffle");
     dialog.querySelector("[data-title]").textContent = set.title;
     first.max = String(set.questions.length);
-    count.value = Math.min(Number(saved.count) || 10, set.questions.length, 100);
+    count.value = Math.min(set.defaultCount ?? (Number(saved.count) || 10), set.questions.length, 100);
     seconds.value = Number(saved.seconds) || 45;
     strict.checked = saved.strict !== false;
     selfPaced.checked = saved.selfPaced !== false;
@@ -131,7 +131,9 @@
   function mount(anchor, selection) {
     if (!isLesson()) return;
     const target = document.getElementById(anchor);
-    if (!target || document.getElementById("live-" + anchor)) return;
+    if (!target) return;
+    const existing = document.getElementById("live-" + anchor);
+    if (existing) return existing;
     const button = document.createElement("button");
     button.id = "live-" + anchor;
     button.type = "button";
@@ -151,6 +153,7 @@
       finally { button.disabled = false; }
     };
     target.after(button, status);
+    return button;
   }
   window.LiveRound = { bundle, workbook, mount, create };
 })();
