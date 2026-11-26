@@ -29,9 +29,9 @@
 .types span{font:11px var(--mono);letter-spacing:.06em;border:1px solid var(--studio);padding:5px 8px;color:var(--stone)}
 /* review */
 .rev{border-top:1px solid var(--studio)}
-.rev details{border-bottom:1px solid var(--studio)}
-.rev summary{list-style:none;display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer}
-.rev summary::-webkit-details-marker{display:none}
+.rev>details{border-bottom:1px solid var(--studio)}
+.rev>details>summary{list-style:none;display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer}
+.rev>details>summary::-webkit-details-marker{display:none}
 .rev .mk{flex:none;width:30px;height:30px;display:grid;place-items:center;font:13px var(--mono);border:1px solid var(--ink)}
 .rev .mk.ok{background:var(--ink);color:var(--paper)}
 .rev .mk.no{border-style:dashed;border-color:var(--stone);color:var(--stone)}
@@ -43,6 +43,9 @@
 .rbody{padding:4px 0 22px}
 .expl{background:var(--mist);padding:16px;margin-top:6px;font-size:15px;line-height:1.6}
 .expl .label{display:block;margin-bottom:6px}
+.expl-traps{margin-top:8px}
+.expl-traps summary{cursor:pointer;width:fit-content;padding-block:8px}
+.expl-traps ul{margin:4px 0 0;padding-inline-start:20px}
 .ropt{display:flex;gap:10px;padding:8px 10px;border:1px solid var(--mist);margin-bottom:4px;font-size:15px}
 .ropt .lt{font:13px var(--mono);flex:none;width:18px}
 .ropt.right{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
@@ -140,7 +143,7 @@
 <script src="tools.js?v=202611240557"></script>
 <script src="livepractice.js?v=202611240557"></script>
 <script src="lesson-practice-student.js?v=202611240557"></script>
-<script src="practice.js?v=202611260010"></script>
+<script src="practice.js?v=202611261045"></script>
 <script src="gloss.js?v=202611240557"></script>
 <script src="dict.js?v=202611240557"></script>
 </body>

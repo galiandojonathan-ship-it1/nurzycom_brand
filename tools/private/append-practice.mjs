@@ -18,6 +18,8 @@ const key = Buffer.from(readFileSync(keyPath, "utf8").trim(), "base64");
 assert.equal(key.length, 32, "Expected a 256-bit course key");
 const answerHash = (salt, i, a) => createHash("sha256").update(`${salt}:${i}:${a}`).digest("hex").slice(0, 16);
 const text = (value) => typeof value === "string" && value.trim().length > 0;
+const validDistractors = (traps, key) => traps && typeof traps === "object" && Object.keys(traps).length === 3 &&
+  [..."ABCD"].every((letter) => letter === key ? !Object.hasOwn(traps, letter) : Object.hasOwn(traps, letter) && text(traps[letter]));
 
 function seal(data) {
   const iv = randomBytes(12);
@@ -73,6 +75,9 @@ function verifyCatalog(catalog) {
       } else if (gradingLetters.length === 1 && explanation.a !== gradingLetters[0]) {
         issue(ref, "The review key and the grading key disagree.");
       }
+      if (explanation && Object.hasOwn(explanation, "traps") && !validDistractors(explanation.traps, explanation.a)) {
+        issue(ref, "The review has invalid distractor explanations.");
+      }
     }
   }
   console.log(`Checked ${checked} questions in ${catalog.sets.length} sets. Issues: ${errors}.`);
@@ -107,8 +112,7 @@ function appendSet(catalog, authorPath, outputPath) {
     assert(Array.isArray(o) && o.length === 4 && o.every(text) && new Set(o).size === 4, number);
     assert(Object.hasOwn(keyCounts, a), `${number} has an invalid answer`);
     keyCounts[a]++;
-    assert.deepEqual(Object.keys(traps).sort(), [..."ABCD"].filter((letter) => letter !== a), `${number} needs three distractor explanations`);
-    assert(Object.values(traps).every(text), number);
+    assert(validDistractors(traps, a), `${number} needs three distractor explanations`);
 
     const marked = new Set();
     const richText = [s, ...o, ...b.flatMap((block) => block.k === "p" || block.k === "ul" ? block.v : [])];
@@ -126,7 +130,7 @@ function appendSet(catalog, authorPath, outputPath) {
     assert(marked.size >= 5, `${number} needs at least five distinct course words`);
     assert.deepEqual(w, [...marked], `${number} glossary list does not match the passage and choices`);
     const h = answerHash(salt, i, a);
-    return { i, b, s, o, h, x: seal({ a, t, x }).toString("base64"), w };
+    return { i, b, s, o, h, x: seal({ a, t, x, traps }).toString("base64"), w };
   });
   assert(Object.values(keyCounts).every((count) => count === 3), "Distribute the 12 keys evenly across A–D");
 

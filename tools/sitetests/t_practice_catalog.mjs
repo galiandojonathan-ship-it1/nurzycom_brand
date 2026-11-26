@@ -37,6 +37,9 @@ try {
   const valid = verify([... "ABCD"].map((letter, i) => question(i + 1, letter)));
   assert.equal(valid.status, 0, valid.stderr);
   assert.match(valid.stdout, /Checked 4 questions in 1 sets\. Issues: 0/);
+  const withDistractors = { ...question(1, "A"),
+    x: seal({ a: "A", x: "private example", traps: { B: "Reason 1", C: "Reason 2", D: "Reason 3" } }).toString("base64") };
+  assert.equal(verify([withDistractors]).status, 0);
 
   const invalid = verify([
     question(1, "B", "D"),
@@ -44,6 +47,7 @@ try {
     { ...question(3, "C"), x: "not-a-review-record" },
     { ...question(4, "D"), o: ["One", "Two", "Three", "One "] },
     question(4, "A"),
+    { ...question(6, "C"), x: seal({ a: "C", x: "private example", traps: { A: "Reason 1" } }).toString("base64") },
   ]);
   assert.equal(invalid.status, 1);
   assert.match(invalid.stderr, /position 1: The review key and the grading key disagree/);
@@ -51,7 +55,8 @@ try {
   assert.match(invalid.stderr, /position 3: The review record could not be opened/);
   assert.match(invalid.stderr, /position 4: Expected four distinct answer choices/);
   assert.match(invalid.stderr, /position 5: Invalid or repeated question number/);
-  assert.match(invalid.stdout, /Issues: 5/);
+  assert.match(invalid.stderr, /position 6: The review has invalid distractor explanations/);
+  assert.match(invalid.stdout, /Issues: 6/);
   console.log("PASS read-only hard-practice catalog verification");
 } finally {
   rmSync(dir, { recursive: true });
