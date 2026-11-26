@@ -30,8 +30,14 @@
       if (C.nowHTML === html) return;
       const focused = document.activeElement;
       const identity = focused?.tagName === "BUTTON" && box.contains(focused) ? Object.entries(focused.dataset) : [];
+      const previousGroups = box.querySelector("[data-cr-groups]");
+      const groupsOpen = previousGroups?.open;
+      const groupsFocused = previousGroups?.firstElementChild === focused;
       C.nowHTML = html;
       box.innerHTML = html;
+      const groups = box.querySelector("[data-cr-groups]");
+      if (groups && groupsOpen) groups.open = true;
+      if (groups && groupsFocused) groups.firstElementChild.focus({ preventScroll: true });
       if (identity.length) {
         [...box.querySelectorAll("button")].find((button) => identity.every(([key, value]) => button.dataset[key] === value))?.focus({ preventScroll: true });
       }
@@ -47,8 +53,14 @@
     const names = [], seen = new Set(), add = (v, label) => { const k = v.trim().toLowerCase(); if (!v || seen.has(k)) return; seen.add(k); names.push([v, label]); };
     reviews().forEach((r) => add(r.group, shown(r)));
     ((window.LESSON && LESSON.groups()) || []).slice(0, 6).forEach((g) => add(g, g));
-    update(`${names.slice(0, 8).map(([v, label]) => `<button type="button" class="cr-chip" data-start="${esc(v)}">Начать: ${esc(label)}</button>`).join("")}
-      <button type="button" class="cr-chip main" data-ask="1">${names.length ? "Другой урок…" : "Начать урок"}</button>`);
+    if (!names.length) {
+      update('<button type="button" class="cr-chip main" data-ask="1">Начать урок</button>');
+      return;
+    }
+    const start = ([group, label], primary = false) => `<button type="button" class="cr-chip${primary ? " main" : ""}" data-start="${esc(group)}">Начать: ${esc(label)}</button>`;
+    update(`${start(names[0], true)}<details data-cr-groups class="cr-other-lessons"><summary class="cr-chip">Другой урок</summary>
+      <div class="cr-group-options">${names.slice(1, 8).map((item) => start(item)).join("")}
+        <button type="button" class="cr-chip" data-ask="1">Указать группу или ученика…</button></div></details>`);
   }
 
   // ---------- the page
