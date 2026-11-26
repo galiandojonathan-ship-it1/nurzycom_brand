@@ -510,7 +510,9 @@
     for (const [id, rs] of Object.entries(mocks)) {   // the latest run of a test: its sections sent within 15 minutes of each other
       const last = rs[rs.length - 1], run = {};
       rs.filter((r) => Math.abs((+r.ts || 0) - (+last.ts || 0)) < 9e5).forEach((r) => (run[r.sec2] = r));
-      const v = ["rw", "math"].filter((x) => run[x]).map((x) => { const r = run[x]; return `${x === "rw" ? "RW" : "Math"} ${r.a}/${r.b} ≈ ${window.SATSCALE ? SATSCALE.section(x, r.hard, r.a) : "?"}`; }).join(" · ");
+      const v = ["rw", "math"].filter((x) => run[x]).map((x) => { const r = run[x], name = x === "rw" ? "RW" : "Math";
+        if (r.mock?.skipped.size) return `${name} ${r.a}/${Math.max(0, r.b - r.mock.skipped.size)} · неполный тест`;
+        return `${name} ${r.a}/${r.b} ≈ ${window.SATSCALE ? SATSCALE.section(x, r.hard, r.a) : "?"}`; }).join(" · ");
       put(`mk_last_${n}_${id}`, v, +last.ts || 0);
       rs.forEach((r) => cnt(`mk_att_${n}_${id}_${r.sec2}`, +r.ts || 0));
     }

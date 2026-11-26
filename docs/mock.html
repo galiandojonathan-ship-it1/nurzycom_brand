@@ -79,6 +79,7 @@
 .dom span.mono{font-size:13px;white-space:nowrap}
 .revmod{margin-top:26px}
 .onlybad{display:flex;gap:10px;align-items:center;margin-top:22px;font-size:15px;cursor:pointer}.onlybad input{width:18px;height:18px;accent-color:var(--ink)}
+#skip-question:disabled{opacity:.55}
 .only-bad .rv:not(.bad){display:none}
 .rv{border-bottom:1px solid var(--studio)}
 .rv summary{list-style:none;display:flex;gap:12px;align-items:center;padding:12px 0;cursor:pointer}
@@ -202,7 +203,7 @@
     <div class="qwrap" id="wrap">
       <div class="passage qhtml" id="passage"></div>
       <div class="ask">
-        <div class="qhead"><span><span class="qnum" id="qnum" tabindex="-1"></span><span class="qn" id="qn"></span></span><span class="qtools"><button class="flag elim-tg" id="elim" aria-pressed="false" title="Показать кнопки, чтобы вычёркивать неверные варианты">Вычеркнуть</button><button class="flag" id="flag" aria-pressed="false">Отметить</button></span></div>
+        <div class="qhead"><span><span class="qnum" id="qnum" tabindex="-1"></span><span class="qn" id="qn"></span></span><span class="qtools"><button class="flag elim-tg" id="elim" aria-pressed="false" title="Показать кнопки, чтобы вычёркивать неверные варианты">Вычеркнуть</button><button class="flag" id="flag" aria-pressed="false">Отметить</button><button class="flag" type="button" id="skip-question" aria-pressed="false" title="Исключить вопрос из анализа навыков">Пропустить</button></span></div>
         <div class="stem qhtml" id="stem"></div>
         <div id="opts"></div>
       </div>
@@ -255,7 +256,7 @@
 <script src="gloss.js?v=202611240557"></script>
 <script src="liveround.js?v=202611240557"></script>
 <script src="numeric-answer.js?v=202611252226"></script>
-<script src="mock.js?v=202611252226"></script>
+<script src="mock.js?v=202611261621"></script>
 <script src="bbshare.js?v=202611240557"></script>
 <script src="bbpdf.js?v=202611240557"></script>
 <script src="bluebook-import.js?v=202611240557"></script>

@@ -26,11 +26,15 @@
       if (!/^([VMXTDUA]\d\d|P[TR]\d\d?|MD|VA)$/.test(lesson) || !sc) return;
       const part = g("part"), pid = (part.match(/^p\d+/) || [""])[0];
       if (lesson[0] === "P") lesson += /^Math/.test(part) ? "·Math" : "·RW";   // mock tests: one row per section
-      const answers = g("answers").split(/\s+/).filter(Boolean).map((t) => { const [n, v = "-"] = t.split(":"); return { n: /\./.test(n) ? n : Number(n), tries: v === "-" ? [] : v.split(">") }; });
+      const entries = FORMKIT.parseAnswers(g("answers")), mock = lesson[0] === "P" ? FORMKIT.mockCoverage(part, entries) : null;
+      const answers = entries.filter((a) => !mock?.skipped.has(String(a.n)));
+      const b = Math.max(0, +sc[2] - (mock?.skipped.size || 0));
+      const wrong = g("wrong").split(",").map((x) => x.trim()).filter((x) => x && !mock?.skipped.has(x))
+        .map((x) => /^\d+$/.test(x) ? Number(x) : x);
       const s2 = part.match(/2-я: (\d+)\/(\d+)/);   // on-screen parts also report the score after the second attempt
       rows.push({ ts: parseDate(g("ts"), order), name: g("student"), raw: g("student"), key: norm(g("student")), lesson, kind: lesson[0], part, pid, screen: /экран/.test(part), second: s2 ? (100 * +s2[1]) / +s2[2] : null,
-        a: +sc[1], b: +sc[2], pct: +sc[2] ? (100 * +sc[1]) / +sc[2] : 0, wrong: g("wrong").split(",").map((x) => x.trim()).filter(Boolean).map((x) => (/^\d+$/.test(x) ? Number(x) : x)), sec: Number(g("seconds")) || 0,
-        attempt: Number(g("attempt")) || 1, answers });
+        a: +sc[1], b, pct: b ? (100 * +sc[1]) / b : null, wrong, sec: Number(g("seconds")) || 0,
+        attempt: Number(g("attempt")) || 1, answers, mock });
     });
     if (!rows.length) throw new Error("Строки есть, но ни одна не похожа на результат с сайта.");
     rows.sort((x, y) => (x.ts || 0) - (y.ts || 0));
@@ -61,10 +65,19 @@
     if (r.kind === "U") { const l = lessonOf(r.lesson); return `Окружность · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "A") { const l = lessonOf(r.lesson); return `Архаичные слова · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "D") { const l = lessonOf(r.lesson); return `Desmos · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
-    if (r.kind === "P") return `${mockName(r.lesson).replace("·", " · ")} · ${r.part.replace(/^\S+ · /, "")}`;
+    if (r.kind === "P") {
+      let part = r.part;
+      if (r.mock?.modules.includes(1)) part = part.replace(/M1 \d+\/\d+/, "M1 без ответов");
+      if (r.mock?.modules.includes(2)) part = part.replace(/M2 (\S+) \d+\/\d+/, "M2 $1, без ответов");
+      return `${mockName(r.lesson).replace("·", " · ")} · ${part}`;
+    }
     if (r.kind === "T") { const t = D.texts.find((x) => x.id === r.lesson); return `Текст · ${t ? t.title : r.lesson}`; }
     const p = partOf(r.lesson, r.pid); return `${r.lesson} · ${p ? p.title : r.part}`;
   };
+  const mockEstimate = (r) => r.kind === "P" && !r.mock?.skipped.size && window.SATSCALE
+    ? SATSCALE.section(/·Math$/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a) : null;
+  const resultOf = (r) => (r.b ? `${r.a}/${r.b} · ${pct(r.pct)}` : "Без ответов") +
+    (r.mock?.skipped.size ? " · неполный тест" : "");
   const best = (rows) => rows.reduce((m, r) => (m === null || r.pct > m.pct ? r : m), null);
   // per-question first-try misses, with the skill of each question from lessons.json
   function skillStats(rows) {
@@ -140,7 +153,7 @@
       ["С первой попытки", pct(mean(hw30.map((r) => r.pct))), "средний результат ДЗ за 30 дней"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана за 30 дней; на SAT ≈71 с (Verbal), 95 с (Math)"]]);
     html += `<h2>Активность</h2><p class="hint">Сдачи по дням за последние 30 дней.</p><div class="chart" id="ch-act"></div>`;
     const recent = [...D.rows].reverse().slice(0, 12);
-    html += `<h2>Последние сдачи</h2>` + table(["Когда", "Ученик", "Что", "Результат", "Время"], recent.map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${r.a}/${r.b} · ${pct(r.pct)}`, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { click: true, num: [3, 4] });
+    html += `<h2>Последние сдачи</h2>` + table(["Когда", "Ученик", "Что", "Результат", "Время"], recent.map((r) => ({ k: r.key, cells: [when(r.ts), esc(r.name), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : ""), `${resultOf(r)}`, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { click: true, num: [3, 4] });
     html += `<h2>Что повторить</h2><p class="hint">Навыки с самым низким результатом с первой попытки у всех учеников (ДЗ, последние 30 дней).</p><div id="ch-sk"></div>`;
     $("v-overview").innerHTML = html;
     const days = Array.from({ length: 30 }, (_, i) => { const d = new Date(now - (29 - i) * DAY); d.setHours(0, 0, 0, 0); return d; });
@@ -180,7 +193,7 @@
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     const lesHTML = `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     const skHTML = `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    const hisHTML = `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), `${r.a}/${r.b} · ${pct(r.pct)}` + (r.kind === "P" && window.SATSCALE ? ` · ≈ ${SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    const hisHTML = `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), esc(resultOf(r)) + (mockEstimate(r) ? ` · ≈ ${mockEstimate(r)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     // tabs (Nurassyl, 2026-11-23: «сделай эргономичнее… вкладки "анализ", "графики", "сдачи"»); the choice is kept in this browser
     const TABS = [["over", "Обзор"], ["charts", "Графики"], ["anal", "Анализ"], ["subs", "Сдачи"], ["fix", "Работа над ошибками"]];
     const cur = TABS.some(([k]) => k === D.stTab) ? D.stTab : (localStorage.getItem("st_tab") || "over"), tab = TABS.some(([k]) => k === cur) ? cur : "over";
@@ -218,7 +231,7 @@
   function progObs(s, TAGS) {
     const out = [];
     for (const r of s.rows) {
-      const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b ? r.sec / r.b : 0;
+      const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b && !r.mock?.skipped.size ? r.sec / r.b : 0;
       let base;
       if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
         base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
@@ -415,7 +428,7 @@
   async function reportData(s) {
     const hw = s.rows.filter((r) => "VM".includes(r.kind)), NAME = (window.PVIEW && PVIEW.NAME) || {};
     const rows = s.rows.map((r) => ({ t: +r.ts, what: whatOf(r), a: r.a, b: r.b, pct: r.pct, lesson: r.lesson, kind: "VM".includes(r.kind) ? "hw" : r.kind === "P" ? "mock" : "other",
-      est: r.kind === "P" && window.SATSCALE ? SATSCALE.section(/Math/.test(r.lesson) ? "math" : "rw", /M2 сложный/.test(r.part), r.a) : null }));
+      est: mockEstimate(r) }));
     const strong = [], weak = [];
     if (D.prog && D.prog.key === s.key) {
       const res = D.prog.res, n = res.snaps.length - 1, subs = res.subs.filter((x) => x.n >= 3 && x.series[n] != null && NAME[x.k]);
@@ -610,7 +623,7 @@
       const r = rs[rs.length - 1], m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e", ans = {}, bad = new Set(r.wrong.map(String));
       r.answers.forEach((a) => { const [k, n] = String(a.n).split("."); if (n) ans[`${k === "1" ? "m1" : m2}.${n}`] = a.tries[0] || ""; });
       const raw = (m) => +((r.part.match(m === "m1" ? /M1 (\d+)\/(\d+)/ : /M2 \S+ (\d+)\/(\d+)/) || [])[1] || 0);
-      return { r, count: rs.length, m2, ans, bad, m1: raw("m1"), m2raw: raw("m2"), est: window.SATSCALE ? SATSCALE.section(sec, m2 === "m2h", r.a) : null };
+      return { r, count: rs.length, m2, ans, bad, m1: raw("m1"), m2raw: raw("m2"), est: mockEstimate(r) };
     }).sort((x, y) => x.r.name.localeCompare(y.r.name, "ru"));
   }
   const tnum = (m) => +m.id.replace(/\D/g, "");   // the five groups of mock.html, in its order
@@ -626,7 +639,7 @@
     const S = mock.sections.find((s) => s.k === T.sec), runs = mockRuns(mock.id, S.k);
     const solo = !!T.who && !T.others, shown = solo ? runs.filter((x) => x.r.key === T.who) : runs;   // one student: nobody else's answers, names or scores on screen
     const soloName = solo ? ((D.students.find((x) => x.key === T.who) || {}).name || "") : "";
-    const took = (mod) => shown.filter((x) => mod === "m1" || x.m2 === mod);
+    const took = (mod) => shown.filter((x) => (mod === "m1" || x.m2 === mod) && !x.r.mock?.modules.includes(mod === "m1" ? 1 : 2));
     if (!MODN[T.mod]) T.mod = "m1";
     const nSub = (m) => new Set(D.rows.filter((r) => r.lesson.split("·")[0] === m.id).map((r) => r.key)).size;
     let html = `${solo ? '<div class="row" style="margin-top:0"><button class="btn ghost" id="t-back">← Карточка ученика</button></div>' : ""}<h2>Пробные тесты${solo ? ` · ${esc(soloName)}` : ""}</h2><p class="hint">${solo ? "Показаны только ответы этого ученика: ответы, имена и баллы других учеников скрыты. Удобно разбирать ошибки вместе с учеником." : "Все вопросы каждого теста с верным ответом и разбором. Под каждым вопросом — что выбрал каждый ученик (последняя сдача этого раздела). Число на кнопке теста — сколько учеников его сдали."}</p>
@@ -635,7 +648,7 @@
       <div class="chips" id="t-sec" style="margin-top:8px">${mock.sections.map((s) => `<button class="chip" data-s="${s.k}" aria-pressed="${s.k === S.k}">${esc(s.name)}</button>`).join("")}</div>`;
     if (shown.length) {
       html += `<h2>${solo ? "Результат ученика" : `Кто сдал · ${runs.length}`}</h2>` + table(["Ученик", "Когда", "Модуль 1", "Модуль 2", "Верно", "Примерный балл", "Сдач"], shown.map((x) => ({ k: x.r.key,
-        cells: [`<b>${esc(x.r.name)}</b>`, when(x.r.ts), `${x.m1}/${S.n}`, `${x.m2 === "m2h" ? "сложный" : "лёгкий"} · ${x.m2raw}/${S.n}`, `${x.r.a}/${x.r.b} · ${pct(x.r.pct)}`, x.est ? `≈ ${x.est}` : "—", x.count] })), { click: true, num: [2, 4, 5, 6] });
+        cells: [`<b>${esc(x.r.name)}</b>`, when(x.r.ts), x.r.mock?.modules.includes(1) ? "Без ответов" : `${x.m1}/${S.n}`, x.r.mock?.modules.includes(2) ? "Без ответов" : `${x.m2 === "m2h" ? "сложный" : "лёгкий"} · ${x.m2raw}/${S.n}`, esc(resultOf(x.r)), x.est ? `≈ ${x.est}` : "—", x.count] })), { click: true, num: [2, 4, 5, 6] });
     } else html += `<p class="hint" style="margin-top:18px">${solo ? `${esc(soloName)} пока не сдавал(а) этот раздел.` : "Этот раздел пока никто не сдал."} Вопросы и разборы ниже всё равно доступны.</p>`;
     html += `<div class="chips" id="t-mod" style="margin-top:22px">${Object.keys(MODN).map((m) => `<button class="chip" data-d="${m}" aria-pressed="${m === T.mod}">${MODN[m]}${runs.length && !solo ? ` · ${took(m).length}` : ""}</button>`).join("")}</div>
       <div class="row t-filters"><select id="t-who" aria-label="Ученик"><option value="">Все ученики</option>${runs.map((x) => `<option value="${esc(x.r.key)}"${x.r.key === T.who ? " selected" : ""}>${esc(x.r.name)}</option>`).join("")}</select>
@@ -658,7 +671,8 @@
     if (D.view !== "tests" || !$("t-list")) return;   // the view changed while the questions were loading
     const who = took(T.mod), focus = runs.find((x) => x.r.key === T.who);
     let qs = b.mods[T.mod].map((q) => {
-      const ch = who.map((x) => ({ x, a: x.ans[`${T.mod}.${q.n}`] || "", ok: !x.bad.has(`${T.mod === "m1" ? 1 : 2}.${q.n}`) }));
+      const id = `${T.mod === "m1" ? 1 : 2}.${q.n}`;
+      const ch = who.filter((x) => !x.r.mock?.skipped.has(id)).map((x) => ({ x, a: x.ans[`${T.mod}.${q.n}`] || "", ok: !x.bad.has(id) }));
       return { q, ch, right: ch.filter((c) => c.ok).length };
     });
     if (T.bad) qs = qs.filter((o) => o.right < o.ch.length || (focus && o.ch.some((c) => c.x === focus && !c.ok)));
