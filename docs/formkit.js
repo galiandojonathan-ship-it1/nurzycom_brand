@@ -92,6 +92,29 @@
   }
 
   // one result per form row: { ts, raw, lesson, kind, part, pid, a, b, attempt, sec, sec2 (mock section) }
+  function parseAnswers(value) {
+    return value.trim().split(/\s+/).filter(Boolean).map((token) => {
+      const [n, v] = token.split(":");
+      const blank = v === "-" || v === "~";
+      return { n: n.includes(".") ? n : Number(n), tries: !v || blank ? [] : v.split(">"), skipped: v === "~", blank };
+    });
+  }
+  function mockCoverage(part, answers) {
+    const skipped = new Set(answers.filter((a) => a.skipped && /^([12])\.\d+$/.test(a.n)).map((a) => String(a.n)));
+    const modules = [];
+    for (const n of [1, 2]) {
+      const score = part.match(n === 1 ? /\bM1 (\d+)\/(\d+)/ : /\bM2 \S+ (\d+)\/(\d+)/);
+      if (!score || Number(score[1]) !== 0 || Number(score[2]) < 1) continue;
+      const prefix = n + ".", module = answers.filter((a) => String(a.n).startsWith(prefix));
+      // Historical records mark each unanswered position with a dash. Require an intact, fully blank module.
+      const positions = new Set(module.filter((a) => a.blank).map((a) => String(a.n)));
+      if (module.length !== Number(score[2]) || positions.size !== module.length ||
+          !module.every((_, i) => positions.has(prefix + (i + 1)))) continue;
+      modules.push(n);
+      positions.forEach((id) => skipped.add(id));
+    }
+    return { skipped, modules };
+  }
   function rows(text) {
     const all = parseCSV(String(text || "").replace(/^\uFEFF/, "")); if (all.length < 2) return [];
     const head = all[0], body = all.slice(1), c = columns(head, body), out = [];
@@ -100,11 +123,11 @@
     for (const r of body) {
       const g = (k) => (c[k] === undefined ? "" : (r[c[k]] || "").trim());
       const lesson = g("lesson").toUpperCase(), sc = g("score").match(/^(\d+)\/(\d+)$/); if (!/^([VMXTDUA]\d\d|P[TR]\d\d?|MD|VA)$/.test(lesson) || !sc) continue;
-      const part = g("part");
+      const part = g("part"), mock = /^P[TR]/.test(lesson) ? mockCoverage(part, parseAnswers(g("answers"))) : null;
       out.push({ ts: parseDate(g("ts"), order), raw: g("student"), lesson, kind: lesson[0], part, pid: (part.match(/^p\d+/) || [""])[0], a: +sc[1], b: +sc[2],
-        attempt: Number(g("attempt")) || 1, sec: Number(g("seconds")) || 0, sec2: /^P[TR]/.test(lesson) ? (/^Math/.test(part) ? "math" : "rw") : "", hard: /M2 сложный/.test(part) });
+        attempt: Number(g("attempt")) || 1, sec: Number(g("seconds")) || 0, sec2: mock ? (/^Math/.test(part) ? "math" : "rw") : "", hard: /M2 сложный/.test(part), mock });
     }
     return out.sort((x, y) => (x.ts || 0) - (y.ts || 0));
   }
-  window.FORMKIT = { roman, key, group, clean, parseCSV, columns, slashOrder, parseDate, rows };
+  window.FORMKIT = { roman, key, group, clean, parseCSV, columns, slashOrder, parseDate, parseAnswers, mockCoverage, rows };
 })();

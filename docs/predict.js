@@ -39,7 +39,7 @@
     for (const r of rows || []) {
       if (r.kind !== "P" || !scale) continue;
       const sec = /Math/.test(r.lesson) ? "math" : "rw";
-      if (r.answers && r.answers.length && r.answers.filter((a) => !a.tries.length).length > r.answers.length / 2) continue;   // abandoned
+      if (r.mock?.skipped.size || r.answers?.length && r.answers.filter((a) => !a.tries.length).length > r.answers.length / 2) continue;   // abandoned
       out.push({ t: +r.ts, sec, score: scale.section(sec, /M2 сложный/.test(r.part), r.a), src: "mock", label: r.lesson.split("·")[0] });
     }
     for (const d of shares || []) {

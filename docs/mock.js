@@ -162,6 +162,7 @@
     $("stem").innerHTML = (math ? q.stim : "") + q.stem;
     $("qnum").textContent = q.n; $("qn").textContent = `из ${its.length}`;
     $("flag").setAttribute("aria-pressed", String(T.st.mk[mkey()].includes(q.n)));
+    updateSkip(q.n, A[q.n]);
     const out = T.out[q.n] || new Set();
     if (q.t === "mc") {
       $("opts").innerHTML = q.opts.map((o, k) => { const c = "ABCD"[k];
@@ -173,7 +174,7 @@
         <p class="hint" id="m-in-h"></p></div>`;
       const hint = () => { const v = $("m-in").value.trim(); $("m-in-h").textContent = !v ? "Целое, дробь 7/2 или десятичная .75. Смешанные числа (3 1/2) не принимаются."
         : parseSpr(v) === null ? "Формат: 12, -3, 7/2 или .75" : /,/.test(v) ? "На экзамене пишите точку: .5, а не ,5" : "Ответ: " + v; };
-      $("m-in").oninput = () => { const v = $("m-in").value.trim(); if (v) A[q.n] = v; else delete A[q.n]; save(); hint(); renderGrid(); };
+      $("m-in").oninput = () => { const v = $("m-in").value.trim(); if (v) { A[q.n] = v; clearSkip(q.n); } else delete A[q.n]; updateSkip(q.n, v); save(); hint(); renderGrid(); };
       hint();
     }
     glossQ(q, [$("passage"), $("stem")].concat(GIVEAWAY.test(q.sk || "") ? [] : [$("opts")]));
@@ -200,7 +201,22 @@
     $("grid").innerHTML = gridHtml(true);
     $("grid").querySelectorAll("button").forEach((b) => (b.onclick = () => { go(Number(b.dataset.k)); focusQ(); }));
   }
-  function choose(c) { const q = items()[T.cur]; T.st.ans[mkey()][q.n] = c; if (T.out[q.n]) T.out[q.n].delete(c); save(); render(); }
+  const skipped = (key, n) => !!T.st.skips?.[key]?.[n] && !T.st.ans[key]?.[n];
+  function clearSkip(n) { if (T.st.skips?.[mkey()]) delete T.st.skips[mkey()][n]; }
+  function updateSkip(n, answer) {
+    const button = $("skip-question");
+    button.disabled = !!answer;
+    button.setAttribute("aria-pressed", String(skipped(mkey(), n)));
+  }
+  $("skip-question").onclick = () => {
+    const n = items()[T.cur].n, key = mkey();
+    if (T.st.ans[key][n]) return;
+    const marks = ((T.st.skips ||= {})[key] ||= {});
+    if (marks[n]) delete marks[n]; else marks[n] = true;
+    updateSkip(n, "");
+    save();
+  };
+  function choose(c) { const q = items()[T.cur]; T.st.ans[mkey()][q.n] = c; clearSkip(q.n); if (T.out[q.n]) T.out[q.n].delete(c); save(); render(); }
   function strike(c) {
     const q = items()[T.cur], A = T.st.ans[mkey()], o = T.out[q.n] || (T.out[q.n] = new Set());
     if (o.has(c)) o.delete(c); else { o.add(c); if (A[q.n] === c) { delete A[q.n]; save(); } }
@@ -236,7 +252,9 @@
     $("chk-grid").innerHTML = gridHtml(false);
     $("chk-grid").querySelectorAll("button").forEach((b) => (b.onclick = () => { go(Number(b.dataset.k)); focusQ(); }));
     const blank = its.filter((q) => !A[q.n]).map((q) => q.n);
-    $("chk-sum").textContent = `Отвечено: ${its.length - blank.length} из ${its.length}.${blank.length ? ` Без ответа: ${blank.join(", ")}.` : ""}${M.length ? ` Отмечены: ${[...M].sort((a, b) => a - b).join(", ")}.` : ""}`;
+    const intentional = blank.filter((n) => skipped(mkey(), n));
+    const unanswered = blank.filter((n) => !skipped(mkey(), n));
+    $("chk-sum").textContent = `Отвечено: ${its.length - blank.length} из ${its.length}.${unanswered.length ? ` Без ответа: ${unanswered.join(", ")}.` : ""}${intentional.length ? ` Пропущены: ${intentional.join(", ")}.` : ""}${M.length ? ` Отмечены: ${[...M].sort((a, b) => a - b).join(", ")}.` : ""}`;
     show("m-check"); tick(); $("chk-h").focus({ preventScroll: true });
   }
   $("chk-back").onclick = () => { go(T.cur); focusQ(); };
@@ -267,28 +285,37 @@
 
   // ---- results, review and sending
   function modsOf(sec) { const r = T.st.res[sec]; return ["m1", r.m2h ? "m2h" : "m2e"]; }
+  function moduleCoverage(sec, mod) {
+    const key = `${sec}.${mod}`, qs = T.bundles[secInfo(sec).b].mods[mod];
+    const answered = qs.some((q) => !!T.st.ans[key]?.[q.n]);
+    return { answered, eligible: answered ? qs.filter((q) => !skipped(key, q.n)) : [] };
+  }
   function results() {
     clearInterval(T.timer);
     const parts = [], est = {}, skills = [], capped = [];
     $("res-title").textContent = `${T.mock.title} · результат`;
     const secHtml = T.st.secs.map((sec) => {
-      const r = T.st.res[sec], [, m2] = modsOf(sec), b = T.bundles[secInfo(sec).b], hard = m2 === "m2h";
-      const tot = r.m1.raw + r[m2].raw, n = r.m1.n + r[m2].n, secs = r.m1.sec + r[m2].sec, sc = SATSCALE.section(sec, hard, tot);
-      est[sec] = sc; if (!hard) capped.push(sec);
-      parts.push(`${sec === "rw" ? "RW" : "Math"} ${tot}/${n} ≈ ${sc}`);
+      const r = T.st.res[sec], [, m2] = modsOf(sec), hard = m2 === "m2h";
+      const mods = { m1: moduleCoverage(sec, "m1"), [m2]: moduleCoverage(sec, m2) };
+      const tot = r.m1.raw + r[m2].raw, n = mods.m1.eligible.length + mods[m2].eligible.length, secs = r.m1.sec + r[m2].sec;
+      const full = n === r.m1.n + r[m2].n && n > 0, sc = full ? SATSCALE.section(sec, hard, tot) : null;
+      if (full) { est[sec] = sc; if (!hard) capped.push(sec); }
+      const summary = n ? `${tot}/${n}` : "без ответов";
+      parts.push(`${sec === "rw" ? "RW" : "Math"} ${summary}${full ? ` ≈ ${sc}` : " · неполный тест"}`);
       const dom = {}, skl = {};
-      for (const mod of ["m1", m2]) for (const q of b.mods[mod]) {
+      for (const mod of ["m1", m2]) for (const q of mods[mod].eligible) {
         const ok = right(q, T.st.ans[`${sec}.${mod}`][q.n]) ? 1 : 0;
         const d = dom[q.dom] || (dom[q.dom] = [0, 0]); d[1]++; d[0] += ok;
         const s = skl[q.sk] || (skl[q.sk] = { sec, sk: q.sk, a: 0, k: 0 }); s.k++; s.a += ok;
       }
       skills.push(...Object.values(skl));
       const seg = (a, k) => { const f = Math.round((7 * a) / k); return `<span class="seg" aria-label="${a} из ${k}">${Array.from({ length: 7 }, (_, i) => `<i${i < f ? ' class="on"' : ""}></i>`).join("")}</span>`; };
+      const moduleScore = (mod) => mods[mod].answered ? `${r[mod].raw}/${mods[mod].eligible.length}` : "Без ответов";
       return `<div class="secres"><span class="label">${SEC[sec]}</span>
-        <div class="result-grid"><div><span class="label">Примерный балл · 200–800</span><div class="big">${sc}</div><div class="meter"><i style="width:${((sc - 200) / 600) * 100}%"></i></div></div>
-        <div class="stats"><div><span class="label">Модуль 1</span><b>${r.m1.raw}/${r.m1.n}</b></div><div><span class="label">Модуль 2 · ${hard ? "сложный" : "лёгкий"}</span><b>${r[m2].raw}/${r[m2].n}</b></div>
-        <div><span class="label">Верно</span><b>${tot}/${n} · ${Math.round((100 * tot) / n)}%</b></div><div><span class="label">Время</span><b>${Math.floor(secs / 60)} мин ${secs % 60} с</b></div></div></div>
-        <div class="ks"><span class="label">Knowledge and Skills · по разделам</span>${Object.entries(dom).map(([d, [a, k]]) => `<div class="dom"><span>${DOM[d] || d}<small>${k} вопр. · ${Math.round((100 * k) / n)}% теста</small></span>${seg(a, k)}<span class="mono">${a}/${k}</span></div>`).join("")}</div></div>`;
+        <div class="result-grid"><div>${full ? `<span class="label">Примерный балл · 200–800</span><div class="big">${sc}</div><div class="meter"><i style="width:${((sc - 200) / 600) * 100}%"></i></div>` : '<span class="label">Неполный тест</span><p class="hint">Для примерного балла нужны оба модуля без осознанных пропусков.</p>'}</div>
+        <div class="stats"><div><span class="label">Модуль 1</span><b>${moduleScore("m1")}</b></div><div><span class="label">Модуль 2 · ${hard ? "сложный" : "лёгкий"}</span><b>${moduleScore(m2)}</b></div>
+        <div><span class="label">Верно</span><b>${n ? `${summary} · ${Math.round((100 * tot) / n)}%` : "—"}</b></div><div><span class="label">Время</span><b>${Math.floor(secs / 60)} мин ${secs % 60} с</b></div></div></div>
+        ${n ? `<div class="ks"><span class="label">Knowledge and Skills · по разделам</span>${Object.entries(dom).map(([d, [a, k]]) => `<div class="dom"><span>${DOM[d] || d}<small>${k} вопр. · ${Math.round((100 * k) / n)}%</small></span>${seg(a, k)}<span class="mono">${a}/${k}</span></div>`).join("")}</div>` : ""}</div>`;
     }).join("");
     const both = est.rw !== undefined && est.math !== undefined;
     const total = both ? `<div class="total-card"><span class="label">Примерный общий балл</span><div class="big">${est.rw + est.math}</div>
@@ -296,7 +323,7 @@
     // weak spots: the skills with the lowest share of right answers (at least 2 questions, under 80%)
     const weak = skills.filter((s) => s.k >= 2 && s.a / s.k < 0.8).sort((x, y) => x.a / x.k - y.a / y.k || y.k - x.k).slice(0, 4);
     const map = (T.index && T.index.skills) || {};
-    const weakHtml = `<div class="weak"><span class="label">Слабые места · с чего начать</span>${weak.length ? weak.map((s, i) => {
+    const weakHtml = !skills.length ? "" : `<div class="weak"><span class="label">Слабые места · с чего начать</span>${weak.length ? weak.map((s, i) => {
       const l = map[s.sk.toLowerCase()];
       return `<div class="wk"><span class="no">${i + 1}</span><div><b>${esc(s.sk)}</b><small>${SEC[s.sec]} · верно ${s.a} из ${s.k} (${Math.round((100 * s.a) / s.k)}%)</small></div>
         ${l ? `<a class="btn ghost" href="index.html?l=${encodeURIComponent(l.tag)}">Повторить: ${esc(l.title.replace(/^SAT (Verbal|Math) · /, ""))}</a>` : ""}</div>`;
@@ -317,15 +344,15 @@
     r.innerHTML = `<p class="hint rv-how">В вопросах с ошибкой сначала попробуйте ещё раз: выберите другой вариант или введите ответ. Правильный ответ и разбор откроются после верной попытки или по кнопке «Показать ответ». Балл от этого не меняется.</p>
       <label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>
       <label class="onlybad" style="margin-top:8px"><input type="checkbox" id="rv-show"${showAll ? " checked" : ""}> Сразу показывать правильные ответы</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
-      const its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[`${sec}.${mod}`];
+      const key = `${sec}.${mod}`, its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[key], coverage = moduleCoverage(sec, mod);
       return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
-        const a = A[q.n], ok = right(q, a);
+        const a = A[q.n], ok = right(q, a), omitted = !coverage.answered || skipped(key, q.n);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
           return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}${!ok && a === c ? " tried" : ""}" data-l="${c}"${ok ? "" : ' role="button" tabindex="0"'}><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg r">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
         const again = ok ? "" : `<div class="try"><p class="try-h">Попробуйте ещё раз: ${q.t === "mc" ? "выберите другой вариант." : "введите ответ."}</p>
             ${q.t === "mc" ? "" : '<div class="row try-row"><input type="text" class="try-in" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Ваш ответ"><button class="btn try-go" type="button">Проверить</button></div>'}
             <button class="btn ghost try-show" type="button">Показать ответ</button></div><p class="try-fb" aria-live="polite"></p>`;
-        return `<details class="rv${ok ? "" : " bad"}${!ok && !showAll ? " quiz" : ""}" data-sec="${sec}" data-mod="${mod}" data-n="${q.n}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")}<span class="ans-sum"> · верный: ${esc(q.ans)}</span> · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
+        return `<details class="rv${ok || omitted ? "" : " bad"}${!ok && !showAll ? " quiz" : ""}" data-sec="${sec}" data-mod="${mod}" data-n="${q.n}"><summary><span class="mk ${ok ? "ok" : "no"}">${q.n}</span><span><b>${!coverage.answered ? "Модуль без ответов" : omitted ? "Пропущен" : ok ? "Верно" : a ? "Ошибка" : "Без ответа"}</b><br><small>Ваш ответ: ${esc(a || "—")}<span class="ans-sum"> · верный: ${esc(q.ans)}</span> · ${esc(q.sk)}${q.own ? " · авторский вопрос" : ""}</small></span></summary>
           <div class="rbody">${q.stim ? `<div class="qhtml">${q.stim}</div>` : ""}<div class="qhtml">${q.stem}</div>${opts}${again}<div class="sv-expl"><span class="label">${q.own ? "Разбор nurzycom · авторский вопрос" : "Объяснение College Board"}</span><div class="qhtml">${q.rat}</div>${q.dz || ""}</div></div></details>`;
       }).join("")}</div>`;
     }).join("")).join("");
@@ -373,7 +400,11 @@
       for (const sec of todo) {
         const r = T.st.res[sec], [, m2] = modsOf(sec), b = T.bundles[secInfo(sec).b];
         const ans = [], wrong = [];
-        ["m1", m2].forEach((mod, k) => b.mods[mod].forEach((q) => { const a = T.st.ans[`${sec}.${mod}`][q.n]; ans.push(`${k + 1}.${q.n}:${a || "-"}`); if (!right(q, a)) wrong.push(`${k + 1}.${q.n}`); }));
+        ["m1", m2].forEach((mod, k) => b.mods[mod].forEach((q) => {
+          const key = `${sec}.${mod}`, a = T.st.ans[key][q.n], id = `${k + 1}.${q.n}`;
+          ans.push(`${id}:${skipped(key, q.n) ? "~" : a === "~" ? "~~" : a || "-"}`);
+          if (!right(q, a)) wrong.push(id);
+        }));
         const ak = `mk_att_${student()}_${T.st.mid}_${sec}`, attempt = Number(store(ak) || 0) + 1;
         const res = { student: student(), lesson: T.st.mid, part: `${sec === "rw" ? "RW" : "Math"} · M1 ${r.m1.raw}/${r.m1.n} · M2 ${m2 === "m2h" ? "сложный" : "лёгкий"} ${r[m2].raw}/${r[m2].n}`,
           answers: ans.join(" "), score: `${r.m1.raw + r[m2].raw}/${r.m1.n + r[m2].n}`, wrong: wrong.join(","), seconds: String(r.m1.sec + r[m2].sec), attempt: String(attempt) };
