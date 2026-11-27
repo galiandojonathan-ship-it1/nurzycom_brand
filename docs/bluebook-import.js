@@ -77,8 +77,9 @@
     math: ["Algebra", "Advanced Math", "Problem-Solving and Data Analysis", "Geometry and Trigonometry"] };
   function parseMeta(source) {
     const text = String(source || "").replace(/\r\n?/g, "\n").replace(/\u00a0/g, " "), out = {};
-    const h = text.match(/\b(SAT|PSAT\/NMSQT|PSAT 10|PSAT 8\/9)\s+Practice\s+(?:Test\s+)?(\d+)\s*[-–—]\s*([A-Z][a-z]+\.? \d{1,2},? \d{4})/);
-    if (h) { out.program = h[1]; out.num = +h[2]; const t = Date.parse(h[3].replace(/\./, "")); if (!isNaN(t)) out.taken = t; out.title = `${h[1]} Practice ${h[2]}`; }
+    const h = text.match(/\b(SAT|PSAT\/NMSQT|PSAT 10|PSAT 8\/9)\s+Practice\s+(?:Test\s+)?(\d+)\s*[-–—]\s*([A-Z][a-z]+\.? \d{1,2},? \d{4})/)
+      || text.match(/^(SAT|PSAT\/NMSQT|PSAT 10|PSAT 8\/9) Practice (?:Test )?(\d+)[ \t]*$/m);
+    if (h) { out.program = h[1]; out.num = +h[2]; const t = h[3] ? Date.parse(h[3].replace(/\./, "")) : NaN; if (!isNaN(t)) out.taken = t; out.title = `${h[1]} Practice ${h[2]}`; }
     const num = (label) => { const m = text.match(new RegExp("(\\d+)\\s*\\n\\s*" + label)); return m ? +m[1] : null; };
     out.total = num("Total Questions"); out.correct = num("Correct Answers"); out.incorrect = num("Incorrect Answers");
     const dom = {};
@@ -130,10 +131,14 @@
     return { matches, match: matches.length === 1 ? matches[0] : null };
   }
 
+  function matchForReport(match, meta) {
+    return !match || (meta?.num && ((meta.program && meta.program !== "SAT") || match.test !== "SAT" + meta.num)) ? null : match;
+  }
+
   // after a single match, a row copied without its key gets the catalog key (and keeps the mark nokey)
-  function fillKeys(rows, cat) {
+  function fillKeys(rows, cat, meta) {
     for (const section of Object.keys(SIZES)) {
-      const m = detect(rows, cat, section).match; if (!m) continue;
+      const m = matchForReport(detect(rows, cat, section).match, meta); if (!m) continue;
       rows.filter((r) => r.section === section && r.nokey).forEach((r) => { const it = cat.items[m.ids[r.module - 1][r.question - 1]]; if (it) r.answers = it.k.slice(0, 3); });
     }
     return rows;
@@ -150,10 +155,11 @@
     const out = { v: 1, src: "bluebook", at: Date.now(), hash, sections: {}, ...(meta.taken ? { taken: meta.taken } : {}), ...(meta.title ? { title: meta.title } : {}) };
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
-      const m = cat ? detect(rows, cat, section).match : null, items = (cat && cat.items) || {}, skills = {};
+      const detected = cat ? detect(rows, cat, section).match : null, m = matchForReport(detected, meta), items = (cat && cat.items) || {}, skills = {};
       const itemOf = (r) => (m ? m.ids[r.module - 1][r.question - 1] : null), sk = skipOf(sel, section), done = (r) => !sk.skip[r.module - 1];
       if (m) sel.filter(done).forEach((r) => { const it = items[itemOf(r)], k = it && (it.s || it.si); if (!k) return; const x = (skills[k] = skills[k] || [0, 0]); x[1]++; if (r.status !== "correct") x[0]++; });
       out.sections[section] = { test: m ? m.test : null, label: m ? m.label : null, route: m ? m.route : null, n: sel.length,
+        ...(detected && !m ? { conflict: detected.label } : {}),
         tot: [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length),
         ...(sk.skip[0] || sk.skip[1] ? { skip: sk.skip, om: sk.om } : {}),   // modules not done: their blanks are not misses
         miss: sel.filter((r) => r.status !== "correct" && done(r)).map((r) => { const id = itemOf(r), it = items[id] || null;
@@ -186,13 +192,13 @@
     if (rows.some((r) => r.nokey)) out.append(el("p", cat ? "«Show Correct Answers» был выключен: правильные ответы взяты из справочника." : "«Show Correct Answers» выключен: включите его над таблицей и скопируйте снова, чтобы увидеть правильные ответы.", "hint"));
     for (const section of Object.keys(SIZES)) {
       const sel = rows.filter((r) => r.section === section); if (!sel.length) continue;
-      const sk = skipOf(sel, section), misses = sel.filter((r) => r.status !== "correct" && !sk.skip[r.module - 1]), det = cat ? detect(rows, cat, section) : { matches: [] }, m = det.match;
+      const sk = skipOf(sel, section), misses = sel.filter((r) => r.status !== "correct" && !sk.skip[r.module - 1]), det = cat ? detect(rows, cat, section) : { matches: [] }, m = matchForReport(det.match, meta);
       const tot = [1, 2].map((k) => sel.filter((r) => r.module === k && r.status === "correct").length);
       out.append(el("h3", `${LABEL[section]} · ${sk.skip[0] && sk.skip[1] ? "раздел не решался" : `М1 ${sk.skip[0] ? "не решался" : `${tot[0]}/${SIZES[section]}`} · М2 ${sk.skip[1] ? "не решался" : `${tot[1]}/${SIZES[section]}`}`}`));
       if (sk.skip[0] || sk.skip[1]) out.append(el("p", sk.skip[0] && sk.skip[1] ? `Без ответа ${sk.om[0] + sk.om[1]} из ${SIZES[section] * 2}: раздел не решался, его пропуски не считаются ошибками и в анализ не входят.`
         : `Модуль ${sk.skip[0] ? 1 : 2} не решался (без ответа ${sk.om[sk.skip[0] ? 0 : 1]} из ${SIZES[section]}): его пропуски не считаются ошибками и в анализ не входят.`, "hint bb-skip"));
       if (sk.skip[0] && sk.skip[1]) continue;
-      if (m && meta.num && m.test !== "SAT" + meta.num) out.append(el("p", `В заголовке ${meta.title}, а ответы совпадают с ${m.label}. Проверьте, что скопирована страница нужного теста.`, "bb-warn"));
+      if (det.match && !m) out.append(el("p", `В заголовке ${meta.title}, а ключи совпадают с ${det.match.label}. Вопросы останутся без привязки к тесту, пока заголовок и ключи расходятся.`, "bb-warn"));
       const dm = meta.domains && meta.domains[section];
       if (dm) out.append(el("p", "Домены College Board: " + Object.entries(dm).map(([d, v]) => `${d} ${v[0]}/${v[1]}`).join(" · "), "hint"));
       out.append(el("p", m ? `${m.label} · модуль 2 ${ROUTE[m.route]}. Ошибок и пропусков: ${misses.length}.`
@@ -286,7 +292,7 @@
     status.textContent = summary + " Определяем тест и модули…";
     const data = await loadCatalog();
     if (req !== revision) return false;
-    if (data) { fillKeys(rows, data); render(rows, data, meta); }
+    if (data) { fillKeys(rows, data, meta); render(rows, data, meta); }
     last = { rows, cat: data, meta };
     status.textContent = summary + (canSend() ? " Всё прочитано: нажмите «Отправить преподавателю»." : data ? "" : " Навыки пока недоступны: проверьте ещё раз, когда будет связь.");
     return true;
