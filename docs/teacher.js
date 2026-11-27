@@ -204,19 +204,27 @@
       + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
       + pane("anal", skHTML)
       + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
-      + pane("fix", '<div id="st-rv"></div><div id="st-tw"></div>');
+      + pane("fix", '<div id="st-originals"></div><div id="st-rv"></div><div id="st-tw"></div>');
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll("[data-st]").forEach((b) => (b.onclick = () => { D.stTab = b.dataset.st; try { localStorage.setItem("st_tab", D.stTab); } catch (e) { /* private mode */ }
       $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
       $("v-students").querySelectorAll(".st-pane").forEach((p) => (p.hidden = p.dataset.pane !== D.stTab)); }));
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
-    progMount(s).catch(() => { const b = $("st-prog"); if (b) b.innerHTML = ""; });
+    const reviewBox = $("st-rv"), originalBox = $("st-originals"), keys = new Set([s.key]);
+    const collected = gaCollect({ keys });
+    if (window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key,
+      pool: async () => [...(await twinPool(await collected)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)),
+      quick: () => twinQuick(s), load: twinLoad });
+    if (window.TeacherOriginals) originalCards.set(originalBox, TeacherOriginals.mount(originalBox, originalLoad));
+    progMount(s).catch(() => { if (D.student === s.key && $("st-prog")) $("st-prog").innerHTML = ""; });
     predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
     goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
-    gaCollect({ keys: new Set([s.key]) }).then((all) => { bbRender(s, all); if (D.student === s.key && $("st-rv")) rvMount($("st-rv"), { slot: "st", mode: "solo", title: s.name, all, keys: new Set([s.key]), names: [s.name] });
-      if (D.student === s.key && $("st-tw") && window.TWINS) D.tw = TWINS.mount($("st-tw"), { name: s.name, key: s.key, pool: async () => [...(await twinPool(all)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)), quick: () => twinQuick(s),
-        load: twinLoad }); }).catch(() => { /* the card works without it */ });
+    collected.then((all) => {
+      if (!reviewBox.isConnected) return;
+      bbRender(s, all);
+      rvMount(reviewBox, { slot: "st", mode: "solo", title: s.name, all, keys, names: [s.name] });
+    }).catch(() => { if (reviewBox.isConnected) reviewBox.textContent = "Не удалось загрузить задания для разбора."; });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => { D.student = null; render(); };
     if ($("st-pdf")) $("st-pdf").onclick = async () => { const b = $("st-pdf"); b.disabled = true; try { REPORT.open(await reportData(s)); } finally { b.disabled = false; } };
@@ -245,7 +253,7 @@
       for (const a of r.answers) {
         const b = base(a), tag = TAGS[b.id], blank = !a.tries.length;
         out.push({ ...b, t: +r.ts, x: blank || wrong.has(String(a.n)) ? 0 : 1, blank, level: tag ? tag.d : "M", type: tag ? tag.ty : "mc", part: `${r.lesson}|${r.pid}|${+r.ts}`,
-          attempt: r.attempt || 1, chosen: a.tries[0] || "", second: a.tries.length > 1 && tag && tag.ty === "mc" ? (a.tries[1] === tag.k ? 1 : 0) : null, secs: per });
+          original: { r, n: a.n }, attempt: r.attempt || 1, chosen: a.tries[0] || "", second: a.tries.length > 1 && tag && tag.ty === "mc" ? (a.tries[1] === tag.k ? 1 : 0) : null, secs: per });
       }
     }
     return out;
@@ -283,6 +291,7 @@
         let id = (it.c || []).find((r) => TAGS[r]);
         if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
         obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
+          original: { test: x.label || x.test, module: mi + 1, n: qi + 1, keys: m?.[3], sk: it.s || it.si },
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
       }); });
     }
@@ -291,7 +300,8 @@
       const id = it.ref && TAGS[it.ref] ? it.ref : `LV.${rec.round}.${i + 1}`;
       if (!TAGS[id] && it.sk && !tags[id]) { const tg = PROGRESS.tagFromSkill(it.sk); if (tg) tags[id] = tg; }
       obs.push({ id, t: rec.at, x: a[1] ? 1 : 0, blank: false, sec: it.sec || "rw", level: it.d || "M", type: it.type === "mc" ? "mc" : "spr",
-        ctx: "learn", src: "live", part: `live|${rec.round}`, attempt: 1, chosen: /^[A-D]$/.test(a[0] || "") ? a[0] : "", second: null, secs: 0 });
+        original: { title: rec.title || "Живая практика", n: i + 1, ref: it.ref, sk: it.sk },
+        ctx: "learn", src: "live", part: `live|${rec.round}`, attempt: 1, chosen: a[0] || "", second: null, secs: 0 });
     });
     return { obs, tags };
   }
@@ -304,7 +314,9 @@
     let sel = {}; try { sel = JSON.parse(localStorage.getItem("pg_src_" + s.key) || "{}"); } catch (e) { sel = {}; }
     return PROGRESS.compute([...progObs(s, TAGS), ...extra.obs].filter((o) => sel[o.src] !== false), tags);
   }
+  const originalCards = new WeakMap();
   async function progMount(s) {
+    const originals = originalCards.get($("st-originals"));
     const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
     box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
     const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
@@ -318,13 +330,44 @@
     // which sources count, remembered per student (Nurassyl's own account: homework off, it was only testing the site)
     const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
     const draw = () => {
-      const res = PROGRESS.compute(all.filter((o) => sel[o.src] !== false), tags); D.prog = { key: s.key, res };
-      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: (f) => { if (D.tw && D.student === s.key) { const t = document.querySelector('[data-st="fix"]'); if (t) t.click(); D.tw.preset(f); } },   // «Похожие» on a subtopic or a trap
+      const active = all.filter((o) => sel[o.src] !== false);
+      const res = PROGRESS.compute(active, tags); D.prog = { key: s.key, res };
+      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: originals && ((f) => {
+          const mistakes = active.filter((o) => {
+            const tag = tags[o.id];
+            return o.x === 0 && !o.blank && tag && (f.subtopic ? tag.p === f.subtopic || tag.s?.includes(f.subtopic) : tag.t?.[o.chosen] === f.trapKey);
+          });
+          document.querySelector('[data-st="fix"]')?.click();
+          originals(f.label, mistakes.map(progressMistake));
+        }),
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
           set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
     };
     draw(); D.progDraw = { key: s.key, fn: draw };
     liveMount(s).catch(() => { /* no lesson account */ });
+  }
+  function courseMistake(ref) {
+    const [code, part, mod, n] = (ref || "").split(".");
+    if (!part || !mod) return null;
+    if (MODN[mod] && n) {
+      const section = D.mocks?.mocks.find((test) => test.id === code)?.sections.find((s) => s.k === part);
+      return section ? { src: { b: section.b, mod, i: +n - 1 }, title: `${mockName(code)} · ${section.name} · ${MODN[mod]} · №${n}`, work: `${mockName(code)} · ${section.name}` } : null;
+    }
+    const lesson = lessonOf(code), P = partOf(code, part);
+    const q = P?.q.find((q) => String(q.n) === mod);
+    return q ? { src: { b: P.b, n: q.n }, title: `${lesson?.title || code} · ${P.title} · №${mod}`, work: P.title, sk: q.sk } : null;
+  }
+  function progressMistake(o) {
+    const a = o.original, section = o.sec === "math" ? "Math" : "Reading and Writing";
+    const q = o.src === "live" ? courseMistake(a.ref) : o.src === "bb" ? null : courseMistake(o.id);
+    const hard = a.r?.kind === "X" ? D.sets.find((s) => s.id === a.r.lesson) : null;
+    const title = o.src === "bb" ? `Bluebook · ${a.test} · ${section} · Модуль ${a.module} · №${a.n}`
+      : o.src === "live" ? `${a.title} · №${a.n}` : q?.title || `${whatOf(a.r)} · №${a.n}`;
+    return { id: `${o.part}|${o.id}`, title, q, hard: hard && { set: hard, n: a.n }, ts: o.t,
+      chosen: o.chosen,
+      bb: o.src === "bb" ? { keys: a.keys || [] } : null,
+      sourceNote: o.src === "bb" ? "В отчёте Bluebook сохранены номер и ответы. Текст задания доступен в Bluebook."
+        : o.src === "live" && !q ? "В записи урока сохранены номер вопроса и ответ ученика." : "" };
   }
   // «Ориентир на SAT» (predict.js): a range from the full practice-test sections, site tests and shared Bluebook tests;
   // follows the «Пробные на сайте» / «Bluebook» source switches of the progress block. Internal: an estimate, not a result.
@@ -536,6 +579,29 @@
       out.push(...BBSHARE.fromCopy(await SITE.unsealBlob(g.data.data).catch(() => null), id).map((x) => Object.assign(x, { acct: id })));
     }
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
+  }
+  async function originalLoad(c) {
+    if (c.bb) return { acc: c.bb.keys };
+    if (c.hard) {
+      const { set, n } = c.hard, q = set.q.find((q) => String(q.i) === String(n));
+      if (!q) return null;
+      const rich = (t) => esc(t).replace(/⟦/g, "<u>").replace(/⟧/g, "</u>").replace(/\[\[([^\]|]+)\|[^\]]+\]\]/g, "$1");
+      const stim = (q.b || []).map((b) => {
+        if (b.k === "p" || b.k === "h") return `<p>${rich(b.v)}</p>`;
+        if (b.k === "ul") return `<ul>${b.v.map((v) => `<li>${rich(v)}</li>`).join("")}</ul>`;
+        if (b.k !== "table") return "";
+        const [head, ...rows] = b.rows;
+        return `<div class="tw"><table class="dt"><caption>${esc(b.c)}</caption><thead><tr>${head.map((v) => `<th>${esc(v)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+      }).join("");
+      const key = await Promise.all(Array.from("ABCD", async (L) => {
+        const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${set.salt}:${q.i}:${L}`));
+        const k = Array.from(new Uint8Array(hash).slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
+        return k === q.h ? L : "";
+      }));
+      return { t: "mc", ans: key.find(Boolean), stim, stem: rich(q.s), opts: q.o.map(rich) };
+    }
+    if (!c.q) return null;
+    return c.q ? teacherReviewItem(c.q) : null;
   }
   // every first-attempt mistake of one student for the Gemini picker, with the subtopic and the trap from the progress tags
   async function twinLoad(c) {
@@ -988,13 +1054,16 @@
   function rvParts(all) {
     const parts = new Map();
     for (const q of all) {
-      if (!parts.has(q.part)) parts.set(q.part, { k: q.part, label: q.plabel, work: q.work, ts: 0, nq: 0, wrong: 0, n: 0, peak: 0 });
+      if (!parts.has(q.part)) parts.set(q.part, { k: q.part, label: q.plabel, work: q.work, sec: q.sec, modules: new Set(), ts: 0, nq: 0, wrong: 0, n: 0, peak: 0 });
       const p = parts.get(q.part);
       p.n += q.n;
       p.wrong += q.wrong;
       p.nq += Number(q.wrong > 0);
       p.peak = Math.max(p.peak, q.wrong);
-      if (q.wrong) p.ts = Math.max(p.ts, q.ts || 0);
+      if (q.wrong) {
+        p.ts = Math.max(p.ts, q.ts || 0);
+        if (q.src?.mod) p.modules.add(q.src.mod);
+      }
     }
     return [...parts.values()].filter((p) => p.wrong).sort((a, b) => b.ts - a.ts || a.label.localeCompare(b.label, "ru", { numeric: true }));
   }
@@ -1026,56 +1095,92 @@
     if (!parts.length) { box.innerHTML = ""; return; }
     const available = new Set(parts.map((p) => p.k));
     for (const k of sel) if (!available.has(k)) sel.delete(k);
-    const filters = rvFilters.get(c.key) || { search: "", parts: "recent", questions: "" };
+    const filters = rvFilters.get(c.key) || { search: "", kind: "", sec: "", parts: "recent", questions: "" };
     rvFilters.set(c.key, filters);
     const day = (ts) => (ts ? new Date(ts).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "");
     box.innerHTML = `<div class="card rv-card"><h2>Разбор на уроке</h2>
       ${rvSummary(c)}
-      <h3>Выберите задания</h3>
       <div class="rv-controls">
-        <label>Поиск задания<input type="search" data-rvsearch placeholder="Урок, тема или код"></label>
+        <label>Найти тест или урок<input type="search" data-rvsearch placeholder="Например, Прогноз 3, PR3 или V06"></label>
+        <label>Тип задания<select data-rvkind><option value="">Все задания</option><option value="mock">Пробные тесты</option><option value="course">Уроки и домашние задания</option></select></label>
+        <label>Раздел<select data-rvsec><option value="">Все разделы</option><option value="rw">Reading and Writing</option><option value="math">Math</option></select></label>
         <label>Сортировка заданий<select data-rvparts><option value="recent">Сначала недавние</option><option value="share">По доле ошибок</option><option value="wrong">По числу ошибок</option><option value="peak">По максимуму ошибившихся на вопросе</option></select></label>
-        <label>Порядок вопросов<select data-rvquestions><option value="">${c.mode === "group" ? "По доле ошибившихся" : "По порядку заданий"}</option><option value="wrong">По числу ошибившихся</option><option value="level">По уровню сложности, если указан</option></select></label>
       </div>
+      <div class="rv-listhead"><h3>Задания с ошибками</h3><span class="hint" data-rvfound role="status"></span></div>
       <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора"></div>
-      <p class="rv-all"><button type="button" class="tlink" data-rvall="1">Выбрать найденные</button> · <button type="button" class="tlink" data-rvall="0">Снять выбор</button></p>
+      <div class="rv-all"><button type="button" class="tlink" data-rvall="1">Выбрать найденные</button><button type="button" class="tlink" data-rvall="0">Снять выбор</button></div>
       <p class="hint" data-rvcount role="status"></p>
+      <details class="rv-preview"><summary>Вопросы для разбора</summary>
+        <label>Порядок вопросов<select data-rvquestions><option value="">${c.mode === "group" ? "По доле ошибившихся" : "По порядку заданий"}</option><option value="wrong">По числу ошибившихся</option><option value="level">По уровню сложности, если указан</option></select></label>
+        <div data-rvpreview></div></details>
       ${c.mode === "group" && SITE.adminKey() && c.all.some((q) => q.sec === "rw") ? '<section class="rv-ai" data-vl></section>' : ""}
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
-      <p class="hint">«Подготовить урок» автоматически подбирает свежие ошибки. Отправленный разбор появится в «Ошибках класса».</p>
-      <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div>
-      <details class="rv-preview"><summary>Вопросы для отправки</summary><div data-rvpreview></div></details></div>`;
+      <p class="hint">«Подготовить урок» сразу подбирает и отправляет свежие ошибки в «Ошибки класса».</p>
+      <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div></div>`;
     const btn = $(`${id}-send`), list = box.querySelector(".rv-parts"), preview = box.querySelector("[data-rvpreview]");
     const count = box.querySelector("[data-rvcount]"), search = box.querySelector("[data-rvsearch]");
     const partSort = box.querySelector("[data-rvparts]"), questionSort = box.querySelector("[data-rvquestions]");
+    const kind = box.querySelector("[data-rvkind]"), section = box.querySelector("[data-rvsec]");
+    const found = box.querySelector("[data-rvfound]");
     search.value = filters.search;
+    kind.value = filters.kind;
+    section.value = filters.sec;
     partSort.value = filters.parts;
     questionSort.value = filters.questions;
     function label() {
       const qs = rvPick(c);
       count.textContent = sel.size ? `Выбрано заданий · ${sel.size}. К отправке · ${qs.length}.` : `Автоподбор · ${qs.length} ${pl(qs.length, "вопрос", "вопроса", "вопросов")}.`;
       btn.textContent = qs.length ? "Показать на уроке →" : "Нет вопросов с ошибками";
+      box.querySelector(".rv-preview > summary").textContent = `Вопросы для разбора · ${qs.length}`;
+      box.querySelector('[data-rvall="0"]').disabled = !sel.size;
       btn.disabled = !qs.length;
       preview.innerHTML = qs.map((q, i) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title)}</b><br><small>Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("") || '<p class="hint">Нет вопросов с ошибками.</p>';
       preview.querySelectorAll("[data-rvq]").forEach((d) => d.addEventListener("toggle", () => { if (d.open) gaOpen(d, qs[+d.dataset.rvq]); }));
     }
+    const isMock = (p) => p.work === "Пробные тесты";
+    const code = (p) => isMock(p) ? p.k.split(".")[0] : p.k;
+    const modules = (p) => Object.keys(MODN).filter((k) => p.modules.has(k)).map((k) => MODN[k]).join(" / ");
     function visibleParts() {
-      const term = filters.search.trim().toLowerCase();
-      const matched = parts.filter((p) => `${p.label} ${p.k}`.toLowerCase().includes(term));
+      const terms = filters.search.toLowerCase().trim().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+      const matched = parts.filter((p) => {
+        const text = `${p.label} ${p.k} ${p.work} ${modules(p)}`.toLowerCase();
+        return (!filters.kind || isMock(p) === (filters.kind === "mock")) &&
+          (!filters.sec || p.sec === filters.sec) && terms.every((term) => text.includes(term));
+      });
       if (filters.parts === "share") matched.sort(byShare);
       else if (filters.parts === "wrong") matched.sort(byWrong);
       else if (filters.parts === "peak") matched.sort((a, b) => b.peak - a.peak || byWrong(a, b));
       return matched;
     }
     function renderParts() {
-      list.innerHTML = visibleParts().map((p) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(p.k)}"${sel.has(p.k) ? " checked" : ""}><span>${esc(p.label)}</span><small>${pct(100 * errorShare(p))} ошибок · ${p.wrong} из ${p.n} ответов · до ${p.peak} ошибившихся на одном вопросе${p.ts ? " · " + day(p.ts) : ""}</small></label>`).join("") || '<p class="hint">По этому запросу заданий нет.</p>';
+      const matched = visibleParts();
+      found.textContent = `Найдено ${matched.length} из ${parts.length}`;
+      box.querySelector('[data-rvall="1"]').disabled = !matched.length;
+      list.innerHTML = matched.map((p) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(p.k)}"${sel.has(p.k) ? " checked" : ""}>
+        <span class="rv-source"><span class="rv-source-meta"><b>${esc(code(p))}</b> ${esc(isMock(p) ? "Пробный тест" : p.work)}</span>
+          <strong>${esc(p.label)}</strong>${p.modules.size ? `<small>${esc(modules(p))}</small>` : ""}</span>
+        <span class="rv-stats"><b>${p.nq} ${pl(p.nq, "вопрос с ошибкой", "вопроса с ошибками", "вопросов с ошибками")}</b>
+          <small>${p.wrong} из ${p.n} ответов · ${pct(100 * errorShare(p))}${p.ts ? " · " + day(p.ts) : ""}</small></span>
+        </label>`).join("") || '<p class="rv-empty hint">По этому запросу заданий нет.</p>';
+    }
+    function updateSelection() {
+      if (sel.size) preview.closest("details").open = true;
+      label();
     }
     search.oninput = () => { filters.search = search.value; renderParts(); };
+    kind.onchange = () => { filters.kind = kind.value; renderParts(); };
+    section.onchange = () => { filters.sec = section.value; renderParts(); };
     partSort.onchange = () => { filters.parts = partSort.value; renderParts(); };
     questionSort.onchange = () => { filters.questions = questionSort.value; label(); };
-    list.onchange = ({ target }) => { if (!target.matches("[data-rvp]")) return; if (target.checked) sel.add(target.dataset.rvp); else sel.delete(target.dataset.rvp); label(); };
-    box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { if (x.dataset.rvall === "1") visibleParts().forEach((p) => sel.add(p.k)); else sel.clear(); renderParts(); label(); }));
-    box.querySelectorAll("[data-rvquick]").forEach((x) => (x.onclick = () => { sel.add(x.dataset.rvquick); search.value = filters.search = ""; renderParts(); label(); list.querySelectorAll("[data-rvp]").forEach((input) => { if (input.dataset.rvp === x.dataset.rvquick) input.focus(); }); }));
+    list.onchange = ({ target }) => { if (!target.matches("[data-rvp]")) return; if (target.checked) sel.add(target.dataset.rvp); else sel.delete(target.dataset.rvp); updateSelection(); };
+    box.querySelectorAll("[data-rvall]").forEach((x) => (x.onclick = () => { if (x.dataset.rvall === "1") visibleParts().forEach((p) => sel.add(p.k)); else sel.clear(); renderParts(); updateSelection(); }));
+    box.querySelectorAll("[data-rvquick]").forEach((x) => (x.onclick = () => {
+      sel.add(x.dataset.rvquick);
+      search.value = filters.search = kind.value = filters.kind = section.value = filters.sec = "";
+      window.SiteSelect?.sync(kind); window.SiteSelect?.sync(section);
+      renderParts(); updateSelection();
+      Array.from(list.querySelectorAll("[data-rvp]")).find((input) => input.dataset.rvp === x.dataset.rvquick)?.focus();
+    }));
     if (window.VerbalLesson) VerbalLesson.mount(box, {
       select: () => {
         const candidates = c.ranked.filter((q) => q.sec === "rw" && q.wrong && (!sel.size || sel.has(q.part))).sort(byWrong);
@@ -1094,7 +1199,7 @@
     });
     btn.onclick = () => rvSend(c, btn, $(`${id}-send-st`));
     $(`${id}-prep`).onclick = () => rvPrepare(c, box);
-    renderParts(); label();
+    renderParts(); updateSelection();
   }
   function rvQuestion(q) {
     return { id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n,
@@ -1206,7 +1311,9 @@
     if (!item) { body.innerHTML = '<p class="hint">Вопрос не найден.</p>'; return; }
     const t = trapOf(q), acc = [].concat(item.acc || item.ans).filter(Boolean), ok = q.n - q.wrong;
     const opts = item.t === "mc" && item.opts && item.opts.length ? item.opts.map((o, k) => { const L = "ABCD"[k], c = L === item.ans ? ok : q.picks[L] || 0;
-        return `<div class="ropt${L === item.ans ? " right" : ""}${t && t[0] === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${L === item.ans ? "верный · " : ""}${c} ${pl(c, "ученик", "ученика", "учеников")}</span></div>`; }).join("")
+        const mine = q.mine?.[0] === L;
+        const tag = q.mine ? L === item.ans ? "верный ответ" : mine ? "ответ ученика" : "" : `${L === item.ans ? "верный · " : ""}${c} ${pl(c, "ученик", "ученика", "учеников")}`;
+        return `<div class="ropt${L === item.ans ? " right" : ""}${mine || t?.[0] === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${tag}</span></div>`; }).join("")
       : `<p class="hint">Принимаются: ${esc(acc.join(", "))} · неверные ответы: ${esc(Object.entries(q.picks).map(([v, c]) => `${v} (${c})`).join(", ") || "—")}</p>`;
     body.innerHTML = `${item.stim ? `<div class="qhtml">${item.stim}</div>` : ""}<div class="qhtml">${item.stem || ""}</div>${opts}
       ${t ? `<p class="ga-trap">Общая ловушка: вариант <b>${t[0]}</b> выбрали ${t[1]} из ${q.wrong} ошибившихся. Стоит разобрать, почему он кажется верным.</p>` : ""}
