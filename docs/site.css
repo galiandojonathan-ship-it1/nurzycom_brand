@@ -1151,3 +1151,24 @@ html:not(.elim-on) .opt:not(.out) .x{display:none}          /* the × buttons sh
 .tw-original-body{min-width:0;padding:0 14px 12px;overflow-wrap:anywhere}
 .tw-answers{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px}
 .tw-answers span{background:var(--paper);border-radius:8px;padding:5px 8px}
+
+/* Teacher-only live progress, kept in view while reading a question or the answer table. */
+.live-teacher-bar,.lp-active{position:sticky;top:var(--live-bar-top,60px);z-index:4;display:flex;align-items:center;justify-content:space-between;gap:8px 16px;background:var(--paper);border:1px solid var(--studio);border-radius:var(--control-radius);padding:9px 12px;margin:0 0 10px;box-shadow:0 3px 9px #261d1314}
+.live-teacher-bar[hidden],.lp-active[hidden]{display:none}
+.live-teacher-identity,.lp-active>div{min-width:0;overflow-wrap:anywhere}
+.live-practice .live-teacher-bar h3{margin:0 0 3px;font-size:16px}
+.live-teacher-identity>span{display:inline-block;font-size:14px;margin-inline-end:12px}
+.live-teacher-position,.lp-active strong{font-weight:700}
+.live-teacher-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.live-teacher-actions>.btn,.lp-active>.btn{min-height:42px;padding:7px 11px}
+.live-teacher-settings[open] .live-teacher-actions{margin-top:10px}
+.lp-active p,.lp-active small{margin:0;color:#665b4f;font-size:14px}
+.lp-active small:not(:empty){margin-inline-start:8px}
+.dk-practice .lp-deck-status{flex-basis:auto;min-width:0}
+@media(max-width:650px){
+  .live-teacher-bar,.lp-active{flex-wrap:wrap;padding:7px 9px}
+  .live-teacher-actions>.btn,.lp-active>.btn{min-height:44px}
+  .dk-practice .lp-deck-status{flex-basis:100%}
+}
+.live-teacher-identity>[data-live-timing]:empty{display:none}
+.live-teacher-identity>[data-live-timing]{color:#665b4f}

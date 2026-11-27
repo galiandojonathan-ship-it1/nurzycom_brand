@@ -449,7 +449,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         copy.classList.add("ghost");
         const launch = button("Начать раунд", async () => { await api("start", {}); await refresh(); });
         launch.dataset.launch = "";
-        const previous = button("Предыдущий вопрос", async () => {
+        const previous = button("← Назад", async () => {
           if (state.strict) {
             hostPreview = Number(content.querySelector("[data-current-question]").dataset.number) - 1;
             render(set);
@@ -458,6 +458,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
             await refresh();
           }
         });
+        previous.setAttribute("aria-label", "Предыдущий вопрос");
         previous.classList.add("ghost");
         previous.dataset.back = "";
         const next = button("Следующий вопрос", async () => {
@@ -496,13 +497,38 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         currentQuestion.hidden = true;
         const jump = document.createElement("div");
         jump.className = "live-qgrid live-jump"; jump.dataset.jump = ""; jump.setAttribute("aria-label", "Перейти к вопросу");
-        content.append(heading(state.title), link, copy, launch, previous, next, jump, close, currentQuestion, answers);
+        const toolbar = document.createElement("div");
+        toolbar.className = "live-teacher-bar";
+        const identity = document.createElement("div"); identity.className = "live-teacher-identity";
+        const title = heading(state.title), meta = document.createElement("span"), position = document.createElement("span"), clock = document.createElement("span");
+        meta.dataset.liveAnswers = ""; position.dataset.livePosition = "";
+        position.className = "live-teacher-position";
+        clock.dataset.liveTiming = "";
+        identity.append(title, position, meta, clock);
+        const actions = document.createElement("div"); actions.className = "live-teacher-actions";
+        actions.append(launch, previous, next);
+        const settings = document.createElement("details"); settings.className = "live-teacher-settings";
+        const settingsTitle = document.createElement("summary"); settingsTitle.textContent = "Настройки";
+        const settingsBody = document.createElement("div"); settingsBody.className = "live-teacher-actions";
+        settingsBody.append(link, copy, close); settings.append(settingsTitle, settingsBody);
+        toolbar.append(identity, actions);
+        content.append(toolbar, settings, jump, currentQuestion, answers);
+        const top = document.querySelector(".top");
+        if (top && window.ResizeObserver) new ResizeObserver(() => {
+          toolbar.style.setProperty("--live-bar-top", top.offsetHeight + "px");
+        }).observe(top);
       }
       content.querySelector("[data-launch]").hidden = state.started !== null || state.finished;
       content.querySelector("[data-close]").hidden = state.finished;
       if (hostPreview !== null && hostPreview >= number) hostPreview = null;
       if (!state.selfPaced) hostPick = null;
       const displayed = (state.selfPaced ? hostPick : null) ?? hostPreview ?? number;
+      const answerCount = number ? new Set((state.answers || []).filter((a) => a.question_number === number).map((a) => a.participant_id)).size : 0;
+      const position = ended ? "Раунд завершён" : number ? `Вопрос ${number} из ${state.total}` : "Раунд готов к запуску";
+      const count = number ? `Ответили ${answerCount} из ${state.students.length}` : `Подключились: ${state.students.length}`;
+      const pos = content.querySelector("[data-live-position]"), stats = content.querySelector("[data-live-answers]");
+      if (pos.textContent !== position) pos.textContent = position;
+      if (stats.textContent !== count) stats.textContent = count;
       // question numbers: in a teacher-led round without the strict clock a click moves the class; in a self-paced round it only
       // shows that question here; the small number is how many have answered it
       const jump = content.querySelector("[data-jump]"), canJump = !!number && !ended && !strict;
@@ -541,7 +567,10 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       const mode = state.selfPaced ? "каждый в своём темпе"
         : `${timing} · ${strict ? "строго" : "без строгого лимита"}${hostPreview === null ? "" : ` · просмотр вопроса ${hostPreview}`}`;
       const waiting = state.selfPaced ? "каждый в своём темпе" : `${state.seconds} с на вопрос · ${strict ? "строго" : "без строгого лимита"}`;
-      setMessage(ended ? "Раунд завершён." : number ? `Вопрос ${number} из ${state.total} · ${mode}` : `В комнате: ${state.students.length} · ${waiting}`);
+      const clock = content.querySelector("[data-live-timing]");
+      const time = ended ? "" : number ? mode : waiting;
+      if (clock.textContent !== time) clock.textContent = time;
+      setMessage("");
       if (state.finished && !content.querySelector("[data-review]")) {
         results.parentElement.before(reviewView(set.q.slice(0, state.total || 10)));
       }

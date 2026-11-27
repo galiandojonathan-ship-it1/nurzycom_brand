@@ -204,7 +204,7 @@
       + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
       + pane("anal", skHTML)
       + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
-      + pane("fix", '<div id="st-originals"></div><div id="st-ready"></div><div id="st-rv"></div><div id="st-tw"></div>');
+      + pane("fix", '<div class="review-workspace"><div id="st-originals"></div><div id="st-ready"></div></div><div id="st-rv"></div><div id="st-tw"></div>');
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll("[data-st]").forEach((b) => (b.onclick = () => { D.stTab = b.dataset.st; try { localStorage.setItem("st_tab", D.stTab); } catch (e) { /* private mode */ }
       $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
@@ -335,6 +335,10 @@
     const draw = () => {
       const active = all.filter((o) => sel[o.src] !== false);
       const res = PROGRESS.compute(active, tags); D.prog = { key: s.key, res };
+      if (originals && !$("st-originals").querySelector(".tw-original-card")) {
+        const mistakes = active.filter((o) => o.x === 0 && !o.blank && o.chosen);
+        originals("", mistakes.map(progressMistake), { all, mistakes, tags }, { quiet: true });
+      }
       PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: originals && ((f) => {
           const mistakes = active.filter((o) => {
             const tag = tags[o.id];
@@ -362,17 +366,25 @@
   }
   function progressMistake(o) {
     const a = o.original;
-    if (o.src === "bb") return bluebookMistake(o.sec, a, o.chosen, o.t);
+    if (o.src === "bb") return { ...bluebookMistake(o.sec, { ...a, group: o.part.split("|")[1] }, o.chosen, o.t), observation: o };
     const q = courseMistake(o.src === "live" ? a.ref : o.id);
     const hard = a.r?.kind === "X" ? D.sets.find((s) => s.id === a.r.lesson) : null;
     const title = o.src === "live" ? `${a.title} · №${a.n}` : q?.title || `${whatOf(a.r)} · №${a.n}`;
-    return { title, q, hard: hard && { set: hard, n: a.n }, ts: o.t, chosen: o.chosen,
+    const [code, , mod, number] = o.id.split(".");
+    const day = o.t ? Math.floor((o.t + 5 * 3600000) / DAY) : "";
+    const test = o.src === "mock" ? D.mocks?.mocks.find((m) => m.id === code)?.title || mockName(code)
+      : o.src === "live" ? a.title : a.r ? whatOf(a.r) : title;
+    const group = o.src === "mock" ? [code, day, o.attempt].join("|") : o.part;
+    return { title, q, hard: hard && { set: hard, n: a.n }, ts: o.t, chosen: o.chosen, observation: o,
+      review: { group, test, section: o.sec === "math" ? "Math" : "Reading and Writing",
+        module: o.src === "mock" ? MODN[mod] : "", n: o.src === "mock" ? number : a.n, attempt: o.attempt },
       sourceNote: o.src === "live" && !q ? "В записи урока сохранены номер вопроса и ответ ученика." : "" };
   }
   function bluebookMistake(sec, a, chosen, ts) {
     const section = sec === "math" ? "Math" : "Reading and Writing", mod = a.module === 1 ? "m1" : a.route;
     return { title: `Bluebook · ${a.test} · ${section} · ${MODN[mod] || "Модуль 2"} · №${a.n}`,
-      ts, chosen, bb: { keys: a.keys || [], sec, cid: a.cid, refs: a.refs || [] } };
+      ts, chosen, review: { group: `bb|${a.group || a.test + "|" + ts}`, test: `Bluebook · ${a.test}`, section, module: MODN[mod] || "Модуль 2", n: a.n },
+      bb: { keys: a.keys || [], sec, cid: a.cid, refs: a.refs || [] } };
   }
   // «Ориентир на SAT» (predict.js): a range from the full practice-test sections, site tests and shared Bluebook tests;
   // follows the «Пробные на сайте» / «Bluebook» source switches of the progress block. Internal: an estimate, not a result.
@@ -559,17 +571,19 @@
       button.onclick = () => {
         const [i, sec] = button.dataset.bbPreview.split(":"), d = sh[+i], x = d.sections[sec];
         const test = x.label || d.title || "Пробник Bluebook";
-        const list = x.miss.filter((m) => m[2] != null && !x.skip?.[m[0] - 1]).map((m) => {
+        const entries = x.miss.filter((m) => m[2] != null && !x.skip?.[m[0] - 1]);
+        const list = entries.map((m) => {
           const byPosition = cat?.tests?.[x.test]?.[sec]?.[m[0] === 1 ? "m1" : x.route]?.[m[1] - 1];
           const cid = m[4] || byPosition;
-          return bluebookMistake(sec, { test, route: x.route, module: m[0], n: m[1], cid, keys: m[3], refs: cat?.items?.[cid]?.c }, m[2], d.taken || d.at);
+          return bluebookMistake(sec, { test, group: d.hash, route: x.route, module: m[0], n: m[1], cid, keys: m[3], refs: cat?.items?.[cid]?.c }, m[2], d.taken || d.at);
         });
         document.querySelector('[data-st="fix"]')?.click();
-        const mistakes = x.miss.filter((m) => m[2] != null && !x.skip?.[m[0] - 1]).map((m) => {
+        const mistakes = entries.map((m) => {
           const it = cat?.items?.[m[4]];
           return { id: it?.c?.[0] || m[4], sec, x: 0, chosen: m[2], t: d.taken || d.at, level: it?.d || m[6],
             original: { refs: it?.c }, skill: it?.s || it?.si || m[5] };
         });
+        list.forEach((c, j) => { c.observation = mistakes[j]; });
         originals(test, list, { label: test, mistakes });
       };
     });
@@ -1228,7 +1242,22 @@
       box.querySelector(".rv-preview > summary").textContent = `Вопросы для разбора · ${qs.length}`;
       box.querySelector('[data-rvall="0"]').disabled = !sel.size;
       btn.disabled = !qs.length;
-      preview.innerHTML = qs.map((q, i) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title)}</b><br><small>Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("") || '<p class="hint">Нет вопросов с ошибками.</p>';
+      const previewGroups = new Map();
+      qs.forEach((q, i) => {
+        const title = q.plabel || q.title;
+        if (!previewGroups.has(title)) previewGroups.set(title, { at: 0, modules: new Map() });
+        const group = previewGroups.get(title), mod = MODN[q.src?.mod] || "";
+        group.at = Math.max(group.at, q.ts || 0);
+        if (!group.modules.has(mod)) group.modules.set(mod, []);
+        group.modules.get(mod).push({ q, i });
+      });
+      const cards = (items) => items.map(({ q, i }) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title.match(/№.+$/)?.[0] || q.title)}</b><br><small>Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("");
+      preview.innerHTML = [...previewGroups].map(([title, group], index) => {
+        const size = [...group.modules.values()].reduce((n, items) => n + items.length, 0);
+        return `<details class="review-group"${index === 0 ? " open" : ""}><summary><span><strong>${esc(title)}</strong>${group.at ? `<span class="review-date">${day(group.at)}</span>` : ""}</span><small>${size} ${pl(size, "вопрос", "вопроса", "вопросов")}</small></summary>
+          <div class="review-group-body">${[...group.modules].map(([mod, items], index) => mod ?
+            `<details class="review-group"${index === 0 ? " open" : ""}><summary><span>${esc(mod)}</span><small>${items.length} ${pl(items.length, "вопрос", "вопроса", "вопросов")}</small></summary><div class="review-group-body">${cards(items)}</div></details>` : cards(items)).join("")}</div></details>`;
+      }).join("") || '<p class="hint">Нет вопросов с ошибками.</p>';
       preview.querySelectorAll("[data-rvq]").forEach((d) => d.addEventListener("toggle", () => { if (d.open) gaOpen(d, qs[+d.dataset.rvq]); }));
     }
     const isMock = (p) => p.work === "Пробные тесты";
