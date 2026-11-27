@@ -99,6 +99,10 @@ export async function onRequest({ env, request }) {
         settings.strict && settings.selfPaced)) {
       return error(400, "Время на вопрос: от 5 до 600 секунд.");
     }
+    if (configured && settings.record !== undefined &&
+        (typeof settings.record !== "string" || settings.record.length > 24576 || !/^[A-Za-z0-9+/=]+$/.test(settings.record))) {
+      return error(400, "Настройки учёта в индексе недоступны.");
+    }
     const maximum = configured ? 100 : 10;
     if (!(typeof set === "string" && (/^X\d{2}$/.test(set) || /^sealed:[A-Za-z0-9+/=]+$/.test(set) && set.length <= 650000)) || typeof title !== "string" || title.length > 160 ||
         !Array.isArray(keys) || keys.length < 1 || keys.length > maximum || keys.some((key) =>
@@ -136,7 +140,7 @@ export async function onRequest({ env, request }) {
     const storedSet = configured ? JSON.stringify({
       v: settings.selfPaced !== undefined || settings.calculator !== undefined ? 3 : 2,
       source: set, seconds: settings.seconds, strict: settings.strict, selfPaced: settings.selfPaced,
-      calculator: settings.calculator, current: 1, questionStartedAt: null
+      calculator: settings.calculator, record: settings.record, current: 1, questionStartedAt: null
     }) : set;
     // Keep D1 bind counts and per-invocation query counts small on the Free plan.
     const questionInserts = [];
@@ -273,6 +277,7 @@ export async function onRequest({ env, request }) {
       questionStartedAt: config?.questionStartedAt || started
     };
     if (host) {
+      if (config?.record) state.record = config.record;
       const [students, answers] = await db.batch([
         db.prepare("SELECT id, display_name FROM live_participants WHERE round_id = ? ORDER BY joined_at").bind(id),
         db.prepare(`SELECT participant_id, question_number, answer, correct FROM ${answerTable} WHERE round_id = ?`).bind(id)

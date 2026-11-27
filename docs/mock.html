@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="site.css?v=202611271431">
+<link rel="stylesheet" href="site.css?v=202611271838">
 <script src="auth.js?v=202611240557"></script>
 <style>
 .mocks{display:grid;grid-template-columns:1fr;gap:8px}
@@ -29,7 +29,6 @@
 .formats .pick{flex-direction:column;align-items:flex-start;gap:2px}
 .formats .pick:disabled{opacity:.35;cursor:default}
 .mock-live{border-top:1px solid var(--studio);margin-top:20px;padding-top:14px}
-.mock-live select{min-width:0;max-width:100%;font:inherit;padding:8px;border:1px solid var(--studio);border-radius:var(--control-radius);background:var(--white)}
 .mock-live .hint:empty{display:none}
 .bb-import{margin:0 0 20px}
 .bb-import summary{font-weight:600;cursor:pointer;padding-block:10px}
@@ -176,8 +175,7 @@
       <div class="row"><button class="btn" id="go" disabled>Начать <span class="arr">→</span></button><button class="btn ghost hidden" id="open-res" type="button">Результат и разбор</button></div>
       <p class="hint" id="start-msg"></p>
       <div class="mock-live" id="mock-live" hidden>
-        <label class="label" for="mock-live-module">Модуль для живой практики</label>
-        <div class="row"><select id="mock-live-module" disabled><option value="">Выберите пробный тест</option></select></div>
+        <span id="mock-live-anchor" hidden></span>
       </div>
     </div>
     <div class="card" style="margin-top:36px"><span class="label">Как устроено</span>
@@ -262,9 +260,9 @@
 <script src="tools.js?v=202611240557"></script>
 <script src="scale.js?v=202611240557"></script>
 <script src="gloss.js?v=202611240557"></script>
-<script src="liveround.js?v=202611261817"></script>
+<script src="liveround.js?v=202611271838"></script>
 <script src="numeric-answer.js?v=202611252226"></script>
-<script src="mock.js?v=202611261817"></script>
+<script src="mock.js?v=202611271838"></script>
 <script src="bbshare.js?v=202611271241"></script>
 <script src="bbpdf.js?v=202611240557"></script>
 <script src="bluebook-import.js?v=202611271241"></script>

@@ -214,6 +214,34 @@
     const ks = hit ? hit[1] : ALIAS[key] ? [ALIAS[key]] : [];
     return !ks.length ? null : ks.length === 1 ? { p: ks[0], s: [], t: {} } : { p: null, s: ks.slice(), sw: 1 / ks.length, t: {} };
   }
+  // Turn one finalized live round into evidence. Attempt positions are kept separate from source question numbers.
+  function liveRound(rec, student, courseTags, fallbackTags = {}) {
+    const mode = rec.v === 2 ? rec.progress : "answered";
+    if (mode !== "answered" && mode !== "module") return [];
+    const items = Array.isArray(rec.items) ? rec.items : [];
+    const answerFor = (i) => {
+      const a = student.ans?.[i + 1];
+      return Array.isArray(a) && a[0] && (a[1] === 0 || a[1] === 1) ? a : null;
+    };
+    let rows;
+    if (mode === "module") {
+      if (!Array.isArray(rec.module) || !rec.module.length) return [];
+      const byRef = new Map(items.map((it, i) => [it.ref, answerFor(i)]).filter(([ref, a]) => ref && a));
+      if (!byRef.size) return [];   // joining a room alone is not a submitted module
+      rows = rec.module.map((it, i) => ({ it, i, a: byRef.get(it.ref) }));
+    } else rows = items.map((it, i) => ({ it, i, a: answerFor(i) })).filter(({ a }) => a);
+    return rows.map(({ it, i, a }) => {
+      const id = it.ref || `LV.${rec.round}.${i + 1}`;
+      if (!courseTags[id] && it.sk && !fallbackTags[id]) {
+        const tag = tagFromSkill(it.sk);
+        if (tag) fallbackTags[id] = tag;
+      }
+      return { id, t: rec.at, x: a?.[1] === 1 ? 1 : 0, blank: !a, sec: it.sec || "rw", level: it.d || "M",
+        type: it.type === "mc" ? "mc" : "spr", ctx: mode === "module" ? "mock" : "learn", src: "live",
+        part: `live|${rec.round}`, attempt: 1, chosen: a?.[0] || "", second: null, secs: 0,
+        original: { title: rec.title || "Живая практика", n: it.n || i + 1, ref: it.ref, refs: it.ref ? [it.ref] : [], sk: it.sk } };
+    });
+  }
   function bankFreq(tags) { const f = {}; for (const id in tags) { const k = tags[id] && tags[id].p; if (k) f[k] = (f[k] || 0) + 1; } return f; }
   // «Цель ученика» (Nurassyl, 2026-11-23: «вписать target score… чтобы графики и анализ показали, где у него проседает
   // относительно его target score»). A section target score → the raw count it needs on the hard route (scale.js, nurzycom's
@@ -269,6 +297,6 @@
     const gap = need - now;
     return gap > 0.05 ? ["stuck", "ниже цели"] : gap < -0.05 ? ["ok", "выше цели"] : ["grow", "на уровне цели"];
   }
-  const api = { compute, drivers, change, ZMIN, targetNeeds, targetFor, vsTarget, MIX, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
+  const api = { compute, liveRound, drivers, change, ZMIN, targetNeeds, targetFor, vsTarget, MIX, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
   if (typeof module !== "undefined") module.exports = api; else root.PROGRESS = api;
 })(typeof window !== "undefined" ? window : globalThis);

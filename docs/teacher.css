@@ -201,3 +201,10 @@
 .review-group[hidden]{display:none}
 
 #st-ready [data-rp-open][hidden]{display:none}
+
+.rp-batch{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.rp-batch .chip,.rp-tray [data-rp-clear]{min-height:38px}
+.rp-batch .chip:disabled{opacity:.55;cursor:default}
+.rp-control{background:#e8efdc;color:#324421}
+.rp-tray .rp-control{margin-inline-start:4px}
+.rp-tray [data-rp-clear]{margin:5px 0}
