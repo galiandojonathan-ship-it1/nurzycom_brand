@@ -23,15 +23,18 @@ window.TeacherOriginals = (() => {
       : !c.sourceNote && !c.bb ? '<p class="hint">Текст задания не загрузился.</p>' : ""}`;
   }
 
-  function mount(box, load) {
-    return (label, list) => {
+  function mount(box, load, practice) {
+    return (label, list, context) => {
       list.sort((a, b) => b.ts - a.ts);
       box.innerHTML = `<div class="card tw tw-original-card"><div class="tw-scopehead"><div>
         <h3 tabindex="-1">Ошибки ученика</h3><p>${escape(label)} · ${list.length} ${misses[plural.select(list.length)]}</p></div>
-        <button type="button" class="btn ghost" data-original-close>Закрыть</button></div>
+        <div class="row">${practice && context && list.length ? '<button type="button" class="btn ghost" data-original-practice>Подобрать готовые по этим ошибкам</button>' : ""}
+        <button type="button" class="btn ghost" data-original-close>Закрыть</button></div></div>
         ${list.length ? `<ul class="tw-originals">${list.map((c, i) => `<li><details data-tworiginal="${i}"${i === 0 ? " open" : ""}>
           <summary><span><b>${escape(c.title)}</b><small>${[c.ts ? date.format(c.ts) : "", `ответ ученика: ${c.chosen}`].filter(Boolean).map(escape).join(" · ")}</small></span></summary>
           <div class="tw-original-body"></div></details></li>`).join("")}</ul>` : '<p class="hint">В выбранных источниках нет неверных ответов по этой теме.</p>'}</div>`;
+      const pick = box.querySelector("[data-original-practice]");
+      if (pick) pick.onclick = () => practice(context);
       box.querySelector("[data-original-close]").onclick = () => {
         box.replaceChildren();
         document.querySelector('[data-st="fix"]')?.focus();

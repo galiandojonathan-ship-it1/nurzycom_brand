@@ -7,7 +7,7 @@
   const $ = (id) => document.getElementById(id);
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } return null; };
-  const { esc, rich } = CTL;
+  const { esc, html, view } = CTL;
   const st = { bank: [], t: null, run: null, cur: 0, timer: 0 };
   const runKey = (id) => `ct_run_${id}`;
   const who = () => store("hw_student") || "";
@@ -47,23 +47,39 @@
     $("restart").classList.toggle("hidden", !run);
     $("s-msg").textContent = run && run.deadline ? `Время идёт: осталось ${clockTxt(Math.max(0, run.deadline - Date.now()))}.` : "";
     document.title = `${t.title || "Тест"} · nurzycom`;
-    LiveRound.mount("go", () => ({
-      title: st.t.title || "Тест",
-      questions: st.t.q.map((q) => ({
-        prompt: CTL.rich(q.passage) + CTL.rich(q.stem),
-        passageLength: CTL.rich(q.passage).length,
-        options: q.type === "spr" ? [] : q.o.map(CTL.inline),
-        type: q.type === "spr" ? "custom" : "mc",
-        accepted: q.type === "spr" ? CTL.accepted(q.a) : [q.a]
-      }))
-    }));
+    LiveRound.mount("go", async () => {
+      if (!await ready(t)) throw Error("Не удалось загрузить вопросы из пробника. Повторите попытку.");
+      return { title: t.title || "Тест", questions: t.q.map((entry) => {
+        const q = view(entry), passage = html(q, "passage");
+        return { prompt: passage + html(q, "stem"), passageLength: passage.length,
+          options: q.type === "spr" ? [] : q.o.map((_, i) => html(q, "o", i)),
+          type: q.type === "spr" && !q.ref ? "custom" : q.type,
+          keyType: q.type === "spr" && !q.ref ? "custom" : q.type,
+          accepted: q.type === "spr" ? q.mockKeys || CTL.accepted(q.a) : [q.a] };
+      }) };
+    });
     show("p-start"); $("s-title").focus({ preventScroll: true });
     if (new URLSearchParams(location.search).get("live") === "1") { const b = document.getElementById("live-go"); if (b) b.click(); }
   }
   function loadRun() { try { const r = JSON.parse(store(runKey(st.t.id)) || "null"); return r && r.at === st.t.at ? r : null; } catch (e) { return null; } }
   const save = () => store(runKey(st.t.id), JSON.stringify(st.run));
-  function begin(fresh) {
+  async function ready(t) {
+    if (!t.q.some((q) => q.ref)) return true;
+    await CTL.resolve(t.q);
+    return !t.q.some((q) => q.ref && CTL.problems(q).length);
+  }
+  async function begin(fresh) {
+    if ($("go").disabled) return;
     if (!SITE.me()) { const n = $("student").value.trim(); if (n.length < 2) { $("s-msg").textContent = "Напишите имя и первую букву фамилии."; $("student").focus(); return; } store("hw_student", n); }
+    const go = $("go");
+    go.disabled = true;
+    try {
+      if (!await ready(st.t)) {
+        renderStart();
+        $("s-msg").textContent = "Не удалось загрузить вопросы из пробника. Попробуйте снова.";
+        return;
+      }
+    } finally { go.disabled = false; }
     st.run = fresh ? null : loadRun();
     if (!st.run) { const now = Date.now(); st.run = { at: st.t.at, t0: now, deadline: st.t.minutes ? now + st.t.minutes * 60000 : 0, ans: {}, out: {}, marked: [], cur: 0 }; }
     st.cur = st.run.cur || 0; save();
@@ -81,24 +97,24 @@
   }
 
   // ---- one question
-  const Q = () => st.t.q[st.cur];
+  const Q = () => view(st.t.q[st.cur]);
   function renderQ() {
     const qs = st.t.q, q = Q(), A = st.run.ans, out = new Set(st.run.out[q.id] || []), n = Object.values(A).filter((v) => v !== "" && v != null).length;
-    $("passage").innerHTML = rich(q.passage);
+    $("passage").innerHTML = html(q, "passage");
     $("qwrap").classList.toggle("solo", !String(q.passage || "").trim());
     $("passage").classList.toggle("hidden", !String(q.passage || "").trim());
     $("qn").textContent = `Вопрос ${st.cur + 1} из ${qs.length}`;
     document.body.dataset.lq = `CT.${st.t.id}.${st.cur + 1}`; document.body.dataset.lt = `Мой тест · ${st.t.title || "Без названия"}`;   // lesson mode (lesson.js)
     $("t-pos").textContent = `${n} / ${qs.length}`;
     $("prog").style.width = `${(100 * n) / qs.length}%`;
-    $("stem").innerHTML = rich(q.stem);
+    $("stem").innerHTML = html(q, "stem");
     $("flag").setAttribute("aria-pressed", String(st.run.marked.includes(q.id)));
     if (q.type === "spr") {
       $("opts").innerHTML = `<label class="spr"><span class="label">Ваш ответ</span><input id="spr" type="text" inputmode="decimal" autocomplete="off" maxlength="12" value="${esc(A[q.id] || "")}" aria-label="Ваш ответ на вопрос ${st.cur + 1}"><small>Число или дробь: 0.5, .5 и 1/2 считаются одинаково.</small></label>`;
       $("spr").oninput = (e) => { A[q.id] = e.target.value.trim(); save(); $("t-pos").textContent = `${Object.values(A).filter((v) => v !== "" && v != null).length} / ${qs.length}`; renderGrid(); };
     } else {
       $("opts").innerHTML = q.o.map((o, k) => { const c = "ABCD"[k];
-        return `<div class="opt${A[q.id] === c ? " on" : ""}${out.has(c) ? " out" : ""}" data-c="${c}"><button class="ch" data-c="${c}" aria-pressed="${A[q.id] === c}"><span class="lt">${c}</span><span class="tx">${CTL.inline(o)}</span></button><button class="x" data-c="${c}" aria-label="${out.has(c) ? "Вернуть" : "Вычеркнуть"} ${c}" title="Вычеркнуть">${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
+        return `<div class="opt${A[q.id] === c ? " on" : ""}${out.has(c) ? " out" : ""}" data-c="${c}"><button class="ch" data-c="${c}" aria-pressed="${A[q.id] === c}"><span class="lt">${c}</span><span class="tx">${html(q, "o", k)}</span></button><button class="x" data-c="${c}" aria-label="${out.has(c) ? "Вернуть" : "Вычеркнуть"} ${c}" title="Вычеркнуть">${out.has(c) ? "↺" : "×"}</button></div>`; }).join("");
       $("opts").querySelectorAll(".ch").forEach((b) => (b.onclick = () => choose(b.dataset.c)));
       $("opts").querySelectorAll(".x").forEach((b) => (b.onclick = () => strike(b.dataset.c)));
     }
@@ -162,22 +178,22 @@
     show("p-result");
   }
   function renderReview(run, ok) {
-    const mode = st.t.review || "full", qs = st.t.q;
+    const mode = st.t.review || "full", qs = st.t.q.map(view);
     $("rev-step").classList.toggle("hidden", mode === "score");
     if (mode === "score") return;
     $("rev").innerHTML = qs.map((q, i) => {
       const mine = run.ans[q.id], full = mode === "full";
-      const body = full ? `<div class="rbody">${q.passage ? `<div class="passage" style="padding:8px 0 4px">${rich(q.passage)}</div>` : ""}<div class="stem">${rich(q.stem)}</div>
+      const body = full ? `<div class="rbody">${q.passage ? `<div class="passage" style="padding:8px 0 4px">${html(q, "passage")}</div>` : ""}<div class="stem">${html(q, "stem")}</div>
         ${q.type === "spr" ? `<div class="ropt right"><span>Верный ответ: <b>${esc(CTL.answerText(q))}</b></span></div><div class="ropt${ok[i] ? " right" : " mine"}"><span>Ваш ответ: ${esc(mine || "—")}</span></div>`
-          : q.o.map((o, k) => { const c = "ABCD"[k], r = q.a === c; return `<div class="ropt${r ? " right" : ""}${mine === c ? " mine" : ""}"><span class="lt">${c}</span><span>${CTL.inline(o)}</span>${r ? '<span class="tg">верный</span>' : mine === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("")}
-        ${q.x ? `<div class="expl"><span class="label">Разбор</span>${rich(q.x)}</div>` : ""}</div>` : "";
+          : q.o.map((o, k) => { const c = "ABCD"[k], r = q.a === c; return `<div class="ropt${r ? " right" : ""}${mine === c ? " mine" : ""}"><span class="lt">${c}</span><span>${html(q, "o", k)}</span>${r ? '<span class="tg">верный</span>' : mine === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("")}
+        ${q.x ? `<div class="expl"><span class="label">Разбор</span>${html(q, "x")}</div>` : ""}</div>` : "";
       const sum = `<span class="mk ${ok[i] ? "ok" : "no"}">${i + 1}</span><span class="sm"><b>${ok[i] ? "Верно" : mine ? "Ошибка" : "Без ответа"}</b><small>Ваш ответ: ${esc(mine || "—")}${full ? ` · верный: ${esc(CTL.answerText(q))}` : ""}${q.skill ? ` · ${esc(q.skill)}` : ""}</small></span>`;
       return full ? `<details><summary>${sum}<span class="ar">›</span></summary>${body}</details>` : `<div class="rrow" style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--studio)">${sum}</div>`;
     }).join("");
   }
 
   $("go").onclick = () => begin(false);
-  $("restart").onclick = () => { if (confirm("Начать тест заново? Ответы этой попытки сотрутся.")) { store(runKey(st.t.id), null); begin(true); } };
+  $("restart").onclick = () => { if (confirm("Начать тест заново? Ответы этой попытки сотрутся.")) begin(true); };
   $("again").onclick = () => begin(true);
 
   // ---- start

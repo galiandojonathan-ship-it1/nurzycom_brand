@@ -204,7 +204,7 @@
       + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
       + pane("anal", skHTML)
       + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
-      + pane("fix", '<div id="st-originals"></div><div id="st-rv"></div><div id="st-tw"></div>');
+      + pane("fix", '<div id="st-originals"></div><div id="st-ready"></div><div id="st-rv"></div><div id="st-tw"></div>');
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll("[data-st]").forEach((b) => (b.onclick = () => { D.stTab = b.dataset.st; try { localStorage.setItem("st_tab", D.stTab); } catch (e) { /* private mode */ }
       $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
@@ -216,7 +216,10 @@
     if (window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key,
       pool: async () => [...(await twinPool(await collected)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)),
       quick: () => twinQuick(s), load: twinLoad });
-    if (window.TeacherOriginals) originalCards.set(originalBox, TeacherOriginals.mount(originalBox, originalLoad));
+    const ready = $("st-ready"), practice = window.TeacherPractice && SITE.adminKey() && TeacherPractice.mount(ready, {
+      key: s.key, context: (input) => practiceContext(s, input), candidates: practiceCandidates
+    });
+    if (window.TeacherOriginals) originalCards.set(originalBox, TeacherOriginals.mount(originalBox, originalLoad, practice));
     progMount(s).catch(() => { if (D.student === s.key && $("st-prog")) $("st-prog").innerHTML = ""; });
     predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
     goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
@@ -291,7 +294,7 @@
         let id = (it.c || []).find((r) => TAGS[r]);
         if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
         obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
-          original: { test: x.label || x.test, route: x.route, cid, refs: it.c, module: mi + 1, n: qi + 1, keys: m?.[3] },
+          original: { test: x.label || x.test, route: x.route, cid, refs: it.c, sk: it.s || it.si, module: mi + 1, n: qi + 1, keys: m?.[3] },
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
       }); });
     }
@@ -300,7 +303,7 @@
       const id = it.ref && TAGS[it.ref] ? it.ref : `LV.${rec.round}.${i + 1}`;
       if (!TAGS[id] && it.sk && !tags[id]) { const tg = PROGRESS.tagFromSkill(it.sk); if (tg) tags[id] = tg; }
       obs.push({ id, t: rec.at, x: a[1] ? 1 : 0, blank: false, sec: it.sec || "rw", level: it.d || "M", type: it.type === "mc" ? "mc" : "spr",
-        original: { title: rec.title || "Живая практика", n: i + 1, ref: it.ref, sk: it.sk },
+        original: { title: rec.title || "Живая практика", n: i + 1, ref: it.ref, refs: it.ref ? [it.ref] : [], sk: it.sk },
         ctx: "learn", src: "live", part: `live|${rec.round}`, attempt: 1, chosen: a[0] || "", second: null, secs: 0 });
     });
     return { obs, tags };
@@ -338,7 +341,7 @@
             return o.x === 0 && !o.blank && tag && (f.subtopic ? tag.p === f.subtopic || tag.s?.includes(f.subtopic) : tag.t?.[o.chosen] === f.trapKey);
           });
           document.querySelector('[data-st="fix"]')?.click();
-          originals(f.label, mistakes.map(progressMistake));
+          originals(f.label, mistakes.map(progressMistake), { label: f.label, all, mistakes, focus: f.subtopic, trap: f.trapKey, tags });
         }),
         sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
           set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
@@ -562,7 +565,12 @@
           return bluebookMistake(sec, { test, route: x.route, module: m[0], n: m[1], cid, keys: m[3], refs: cat?.items?.[cid]?.c }, m[2], d.taken || d.at);
         });
         document.querySelector('[data-st="fix"]')?.click();
-        originals(test, list);
+        const mistakes = x.miss.filter((m) => m[2] != null && !x.skip?.[m[0] - 1]).map((m) => {
+          const it = cat?.items?.[m[4]];
+          return { id: it?.c?.[0] || m[4], sec, x: 0, chosen: m[2], t: d.taken || d.at, level: it?.d || m[6],
+            original: { refs: it?.c }, skill: it?.s || it?.si || m[5] };
+        });
+        originals(test, list, { label: test, mistakes });
       };
     });
     bbDelWire(s, all, sh);
@@ -633,6 +641,57 @@
     }
     if (!c.q) return null;
     return c.q ? teacherReviewItem(c.q) : null;
+  }
+  async function practiceContext(s, input) {
+    const raw = await progTags(), extra = input?.all ? null : await progExtra(s, raw).catch(() => ({ obs: [], tags: {} }));
+    const tags = input?.tags || { ...raw, ...extra?.tags };
+    const all = input?.all || [...progObs(s, raw), ...extra.obs];
+    const byTime = (a, b) => b.t - a.t;
+    const attempts = (input?.mistakes || all.filter((o) => o.x === 0 && !o.blank && o.chosen)).slice().sort(byTime);
+    const priority = new Map();
+    for (const o of attempts) {
+      const tag = tags[o.id] || raw[o.id] || {}, primary = input?.focus || tag.p;
+      const subs = primary ? [primary] : tag.s || [];
+      const skill = PROGRESS.SKILL_OF_SUB[primary || subs[0]] || o.skill || o.original?.sk;
+      const trap = input?.trap || tag.t?.[o.chosen];
+      if (!subs.length && !trap && !skill) continue;
+      const k = [o.sec, primary, subs.join(), trap, skill].join("|");
+      if (!priority.has(k)) priority.set(k, { sec: o.sec, primary, subs, skill, trap, level: o.level });
+      if (priority.size >= 12) break;
+    }
+    const seen = [...all, ...attempts].flatMap((o) => [o.id, ...(o.original?.refs || [])]);
+    return { label: input?.label || "", targets: [...priority.values()], seen };
+  }
+
+  async function practiceCandidates(source) {
+    if (source === "bank") {
+      const { questions } = await SITE.json("nbank");
+      return { items: (questions || []).filter((q) => q?.id && q.stem).flatMap((q) => {
+        const item = NBANK.toQuestion(q);
+        return CTL.problems(item).length ? [] : [{ id: q.id, label: `nurzycom bank · ${q.id}`, source, sec: q.sec,
+          skill: q.skill, primary: q.sub, subs: q.sub ? [q.sub] : [], traps: Object.values(q.traps || {}), level: q.level, raw: q, item }];
+      }) };
+    }
+    const tags = await progTags(), jobs = (D.mocks?.mocks || []).flatMap((m) => m.sections.map((s) => ({ m, s })));
+    const items = [];
+    let next = 0, incomplete = false;
+    async function worker() {
+      while (next < jobs.length) {
+        const { m, s } = jobs[next++];
+        let bundle;
+        try { bundle = await bundleT(s.b); } catch { incomplete = true; continue; }
+        for (const [mod, list] of Object.entries(bundle.mods || {})) list.forEach((q, i) => {
+          const n = i + 1, id = `${m.id}.${s.k}.${mod}.${n}`, tag = tags[id] || {};
+          const ref = { b: s.b, mod, i }, item = CTL.fromMock(q);
+          if (!CTL.mockRef(ref) || !item || CTL.problems(item).length) return;
+          items.push({ id, label: `${m.title || mockName(m.id)} · ${s.name} · ${MODN[mod]} · №${n}`, source, sec: s.k,
+            skill: q.sk, primary: tag.p, subs: [tag.p, ...(tag.s || [])].filter(Boolean), traps: Object.values(tag.t || {}),
+            level: q.d || tag.d, ref, item });
+        });
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, worker));
+    return { items, incomplete };
   }
   // every first-attempt mistake of one student for the Gemini picker, with the subtopic and the trap from the progress tags
   async function twinLoad(c) {
@@ -709,7 +768,11 @@
     H: "Algebra", P: "Advanced Math", Q: "Problem-Solving and Data Analysis", S: "Geometry and Trigonometry" };
   const DIFN = { E: "лёгкий", M: "средний", H: "сложный" };
   async function bundleT(path) {
-    if (!D.bundles[path]) D.bundles[path] = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(path, { cache: "no-store" })).arrayBuffer())));
+    if (!D.bundles[path]) D.bundles[path] = (async () => {
+      const response = await fetch(path);
+      if (!response.ok) throw Error("Набор вопросов недоступен");
+      return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));
+    })().catch((error) => { delete D.bundles[path]; throw error; });
     return D.bundles[path];
   }
   // each student's latest submission of one test section (older ones are counted, not shown)
