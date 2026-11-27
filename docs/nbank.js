@@ -97,14 +97,17 @@ window.NBANK = (() => {
     const title = box.querySelector("#nb-title"); if (title) title.oninput = () => (E.title = title.value);
     b("nb-save", () => make(false)); b("nb-give", () => make(true));
   }
+  function toQuestion(q) {
+    const x = (q.explanation_ru || "") + (q.trap_ru ? `\n\nЛовушка: ${q.trap_ru}` : "");
+    return { ...CTL.newQ(q.type), passage: q.passage || "", stem: q.stem, skill: q.skill, level: q.level, nb: q.id, x,
+      ...(q.type === "spr" ? { a: (q.accept || [q.key]).join(";") } : { o: (q.options || []).slice(), a: q.key, gl: q.words || [] }) };
+  }
   async function make(assign) {
     if (!window.CTED || !window.CTL) { E.msg = "«Мои тесты» не загрузились: обновите страницу."; api.render(); return; }
     const picked = E.all.filter((q) => E.sel.has(q.id)); if (!picked.length) return;
     const t = CTL.newTest(); t.title = (E.title || defTitle(picked)).trim(); t.src = "nbank";
     t.note = "Вопросы nurzycom в формате SAT. Решайте без подсказок и проверяйте каждый вариант.";
-    t.q = picked.map((q) => Object.assign(CTL.newQ(q.type === "spr" ? "spr" : "mc"), q.type === "spr"
-      ? { passage: q.passage || "", stem: q.stem, a: (q.accept || [q.key]).join(";"), x: q.explanation_ru + (q.trap_ru ? `\n\nЛовушка: ${q.trap_ru}` : ""), skill: q.skill, level: q.level, nb: q.id }
-      : { passage: q.passage || "", stem: q.stem, o: q.options.slice(), a: q.key, x: q.explanation_ru + (q.trap_ru ? `\n\nЛовушка: ${q.trap_ru}` : ""), skill: q.skill, level: q.level, nb: q.id, gl: q.words || [] }));
+    t.q = picked.map(toQuestion);
     const bad = t.q.filter((q) => CTL.problems(q).length).length;
     if (bad) { E.msg = `Вопросов с ошибкой формата: ${bad}. Снимите их и попробуйте снова.`; api.render(); return; }
     const ok = await CTED.addTest(t, `Тест «${t.title}» сохранён`);
@@ -113,5 +116,5 @@ window.NBANK = (() => {
     api.render();
     if (assign && ok) CTED.giveTo(t.id);
   }
-  return { init: (a) => (api = Object.assign(api, a)), load, html, bind, get loaded() { return E.loaded; }, _E: E };
+  return { init: (a) => (api = Object.assign(api, a)), load, html, bind, toQuestion, get loaded() { return E.loaded; }, _E: E };
 })();

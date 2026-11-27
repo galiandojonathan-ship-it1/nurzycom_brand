@@ -51,6 +51,43 @@
     return out.join("");
   }
 
+  // Ready practice stores only a reference to the immutable course bundle.
+  const bundles = new Map(), mockItems = new Map();
+  const mockRef = (ref) => ref && /^(?:\.\/|\/)?q\/mocks\/[a-f0-9]{12}\.bin$/.test(ref.b) &&
+    ["m1", "m2e", "m2h"].includes(ref.mod) && Number.isInteger(ref.i) && ref.i >= 0;
+  const refKey = (r) => `${r.b}:${r.mod}:${r.i}`;
+  function fromMock(item) {
+    if (!item || !["mc", "spr"].includes(item.t)) return null;
+    const keys = [].concat(item.acc || []).filter((key) => key != null && String(key).trim()).map(String);
+    if (item.t === "mc" && (!/^[A-D]$/.test(keys[0] || "") || !Array.isArray(item.opts) || item.opts.length !== 4 || item.ans && item.ans !== keys[0])) return null;
+    if (item.t === "spr" && (!keys.length || !keys.every((key) => /^-?\d+\.\d{4}$/.test(key)))) return null;
+    return { type: item.t, passage: item.stim || "", stem: item.stem || "", o: item.opts || [],
+      a: item.t === "mc" ? keys[0] : String(item.ans || keys.join("; ")), x: item.rat || "", mockKeys: keys };
+  }
+  function view(q) {
+    if (!q.ref) return q;
+    const item = mockRef(q.ref) && mockItems.get(refKey(q.ref));
+    return item ? { ...q, ...item } : { ...q, passage: "", stem: "", o: [], a: "", x: "" };
+  }
+  function html(q, field, index) {
+    const item = view(q), value = field === "o" ? item.o[index] : item[field];
+    return q.ref ? value || "" : field === "o" ? inline(value) : rich(value);
+  }
+  async function resolve(questions) {
+    await Promise.all(questions.filter((q) => mockRef(q?.ref)).map(async (q) => {
+      const r = q.ref, key = refKey(r);
+      if (mockItems.has(key)) return;
+      if (!bundles.has(r.b)) bundles.set(r.b, (async () => {
+        const response = await fetch(r.b);
+        if (!response.ok) throw new Error("Пробник недоступен");
+        return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));
+      })().catch(() => { bundles.delete(r.b); return null; }));
+      const bundle = await bundles.get(r.b);
+      const item = fromMock(bundle?.mods?.[r.mod]?.[r.i]);
+      if (item) mockItems.set(key, item);
+    }));
+  }
+
   // ---- typed answers (as on the SAT: 0.5, .5, 1/2 and 2/4 are the same number); text answers compare without case and spaces
   function num(s) {
     const t = String(s).trim().replace(/\s+/g, "").replace(/,/g, ".").replace(/^\+/, "").replace(/[−–]/g, "-");
@@ -60,15 +97,19 @@
   }
   const accepted = (a) => String(a || "").split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
   function isRight(q, ans) {
+    q = view(q);
     if (ans == null || String(ans).trim() === "") return false;
     if (q.type !== "spr") return /^[ABCD]$/.test(q.a || "") && String(ans).toUpperCase() === q.a;
+    if (q.mockKeys) return q.mockKeys.includes(window.parseSATNumericAnswer?.(ans));
     const n = num(ans), clean = (s) => String(s).trim().toLowerCase().replace(/\s+/g, "");
     return accepted(q.a).some((x) => { const v = num(x); return v != null && n != null ? Math.abs(v - n) < 1e-9 * Math.max(1, Math.abs(v)) : clean(x) === clean(ans); });
   }
-  const answerText = (q) => (q.type === "spr" ? accepted(q.a).join(" или ") : q.a);
+  const answerText = (q) => { q = view(q); return q.type === "spr" ? q.ref ? q.a : accepted(q.a).join(" или ") : q.a; };
 
   // ---- a question is ready when it can be graded
   function problems(q) {
+    q = view(q);
+    if (q.ref && !q.mockKeys) return ["исходный вопрос недоступен"];
     const p = [];
     if (!String(q.stem || "").trim() && !String(q.passage || "").trim()) p.push("нет текста вопроса");
     if (q.type === "mc") {
@@ -143,5 +184,5 @@
     return { tests: Array.isArray(B && B.tests) ? B.tests : [], at: (B && B.at) || 0 };
   }
 
-  window.CTL = { esc, rich, inline, isRight, answerText, accepted, problems, parseText, newTest, newQ, keys, parseAns, packAns, loadBank, SKILLS, LEVELS, REVIEW, LETTERS };
+  window.CTL = { esc, rich, inline, isRight, answerText, accepted, problems, parseText, newTest, newQ, fromMock, mockRef, view, html, resolve, keys, parseAns, packAns, loadBank, SKILLS, LEVELS, REVIEW, LETTERS };
 })();

@@ -108,11 +108,11 @@
     let bank = null; try { bank = window.CTL ? await CTL.loadBank() : null; } catch (e) { bank = null; }
     if ($("cr-ct-list") !== box) return;
     const tests = ((bank && bank.tests) || []).filter((t) => t && Array.isArray(t.q) && t.q.length)
-      .sort((a, b) => (b.src === "gemini" || /^Работа над ошибками/.test(b.title || "")) - (a.src === "gemini" || /^Работа над ошибками/.test(a.title || "")) || (b.at || 0) - (a.at || 0)).slice(0, 12);
-    box.innerHTML = tests.length ? `<ul class="cr-list cr-ct">${tests.map((t) => { const g = t.src === "gemini" || /^Работа над ошибками/.test(t.title || ""), href = `mytest.html?t=${encodeURIComponent(t.id)}`;
+      .sort((a, b) => (b.src === "gemini") - (a.src === "gemini") || (b.at || 0) - (a.at || 0)).slice(0, 12);
+    box.innerHTML = tests.length ? `<ul class="cr-list cr-ct">${tests.map((t) => { const g = t.src === "gemini", href = `mytest.html?t=${encodeURIComponent(t.id)}`;
       return `<li><div class="cr-item" style="cursor:default"><span><span class="cr-kind">${g ? "Gemini · на ошибки" : "Мой тест"}</span><b>${esc(t.title || "Без названия")}</b><small>${t.q.length} ${pl(t.q.length, "вопрос", "вопроса", "вопросов")}${t.at ? " · " + esc(day(t.at)) : ""}</small></span>
         <details class="cr-manage"><summary>Открыть тест</summary><div class="cr-acts"><a class="cr-chip" href="${href}">На общем экране</a><a class="cr-chip" href="${href}&amp;live=1">На устройствах учеников</a></div></details></div></li>`; }).join("")}</ul>`
-      : '<p class="cr-empty">Тестов пока нет. В кабинете: «Результаты» → карточка ученика → «Похожие вопросы · Gemini» → «Задать» или «Только сохранить».</p>';
+      : '<p class="cr-empty">Тестов пока нет. В кабинете: «Результаты» → карточка ученика → «Работа над ошибками» → «Подобрать готовые задания».</p>';
   }
   function tiles() {
     const ls = C.lessons.filter((l) => l.tag[0] === C.course), box = $("cr-tiles"); if (!box) return;

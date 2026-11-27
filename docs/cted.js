@@ -5,7 +5,7 @@
 // synced copies. Data model and checking: ctlogic.js. The student's screen: mytest.html.
 (function () {
   "use strict";
-  const { esc, rich } = CTL;
+  const { esc, view, html: qMarkup } = CTL;
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);
   const E = { view: "list", tests: [], at: 0, d: null, dirty: false, open: new Set(), imp: false, impText: "", impMsg: "", resId: "", msg: "", loaded: false, stu: "", onlyWrong: true, pending: null };
   let api = null;
@@ -19,17 +19,29 @@
     try { srv = await CTL.loadBank(); } catch (e) { srv = null; }
     try { loc = JSON.parse(localStorage.getItem("cb_ct") || "null"); } catch (e) { loc = null; }
     const pick = srv && (!loc || (srv.at || 0) >= (loc.at || 0)) ? srv : loc || { tests: [], at: 0 };
-    E.tests = Array.isArray(pick.tests) ? pick.tests : []; E.at = pick.at || 0; E.loaded = true;
+    E.tests = Array.isArray(pick.tests) ? pick.tests : []; E.at = pick.at || 0;
+    await CTL.resolve(E.tests.flatMap((t) => t.q || []));
+    E.loaded = true;
     titles();
     if (pick === loc && srv && (loc.at || 0) > (srv.at || 0)) save("Тесты из этого браузера сохранены на сервере", true);
   }
   function titles() { E.tests.forEach((t) => (PLAN.CT[t.id] = t.title || "Без названия")); }
-  async function save(msg, quiet) {
-    E.at = Date.now(); titles();
-    try { localStorage.setItem("cb_ct", JSON.stringify({ tests: E.tests, at: E.at })); } catch (e) { /* storage full or private mode */ }
-    const r = await SITE.api("admin/custom", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob({ tests: E.tests, at: E.at }) }) }).catch(() => ({ status: 0 }));
-    if (!quiet || r.ok) api.toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${r.status === 403 ? "нужен ключ администратора" : r.status === 400 ? "тесты слишком большие" : "нет связи с сервером"})`, !r.ok);
-    return r.ok;
+  let writes = Promise.resolve();
+  function save(msg, quiet) {
+    E.at = Math.max(Date.now(), E.at + 1); titles();
+    const at = E.at, snapshot = JSON.stringify({ tests: E.tests, at });
+    try { localStorage.setItem("cb_ct", snapshot); } catch (e) { /* storage full or private mode */ }
+    const put = async () => {
+      let r;
+      try {
+        const data = await SITE.sealBlob(JSON.parse(snapshot));
+        r = await SITE.api("admin/custom", { method: "PUT", body: JSON.stringify({ data }) });
+      } catch { r = { status: 0 }; }
+      if (at === E.at && (!quiet || r.ok)) api.toast(r.ok ? msg : `${msg} · сохранено только в этом браузере (${r.status === 403 ? "нужен ключ администратора" : r.status === 400 ? "тесты слишком большие" : "нет связи с сервером"})`, !r.ok);
+      return r.ok;
+    };
+    writes = writes.then(put, put);
+    return writes;
   }
   const items = () => E.tests.filter((t) => t.q && t.q.length).map((t) => ({ v: t.id, t: `Мой тест · ${t.title || "Без названия"} · ${qn(t.q.length)}`, href: `mytest.html?t=${t.id}`, rk: ["ct_last_", t.id] }));
 
@@ -64,9 +76,10 @@
   function qHTML(q, i, n) {
     const p = CTL.problems(q), open = E.open.has(q.id);
     const head = `${i + 1} · ${q.type === "spr" ? "ответ-число" : "A–D"}${q.skill ? ` · ${q.skill}` : ""} · ${CTL.LEVELS[q.level] || "Medium"}`;
-    const preview = String(q.stem || q.passage || "").replace(/\s+/g, " ").slice(0, 90);
+    const preview = q.ref ? q.source || "Вопрос из пробника" : String(q.stem || q.passage || "").replace(/\s+/g, " ").slice(0, 90);
+    const actions = `<div class="row ct-qact"><button class="chip" type="button" data-qup="1"${i ? "" : " disabled"}>↑ Выше</button><button class="chip" type="button" data-qdown="1"${i < n - 1 ? "" : " disabled"}>↓ Ниже</button><button class="chip" type="button" data-qdup="1">Копия</button><button class="chip" type="button" data-qdel="1">Удалить</button></div>`;
     return `<details class="ct-q${p.length ? " has-bad" : ""}" data-q="${esc(q.id)}"${open ? " open" : ""}><summary><span class="ct-n">${esc(head)}</span><span class="ct-pv">${esc(preview || "пустой вопрос")}</span>${p.length ? `<span class="bad">${esc(p.join(", "))}</span>` : ""}</summary>
-      <div class="ct-qb"><div class="ct-ed">
+      <div class="ct-qb"><div class="ct-ed">${q.ref ? `<p class="hint">${esc(preview)}</p>${actions}` : `
         <div class="cb-grid ct-3"><label class="f"><span>Тип</span><select data-qf="type"><option value="mc"${q.type === "mc" ? " selected" : ""}>Варианты A–D</option><option value="spr"${q.type === "spr" ? " selected" : ""}>Ответ-число (SPR)</option></select></label>
           <label class="f"><span>Навык</span><select data-qf="skill">${skillOpts(q.skill)}</select></label>
           <label class="f"><span>Уровень</span><select data-qf="level">${Object.entries(CTL.LEVELS).map(([k, v]) => `<option value="${k}"${q.level === k ? " selected" : ""}>${v}</option>`).join("")}</select></label></div>
@@ -75,12 +88,13 @@
         ${q.type === "spr" ? `<label class="f"><span>Верные ответы (через ; если их несколько)</span><input type="text" data-qf="a" value="${esc(q.a)}" placeholder="Например: 12.5; 25/2"><small class="hint">0.5, .5 и 1/2 засчитываются одинаково.</small></label>`
           : `<fieldset class="f ct-opts"><legend>Варианты · отметьте верный</legend>${q.o.map((o, k) => { const c = "ABCD"[k]; return `<div class="ct-o"><label class="ct-r"><input type="radio" name="a-${esc(q.id)}" data-qa="${c}"${q.a === c ? " checked" : ""}> ${c}</label><input type="text" data-qo="${k}" value="${esc(o)}" aria-label="Вариант ${c}"></div>`; }).join("")}</fieldset>`}
         <label class="f"><span>Разбор (ученик видит после сдачи)</span><textarea data-qf="x" rows="3" placeholder="Почему верный ответ верный и почему остальные нет">${esc(q.x)}</textarea></label>
-        <div class="row ct-qact"><button class="chip" type="button" data-qup="1"${i ? "" : " disabled"}>↑ Выше</button><button class="chip" type="button" data-qdown="1"${i < n - 1 ? "" : " disabled"}>↓ Ниже</button><button class="chip" type="button" data-qdup="1">Копия</button><button class="chip" type="button" data-qdel="1">Удалить</button></div>
+        ${actions}`}
       </div><div class="ct-prev"><span class="label">Как увидит ученик</span><div class="ct-pbox">${previewHTML(q)}</div></div></div></details>`;
   }
   function previewHTML(q) {
-    return `${q.passage ? `<div class="passage">${rich(q.passage)}</div>` : ""}<div class="stem">${rich(q.stem) || '<p class="hint">Вопрос пока пуст.</p>'}</div>
-      ${q.type === "spr" ? `<div class="ct-spr">Ответ: ${esc(CTL.answerText(q) || "—")}</div>` : `<ol class="ct-pv-o">${q.o.map((o, k) => `<li class="${q.a === "ABCD"[k] ? "on" : ""}"><b>${"ABCD"[k]}</b> ${CTL.inline(o) || "…"}</li>`).join("")}</ol>`}`;
+    q = view(q);
+    return `${q.passage ? `<div class="passage">${qMarkup(q, "passage")}</div>` : ""}<div class="stem">${qMarkup(q, "stem") || '<p class="hint">Вопрос пока пуст.</p>'}</div>
+      ${q.type === "spr" ? `<div class="ct-spr">Ответ: ${esc(CTL.answerText(q) || "—")}</div>` : `<ol class="ct-pv-o">${q.o.map((o, k) => `<li class="${q.a === "ABCD"[k] ? "on" : ""}"><b>${"ABCD"[k]}</b> ${qMarkup(q, "o", k) || "…"}</li>`).join("")}</ol>`}`;
   }
   function editHTML() {
     const d = E.d, bad = d.q.filter((q) => CTL.problems(q).length).length;
@@ -125,6 +139,7 @@
   const rightOf = (q, a) => !blankOf(a) && CTL.isRight(q, a);
   const names = (rows) => rows.map((r) => esc(r.u.name)).join(", ");
   function optsHTML(q, rows, mine) {
+    q = view(q);
     if (q.type === "spr") {
       const groups = new Map();
       for (const r of rows) { const a = r.A[q.id]; if (blankOf(a)) continue; const k = String(a).trim(); groups.set(k, [...(groups.get(k) || []), r]); }
@@ -137,18 +152,19 @@
       const L = "ABCD"[k], who = rows.filter((r) => String(r.A[q.id] || "").toUpperCase() === L), key = q.a === L, picked = mine !== undefined && String(mine).toUpperCase() === L;
       const cls = key ? "ok" : picked ? "no" : who.length ? "trap" : "";
       const tag = key ? '<em class="t-ok">верный</em>' : picked ? '<em class="t-no">ответ ученика</em>' : "";
-      return `<li class="${cls}"><b class="lt">${L}</b><span class="ot">${CTL.inline(o)}${tag}</span>${mine === undefined ? `<span class="cnt">${who.length ? `${who.length} · ${names(who)}` : "0"}</span>` : ""}</li>`; }).join("")}</ol>`;
+      return `<li class="${cls}"><b class="lt">${L}</b><span class="ot">${qMarkup(q, "o", k)}${tag}</span>${mine === undefined ? `<span class="cnt">${who.length ? `${who.length} · ${names(who)}` : "0"}</span>` : ""}</li>`; }).join("")}</ol>`;
   }
   function qcard(q, i, o) {
+    q = view(q);
     const meta = [q.skill, CTL.LEVELS[q.level]].filter(Boolean).map(esc).join(" · ");
     const head = o.mine !== undefined
       ? `<span class="${rightOf(q, o.mine) ? "ok" : "no"}">${blankOf(o.mine) ? "без ответа" : rightOf(q, o.mine) ? "верно" : `ответ ${esc(String(o.mine).slice(0, 12))}`}</span>`
       : `<span class="${o.wrong ? "no" : "ok"}">ошиблись ${o.wrong} из ${o.rows.length}${o.rows.length ? ` · ${Math.round((100 * o.wrong) / o.rows.length)}%` : ""}</span>`;
     const blanks = o.mine === undefined ? o.rows.filter((r) => blankOf(r.A[q.id])) : [];
     return `<details class="ct-mq"${o.open ? " open" : ""}><summary><b>Вопрос ${i + 1}</b>${head}${meta ? `<small>${meta}</small>` : ""}</summary>
-      <div class="ct-mb">${q.passage ? `<div class="passage">${rich(q.passage)}</div>` : ""}<div class="stem">${rich(q.stem)}</div>
+      <div class="ct-mb">${q.passage ? `<div class="passage">${qMarkup(q, "passage")}</div>` : ""}<div class="stem">${qMarkup(q, "stem")}</div>
         ${optsHTML(q, o.rows || [], o.mine)}${blanks.length ? `<p class="ct-blank">Без ответа: ${blanks.length} · ${names(blanks)}</p>` : ""}
-        ${q.x ? `<div class="ct-x"><b>Разбор</b>${rich(q.x)}</div>` : ""}</div></details>`;
+        ${q.x ? `<div class="ct-x"><b>Разбор</b>${qMarkup(q, "x")}</div>` : ""}</div></details>`;
   }
   function mistHTML(t, R) {
     if (!R.rows.length) return "";
@@ -157,16 +173,18 @@
       <label class="ct-only"><input type="checkbox" id="ct-only"${E.onlyWrong ? " checked" : ""}> только вопросы с ошибками</label></div>`;
     // answers kept for questions that are no longer in the test (deleted or replaced after students submitted)
     const ids = new Set(t.q.map((q) => q.id)), staleOf = (rows) => rows.reduce((a, r) => a + Object.keys(r.A).filter((k) => k !== "sec" && !ids.has(k)).length, 0);
+    const known = t.q.map((q, i) => ({ q, i })).filter(({ q }) => !q.ref || CTL.view(q).mockKeys);
+    const unavailable = known.length < t.q.length ? '<p class="hint">Часть исходных вопросов недоступна. Балл попытки сохранён, разбор этих вопросов пропущен.</p>' : "";
     let body, lead, note = "";
     if (me) {
-      const all = t.q.map((q, i) => ({ q, i, a: me.A[q.id] })).filter((x) => x.a !== undefined), bad = all.filter((x) => !rightOf(x.q, x.a));
+      const all = known.map(({ q, i }) => ({ q, i, a: me.A[q.id] })).filter((x) => x.a !== undefined), bad = all.filter((x) => !rightOf(x.q, x.a));
       const show = E.onlyWrong ? bad : all;
       const old = staleOf([me]);
       lead = `${esc(me.u.name)} · ${esc(me.last)} · ошибок и пропусков: ${bad.length}${me.att > 1 ? ` · попыток ${me.att}, показана последняя` : ""}`;
       note = old ? `Балл ${esc(me.last)} посчитан по прежней версии теста: ${old} ${pl(old, "ответ относится", "ответа относятся", "ответов относятся")} к вопросам, которые потом удалили или заменили. Их здесь нет.` : "";
       body = show.length ? show.map((x) => qcard(x.q, x.i, { mine: x.a, open: true })).join("") : `<p class="td-sub">${!all.length ? "В этой попытке нет ответов на нынешние вопросы теста." : old ? "В нынешних вопросах теста ошибок нет." : "Ошибок нет: все ответы верные."}</p>`;
     } else {
-      const all = t.q.map((q, i) => { const rows = R.rows.filter((r) => r.A[q.id] !== undefined); return { q, i, rows, wrong: rows.filter((r) => !rightOf(q, r.A[q.id])).length }; });
+      const all = known.map(({ q, i }) => { const rows = R.rows.filter((r) => r.A[q.id] !== undefined); return { q, i, rows, wrong: rows.filter((r) => !rightOf(q, r.A[q.id])).length }; });
       const st = all.filter((x) => x.rows.length && (!E.onlyWrong || x.wrong)), fresh = all.filter((x) => !x.rows.length), old = staleOf(R.rows);
       note = fresh.length || old ? [fresh.length ? `Без ответов: ${fresh.length === 1 ? "вопрос" : "вопросы"} ${fresh.map((x) => x.i + 1).join(", ")}. ${fresh.length === 1 ? "Его" : "Их"} добавили или заменили после того, как ученики сдали тест.` : "",
         old ? `${old} ${pl(old, "ответ относится", "ответа относятся", "ответов относятся")} к удалённым или заменённым вопросам; ошибки в них здесь не видны, а балл в таблице посчитан по прежней версии.` : ""].filter(Boolean).join(" ") : "";
@@ -175,7 +193,7 @@
       body = st.length ? st.map((x, k) => qcard(x.q, x.i, { rows: x.rows, wrong: x.wrong, open: k < 3 })).join("")
         : `<p class="td-sub">${fresh.length === all.length ? "В сданных попытках нет ответов на нынешние вопросы теста: вопросы заменили после сдачи." : fresh.length || old ? "Ошибок нет в вопросах, на которые есть ответы." : "Ошибок нет: все ответили верно."}</p>`;
     }
-    return `<section class="ct-mist" id="ct-mist"><h3 tabindex="-1">Разбор ошибок</h3>${tools}<p class="hint">${lead}</p>${note ? `<p class="hint ct-stale" role="note">${note}</p>` : ""}${body}</section>`;
+    return `<section class="ct-mist" id="ct-mist"><h3 tabindex="-1">Разбор ошибок</h3>${tools}<p class="hint">${lead}</p>${unavailable}${note ? `<p class="hint ct-stale" role="note">${note}</p>` : ""}${body}</section>`;
   }
   const html = () => (!E.loaded ? '<p class="cb-wait">Загружаю тесты…</p>' : E.view === "edit" && E.d ? editHTML() : E.view === "res" ? resHTML() : listHTML());
 
@@ -261,6 +279,6 @@
     open: () => { if (E.pending && E.tests.some((t) => t.id === E.pending.id)) { E.view = "res"; E.resId = E.pending.id; E.stu = E.pending.uid || ""; } else E.view = "list"; E.pending = null; },
     openRes: (id, uid) => { E.pending = { id, uid }; }, get loaded() { return E.loaded; },
     // «Похожие вопросы» (twins.js): a finished test from Gemini drafts, then the assign form for that student
-    addTest: async (t, msg) => { if (!E.loaded) await load(); E.tests.unshift(t); return save(msg); },
+    addTest: async (t, msg) => { if (!E.loaded) await load(); const i = E.tests.findIndex((test) => test.id === t.id); if (i < 0) E.tests.unshift(t); else E.tests[i] = t; return save(msg); },
     giveTo: (id, key) => api.give(id, key) };
 })();

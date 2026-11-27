@@ -140,3 +140,16 @@
   :where(.teacher-data) .rv-p input{margin-top:4px}
   :where(.teacher-data) .rv-stats{grid-column:2;text-align:left}
 }
+
+/* Ready practice from student mistakes */
+#st-ready{margin:12px 0 18px;scroll-margin-top:100px}
+.rp{margin-top:12px}
+.rp-toolbar,.rp-actions{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:10px 0}
+.rp-toolbar label{display:grid;min-width:0;gap:4px}
+.rp-list{display:grid;gap:6px;margin:10px 0}
+.rp-entry{display:grid;grid-template-columns:42px minmax(0,1fr);border:1px solid var(--studio);border-radius:var(--control-radius);background:var(--white,#fff)}
+.rp-pick{display:flex;justify-content:center;align-items:flex-start;padding:14px 4px;cursor:pointer}
+.rp-entry:has(:checked){border-color:var(--ink)}
+.rp-entry summary{padding:9px 10px 10px 0;cursor:pointer;overflow-wrap:anywhere}
+.rp-entry summary small{display:block;margin-top:3px;color:#665b4f}
+.rp-question{padding:0 10px 12px 0;overflow-wrap:anywhere}
