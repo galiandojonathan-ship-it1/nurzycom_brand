@@ -291,7 +291,7 @@
         let id = (it.c || []).find((r) => TAGS[r]);
         if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
         obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
-          original: { test: x.label || x.test, module: mi + 1, n: qi + 1, keys: m?.[3], sk: it.s || it.si },
+          original: { test: x.label || x.test, route: x.route, cid, refs: it.c, module: mi + 1, n: qi + 1, keys: m?.[3] },
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
       }); });
     }
@@ -358,16 +358,18 @@
     return q ? { src: { b: P.b, n: q.n }, title: `${lesson?.title || code} · ${P.title} · №${mod}`, work: P.title, sk: q.sk } : null;
   }
   function progressMistake(o) {
-    const a = o.original, section = o.sec === "math" ? "Math" : "Reading and Writing";
-    const q = o.src === "live" ? courseMistake(a.ref) : o.src === "bb" ? null : courseMistake(o.id);
+    const a = o.original;
+    if (o.src === "bb") return bluebookMistake(o.sec, a, o.chosen, o.t);
+    const q = courseMistake(o.src === "live" ? a.ref : o.id);
     const hard = a.r?.kind === "X" ? D.sets.find((s) => s.id === a.r.lesson) : null;
-    const title = o.src === "bb" ? `Bluebook · ${a.test} · ${section} · Модуль ${a.module} · №${a.n}`
-      : o.src === "live" ? `${a.title} · №${a.n}` : q?.title || `${whatOf(a.r)} · №${a.n}`;
-    return { id: `${o.part}|${o.id}`, title, q, hard: hard && { set: hard, n: a.n }, ts: o.t,
-      chosen: o.chosen,
-      bb: o.src === "bb" ? { keys: a.keys || [] } : null,
-      sourceNote: o.src === "bb" ? "В отчёте Bluebook сохранены номер и ответы. Текст задания доступен в Bluebook."
-        : o.src === "live" && !q ? "В записи урока сохранены номер вопроса и ответ ученика." : "" };
+    const title = o.src === "live" ? `${a.title} · №${a.n}` : q?.title || `${whatOf(a.r)} · №${a.n}`;
+    return { title, q, hard: hard && { set: hard, n: a.n }, ts: o.t, chosen: o.chosen,
+      sourceNote: o.src === "live" && !q ? "В записи урока сохранены номер вопроса и ответ ученика." : "" };
+  }
+  function bluebookMistake(sec, a, chosen, ts) {
+    const section = sec === "math" ? "Math" : "Reading and Writing", mod = a.module === 1 ? "m1" : a.route;
+    return { title: `Bluebook · ${a.test} · ${section} · ${MODN[mod] || "Модуль 2"} · №${a.n}`,
+      ts, chosen, bb: { keys: a.keys || [], sec, cid: a.cid, refs: a.refs || [] } };
   }
   // «Ориентир на SAT» (predict.js): a range from the full practice-test sections, site tests and shared Bluebook tests;
   // follows the «Пробные на сайте» / «Bluebook» source switches of the progress block. Internal: an estimate, not a result.
@@ -547,8 +549,22 @@
       for (const e of sh) if ((e.taken || e.at) < (d.taken || d.at)) for (const x of Object.values(e.sections)) if (x.miss.some((m) => m[4] === id)) { parts.push(`Bluebook ${esc(x.label || "")} · ✗`); again++; }
       return parts.length ? `<br><small class="bb-rep">Уже был: ${parts.join("; ")}</small>` : "";
     };
-    const body = BBSHARE.html(sh, { open: true, rep, del: true });
+    const originals = originalCards.get($("st-originals"));
+    const body = BBSHARE.html(sh, { open: true, rep, del: true, preview: !!originals });
     b.innerHTML = `<div class="card"><span class="label">Bluebook · отправлено учеником</span><p class="hint">«Убрать» удаляет пробник из кабинета и подсказок Gemini. Сразу после удаления можно вернуть. Если ученик отправит его снова, он появится с пометкой «отправлен снова после удаления».</p><p class="hint" role="status" id="bb-del-st"></p>${again ? `<p class="hint"><b>Повторные ошибки: ${again}.</b> Эти вопросы ученик уже решал в курсе или в прошлом пробнике и ошибся снова (✗).</p>` : ""}${body}<p class="hint">Ошибки с подтверждённым навыком есть в «Похожие вопросы · Gemini» ниже (работа «Bluebook · …»).</p></div>`;
+    if (originals) b.querySelectorAll("[data-bb-preview]").forEach((button) => {
+      button.onclick = () => {
+        const [i, sec] = button.dataset.bbPreview.split(":"), d = sh[+i], x = d.sections[sec];
+        const test = x.label || d.title || "Пробник Bluebook";
+        const list = x.miss.filter((m) => m[2] != null && !x.skip?.[m[0] - 1]).map((m) => {
+          const byPosition = cat?.tests?.[x.test]?.[sec]?.[m[0] === 1 ? "m1" : x.route]?.[m[1] - 1];
+          const cid = m[4] || byPosition;
+          return bluebookMistake(sec, { test, route: x.route, module: m[0], n: m[1], cid, keys: m[3], refs: cat?.items?.[cid]?.c }, m[2], d.taken || d.at);
+        });
+        document.querySelector('[data-st="fix"]')?.click();
+        originals(test, list);
+      };
+    });
     bbDelWire(s, all, sh);
   }
   // remove a shared Bluebook result (or put it back): rewrite one key on the student's synced copy, newest change wins
@@ -581,7 +597,22 @@
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
   async function originalLoad(c) {
-    if (c.bb) return { acc: c.bb.keys };
+    if (c.bb) {
+      const { cid, sec, refs } = c.bb;
+      let item;
+      try { item = await window.BluebookQuestion?.load(sec, cid); }
+      catch { /* use a linked copy already in the course if the bank is unavailable */ }
+      if (item) return item;
+      for (const ref of refs) {
+        const q = courseMistake(ref);
+        if (!q) continue;
+        try {
+          const item = await teacherReviewItem(q);
+          if (item?.stem) return { ...item, bankKeys: [].concat(item.acc || item.ans || []), originalSource: "course" };
+        } catch { /* try the next linked copy */ }
+      }
+      return null;
+    }
     if (c.hard) {
       const { set, n } = c.hard, q = set.q.find((q) => String(q.i) === String(n));
       if (!q) return null;

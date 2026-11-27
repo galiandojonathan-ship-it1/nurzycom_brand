@@ -6,15 +6,21 @@ window.TeacherOriginals = (() => {
   const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" });
 
   function question(c, item) {
-    const key = item ? [].concat(item.acc || item.ans || []).filter(Boolean) : [];
+    const key = c.bb ? c.bb.keys : item ? [].concat(item.acc || item.ans || []).filter(Boolean) : [];
+    const sourceId = c.bb && /^[0-9a-f]{8}$/i.test(c.bb.cid || "") ? c.bb.cid : "";
+    const bankKey = item?.bankKeys || [];
+    const matchesKey = bankKey.some((v) => key.includes(v));
+    const bankNotice = !c.bb ? "" : item
+      ? `<p class="hint">${item.originalSource === "course" ? "Источник: это же задание в курсе." : "Источник: SAT Suite Educator Question Bank."}${sourceId ? ` ID <b>${escape(sourceId)}</b>.` : ""} Ответ ученика указан по Bluebook. Варианты ниже в порядке источника.${key.length && bankKey.length && !matchesKey && item.opts ? " Ключи источников различаются." : ""}</p>`
+      : `<p class="hint">${sourceId ? `Публичный банк не вернул текст для ID <b>${escape(sourceId)}</b>.` : "Для этой позиции в индексе нет публичного ID."} <a href="https://mypractice.collegeboard.org/dashboard" target="_blank" rel="noopener noreferrer">Открыть My Practice</a></p>`;
     const answer = `<p class="tw-answers"><span>Ответ ученика <b>${escape(c.chosen)}</b></span>${key.length ? `<span>Верный ответ <b>${escape(key.join(" / "))}</b></span>` : ""}</p>`;
     const opts = item?.opts?.map((value, i) => {
-      const letter = "ABCD"[i], chosen = letter === c.chosen, right = key.includes(letter);
+      const letter = "ABCD"[i], chosen = !c.bb && letter === c.chosen, right = (c.bb ? bankKey : key).includes(letter);
       return `<li class="${right ? "ok" : chosen ? "trap" : ""}"><b>${letter}</b><span class="qhtml">${value}</span>${right ? "<em>верный</em>" : chosen ? "<em>ответ ученика</em>" : ""}</li>`;
     }).join("");
-    return `${answer}${c.sourceNote ? `<p class="hint">${escape(c.sourceNote)}</p>` : ""}${item?.stim || item?.stem || opts ? `<div class="tw-body" lang="en">
+    return `${answer}${bankNotice}${c.sourceNote ? `<p class="hint">${escape(c.sourceNote)}</p>` : ""}${item?.stim || item?.stem || opts ? `<div class="tw-body" lang="en">
       ${item.stim ? `<div class="qhtml">${item.stim}</div>` : ""}${item.stem ? `<div class="qhtml">${item.stem}</div>` : ""}${opts ? `<ol class="tw-opts">${opts}</ol>` : ""}</div>`
-      : !c.sourceNote ? '<p class="hint">Текст задания не загрузился.</p>' : ""}`;
+      : !c.sourceNote && !c.bb ? '<p class="hint">Текст задания не загрузился.</p>' : ""}`;
   }
 
   function mount(box, load) {
