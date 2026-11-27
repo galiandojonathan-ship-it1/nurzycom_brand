@@ -26,7 +26,7 @@ window.BBSHARE = (() => {
   }
   function html(shares, o = {}) {
     if (!shares.length) return o.empty ? `<p class="hint">${esc(o.empty)}</p>` : "";
-    return `<div class="bbs">${shares.map((d) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
+    return `<div class="bbs">${shares.map((d, i) => `<details class="bbs-one"${o.open === false ? "" : " open"}><summary><b>Bluebook · ${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "тест не определён")}${d.taken ? ` · пройден ${esc(day(d.taken))}` : ` · ${esc(day(d.at))}`}</b>
         <small>${Object.entries(d.sections).map(([s, x]) => (x.skip && x.skip[0] && x.skip[1] ? `${SEC[s]} не решался` : `${SEC[s]} ${x.tot[0] + x.tot[1]}/${x.n}`)).join(" · ")} · отправлено учеником ${esc(dayTime(d.at))}</small>
         ${d.resent ? `<span class="bbs-resent">отправлен снова после удаления${d.removedAt ? ` ${esc(day(d.removedAt))}` : ""}</span>` : ""}
         ${o.del ? `<button class="chip" type="button" data-bbdel="${esc(d.key)}">Убрать</button>` : ""}</summary>
@@ -36,6 +36,7 @@ window.BBSHARE = (() => {
           ${x.skip ? `<p class="hint">${x.skip[0] && x.skip[1] ? "Ученик не решал этот раздел (почти все ответы пропущены)" : `Модуль ${x.skip[0] ? 1 : 2} не решался`}: пропуски не считаются ошибками и в анализ не входят.</p>` : ""}
           ${x.domains ? `<p class="hint">Домены College Board: ${Object.entries(x.domains).map(([k, v]) => `${esc(k)} ${v[0]}/${v[1]}`).join(" · ")}</p>` : ""}
           ${sk.length ? `<p class="hint">Ошибки по навыкам (ошибок из вопросов навыка в этом тесте): ${sk.map(([k, v]) => `${esc(k)} ${v[0]} из ${v[1]}`).join(" · ")}</p>` : ""}
+          ${o.preview && x.miss.some((m) => m[2] != null && !x.skip?.[m[0] - 1]) ? `<p><button type="button" class="btn ghost" data-bb-preview="${i}:${s}">Открыть вопросы с ошибками</button></p>` : ""}
           ${x.skip && x.skip[0] && x.skip[1] ? "" : x.miss.length ? `<table class="dt bbs-t"><thead><tr><th>Модуль</th><th class="num">№</th><th>Выбор → ответ</th><th>Навык${o.rep ? " · повторы" : ""}</th></tr></thead><tbody>${x.miss.map((m) =>
             `<tr><td>М${m[0]}</td><td class="num">${m[1]}</td><td>${m[2] == null ? "пропуск" : esc(m[2])} → ${esc((m[3] || []).join(", "))}</td><td>${m[5] ? esc(m[5]) + (m[7] ? " <small>(по открытому индексу)</small>" : "") : '<span class="hint">не подтверждён</span>'}${o.rep && m[4] ? o.rep(m[4], d, m) : ""}</td></tr>`).join("")}</tbody></table>` : '<p class="hint">Без ошибок.</p>'}</div>`; }).join("")}
       <p class="hint">Источник: College Board My Practice → Score Details, вставлено учеником. Навык задания взят из банка College Board; причину ошибки уточните в разборе с учеником.</p></details>`).join("")}</div>`;
