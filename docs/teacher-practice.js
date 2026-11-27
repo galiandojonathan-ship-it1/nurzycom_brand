@@ -59,22 +59,25 @@ window.TeacherPractice = (() => {
   }
 
   function mount(box, options) {
-    let current = null, cached = new Map();
+    let current = null, cached = new Map(), draft = null;
+    const selected = new Map(), workspace = box.closest(".review-workspace");
     box.innerHTML = `<button class="btn" type="button" data-rp-open>Подобрать готовые задания</button><div data-rp-panel></div>`;
     const opener = box.querySelector("[data-rp-open]"), panel = box.querySelector("[data-rp-panel]");
     opener.onclick = () => open();
-    async function open(input) {
+    async function open(input, behavior = {}) {
       if (current?.busy) return;
-      const state = { source: "", selected: new Map(), context: null, count: PAGE, draft: null, loading: true, busy: false, message: "" };
+      const state = { source: current?.source || "", selected, context: null, count: PAGE, loading: true, busy: false, message: "" };
       current = state;
+      workspace?.classList.add("has-practice");
+      opener.hidden = true;
       panel.innerHTML = '<p class="hint" role="status">Подбираю задания по ошибкам ученика…</p>';
-      box.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      if (!behavior.compare || !matchMedia("(min-width: 1050px)").matches) box.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       try {
         state.context = await options.context(input);
         if (current !== state) return;
         draw(state, true);
       } catch {
-        if (current === state) panel.innerHTML = '<p class="hint" role="status">Не удалось прочитать ошибки ученика. Повторите попытку.</p>';
+        if (current === state) { opener.hidden = false; panel.innerHTML = '<p class="hint" role="status">Не удалось прочитать ошибки ученика. Повторите попытку.</p>'; }
         return;
       }
       await load(state);
@@ -105,23 +108,37 @@ window.TeacherPractice = (() => {
       if (current !== state) return;
       const list = state.list || [], { context, source } = state;
       const opened = new Set(Array.from(panel.querySelectorAll("details[open]"), (d) => d.dataset.preview));
-      panel.innerHTML = `<section class="card rp"><h3 tabindex="-1">Готовые задания${context.label ? ` · ${esc(context.label)}` : ""}</h3>
+      panel.innerHTML = `<section class="card rp"><header class="rp-head"><h3 tabindex="-1">Готовые задания</h3><button type="button" class="chip" data-rp-close${state.busy ? " disabled" : ""}>Свернуть</button></header>
+        ${context.label ? `<p class="hint rp-context">${esc(context.label)}</p>` : ""}
         <div class="rp-toolbar"><label>Источник<select data-rp-source${state.busy ? " disabled" : ""}>
           <option value="">Все источники</option>${Object.entries(SOURCE).map(([k, v]) => `<option value="${k}"${source === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <button class="btn ghost" type="button" data-rp-refresh${state.loading || state.busy ? " disabled" : ""}>Обновить подбор</button></div>
         ${state.loading ? '<p class="hint" role="status">Ищу в выбранных источниках…</p>' : list.length ?
           `<div class="rp-list">${list.slice(0, state.count).map((c, i) => `<div class="rp-entry">
             <label class="rp-pick"><input type="checkbox" data-rp-pick="${i}" aria-label="Выбрать ${esc(c.label)}"${state.selected.has(c.id) ? " checked" : ""}${state.busy || (!state.selected.has(c.id) && state.selected.size >= LIMIT) ? " disabled" : ""}></label>
-            <details data-preview="${esc(c.id)}"${opened.has(c.id) ? " open" : ""}><summary><b>${esc(c.label)}</b><small>${[WHY[c.why], c.skill, LEVEL[c.level]].filter(Boolean).map(esc).join(" · ")}</small></summary>
+            <details data-preview="${esc(c.id)}"${opened.has(c.id) ? " open" : ""}><summary><span class="rp-reason">${esc(WHY[c.why])}</span><b>${esc(c.label)}</b><small>${[c.skill, LEVEL[c.level]].filter(Boolean).map(esc).join(" · ")}</small></summary>
               <div class="rp-question"></div></details></div>`).join("")}</div>
           ${list.length > state.count ? `<button type="button" class="btn ghost" data-rp-more>Ещё вопросы · ${list.length - state.count}</button>` : ""}` :
           `<p class="hint">${context.targets.length ? "В выбранных источниках нет новых вопросов по этим ошибкам." : "В этой работе пока нет ошибок с подтверждённым навыком или подтемой."}</p>`}
-        <p class="hint" role="status" data-rp-message>${esc(state.message)}</p>
-        <div class="row rp-actions"><span class="hint" data-rp-count>Выбрано ${state.selected.size} из ${LIMIT}</span>
-          <button type="button" class="btn ghost" data-rp-save${state.busy || !state.selected.size ? " disabled" : ""}>Сохранить в «Мои тесты»</button>
-          <button type="button" class="btn" data-rp-assign${state.busy || !state.selected.size ? " disabled" : ""}>Перейти к назначению</button></div></section>`;
+        <footer class="rp-dock${selected.size ? " has-selection" : ""}">
+          <p class="hint" role="status" data-rp-message>${esc(state.message)}</p>
+          <div class="rp-actions"><details class="rp-tray"${panel.querySelector(".rp-tray[open]") ? " open" : ""}>
+            <summary><span data-rp-count>Выбрано ${selected.size} из ${LIMIT}</span></summary>
+            ${selected.size ? `<ul>${[...selected.values()].map((c) => `<li><span>${esc(c.label)}</span>
+              <button type="button" class="chip" data-rp-remove="${esc(c.id)}" aria-label="Убрать ${esc(c.label)}"${state.busy ? " disabled" : ""}>Убрать</button></li>`).join("")}</ul>`
+              : '<p class="hint">Отметьте вопросы, которые хотите задать.</p>'}</details>
+            <button type="button" class="btn ghost" data-rp-save${state.busy || !selected.size ? " disabled" : ""}>Сохранить</button>
+            <button type="button" class="btn" data-rp-assign${state.busy || !selected.size ? " disabled" : ""}>Назначить</button>
+          </div></footer></section>`;
       const on = (sel, fn) => { const node = panel.querySelector(sel); if (node) node.onclick = fn; };
       if (focusTitle) panel.querySelector("h3").focus({ preventScroll: true });
+      on("[data-rp-close]", () => {
+        current = null; panel.replaceChildren(); workspace?.classList.remove("has-practice");
+        opener.hidden = false; opener.focus();
+      });
+      panel.querySelectorAll("[data-rp-remove]").forEach((button) => {
+        button.onclick = () => { selected.delete(button.dataset.rpRemove); state.message = ""; draw(state); panel.querySelector(".rp-tray summary")?.focus({ preventScroll: true }); };
+      });
       panel.querySelector("[data-rp-source]").onchange = (e) => { state.source = e.target.value; state.count = PAGE; load(state); };
       on("[data-rp-refresh]", () => { cached = new Map(); return load(state); });
       on("[data-rp-more]", () => {
@@ -150,12 +167,12 @@ window.TeacherPractice = (() => {
       if (state.busy || !state.selected.size) return;
       const picks = [...state.selected.values()];
       const signature = JSON.stringify(picks.map((c) => c.id));
-      const draft = state.draft?.signature === signature ? state.draft : { signature, test: {
+      draft = draft?.signature === signature ? draft : { signature, test: {
         ...CTL.newTest(), src: "ready",
         title: `Готовые задания · ${state.context.label ? state.context.label + " · " : ""}${today()}`.slice(0, 90),
         q: picks.map((c) => c.ref ? { id: CTL.newQ().id, type: c.item.type, ref: c.ref, source: c.label, skill: c.skill, level: c.level } : NBANK.toQuestion(c.raw))
       } };
-      state.draft = draft; state.busy = true; state.message = "Сохраняю тест…"; draw(state);
+      state.busy = true; state.message = "Сохраняю тест…"; draw(state);
       try {
         await CTL.resolve(draft.test.q);
         if (draft.test.q.some((q) => CTL.problems(q).length)) {

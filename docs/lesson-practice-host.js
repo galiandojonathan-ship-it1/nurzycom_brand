@@ -26,7 +26,7 @@ window.LessonPracticeHost = (() => {
     if (!restoring) rememberView();
   }
   let accounts, creating, cold = 0, activeNumber, advancing = false, preparingCold = false;
-  let historyCurrent, historyRoom, attemptsByKey = new Map();
+  let historyCurrent, historyRoom, lastRoomState, attemptsByKey = new Map();
   const coldPart = (lesson) => lesson?.parts.find((p) => p.b && p.q?.length >= 4 && /холодн|cold[ -]+start/i.test(p.title));
   const deckUIs = new Map(), bundles = new Map(), coldDecks = new WeakMap();
 
@@ -50,12 +50,21 @@ window.LessonPracticeHost = (() => {
     const classState = restoring ? "Восстанавливаю практику…" : visible
       ? cold ? `У класса холодный старт · ${cold} из 4` : activeNumber ? `У класса вопрос ${activeNumber}` : "Класс ждёт следующий вопрос"
       : "";
+    const state = historyRoom === room ? lastRoomState : null;
+    const active = visible && state?.current === activeNumber && activeNumber;
+    const total = visible && state ? state.members.length : 0;
+    const sentCount = active ? state.attempts.filter((a) => a.number === activeNumber).length : 0;
+    const activity = active ? `Вопрос ${activeNumber} · ответили ${sentCount} из ${total}` : visible ? `Подключились: ${total}` : "";
     if (panels) panels.hidden = !room || restoring;
     if (home) {
       home.create.disabled = restoring;
       home.create.hidden = !!hostId || (!!room && !closed);
       home.retry.hidden = !restoring || !resumeFailed;
-      setClassState(home.state, classState);
+      setClassState(home.state, activity || classState);
+      home.active.hidden = !visible && !restoring;
+      home.title.textContent = state?.title || "Практика с учениками";
+      const item = state?.questions.find((q) => q.number === activeNumber);
+      home.source.textContent = visible ? cold ? "Холодный старт" : item?.skill || "" : "";
       const candidate = visible && !hostId && savedView?.room === room ? savedView : null;
       const available = candidate && home.canReturn(candidate);
       home.returnSlide.hidden = !available;
@@ -74,13 +83,13 @@ window.LessonPracticeHost = (() => {
       button.disabled = advancing || !activeNumber || sendingStage || !!roomQueue()?.pending;
       button.textContent = cold === 4 ? "Закончить холодный старт · 4/4" : `Следующий вопрос · ${cold}/4`;
     };
-    if (panels) updateAdvance(panels.querySelector("[data-lp-advance]"));
+    if (home) updateAdvance(home.advance);
     for (const controls of deckUIs.values()) {
       updateAdvance(controls.advance);
       controls.monitor.hidden = !room;
       controls.monitor.href = room ? link("classroom.html", "practiceHost") : "#";
       controls.copy.hidden = !visible;
-      setClassState(controls.state, classState);
+      setClassState(controls.state, activity || classState);
       if (controls.queue) renderQueue(controls.queue);
     }
   }
@@ -285,6 +294,7 @@ window.LessonPracticeHost = (() => {
       if (full) attemptsByKey.clear();
       for (const a of state.attempts) attemptsByKey.set(`${a.account}:${a.number}`, a);
       historyRoom = roomId; historyCurrent = state.current;
+      lastRoomState = state;
       closed = state.closed; cold = state.cold || 0; activeNumber = state.current;
       if (restoring) {
         restoring = false; resumeFailed = false;
@@ -319,26 +329,34 @@ window.LessonPracticeHost = (() => {
     root.hidden = false;
     root.innerHTML = `<section class="cr-card">
       <h2>${hostId ? "Монитор преподавателя" : "Практика с учениками"}</h2><p class="cr-sub">${hostId ? "Нажмите на ответ, чтобы увидеть время и подсказки." : "Ссылка появится при отправке первого вопроса. Её можно подготовить заранее."}</p>
-      <p data-lp-current role="status" hidden></p>
+      <div class="lp-active" data-lp-active hidden>
+        <div><strong data-lp-title></strong><small data-lp-source></small><p data-lp-current role="status"></p></div>
+        <button class="btn" data-lp-advance type="button" hidden></button>
+      </div>
       <div class="lp-control"><button class="btn" type="button" data-lp-new>Подготовить ссылку заранее</button>
         <button class="btn ghost" type="button" data-lp-retry hidden>Повторить восстановление</button>
         <div data-lp-panels class="lp-control" hidden>
           <div class="lp-home-actions" role="group" aria-label="Ход практики">
-            <button class="btn" data-lp-return type="button" hidden></button>
-            <button class="btn ghost" data-lp-advance type="button" hidden></button></div>
+            <button class="btn" data-lp-return type="button" hidden></button></div>
           <div class="lp-home-actions" role="group" aria-label="Подключение к практике">
             <button class="btn ghost" data-lp-copy type="button">Копировать ссылку для учеников</button>
-            <details class="cr-manage"><summary>Открыть ссылки</summary>
+            <details class="cr-manage"><summary>Настройки</summary>
               <div class="cr-acts"><a data-lp-link></a>
-                <a data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a></div>
-            </details></div>
-          <button class="btn ghost lp-home-end" data-lp-finish type="button">Завершить практику</button></div></div>
+                <a data-lp-monitor target="_blank" rel="noopener">Монитор преподавателя</a>
+                <button class="btn ghost lp-home-end" data-lp-finish type="button">Завершить практику</button></div>
+            </details></div></div></div>
       <p data-lp-view-notice hidden></p><p data-lp-status role="status"></p><div class="lp-roster"></div></section>`;
     panels = root.querySelector("[data-lp-panels]"); status = root.querySelector("[data-lp-status]"); roster = root.querySelector(".lp-roster");
     monitorLink = root.querySelector("[data-lp-monitor]"); studentLink = root.querySelector("[data-lp-link]");
     home = { create: root.querySelector("[data-lp-new]"), retry: root.querySelector("[data-lp-retry]"),
       returnSlide: root.querySelector("[data-lp-return]"), unavailable: root.querySelector("[data-lp-view-notice]"),
-      state: root.querySelector("[data-lp-current]"), canReturn };
+      state: root.querySelector("[data-lp-current]"), advance: root.querySelector("[data-lp-advance]"),
+      active: root.querySelector("[data-lp-active]"), title: root.querySelector("[data-lp-title]"),
+      source: root.querySelector("[data-lp-source]"), canReturn };
+    const top = document.querySelector(".top");
+    if (top && window.ResizeObserver) new ResizeObserver(() => {
+      home.active.style.setProperty("--live-bar-top", top.offsetHeight + "px");
+    }).observe(top);
     home.create.onclick = () => room && !closed ? notify("Ссылка уже готова. Её можно скопировать.") : newRoom(window.LESSON?.session()?.group || "Практика SAT");
     home.retry.onclick = async () => {
       home.retry.disabled = true;
@@ -918,11 +936,9 @@ window.LessonPracticeHost = (() => {
     const bar = el("div"); bar.className = "lp-control dk-bar dk-practice";
     const questions = el("div"); questions.className = "dk-actions";
     questions.setAttribute("role", "group"); questions.setAttribute("aria-label", "Вопросы для класса");
-    const connection = el("div"); connection.className = "dk-actions";
-    connection.setAttribute("role", "group"); connection.setAttribute("aria-label", "Связь с классом");
     const preparation = el("details"); preparation.className = "dk-prep";
     const prepActions = el("div"); prepActions.className = "dk-actions";
-    preparation.append(el("summary", "Подготовка"), prepActions);
+    preparation.append(el("summary", "Настройки"), prepActions);
     const pick = action("Показать с этого слайда", () => recognize(box, deck, lesson, current, readText, readSlide, pick));
     pick.className = "lp-show-slide";
     const manual = action("Выбрать вручную", () => picker(box, deck, current(), lesson, readText));
@@ -932,7 +948,7 @@ window.LessonPracticeHost = (() => {
     const copy = action("Ссылка для учеников", copyLink);
     const monitor = el("a", "Монитор преподавателя"); monitor.target = "_blank"; monitor.rel = "noopener";
     const status = el("small"); status.setAttribute("role", "status");
-    const state = el("small"); state.className = "lp-class-state"; state.setAttribute("role", "status");
+    const state = el("small"); state.className = "lp-class-state lp-deck-status"; state.setAttribute("role", "status");
     questions.append(pick, next);
     prepActions.append(manual);
     if (readSlide) {
@@ -954,14 +970,14 @@ window.LessonPracticeHost = (() => {
         try { await startCold(lesson, deck, readText, readSlide, () => box.isConnected); }
         finally { start.disabled = false; }
       });
-      questions.append(start);
+      prepActions.append(start);
     }
     const plan = el("div"); plan.className = "dk-actions dk-plan";
     const queueControls = readSlide ? attachQueue(box, prepActions, plan, { deck, lesson, readText, readSlide, jump }) : null;
-    connection.append(copy, monitor);
-    bar.append(questions, connection, preparation);
+    prepActions.append(copy, monitor);
+    bar.append(state, questions, preparation);
     if (queueControls) bar.append(plan);
-    bar.append(state, status); box.querySelector(".dk-bar").after(bar);
+    bar.append(status); box.querySelector(".dk-bar").after(bar);
     deckUIs.set(box, { monitor, copy, status, state, advance: next, queue: queueControls });
     links();
   }
