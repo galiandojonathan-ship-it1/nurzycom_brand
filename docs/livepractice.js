@@ -362,7 +362,10 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     const number = independent ? studentNumber : classNumber;
     if (independent) {
       const { select, previous, next } = studentNav;
-      select.value = String(number);
+      if (select.value !== String(number)) {
+        select.value = String(number);
+        window.SiteSelect?.sync(select);
+      }
       if ((number === 1 && document.activeElement === previous) ||
           (number === state.total && document.activeElement === next)) select.focus();
       previous.disabled = number === 1;

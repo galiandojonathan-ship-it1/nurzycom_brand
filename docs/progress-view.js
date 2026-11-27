@@ -208,7 +208,7 @@ window.PVIEW = (() => {
         g.rows.slice().sort(sorter).forEach((r) => {
           const { x, thin, c, b0, now, was, ch, sig, late, stt } = r;
           const tr = document.createElement("tr"); if (thin) tr.className = "pg-thin";
-          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em>${r.need != null ? `<u class="pg-need" style="left:calc(${pct(r.need)}% - 1px)" title="нужно для цели ${pct(r.need)}%"></u>` : ""}</div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b>${r.need != null && !thin ? `<div class="hint">нужно ${pct(r.need)}%</div>` : ""}</td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>${o.onTwins ? `<td><button class="pg-tw" type="button" data-twk="${x.k}" title="Похожие вопросы на ошибки этой подтемы">Похожие</button></td>` : ""}`;
+          tr.innerHTML = `<td>${esc(NAME[x.k] || x.k)}</td><td><div class="pg-bar"><i style="width:${pct(now)}%"></i><em style="left:calc(${pct(was)}% - 1px)"></em>${r.need != null ? `<u class="pg-need" style="left:calc(${pct(r.need)}% - 1px)" title="нужно для цели ${pct(r.need)}%"></u>` : ""}</div></td><td class="num"><b>${x.series[n - 1] == null ? "—" : pct(now) + "%"}</b>${r.need != null && !thin ? `<div class="hint">нужно ${pct(r.need)}%</div>` : ""}</td><td class="num ${!sig ? "pg-noise" : ch >= 0 ? "up" : "down"}"${late ? ` title="изменение с ${day(S[b0].t)}, когда появилось 3 ответа"` : ""}>${thin ? "—" : (ch >= 0 ? "+" : "") + pct(ch)}${late ? `<div class="hint">с ${day(S[b0].t)}</div>` : ""}</td><td class="sp"></td><td class="num">${x.n}</td><td><span class="pg-pill ${stt[0]}">${stt[1]}</span></td>${o.onTwins ? `<td><button class="pg-tw" type="button" data-twk="${x.k}" title="Посмотреть ошибки по этой подтеме">Похожие</button></td>` : ""}`;
           tr.querySelector(".sp").appendChild(spark(x.series.slice(a).map((v, j) => (a + j < b0 ? null : v)), thin ? "#D9D5CD" : "#0F0F0F"));
           tb.appendChild(tr);
         });
@@ -218,7 +218,7 @@ window.PVIEW = (() => {
       ctl.querySelectorAll("[data-mf]").forEach((b) => (b.onclick = () => { mp.f = b.dataset.mf; saveMap(); draw(); }));
       ctl.querySelectorAll("[data-ms]").forEach((b) => (b.onclick = () => { mp.s = b.dataset.ms; saveMap(); draw(); }));
       tb.querySelectorAll("[data-mfold]").forEach((b) => (b.onclick = () => { const k = b.dataset.mfold; if (mp.closed[k]) delete mp.closed[k]; else mp.closed[k] = 1; saveMap(); draw(); }));
-      box.querySelector("#pg-tr").innerHTML = res.traps.length ? res.traps.slice(0, 6).map((x) => `<div class="pg-trap"><div><span>${esc(TRAP[x.trap] || x.trap)}</span><span class="num"><span class="hint">${pct(x.was)}%</span> → <b>${pct(x.now)}%</b></span></div><div class="pg-bar"><i style="width:${pct(x.now)}%"></i><em style="left:calc(${pct(x.was)}% - 1px)"></em></div>${o.onTwins ? `<button class="pg-tw" type="button" data-twt="${esc(x.trap)}" title="Похожие вопросы на ошибки с этой ловушкой">Похожие</button>` : ""}</div>`).join("") : '<p class="hint">Пока мало вопросов с размеченными ловушками.</p>';
+      box.querySelector("#pg-tr").innerHTML = res.traps.length ? res.traps.slice(0, 6).map((x) => `<div class="pg-trap"><div><span>${esc(TRAP[x.trap] || x.trap)}</span><span class="num"><span class="hint">${pct(x.was)}%</span> → <b>${pct(x.now)}%</b></span></div><div class="pg-bar"><i style="width:${pct(x.now)}%"></i><em style="left:calc(${pct(x.was)}% - 1px)"></em></div>${o.onTwins ? `<button class="pg-tw" type="button" data-twt="${esc(x.trap)}" title="Посмотреть ошибки с этой ловушкой">Похожие</button>` : ""}</div>`).join("") : '<p class="hint">Пока мало вопросов с размеченными ловушками.</p>';
       const H = res.habits;
       box.querySelector("#pg-hb").innerHTML = [["Невнимательность", "ошибки там, где модель была почти уверена в верном ответе", H.slip, H.slipExpected], ["Пропуски", "вопросы без ответа", H.blank, null]]
         .map(([l, s, v, e]) => `<div class="pg-hab"><div><b>${l}</b><div class="hint">${s}</div></div><div class="num">${v == null ? "—" : pct(v) + "%"}${e != null ? `<div class="hint">ожидалось ${pct(e)}%</div>` : ""}</div></div>`).join("");
@@ -246,8 +246,8 @@ window.PVIEW = (() => {
           ...sk.filter((x) => !off(x.skill)).map((x) => ({ v: x.series.slice(a).map((v) => (v == null ? null : v * 100)), color: x.color, label: x.skill, w: 1.6, nolabel: true }))],   // skill names are in the legend
           times: cut.map((q) => q.t), fmt: (v) => Math.round(v) + "%", h: 260 });
       }
-      if (o.onTwins) { box.querySelectorAll("[data-twk]").forEach((b) => (b.onclick = () => o.onTwins({ focus: NAME[b.dataset.twk] || "" })));
-        box.querySelectorAll("[data-twt]").forEach((b) => (b.onclick = () => o.onTwins({ trap: TRAP[b.dataset.twt] || "" }))); }
+      if (o.onTwins) { box.querySelectorAll("[data-twk]").forEach((b) => (b.onclick = () => o.onTwins({ subtopic: b.dataset.twk, label: NAME[b.dataset.twk] || b.dataset.twk })));
+        box.querySelectorAll("[data-twt]").forEach((b) => (b.onclick = () => o.onTwins({ trapKey: b.dataset.twt, label: TRAP[b.dataset.twt] || b.dataset.twt }))); }
       box.querySelectorAll("[data-ps]").forEach((b) => (b.onclick = () => { st.sec = b.dataset.ps; draw(); }));
     };
     draw();
