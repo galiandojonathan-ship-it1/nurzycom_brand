@@ -19,9 +19,20 @@ window.BBSHARE = (() => {
   }
   const dayTime = (t) => { const d = new Date(t); return `${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`; };
   const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+  function verifyTitle(d) {
+    const heading = /^(SAT|PSAT\/NMSQT|PSAT 10|PSAT 8\/9) Practice (?:Test )?(\d+)$/i.exec(d.title || "");
+    if (!heading) return d;
+    for (const [s, x] of Object.entries(d.sections)) {
+      if (!x.test || (heading[1].toUpperCase() === "SAT" && x.test === "SAT" + heading[2])) continue;
+      // Keep the student's answers from legacy reports but suppress IDs inferred from a conflicting test.
+      d.sections[s] = { ...x, test: null, label: null, route: null, conflict: x.label || x.test, skills: {},
+        miss: x.miss.map((m) => m.slice(0, 4).concat(null, null, null, 0)) };
+    }
+    return d;
+  }
   function fromCopy(B, acct) {   // acct: the account id of this copy; a record stamped by another account is not its own
     return Object.entries(B || {}).filter(([k, r]) => k.indexOf("bb_share_") === 0 && r && r.v != null)
-      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections && !d.deleted && (!acct || !d.own || d.own === acct) ? Object.assign(d, { key: k }) : null; } catch (e) { return null; } })
+      .map(([k, r]) => { try { const d = JSON.parse(r.v); return d && d.sections && !d.deleted && (!acct || !d.own || d.own === acct) ? Object.assign(verifyTitle(d), { key: k }) : null; } catch (e) { return null; } })
       .filter(Boolean).sort((a, b) => (b.taken || b.at || 0) - (a.taken || a.at || 0));   // by the date the test was taken
   }
   function html(shares, o = {}) {
@@ -32,7 +43,8 @@ window.BBSHARE = (() => {
         ${o.del ? `<button class="chip" type="button" data-bbdel="${esc(d.key)}">Убрать</button>` : ""}</summary>
       ${Object.entries(d.sections).map(([s, x]) => {
         const sk = Object.entries(x.skills || {}).filter(([, v]) => v[0]).sort((a, b) => b[1][0] / b[1][1] - a[1][0] / a[1][1] || b[1][0] - a[1][0]);
-        return `<div class="bbs-sec"><p><b>${SEC[s]}</b> · ${x.test ? `${esc(x.label)} · ${ROUTE[x.route] || ""}` : "тест не определён: навыки не подтверждены"} · ${x.skip && x.skip[0] && x.skip[1] ? "раздел не решался" : `М1 ${x.skip && x.skip[0] ? "не решался" : `${x.tot[0]}/${SIZE[s]}`} · М2 ${x.skip && x.skip[1] ? "не решался" : `${x.tot[1]}/${SIZE[s]}`}`}</p>
+        return `<div class="bbs-sec"><p><b>${SEC[s]}</b> · ${x.test ? `${esc(x.label)} · ${ROUTE[x.route] || ""}${d.title ? "" : " · определён по ключам"}` : "тест не определён: навыки не подтверждены"} · ${x.skip && x.skip[0] && x.skip[1] ? "раздел не решался" : `М1 ${x.skip && x.skip[0] ? "не решался" : `${x.tot[0]}/${SIZE[s]}`} · М2 ${x.skip && x.skip[1] ? "не решался" : `${x.tot[1]}/${SIZE[s]}`}`}</p>
+          ${x.conflict ? `<p class="hint">В исходном отчёте: ${esc(d.title)}. По ключам получился ${esc(x.conflict)}. Привязка к вопросам скрыта из-за расхождения.</p>` : ""}
           ${x.skip ? `<p class="hint">${x.skip[0] && x.skip[1] ? "Ученик не решал этот раздел (почти все ответы пропущены)" : `Модуль ${x.skip[0] ? 1 : 2} не решался`}: пропуски не считаются ошибками и в анализ не входят.</p>` : ""}
           ${x.domains ? `<p class="hint">Домены College Board: ${Object.entries(x.domains).map(([k, v]) => `${esc(k)} ${v[0]}/${v[1]}`).join(" · ")}</p>` : ""}
           ${sk.length ? `<p class="hint">Ошибки по навыкам (ошибок из вопросов навыка в этом тесте): ${sk.map(([k, v]) => `${esc(k)} ${v[0]} из ${v[1]}`).join(" · ")}</p>` : ""}
