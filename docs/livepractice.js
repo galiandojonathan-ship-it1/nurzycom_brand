@@ -13,7 +13,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
   const feedback = panel.querySelector("[role=alert]");
   const content = panel.querySelector("[data-live-content]");
   let credentials = null, state, shown = "", pending = false, pollTimer, refreshVersion = 0;
-  let sealedSet = null, displayedSet = null, receivedAt = 0;
+  let sealedSet = null, displayedSet = null, receivedAt = 0, recordMeta = null, savedRecord;
   let hideCorrect = false, studentNumber = 1, hostPreview = null, hostPick = null, tools, studentNav;
   const drafts = new Map();
   const submissions = new Map();
@@ -168,11 +168,20 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return section;
   }
 
+  function questionNumber(i) {
+    const number = displayedSet?.q[i - 1]?.number;
+    return Number.isInteger(number) && number > 0 ? number : i;
+  }
+  function positionLabel(i, total) {
+    const n = questionNumber(i);
+    return n === i ? `Вопрос ${i} из ${total}` : `Вопрос №${n} · ${i} из ${total}`;
+  }
+
   function scoreboard() {
     const table = document.createElement("table");
     table.setAttribute("aria-label", "Ответы группы по вопросам");
     const header = table.createTHead().insertRow();
-    ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(i + 1)), ...(hideCorrect ? [] : ["Верно"])].forEach((label) => {
+    ["Ученик", ...Array.from({ length: state.total || 10 }, (_, i) => String(questionNumber(i + 1))), ...(hideCorrect ? [] : ["Верно"])].forEach((label) => {
       const cell = document.createElement("th");
       cell.scope = "col";
       cell.textContent = label;
@@ -214,20 +223,32 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     return table;
   }
 
-  // the lesson account keeps a record of every round for the teacher's analysis (2026-11-23, Nurassyl: «activity on lessons»):
-  // synced key lv_r_<round> with the questions' course ids, skills and levels (lr_meta_ from liveround.js) and each student's answers
+  // Record new rounds when finalized. Older rounds still use the browser metadata and answer-only behavior.
   function saveRound() {
     if (!credentials?.host || !state.students?.length || state.started == null) return;
-    let meta = null; try { meta = JSON.parse(localStorage.getItem("lr_meta_" + round) || "null"); } catch { /* none */ }
+    if (state.record && (!recordMeta || !state.finished)) return;
+    let meta = recordMeta;
+    if (!state.record) {
+      try { meta = JSON.parse(localStorage.getItem("lr_meta_" + round) || "null"); } catch { /* old round without metadata */ }
+    }
     const by = new Map(state.students.map((student) => [student.id, { name: student.display_name, ans: {} }]));
-    for (const answer of state.answers) { const st = by.get(answer.participant_id); if (st) st.ans[answer.question_number] = [String(answer.answer).slice(0, 64), answer.correct ? 1 : 0]; }
-    const record = { v: 1, round, at: state.started, title: (meta && meta.title) || "Живая практика",
-      items: (meta && meta.items) || Array.from({ length: state.total || 0 }, () => ({ sec: (meta && meta.sec) || "rw" })), students: [...by.values()] };
-    record.items.forEach((it) => { if (!it.sec) it.sec = (meta && meta.sec) || "rw"; });
-    try { localStorage.setItem("lv_r_" + round, JSON.stringify(record)); } catch { /* storage full */ }
+    for (const answer of state.answers) {
+      const student = by.get(answer.participant_id);
+      if (student) student.ans[answer.question_number] = [String(answer.answer).slice(0, 64), answer.correct ? 1 : 0];
+    }
+    const items = (meta?.items || Array.from({ length: state.total || 0 }, () => ({}))).map((it) => ({ sec: meta?.sec || "rw", ...it }));
+    const record = { v: state.record ? 2 : 1, round, at: state.started, title: meta?.title || state.title || "Живая практика",
+      items, ...(state.record ? { progress: meta.progress, module: meta.module?.map((it) => ({ sec: meta.sec, ...it })) } : {}), students: [...by.values()] };
+    const value = JSON.stringify(record);
+    if (savedRecord === value) return;
+    try {
+      localStorage.setItem("lv_r_" + round, value);
+      savedRecord = value;
+      if (state.finished) SITE.syncNow?.().catch(() => {});
+    } catch { /* auth can retry after connectivity returns */ }
   }
   function updateScoreboard(results) {
-    const signature = JSON.stringify([hideCorrect, state.students, state.answers]);
+    const signature = JSON.stringify([hideCorrect, state.students, state.answers, state.finished]);
     if (results.dataset.signature !== signature) {
       results.replaceChildren(scoreboard());
       results.dataset.signature = signature;
@@ -242,7 +263,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     nav.className = "live-review-nav";
     const select = document.createElement("select");
     select.setAttribute("aria-label", "Перейти к вопросу");
-    questions.forEach((_, i) => select.add(new Option("Вопрос " + (i + 1), i)));
+    questions.forEach((_, i) => select.add(new Option("Вопрос " + questionNumber(i + 1), i)));
     const card = document.createElement("article");
     card.className = "live-host-question";
     const title = heading("");
@@ -261,7 +282,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     function show(index) {
       if (!questions[index]) return;
       select.selectedIndex = index;
-      title.textContent = `Вопрос ${index + 1} из ${questions.length}`;
+      title.textContent = positionLabel(index + 1, questions.length);
       if (index === 0 && document.activeElement === prev ||
           index === questions.length - 1 && document.activeElement === next) select.focus();
       prev.disabled = index === 0;
@@ -289,7 +310,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     nav.setAttribute("aria-label", "Вопросы раунда");
     const select = document.createElement("select");
     select.setAttribute("aria-label", "Перейти к вопросу");
-    for (let i = 1; i <= state.total; i++) select.add(new Option("Вопрос " + i, i));
+    for (let i = 1; i <= state.total; i++) select.add(new Option("Вопрос " + questionNumber(i), i));
     function go(number) {
       if (number < 1 || number > state.total) return;
       studentNumber = number;
@@ -310,8 +331,8 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     // all questions at a glance: answered ones are filled, a click goes straight there
     const grid = document.createElement("div");
     grid.className = "live-qgrid";
-    for (let i = 1; i <= state.total; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = String(i); b.dataset.q = String(i);
-      b.setAttribute("aria-label", "Вопрос " + i); b.onclick = () => go(i); grid.append(b); }
+    for (let i = 1; i <= state.total; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = String(questionNumber(i)); b.dataset.q = String(i);
+      b.setAttribute("aria-label", "Вопрос " + questionNumber(i)); b.onclick = () => go(i); grid.append(b); }
     nav.append(previous, select, next, grid);
     panel.insertBefore(nav, content);
     return { nav, select, previous, next, grid };
@@ -389,13 +410,13 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
     const view = ended ? "done" : state.editable ? String(number) : number + ":" + (answer || "");
     let progress = `Отвечено ${state.answers.length} из ${state.total}`;
     if (independent && submissions.size) {
-      const waiting = [...submissions].filter(([, entry]) => entry.saving).map(([question]) => question);
-      const failed = [...submissions].filter(([, entry]) => entry.error).map(([question]) => question);
+      const waiting = [...submissions].filter(([, entry]) => entry.saving).map(([question]) => questionNumber(question));
+      const failed = [...submissions].filter(([, entry]) => entry.error).map(([question]) => questionNumber(question));
       if (waiting.length) progress += ` · Сохраняем №${waiting.join(", ")}`;
       if (failed.length) progress += ` · Не сохранён выбор №${failed.join(", ")}`;
     }
     setMessage(ended ? "Раунд завершён." : number
-      ? `Вопрос ${number} из ${state.total} · ${independent ? progress : timing}`
+      ? `${positionLabel(number, state.total)} · ${independent ? progress : timing}`
       : "Ждём начала раунда.");
     if (view !== shown) {
       shown = view;
@@ -524,7 +545,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       if (!state.selfPaced) hostPick = null;
       const displayed = (state.selfPaced ? hostPick : null) ?? hostPreview ?? number;
       const answerCount = number ? new Set((state.answers || []).filter((a) => a.question_number === number).map((a) => a.participant_id)).size : 0;
-      const position = ended ? "Раунд завершён" : number ? `Вопрос ${number} из ${state.total}` : "Раунд готов к запуску";
+      const position = ended ? "Раунд завершён" : number ? positionLabel(number, state.total) : "Раунд готов к запуску";
       const count = number ? `Ответили ${answerCount} из ${state.students.length}` : `Подключились: ${state.students.length}`;
       const pos = content.querySelector("[data-live-position]"), stats = content.querySelector("[data-live-answers]");
       if (pos.textContent !== position) pos.textContent = position;
@@ -540,7 +561,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
           jump.dataset.sig = sig; jump.replaceChildren();
           for (let i = 1; i <= state.total; i++) {
             const b = document.createElement("button"); b.type = "button"; b.dataset.q = String(i);
-            b.innerHTML = `${i}<small>${counts[i] || 0}</small>`; b.setAttribute("aria-label", `Вопрос ${i}, ответили ${counts[i] || 0}`);
+            b.innerHTML = `${questionNumber(i)}<small>${counts[i] || 0}</small>`; b.setAttribute("aria-label", `Вопрос ${questionNumber(i)}, ответили ${counts[i] || 0}`);
             b.setAttribute("aria-current", i === displayed ? "true" : "false");
             b.onclick = async () => {
               if (state.selfPaced) { hostPick = i; render(set); return; }
@@ -560,7 +581,7 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
       const showQuestion = !!number && !ended;
       currentQuestion.hidden = !showQuestion;
       if (showQuestion && currentQuestion.dataset.number !== String(displayed)) {
-        currentQuestion.replaceChildren(heading("Вопрос " + displayed), questionView(set.q[displayed - 1]));
+        currentQuestion.replaceChildren(heading("Вопрос " + questionNumber(displayed)), questionView(set.q[displayed - 1]));
         currentQuestion.dataset.number = String(displayed);
       }
       updateScoreboard(results);
@@ -595,13 +616,17 @@ window.mountLivePractice = function ({ sets, blocks, rich, sha, selected }) {
         set = sealedSet;
       } else set = sets.find((item) => item.id === state.set);
       if (!set || set.q.length < (state.total || 10)) throw Error("Набор вопросов недоступен.");
+      if (credentials.host && state.record && !recordMeta) {
+        recordMeta = await SITE.unsealBlob(state.record);
+        if (version !== refreshVersion) return;
+      }
       displayedSet = set;
       render(set);
     } catch (error) {
       if (version !== refreshVersion) return;
       message.textContent = error.message;
     }
-    if (!state?.finished) pollTimer = setTimeout(refresh, 1500);
+    if (!state?.finished || state.record && !recordMeta) pollTimer = setTimeout(refresh, 1500);
   }
 
   const clockTimer = setInterval(() => {

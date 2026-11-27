@@ -266,7 +266,7 @@
      Bluebook: every position of the recognised route (from the catalog), dated by the day the test was taken, weight of a mock.
      A question that is also in the course takes the course id, so the engine counts a later meeting as a repeat and uses its
      subtopic; otherwise its College Board skill spreads the evidence over that skill's subtopics. Live rounds: the round records
-     the lesson account saves (lv_r_), matched to this student by name, weight of a learning part. */
+     the lesson account saves (lv_r_), matched by student name and included according to the round’s index setting. */
   let LIVE = null;
   function liveRecords() {
     if (!LIVE) LIVE = (async () => { const out = [];
@@ -298,14 +298,7 @@
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
       }); });
     }
-    for (const { rec, me } of lv) (rec.items || []).forEach((it, i) => {
-      const a = (me.ans || {})[i + 1]; if (!a) return;
-      const id = it.ref && TAGS[it.ref] ? it.ref : `LV.${rec.round}.${i + 1}`;
-      if (!TAGS[id] && it.sk && !tags[id]) { const tg = PROGRESS.tagFromSkill(it.sk); if (tg) tags[id] = tg; }
-      obs.push({ id, t: rec.at, x: a[1] ? 1 : 0, blank: false, sec: it.sec || "rw", level: it.d || "M", type: it.type === "mc" ? "mc" : "spr",
-        original: { title: rec.title || "Живая практика", n: i + 1, ref: it.ref, refs: it.ref ? [it.ref] : [], sk: it.sk },
-        ctx: "learn", src: "live", part: `live|${rec.round}`, attempt: 1, chosen: a[0] || "", second: null, secs: 0 });
-    });
+    for (const { rec, me } of lv) obs.push(...PROGRESS.liveRound(rec, me, TAGS, tags));
     return { obs, tags };
   }
   const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"]];
@@ -481,8 +474,9 @@
     const box = $("st-live"); if (!box || !SITE.adminKey()) return;
     const lv = await liveOf(s); if ($("st-live") !== box || D.student !== s.key || !lv.length) return;
     const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+    const modes = { off: "Не учитывается", answered: "Только ответы", module: "Как полный модуль" };
     box.innerHTML = `<div class="card"><span class="label">Уроки · живая практика</span><p class="hint">Раунды на уроках, где ученик отвечал со своего устройства (сохраняет аккаунт урока после каждого раунда).</p>
-      ${table(["Дата", "Раунд", "Отвечено", "Верно"], lv.slice().reverse().map(({ rec, me }) => { const a = Object.values(me.ans || {}); return { cells: [esc(day(rec.at)), esc(rec.title || "Раунд"), `${a.length}/${(rec.items || []).length}`, `${a.filter((x) => x[1]).length}`] }; }), { num: [2, 3] })}</div>`;
+      ${table(["Дата", "Раунд", "Отвечено", "Верно", "Учёт в индексе"], lv.slice().reverse().map(({ rec, me }) => { const a = Object.values(me.ans || {}); return { cells: [esc(day(rec.at)), esc(rec.title || "Раунд"), `${a.length}/${(rec.items || []).length}`, `${a.filter((x) => x[1]).length}`, esc(rec.v === 2 ? modes[rec.progress] : modes.answered)] }; }), { num: [2, 3] })}</div>`;
   }
   // «PDF-отчёт»: what the report shows for one student (report.js); only the student's own submissions, no internal index
   async function reportData(s) {
@@ -682,7 +676,7 @@
       const { questions } = await SITE.json("nbank");
       return { items: (questions || []).filter((q) => q?.id && q.stem).flatMap((q) => {
         const item = NBANK.toQuestion(q);
-        return CTL.problems(item).length ? [] : [{ id: q.id, label: `nurzycom bank · ${q.id}`, source, sec: q.sec,
+        return CTL.problems(item).length ? [] : [{ id: q.id, label: `nurzycom bank · ${q.id}`, source, sec: q.sec, control: q.kind === "control",
           skill: q.skill, primary: q.sub, subs: q.sub ? [q.sub] : [], traps: Object.values(q.traps || {}), level: q.level, raw: q, item }];
       }) };
     }

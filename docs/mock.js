@@ -62,33 +62,26 @@
     $("go").disabled = !($("student").value.trim().length >= 2 && T.mock);
     liveModules();
   }
-  function liveModules() {
-    const select = $("mock-live-module");
-    const launch = LiveRound.mount("mock-live-module", async () => {
-      const mock = T.mock, [sec, mod] = select.value.split(".");
-      if (!mock?.sections.some((section) => section.k === sec) || !Object.hasOwn(MODULES, mod)) {
-        throw Error("Выберите тест и модуль.");
-      }
-      const data = await bundle(sec);
-      const items = data.mods?.[mod];
+  function liveModuleOptions(preferred) {
+    const mock = T.mock;
+    if (!mock) throw Error("Выберите пробный тест.");
+    const modules = mock.sections.map((section) => ({ label: SEC[section.k],
+      options: Object.entries(MODULES).map(([mod, label]) => ({ value: `${section.k}.${mod}`, label })) }));
+    const selected = modules.flatMap((section) => section.options).find((opt) => opt.value === preferred)?.value || modules[0].options[0].value;
+    return { title: mock.title, modules, selected, load: async (value) => {
+      const [sec, mod] = value.split("."), section = mock.sections.find((s) => s.k === sec);
+      if (!section || !Object.hasOwn(MODULES, mod)) throw Error("Выберите модуль.");
+      const data = await bundleSection(section), items = data.mods?.[mod];
       if (!items?.length) throw Error("В этом модуле нет вопросов.");
       return { title: `${mock.title} · ${SEC[sec]} · ${MODULES[mod]}`, ref: `${mock.id}.${sec}.${mod}`, sec, math: sec === "math",
-        questions: LiveRound.workbook(items), defaultCount: items.length };
-    });
+        module: true, questions: LiveRound.workbook(items), defaultCount: Math.min(items.length, 100) };
+    } };
+  }
+  function liveModules() {
+    const launch = LiveRound.mount("mock-live-anchor", () => liveModuleOptions(`${fmt()}.m1`));
     if (!launch) return;
     $("mock-live").hidden = false;
-    select.disabled = launch.disabled = !T.mock;
-    if (!T.mock) return;
-    const previous = select.value;
-    select.replaceChildren(...T.mock.sections.map(({ k }) => {
-      const group = document.createElement("optgroup");
-      group.label = SEC[k];
-      group.append(...Object.entries(MODULES).map(([mod, label]) => new Option(label, `${k}.${mod}`)));
-      return group;
-    }));
-    const options = [...select.options];
-    select.value = options.some((o) => o.value === previous) ? previous
-      : options.find((o) => o.value === `${fmt()}.m1`)?.value || options[0]?.value || "";
+    launch.disabled = !T.mock;
   }
   $("student").oninput = () => { store("hw_student", $("student").value.trim()); renderStart(); };
   $("formats").querySelectorAll(".pick").forEach((b) => (b.onclick = () => { T.fmt = b.dataset.f; renderStart(); }));
@@ -96,8 +89,14 @@
   else $("gloss-on").closest("label").classList.add("hidden");
 
   async function bundle(sec) {
-    const s = T.mock.sections.find((x) => x.k === sec);
-    if (!T.bundles[s.b]) T.bundles[s.b] = JSON.parse(new TextDecoder().decode(await SITE.open(await (await fetch(s.b, { cache: "no-store" })).arrayBuffer())));
+    return bundleSection(T.mock.sections.find((x) => x.k === sec));
+  }
+  async function bundleSection(s) {
+    if (!T.bundles[s.b]) {
+      const r = await fetch(s.b, { cache: "no-store" });
+      if (!r.ok) throw Error("Не удалось загрузить вопросы.");
+      T.bundles[s.b] = JSON.parse(new TextDecoder().decode(await SITE.open(await r.arrayBuffer())));
+    }
     return T.bundles[s.b];
   }
   const secInfo = (sec) => T.mock.sections.find((x) => x.k === sec);
@@ -173,10 +172,7 @@
     $("t-title").textContent = `${s.name} · Модуль ${T.st.mod === "m1" ? 1 : 2}`;
     $("wrap").classList.toggle("one", sec === "math");
     if (window.BBTools) { if (!$("t-tools").childElementCount) BBTools.mount($("t-tools")); BBTools.show(sec === "math"); }
-    LiveRound.mount("next", () => ({
-      title: `${T.mock.title} · ${SEC[curSec()]} · ${MODULES[T.st.mod]}`, ref: `${T.mock.id}.${curSec()}.${T.st.mod}`, sec: curSec(), math: curSec() === "math",
-      questions: LiveRound.workbook(items())
-    }));
+    LiveRound.mount("next", () => liveModuleOptions(`${curSec()}.${T.st.mod}`));
     show("m-test"); render();
   }
   function render() {

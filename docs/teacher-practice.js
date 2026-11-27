@@ -66,7 +66,7 @@ window.TeacherPractice = (() => {
     opener.onclick = () => open();
     async function open(input, behavior = {}) {
       if (current?.busy) return;
-      const state = { source: current?.source || "", selected, context: null, count: PAGE, loading: true, busy: false, message: "" };
+      const state = { source: current?.source || "", kind: current?.kind || "", selected, context: null, count: PAGE, loading: true, busy: false, message: "" };
       current = state;
       workspace?.classList.add("has-practice");
       opener.hidden = true;
@@ -104,28 +104,57 @@ window.TeacherPractice = (() => {
       state.loading = false;
       draw(state);
     }
+    function addBatch(state, list, count, selector) {
+      const available = list.filter((c) => !selected.has(c.id));
+      const size = Math.min(count, LIMIT - selected.size, available.length);
+      if (!size || state.busy) return;
+      let picks = available.slice(0, size);
+      if (!state.kind) {
+        const controls = available.filter((c) => c.control);
+        const regular = available.filter((c) => !c.control);
+        const have = [...selected.values()].filter((c) => c.control).length;
+        const needed = Math.min(controls.length, size, Math.max(0, Math.round((selected.size + size) * 0.3) - have, size - regular.length));
+        picks = regular.slice(0, size - needed);
+        controls.slice(0, needed).forEach((c, i) => picks.splice(Math.min(2 + i * 3, picks.length), 0, c));
+      }
+      picks.forEach((c) => selected.set(c.id, c));
+      const controls = picks.filter((c) => c.control).length;
+      state.message = `Добавлено: ${picks.length}${controls ? ` · контрольных: ${controls}` : ""}.`;
+      draw(state);
+      const anchor = panel.querySelector(selector);
+      (anchor?.disabled ? panel.querySelector(".rp-tray summary") : anchor)?.focus({ preventScroll: true });
+    }
+
     function draw(state, focusTitle) {
       if (current !== state) return;
-      const list = state.list || [], { context, source } = state;
+      const all = state.list || [], { context, source, kind } = state;
+      const list = kind ? all.filter((c) => !!c.control === (kind === "control")) : all;
+      const canAdd = !state.loading && !state.busy && selected.size < LIMIT && list.some((c) => !selected.has(c.id));
+      const selectedControls = [...selected.values()].filter((c) => c.control).length;
       const opened = new Set(Array.from(panel.querySelectorAll("details[open]"), (d) => d.dataset.preview));
       panel.innerHTML = `<section class="card rp"><header class="rp-head"><h3 tabindex="-1">Готовые задания</h3><button type="button" class="chip" data-rp-close${state.busy ? " disabled" : ""}>Свернуть</button></header>
         ${context.label ? `<p class="hint rp-context">${esc(context.label)}</p>` : ""}
         <div class="rp-toolbar"><label>Источник<select data-rp-source${state.busy ? " disabled" : ""}>
           <option value="">Все источники</option>${Object.entries(SOURCE).map(([k, v]) => `<option value="${k}"${source === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+          <label>Тип<select data-rp-kind${state.busy ? " disabled" : ""}>
+            ${[["", "Все задания"], ["regular", "Основные"], ["control", "Контрольные"]].map(([value, name]) =>
+              `<option value="${value}"${kind === value ? " selected" : ""}>${name}</option>`).join("")}</select></label>
           <button class="btn ghost" type="button" data-rp-refresh${state.loading || state.busy ? " disabled" : ""}>Обновить подбор</button></div>
+        ${!state.loading && list.length ? `<div class="rp-batch" role="group" aria-label="Быстрый выбор"><button class="chip" type="button" data-rp-add-five${canAdd ? "" : " disabled"}>Добавить 5</button>
+          <button class="chip" type="button" data-rp-fill${canAdd ? "" : " disabled"}>Заполнить до ${LIMIT}</button></div>` : ""}
         ${state.loading ? '<p class="hint" role="status">Ищу в выбранных источниках…</p>' : list.length ?
           `<div class="rp-list">${list.slice(0, state.count).map((c, i) => `<div class="rp-entry">
             <label class="rp-pick"><input type="checkbox" data-rp-pick="${i}" aria-label="Выбрать ${esc(c.label)}"${state.selected.has(c.id) ? " checked" : ""}${state.busy || (!state.selected.has(c.id) && state.selected.size >= LIMIT) ? " disabled" : ""}></label>
-            <details data-preview="${esc(c.id)}"${opened.has(c.id) ? " open" : ""}><summary><span class="rp-reason">${esc(WHY[c.why])}</span><b>${esc(c.label)}</b><small>${[c.skill, LEVEL[c.level]].filter(Boolean).map(esc).join(" · ")}</small></summary>
+            <details data-preview="${esc(c.id)}"${opened.has(c.id) ? " open" : ""}><summary><span class="rp-reason">${esc(WHY[c.why])}</span>${c.control ? ' <span class="rp-reason rp-control">Контрольное</span>' : ""}<b>${esc(c.label)}</b><small>${[c.skill, LEVEL[c.level]].filter(Boolean).map(esc).join(" · ")}</small></summary>
               <div class="rp-question"></div></details></div>`).join("")}</div>
           ${list.length > state.count ? `<button type="button" class="btn ghost" data-rp-more>Ещё вопросы · ${list.length - state.count}</button>` : ""}` :
-          `<p class="hint">${context.targets.length ? "В выбранных источниках нет новых вопросов по этим ошибкам." : "В этой работе пока нет ошибок с подтверждённым навыком или подтемой."}</p>`}
+          `<p class="hint">${context.targets.length ? kind === "control" ? "По этим ошибкам в выбранном источнике нет контрольных вопросов." : "В выбранных источниках нет новых вопросов по этим ошибкам." : "В этой работе пока нет ошибок с подтверждённым навыком или подтемой."}</p>`}
         <footer class="rp-dock${selected.size ? " has-selection" : ""}">
           <p class="hint" role="status" data-rp-message>${esc(state.message)}</p>
           <div class="rp-actions"><details class="rp-tray"${panel.querySelector(".rp-tray[open]") ? " open" : ""}>
-            <summary><span data-rp-count>Выбрано ${selected.size} из ${LIMIT}</span></summary>
-            ${selected.size ? `<ul>${[...selected.values()].map((c) => `<li><span>${esc(c.label)}</span>
-              <button type="button" class="chip" data-rp-remove="${esc(c.id)}" aria-label="Убрать ${esc(c.label)}"${state.busy ? " disabled" : ""}>Убрать</button></li>`).join("")}</ul>`
+            <summary><span data-rp-count>Выбрано ${selected.size} из ${LIMIT}${selectedControls ? ` · контрольных: ${selectedControls}` : ""}</span></summary>
+            ${selected.size ? `<ul>${[...selected.values()].map((c) => `<li><span>${esc(c.label)}${c.control ? '<small class="rp-reason rp-control">Контрольное</small>' : ""}</span>
+              <button type="button" class="chip" data-rp-remove="${esc(c.id)}" aria-label="Убрать ${esc(c.label)}"${state.busy ? " disabled" : ""}>Убрать</button></li>`).join("")}</ul><button type="button" class="chip" data-rp-clear${state.busy ? " disabled" : ""}>Снять все</button>`
               : '<p class="hint">Отметьте вопросы, которые хотите задать.</p>'}</details>
             <button type="button" class="btn ghost" data-rp-save${state.busy || !selected.size ? " disabled" : ""}>Сохранить</button>
             <button type="button" class="btn" data-rp-assign${state.busy || !selected.size ? " disabled" : ""}>Назначить</button>
@@ -140,6 +169,16 @@ window.TeacherPractice = (() => {
         button.onclick = () => { selected.delete(button.dataset.rpRemove); state.message = ""; draw(state); panel.querySelector(".rp-tray summary")?.focus({ preventScroll: true }); };
       });
       panel.querySelector("[data-rp-source]").onchange = (e) => { state.source = e.target.value; state.count = PAGE; load(state); };
+      panel.querySelector("[data-rp-kind]").onchange = (e) => {
+        state.kind = e.target.value; state.count = PAGE; state.message = ""; draw(state);
+        queueMicrotask(() => {
+          const node = panel.querySelector("[data-rp-kind]");
+          (node?.parentElement.querySelector('[role="combobox"]') || node)?.focus({ preventScroll: true });
+        });
+      };
+      on("[data-rp-add-five]", () => addBatch(state, list, 5, "[data-rp-add-five]"));
+      on("[data-rp-fill]", () => addBatch(state, list, LIMIT, "[data-rp-fill]"));
+      on("[data-rp-clear]", () => { selected.clear(); state.message = ""; draw(state); panel.querySelector(".rp-tray summary")?.focus(); });
       on("[data-rp-refresh]", () => { cached = new Map(); return load(state); });
       on("[data-rp-more]", () => {
         const at = state.count; state.count += PAGE; draw(state);
