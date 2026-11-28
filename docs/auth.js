@@ -83,7 +83,7 @@
   const sessionRaw = () => { const k = get("site_key"); if (!k) throw new Error("Войдите на сайт заново."); return b64(k); };
   // ---- results on the account (added 2026-11-05): finished work, scores and progress follow the login to any device.
   // Which localStorage keys travel: finished results and progress; not the login itself, teacher settings or a test in progress.
-  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_|ct_last_|ct_att_|ct_ans_|ls_s_|ls_r_|bb_share_|lv_r_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers|mk_gloss|tasks|tasks_done|ls_m|goal_target)$/;   // tasks: homework the teacher assigned in the cabinet; ls_s_: lesson-mode sessions (lesson.js), ls_r_: their reviews written by the /lesson-review skill; ls_m: the class's mistakes sent from teacher.html (lsmist.js); bb_share_: a Bluebook result the student chose to share (bluebook-import.js)
+  const SYNC = /^(hw_last_|hw_att_|px_last_|px_att_|rd_last_|rd_att_|mk_last_|mk_att_|mk_done_|plan_done_|ct_last_|ct_att_|ct_ans_|ct_first_|ls_s_|ls_r_|bb_share_|lv_r_)|^(plan_course|vocab_hard|vocab_sel|mk_show_answers|mk_gloss|tasks|tasks_done|ls_m|goal_target)$/;   // tasks: homework the teacher assigned in the cabinet; ls_s_: lesson-mode sessions (lesson.js), ls_r_: their reviews written by the /lesson-review skill; ls_m: the class's mistakes sent from teacher.html (lsmist.js); bb_share_: a Bluebook result the student chose to share (bluebook-import.js)
   const META = "sync_meta";   // when each synced key last changed on this device
   const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
   const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;

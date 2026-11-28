@@ -120,5 +120,24 @@ window.BluebookQuestion = (() => {
     if (!questions.has(key)) questions.set(key, lookup(sec, id).catch((error) => { questions.delete(key); throw error; }));
     return questions.get(key);
   }
-  return { load, official };
+  // Shared reports contain answer letters or numbers. Show choices only when the source key agrees.
+  async function review(sec, ref, linked) {
+    const keys = (Array.isArray(ref.keys) ? ref.keys : []).filter((k) => typeof k === "string" && k.trim());
+    const canon = (key) => window.parseSATNumericAnswer?.(key) || String(key).trim().toUpperCase();
+    const matches = (item) => item && item.stem && item.acc?.length &&
+      (!keys.length || keys.some((key) => item.acc.some((accepted) => canon(key) === canon(accepted))));
+    const officialItem = await load(sec, ref.cid).catch(() => null);
+    if (officialItem) {
+      const { stim, stem, opts, bankKeys: acc, rat } = officialItem;
+      const item = { t: opts ? "mc" : "spr", stim, stem, opts, acc, ans: acc[0], rat };
+      if (matches(item)) return item;
+    }
+    if (linked && keys.length) {
+      const original = await linked().catch(() => null);
+      const acc = [].concat(original?.acc || original?.ans || []);
+      if (matches(original && { ...original, acc })) return { ...original, acc };
+    }
+    return { metadataOnly: true, acc: keys };
+  }
+  return { load, official, review };
 })();

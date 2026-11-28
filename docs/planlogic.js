@@ -173,7 +173,7 @@
     if (kind === "hw") return [`hw_last_${name}_${rest}`, `hw_att_${name}_${rest}`];
     if (kind === "px") return [`px_last_${name}_${rest}`, `px_att_${name}_${rest}`];
     if (kind === "rd") return [`rd_last_${name}_${rest}`, `rd_att_${name}_${rest}`];
-    if (kind === "ct") return [`ct_last_${name}_${rest}`, `ct_att_${name}_${rest}`, `ct_ans_${name}_${rest}`];
+    if (kind === "ct") return [`ct_last_${name}_${rest}`, `ct_att_${name}_${rest}`, `ct_ans_${name}_${rest}`, `ct_first_${name}_${rest}`];
     return [`mk_last_${name}_${rest}`, `mk_done_${name}_${rest}`, `mk_att_${name}_${rest}_rw`, `mk_att_${name}_${rest}_math`];
   }
   // tasks the teacher assigned: [{ id, t, href, due, note, at, rk: [prefix, rest] }]; done when the work has a result (rk), also one

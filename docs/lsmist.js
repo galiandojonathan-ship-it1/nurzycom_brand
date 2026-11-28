@@ -140,7 +140,7 @@
       `<ol class="lm-list">${d.qs.map((q, i) => { const t = trapOf(q), m = tries(q);
         return `<li><button type="button" class="lm-card" data-lm="q" data-i="${i}"><span class="n">${i + 1}</span>
           <span><b>${esc(q.title)}</b><small>${esc(q.sk || "—")}${q.d ? " · " + DIFN[q.d] : ""}${q.work ? " · " + esc(q.work) : ""}${t ? ` · <span class="lm-trap">общая ловушка ${t}</span>` : ""}</small></span>
-          ${q.authored ? '<span class="r"><small>Новое задание</small></span>' : solo() ? `<span class="r">${m.length ? esc(m.join(" → ")) : "—"}<small>ответ ученика</small></span>` : `<span class="r">${pct(q)}%<small>ошиблись ${q.wrong} из ${q.n}</small></span>`}</button></li>`; }).join("")}</ol>`;
+          ${q.authored ? '<span class="r"><small>Новое задание</small></span>' : solo() ? `<span class="r">${m.length ? esc(m.join(" → ")) : "—"}<small>ответ ученика</small></span>` : q.bb ? `<span class="r">${q.wrong}<small>ошибок в отчётах</small></span>` : `<span class="r">${pct(q)}%<small>ошиблись ${q.wrong} из ${q.n}</small></span>`}</button></li>`; }).join("")}</ol>`;
     focusH();
   }
   const focusH = () => { const h = M.box && M.box.querySelector(".lm-in h2"); if (h) h.focus({ preventScroll: true }); if (M.box) M.box.scrollTop = 0; };
@@ -157,13 +157,17 @@
       return { stim: escapeParagraphs(a.passage), stem: esc(a.prompt), opts: a.options.map(esc), ans: a.answer,
         rat: escapeParagraphs(a.explanation) };
     }
-    const s = q.src || {}; if (!s.b) return null;
-    const b = await bundle(s.b);
-    if (s.mod) return ((b.mods || {})[s.mod] || [])[s.i] || null;
-    return (Array.isArray(b) ? b : []).find((x) => x.n === s.n) || null;
+    const course = async () => {
+      const s = q.src || {}; if (!s.b) return null;
+      const b = window.OfficialPractice?.hasBundle(s.b) ? await OfficialPractice.bundle(s.b) : await bundle(s.b);
+      if (s.mod) return ((b.mods || {})[s.mod] || [])[s.i] || null;
+      return (Array.isArray(b) ? b : []).find((x) => x.n === s.n) || null;
+    };
+    if (!q.bb) return course();
+    return window.BluebookQuestion?.review(q.sec, q.bb, q.src && course) || { metadataOnly: true, acc: q.bb.keys };
   }
   async function question() {
-    const q = M.snap.qs[M.cur], i = M.cur, n = M.snap.qs.length;
+    const q = M.snap.qs[M.cur], i = M.cur, n = M.snap.qs.length, request = M.request = Symbol();
     M.math = q.sec === "math"; if (M.tool === "desmos" && !M.math) setTool(null);
     document.body.dataset.lq = q.id; document.body.dataset.lt = "Разбор ошибок · " + secTitle(q);   // the lesson bar's marks apply to this question
     setTimeout(() => window.LESSON && LESSON.tick && LESSON.tick(), 0);   // recorded on the timeline at once (after the nav with its marker is drawn)
@@ -173,11 +177,20 @@
       <span>${tools}<button type="button" class="lm-x" data-lm="prev"${i ? "" : " disabled"}>← Назад</button><button type="button" class="lm-x" data-lm="next"${i < n - 1 ? "" : " disabled"}>Далее →</button></span></div>`;
     inner().innerHTML = head(kindLabel(M.snap), reviewTitle(M.snap), `${esc(q.title)} · ${esc(q.sk || "—")}`) + nav + '<p class="lm-empty">Загружаю вопрос…</p>';
     let it = null; try { it = await item(q); } catch (e) { it = null; }
-    if (M.cur !== i || !M.box) return;
+    if (!M.box || M.request !== request || M.cur !== i) return;
     const body = inner().querySelector(".lm-empty");
     if (!it) { body.textContent = "Не удалось открыть этот вопрос. Обновите страницу или перейдите к следующему."; return; }
     const stim = String(it.stim || "").trim(), mc = !!(it.opts && it.opts.length), one = solo(), m = tries(q);
     let opts, sum = "";
+    const pick = one ? (M.show.picks ? "Скрыть ответ ученика" : "Показать ответ ученика") : M.show.picks ? "Скрыть выбор класса" : "Показать выбор класса";
+    if (it.metadataOnly) {
+      const recorded = one ? m.join(" → ") : Object.entries(q.picks || {}).map(([choice, count]) => `${choice} (${count})`).join(", ");
+      body.outerHTML = `<div><p class="hint">Текст исходного вопроса пока не подтверждён. Откройте его в Bluebook → Score Details.</p>
+        ${M.show.picks ? `<p class="lm-spr">${one ? "Ответ ученика" : "Ответы в отчётах"}: ${esc(recorded || "—")}</p>` : ""}
+        ${M.show.ans ? `<p class="lm-spr"><b>Ключ Bluebook:</b> ${esc((it.acc || []).join(", ") || "—")}</p>` : ""}
+        <div class="lm-btns"><button type="button" data-lm="picks" aria-pressed="${M.show.picks}">${pick}</button><button type="button" data-lm="ans" aria-pressed="${M.show.ans}">${M.show.ans ? "Скрыть ответ" : "Показать ответ"}</button></div></div>`;
+      return;
+    }
     if (q.authored) {
       opts = it.opts.map((text, k) => {
         const c = "ABCD"[k], right = M.show.ans && c === it.ans;
@@ -192,12 +205,11 @@
       const right = q.n - q.wrong, trap = trapOf(q), max = Math.max(1, right, ...Object.values(q.picks || {})), cnt = (c) => (c === it.ans ? right : (q.picks || {})[c] || 0);
       opts = mc ? it.opts.map((o, k) => { const c = "ABCD"[k], v = cnt(c);
           const cls = `${M.show.ans && c === it.ans ? " right" : ""}${M.show.picks && !M.show.ans && c === trap ? " trap" : ""}`;
-          return `<div class="lm-o${cls}"><span class="lt">${c}</span><span class="qhtml tx">${o}</span>${M.show.picks ? `<span class="bar"><span><i style="width:${Math.round((100 * v) / max)}%"></i></span>${v} ${pl(v, "ученик", "ученика", "учеников")}</span>` : ""}</div>`; }).join("")
-        : `<p class="lm-spr">Ответ вводится вручную.</p>${M.show.picks ? `<p class="lm-spr">Неверные ответы: ${esc(Object.entries(q.picks || {}).map(([v, c]) => `${v} (${c})`).join(", ") || "—")} · верно ответили: ${right}</p>` : ""}${M.show.ans ? `<p class="lm-spr"><b>Верный ответ:</b> ${esc([].concat(it.acc || it.ans).join(", "))}</p>` : ""}`;
+          return `<div class="lm-o${cls}"><span class="lt">${c}</span><span class="qhtml tx">${o}</span>${M.show.picks && (!q.bb || v) ? `<span class="bar"><span><i style="width:${Math.round((100 * v) / max)}%"></i></span>${v} ${pl(v, "ученик", "ученика", "учеников")}</span>` : ""}</div>`; }).join("")
+        : `<p class="lm-spr">Ответ вводится вручную.</p>${M.show.picks ? `<p class="lm-spr">Неверные ответы: ${esc(Object.entries(q.picks || {}).map(([v, c]) => `${v} (${c})`).join(", ") || "—")}${q.bb ? "" : ` · верно ответили: ${right}`}</p>` : ""}${M.show.ans ? `<p class="lm-spr"><b>Верный ответ:</b> ${esc([].concat(it.acc || it.ans).join(", "))}</p>` : ""}`;
       const blank = (q.picks || {})["—"] || 0;
-      if (M.show.picks) sum = `<p class="lm-sum">Ответили ${q.n} ${pl(q.n, "ученик", "ученика", "учеников")}, ошиблись ${q.wrong}${blank ? `, без ответа ${blank}` : ""}. Имена не показываются.</p>`;
+      if (M.show.picks) sum = q.bb ? `<p class="lm-sum">Показаны неверные ответы из отчётов Bluebook · ${q.wrong}.</p>` : `<p class="lm-sum">Ответили ${q.n} ${pl(q.n, "ученик", "ученика", "учеников")}, ошиблись ${q.wrong}${blank ? `, без ответа ${blank}` : ""}. Имена не показываются.</p>`;
     }
-    const pick = one ? (M.show.picks ? "Скрыть ответ ученика" : "Показать ответ ученика") : M.show.picks ? "Скрыть выбор класса" : "Показать выбор класса";
     body.outerHTML = `<div class="lm-q${stim ? "" : " solo"}">${stim ? `<div class="lm-stim qhtml">${stim}</div>` : ""}<div><div class="lm-stem qhtml">${it.stem || ""}</div>${opts}${sum}
       <div class="lm-btns">${q.authored ? "" : `<button type="button" data-lm="picks" aria-pressed="${M.show.picks}">${pick}</button>`}<button type="button" data-lm="ans" aria-pressed="${M.show.ans}">${M.show.ans ? "Скрыть ответ" : "Показать ответ"}</button></div>
       ${M.show.ans && it.rat ? `<div class="lm-expl"><span class="label">${q.authored ? "Объяснение нового задания" : it.own ? "Объяснение nurzycom" : "Объяснение College Board"}</span><div class="qhtml">${it.rat}</div>${it.dz || ""}</div>` : ""}</div></div>`;

@@ -26,7 +26,11 @@
     return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = name + (VER ? "?" + VER : ""); s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
   }
   function openMist(rid) {
-    need("lsboard.js", () => window.LSBOARD).then(() => need("lsmist.js", () => window.LSMIST)).then(() => LSMIST.open(typeof rid === "string" ? rid : undefined))
+    const sources = Promise.all([need("bluebook-question.js", () => window.BluebookQuestion),
+      need("numeric-answer.js", () => window.parseSATNumericAnswer)]).then(() =>
+      need("official-practice.js", () => window.OfficialPractice)).catch(() => {});
+    Promise.all([sources, need("lsboard.js", () => window.LSBOARD), need("lsmist.js", () => window.LSMIST)])
+      .then(() => LSMIST.open(typeof rid === "string" ? rid : undefined))
       .catch(() => toast("Не удалось загрузить разбор ошибок. Обновите страницу."));
   }
   const HOME = /classroom\.html$/.test(location.pathname) ? "" : '<button type="button" data-a="home">Пульт урока</button>';   // the lesson home page (classroom.html)

@@ -55,15 +55,16 @@ window.BBSHARE = (() => {
   }
   // a removed share stays as a mark (not deleted), so the student's devices do not bring it back and the same attempt cannot be resent
   const tomb = (d) => JSON.stringify({ v: 1, deleted: 1, at: Date.now(), hash: d.hash, title: d.title || null, taken: d.taken || null });
+  const skipped = (x, sec) => x.skip || [1, 2].map((k) => x.miss.filter((m) => m[0] === k && m[2] == null).length >= SIZE[sec] * 0.8);
   function mistakes(shares) {
     const out = [];
     for (const d of shares) for (const [s, x] of Object.entries(d.sections)) {
       if (!x.test) continue;
-      const skip = x.skip || [1, 2].map((k) => x.miss.filter((m) => m[0] === k && m[2] == null).length >= SIZE[s] * 0.8);   // modules not done
+      const skip = skipped(x, s);
       for (const m of x.miss) if (m[5] && !m[7] && !skip[m[0] - 1]) out.push({ id: `BB.${d.hash}.${s}.${m[0]}.${m[1]}`, title: `Bluebook · ${x.label} · ${SEC[s]} · М${m[0]} · №${m[1]}`, plabel: `Bluebook · ${x.label}`,
         sec: s, sk: m[5], d: m[6] || "", chosen: /^[A-D]$/.test(m[2] || "") ? m[2] : "", ts: d.taken || d.at, focus: "", trapKind: "", bb: { keys: m[3] || [] } });
     }
     return out;
   }
-  return { fromCopy, html, mistakes, refLabel, ownMock, tomb };
+  return { fromCopy, html, mistakes, refLabel, ownMock, tomb, skipped };
 })();

@@ -163,7 +163,9 @@
     const ok = qs.map((q) => CTL.isRight(q, A[q.id])), right = ok.filter(Boolean).length;
     const name = who() || SITE.me() || "ученик", K = CTL.keys(name, st.t.id);
     const att = Number(store(K.att) || 0) + 1;
-    store(K.att, String(att)); store(K.ans, CTL.packAns(qs, A, sec / 1000)); store(K.last, `${right}/${qs.length}`);
+    const saved = CTL.packAns(qs, A, sec / 1000);
+    if (att === 1 && !store(K.first)) store(K.first, saved);
+    store(K.att, String(att)); store(K.ans, saved); store(K.last, `${right}/${qs.length}`);
     store(runKey(st.t.id), null);
     const done = st.run; st.run = null;
     if (SITE.sync) SITE.sync().catch(() => {});
