@@ -50,12 +50,8 @@
     const rows = [], waiting = [];
     for (const u of api.users()) {
       const c = api.copy(u); if (!c) continue;
-      let K = CTL.keys(c.nm, t.id), last = c.get(K.last);
-        if (!last) {   // the result was saved under another spelling of the name (hw_student on that device): find it by the test id
-          const k = Object.keys(c.meta || {}).find((x) => x.startsWith("ct_last_") && x.endsWith("_" + t.id) && c.get(x));
-          if (k) { K = CTL.keys(k.slice(8, -(t.id.length + 1)), t.id); last = c.get(K.last); }
-        }
-      if (last) rows.push({ u, last, att: Number(c.get(K.att) || 1), A: CTL.parseAns(c.get(K.ans)), t: c.meta[K.last] || 0 });
+      const rec = CTL.submissions(c).get(t.id);
+      if (rec) rows.push({ ...rec, u, t: rec.at });
       else if (c.tasks.some((x) => x.rk && x.rk[1] === t.id && !x.done)) waiting.push(u);
     }
     return { rows: rows.sort((a, b) => b.t - a.t), waiting };

@@ -178,6 +178,21 @@
   }
   const packAns = (qs, ans, sec) => qs.map((q) => `${q.id}:${ans[q.id] == null || ans[q.id] === "" ? "-" : encodeURIComponent(ans[q.id])}`).join(" ") + ` · ${Math.round(sec)}s`;
 
+  // Read the newest saved attempt when a student used several spellings of their name.
+  function submissions(copy) {
+    const latest = new Map();
+    for (const [key, time] of Object.entries(copy.meta || {})) {
+      const match = /^ct_last_(.+)_(C[a-z0-9]{8})$/.exec(key);
+      if (!match) continue;
+      const [, name, id] = match, K = keys(name, id), last = copy.get(key), at = Number(time) || 0;
+      if (!/^\d+\/\d+$/.test(last || "") || (latest.get(id)?.at ?? -1) > at) continue;
+      let A;
+      try { A = parseAns(copy.get(K.ans)); } catch { A = {}; }
+      latest.set(id, { id, last, at, att: Number(copy.get(K.att)) || 1, A });
+    }
+    return latest;
+  }
+
   // ---- the bank on the server
   async function loadBank() {
     const r = await SITE.api("custom").catch(() => ({ status: 0 }));
@@ -187,5 +202,5 @@
     return { tests: Array.isArray(B && B.tests) ? B.tests : [], at: (B && B.at) || 0 };
   }
 
-  window.CTL = { esc, rich, inline, isRight, answerText, accepted, problems, parseText, newTest, newQ, fromMock, mockRef, view, html, resolve, keys, parseAns, packAns, loadBank, SKILLS, LEVELS, REVIEW, LETTERS };
+  window.CTL = { esc, rich, inline, isRight, answerText, accepted, problems, parseText, newTest, newQ, fromMock, mockRef, view, html, resolve, keys, parseAns, packAns, submissions, loadBank, SKILLS, LEVELS, REVIEW, LETTERS };
 })();
