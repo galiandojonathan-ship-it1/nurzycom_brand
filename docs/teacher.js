@@ -295,6 +295,52 @@
     };
     renderRows();
   }
+  function studentReviewHTML() {
+    const tabs = [["errors", "Ошибки"], ["lesson", "Разбор на уроке"], ["practice", "Похожие задания"]];
+    return `<section class="card review-workspace" aria-labelledby="student-review-title">
+      <h2 id="student-review-title">Работа над ошибками</h2>
+      <div class="review-tabs" role="tablist" aria-label="Работа над ошибками">${tabs.map(([key, label], i) =>
+        `<button type="button" role="tab" id="review-tab-${key}" aria-controls="review-panel-${key}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" data-review-tab="${key}">${label}</button>`).join("")}</div>
+      <div class="review-panel" role="tabpanel" id="review-panel-errors" aria-labelledby="review-tab-errors">
+        <div id="st-originals"><p class="hint" role="status">Загружаю ошибки ученика…</p></div>
+      </div>
+      <div class="review-panel" role="tabpanel" id="review-panel-lesson" aria-labelledby="review-tab-lesson" hidden>
+        <div id="st-rv"><p class="hint" role="status">Загружаю работы для разбора…</p></div>
+      </div>
+      <div class="review-panel" role="tabpanel" id="review-panel-practice" aria-labelledby="review-tab-practice" hidden>
+        <div id="st-ready"></div>
+        ${window.TWINS ? '<details class="review-generator"><summary>Создать новые задания с Gemini</summary><div id="st-tw"></div></details>' : ""}
+      </div>
+    </section>`;
+  }
+
+  function studentReviewTabs(workspace) {
+    const tabs = [...workspace.querySelectorAll("[data-review-tab]")];
+    const select = (tab) => {
+      for (const button of tabs) {
+        const active = button === tab;
+        button.tabIndex = active ? 0 : -1;
+        button.setAttribute("aria-selected", String(active));
+        $(button.getAttribute("aria-controls")).hidden = !active;
+      }
+    };
+    tabs.forEach((tab, i) => {
+      tab.onclick = () => select(tab);
+      tab.onkeydown = (event) => {
+        const next = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i - 1 + tabs.length) % tabs.length,
+          Home: 0, End: tabs.length - 1 }[event.key];
+        if (next == null) return;
+        event.preventDefault();
+        select(tabs[next]);
+        tabs[next].focus();
+      };
+    });
+    return (key) => {
+      const tab = tabs.find((button) => button.dataset.reviewTab === key);
+      if (tab) { select(tab); tab.focus({ preventScroll: true }); }
+    };
+  }
+
   function studentDetail(s) {
     if (!s) { D.student = null; return students(); }
     const hw = s.rows.filter((r) => "VM".includes(r.kind)), scr = hw.filter((r) => r.screen);
@@ -322,7 +368,7 @@
       + pane("charts", '<div id="st-pred"></div><div id="st-prog"></div>')
       + pane("anal", skHTML)
       + pane("subs", hisHTML + '<div id="st-bb"></div><div id="st-live"></div>')
-      + pane("fix", '<div class="review-workspace"><div id="st-originals"></div><div id="st-ready"></div></div><div id="st-rv"></div><div id="st-tw"></div>');
+      + pane("fix", studentReviewHTML());
     $("v-students").innerHTML = html;
     $("v-students").querySelectorAll("[data-st]").forEach((b) => (b.onclick = () => { D.stTab = b.dataset.st; try { localStorage.setItem("st_tab", D.stTab); } catch (e) { /* private mode */ }
       $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
@@ -333,14 +379,25 @@
     });
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     const reviewBox = $("st-rv"), originalBox = $("st-originals"), keys = new Set([s.key]);
+    const selectReview = studentReviewTabs(originalBox.closest(".review-workspace"));
     const collected = gaCollect({ keys });
     if (window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key,
       pool: async () => [...(await twinPool(await collected)), ...(window.BBSHARE ? BBSHARE.mistakes(await bbShares(s).catch(() => [])) : [])].sort((a, b) => (b.ts || 0) - (a.ts || 0)),
       quick: () => twinQuick(s), load: twinLoad });
-    const ready = $("st-ready"), practice = window.TeacherPractice && SITE.adminKey() && TeacherPractice.mount(ready, {
+    const ready = $("st-ready"), openPractice = window.TeacherPractice && SITE.adminKey() && TeacherPractice.mount(ready, {
       key: s.key, context: (input) => practiceContext(s, input), candidates: practiceCandidates
     });
-    if (window.TeacherOriginals) originalCards.set(originalBox, TeacherOriginals.mount(originalBox, originalLoad, practice));
+    if (!openPractice) ready.innerHTML = '<p class="hint">Готовые задания доступны в кабинете с ключом администратора.</p>';
+    if (window.TeacherOriginals) {
+      const show = TeacherOriginals.mount(originalBox, originalLoad, openPractice && ((context) => {
+        selectReview("practice");
+        return openPractice(context);
+      }));
+      originalCards.set(originalBox, (label, list, context, options) => {
+        if (!options?.quiet) selectReview("errors");
+        show(label, list, context, options);
+      });
+    }
     progMount(s);
     predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
     goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
@@ -528,6 +585,10 @@
         <p class="hint" role="status">${value != null ? "Не удалось построить подробные графики." : "Не удалось загрузить индекс."}</p>
         <button type="button" class="btn ghost">Повторить</button></div>`;
       box.querySelector("button").onclick = () => progMount(s);
+      const errors = $("st-originals");
+      if (errors && !errors.querySelector(".tw-original-card")) {
+        errors.innerHTML = '<p class="hint" role="status">Не удалось загрузить ошибки. Повторите попытку на вкладке «Графики».</p>';
+      }
     };
     try {
       if (!window.PROGRESS || !window.PVIEW) { showFailure(); return; }
@@ -567,7 +628,10 @@
             const mistakes = active.filter((o) => o.x === 0 && !o.blank && o.chosen);
             originals("", mistakes.map(progressMistake), { all, mistakes, tags }, { quiet: true });
           }
-        } catch (e) { /* Question previews load independently of the index. */ }
+        } catch (e) {
+          const errors = $("st-originals");
+          if (errors && !errors.querySelector(".tw-original-card")) errors.innerHTML = '<p class="hint" role="status">Не удалось загрузить исходные вопросы.</p>';
+        }
       };
       draw(); D.progDraw = { key: s.key, fn: draw };
       liveMount(s).catch(() => { /* no lesson account */ });
@@ -1535,7 +1599,10 @@
   function rvMount(box, c) {
     if (!box) return;
     c.key = `${c.mode}:${c.title}`; const sel = (D.rvSel[c.key] = D.rvSel[c.key] || new Set()), parts = rvParts(c.all), id = c.slot;
-    if (!parts.length) { box.innerHTML = ""; return; }
+    if (!parts.length) {
+      box.innerHTML = c.mode === "solo" ? '<p class="hint">Нет работ с ошибками для разбора на уроке.</p>' : "";
+      return;
+    }
     const available = new Set(parts.map((p) => p.k));
     for (const k of sel) if (!available.has(k)) sel.delete(k);
     const filters = rvFilters.get(c.key) || { search: "", kind: "", sec: "", parts: "recent", questions: "" };
@@ -1558,7 +1625,7 @@
         <label>Порядок вопросов<select data-rvquestions><option value="">${c.mode === "group" ? "По доле ошибившихся" : "По порядку заданий"}</option><option value="wrong">По числу ошибившихся</option><option value="level">По уровню сложности, если указан</option></select></label>
         <div data-rvpreview></div></details>
       ${c.mode === "group" && SITE.adminKey() && c.all.some((q) => q.sec === "rw") ? '<section class="rv-ai" data-vl></section>' : ""}
-      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
+      <div class="row rv-actions" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" type="button" id="${id}-prep">Подготовить урок <span class="arr">→</span></button><button class="btn ghost" type="button" id="${id}-send"></button></div>
       <p class="hint">«Подготовить урок» сразу подбирает и отправляет свежие ошибки в «Ошибки класса».</p>
       <span class="hint" id="${id}-send-st" role="status"></span><div class="rv-note" id="${id}-note"></div></div>`;
     const btn = $(`${id}-send`), list = box.querySelector(".rv-parts"), preview = box.querySelector("[data-rvpreview]");
