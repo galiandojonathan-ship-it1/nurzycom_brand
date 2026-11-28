@@ -1,0 +1,13 @@
+const { chromium } = require("playwright");
+(async () => { const br = await chromium.launch(); const pg = await br.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+  await pg.goto("http://127.0.0.1:8766/ru/index.html", { waitUntil: "networkidle" }); await pg.waitForTimeout(500);
+  await pg.screenshot({ path: __dirname + "/land390.png" });
+  const r = await pg.evaluate(() => { const img = document.querySelector(".hero-photo"), b = img.getBoundingClientRect();
+    const small = [...document.querySelectorAll("a,button")].filter((e) => { const x = e.getBoundingClientRect(); return x.width && x.height && (x.height < 24 || x.width < 24); }).map((e) => `${e.textContent.trim().slice(0, 18)} ${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`);
+    const lang = [...document.querySelectorAll(".lang a")].map((a) => a.getAttribute("href"));
+    return { img: [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)], vw: innerWidth, small, lang, ids: [...document.querySelectorAll("section[id], [id]")].slice(0, 12).map((e) => e.id) }; });
+  console.log(JSON.stringify(r));
+  await pg.evaluate(() => document.querySelector("#faq, #lessons, section:nth-of-type(4)").scrollIntoView()); await pg.waitForTimeout(200);
+  const before = await pg.evaluate(() => location.hash); await pg.click(".lang a:not([aria-current])"); await pg.waitForLoadState("networkidle");
+  console.log("after EN/RU switch from a lower section: url =", pg.url(), "| scrollY =", await pg.evaluate(() => scrollY), "| hash before:", before);
+  await br.close(); })();

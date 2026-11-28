@@ -1,0 +1,13 @@
+const { chromium } = require("playwright");
+(async () => { const br = await chromium.launch(); const pg = await br.newPage({ viewport: { width: 1000, height: 1400 } });
+  await pg.addInitScript(() => { localStorage.setItem("site_pw", "fixture-pw"); localStorage.setItem("site_login", "loop-test"); localStorage.setItem("hw_student", "Loop Test"); });
+  await pg.goto("http://127.0.0.1:8767/plan.html", { waitUntil: "networkidle" }); await pg.waitForTimeout(600);
+  await pg.emulateMedia({ media: "print" });
+  const r = await pg.evaluate(() => { const vis = (s) => [...document.querySelectorAll(s)].filter((e) => e.offsetParent !== null && getComputedStyle(e).visibility !== "hidden").length;
+    const it = document.querySelector("#plan .it"), st = it && getComputedStyle(it);
+    return { nav: vis(".top, .nav, header.top"), foot: vis("footer, .foot"), print: vis("#print-row, #print"), checkboxes: vis("#plan input[type=checkbox]"), links: vis("#plan a.go"), breakInside: st && st.breakInside, bg: getComputedStyle(document.body).backgroundColor, hero: vis(".hero"), today: vis("#today") }; });
+  console.log(JSON.stringify(r));
+  await pg.pdf({ path: __dirname + "/plan_print.pdf", format: "A4", printBackground: true });
+  const { execSync } = require("child_process"); console.log(execSync(`pdfinfo ${__dirname}/plan_print.pdf | grep Pages`).toString().trim());
+  execSync(`pdftoppm -r 60 -png -f 1 -l 2 ${__dirname}/plan_print.pdf ${__dirname}/plan_print`);
+  await br.close(); })();

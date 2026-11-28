@@ -64,11 +64,11 @@ ol, ul { list-style: none; }
 .logo path { fill: none; stroke: currentColor; stroke-width: 1.5; }
 .logo text { font: 300 italic 21px var(--serif); fill: currentColor; }
 .links { display: flex; gap: 36px; font: 400 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; }
-.links a { opacity: .7; transition: opacity .2s; }
+.links a { opacity: .7; padding: 12px 0; transition: opacity .2s; }
 .links a:hover { opacity: 1; }
 .bar-right { display: flex; align-items: center; gap: 20px; }
 .lang { display: flex; gap: 2px; font: 400 12px var(--mono); letter-spacing: .14em; }
-.lang a { padding: 6px 6px; opacity: .45; transition: opacity .2s; }
+.lang a { padding: 10px 8px; opacity: .68; transition: opacity .2s; }
 .lang a[aria-current] { opacity: 1; text-decoration: underline; text-underline-offset: 5px; }
 .lang a:hover { opacity: 1; }
 .bar-cta {
@@ -241,6 +241,7 @@ details p { padding: 0 0 24px; max-width: 60ch; color: #2c2b28; }
 .foot { background: var(--ink); color: rgba(250, 248, 243, .6); border-top: 1px solid var(--line-dark); padding: 28px 0; font-size: 14px; }
 .foot-row { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .foot-links { display: flex; gap: 24px; }
+.foot-links a { display: inline-block; padding: 8px 0; }
 .foot a:hover { color: var(--paper); }
 
 /* ---------- Responsive ---------- */

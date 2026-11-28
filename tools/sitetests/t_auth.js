@@ -1,0 +1,23 @@
+const { chromium } = require("playwright"); const fs = require("fs"); const AXE = fs.readFileSync(__dirname + "/node_modules/axe-core/axe.min.js", "utf8");
+let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
+(async () => { const br = await chromium.launch(); const pg = await br.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
+  await pg.route(/\/api\//, (r) => r.fulfill({ status: 404, body: "" }));   // local copy has no Cloudflare functions
+  await pg.goto("http://127.0.0.1:8767/index.html", { waitUntil: "networkidle" }); await pg.waitForSelector("#auth-login");
+  ok(await pg.evaluate(() => [...document.querySelectorAll("#auth-in label.auth-f")].map((l) => l.textContent.trim()).join(",") === "Логин,Пароль"), "login: visible labels «Логин», «Пароль»");
+  ok((await pg.getAttribute("#auth-msg", "aria-live")) === "polite", "login: message area is a live region");
+  await pg.fill("#auth-login", "loop-test"); await pg.fill("#auth-pw", "wrongpass1");
+  await pg.check('[data-show="auth-pw"]'); ok((await pg.getAttribute("#auth-pw", "type")) === "text", "show password: the password becomes visible");
+  await pg.press("#auth-pw", "Enter"); await pg.waitForTimeout(1500);
+  ok((await pg.getAttribute("#auth-pw", "type")) === "password", "show password: hidden again after submit");
+  const msg = (await pg.textContent("#auth-msg")).trim(); ok(msg.length > 5 && !/Проверяю/.test(msg), "wrong password: message «" + msg + "»");
+  await pg.addScriptTag({ content: AXE }); const v = await pg.evaluate(async () => (await axe.run(document.getElementById("auth"))).violations.map((x) => x.id + "(" + x.nodes.length + ")"));
+  ok(v.length === 0, "login screen: axe clean " + v.join(","));
+  await pg.click("#auth-to-up"); await pg.waitForTimeout(200);
+  await pg.fill("#up-code", "x"); await pg.fill("#up-name", "Test T"); await pg.fill("#up-login", "test.t"); await pg.fill("#up-pw", "short"); await pg.fill("#up-pw2", "short");
+  await pg.check('[data-show="up-pw up-pw2"]'); ok((await pg.getAttribute("#up-pw2", "type")) === "text", "sign-up: show password reveals both fields");
+  await pg.click("#up-go"); await pg.waitForTimeout(600); const um = (await pg.textContent("#up-msg")).trim();
+  ok(/8|букв|цифр/.test(um), "sign-up: weak password message «" + um + "»");
+  await pg.click("#auth-to-in"); await pg.fill("#auth-login", "loop-test"); await pg.fill("#auth-pw", "fixture-pw"); await pg.press("#auth-pw", "Enter");
+  await pg.waitForSelector(".tile", { timeout: 15000 }).catch(() => {}); ok(await pg.isVisible(".tile"), "right password: logged in, lessons shown");
+  ok(errs.length === 0, "no page errors " + errs.join("|"));
+  await br.close(); console.log(fails ? fails + " FAILED" : "ALL PASS"); process.exit(fails ? 1 : 0); })();
