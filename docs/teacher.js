@@ -331,7 +331,16 @@
     $("v-students").querySelectorAll(".to-custom").forEach((button) => {
       button.onclick = () => { const r = s.rows[+button.dataset.i]; openCustom?.(r.lesson, r.custom.uid); };
     });
-    hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
+    const skillsBox = $("st-sk");
+    gaGroups().then(({ groups }) => {
+      if (!skillsBox.isConnected) return;
+      const prefs = studentAnalytics(groups, s);
+      const included = hw.filter((r) => {
+        const part = partOf(r.lesson, r.pid);
+        return part && filterAnalytics(prefs, r.kind === "M" ? "math" : "rw", workbookSource(workbookContext(part)));
+      });
+      hbars(skillsBox, skillStats(included).filter((x) => x.n >= 2));
+    });
     const reviewBox = $("st-rv"), originalBox = $("st-originals"), keys = new Set([s.key]);
     const collected = gaCollect({ keys });
     if (window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key,
@@ -341,7 +350,7 @@
       key: s.key, context: (input) => practiceContext(s, input), candidates: practiceCandidates
     });
     if (window.TeacherOriginals) originalCards.set(originalBox, TeacherOriginals.mount(originalBox, originalLoad, practice));
-    progMount(s).catch(() => { if (D.student === s.key && $("st-prog")) $("st-prog").innerHTML = ""; });
+    progMount(s);
     predMount(s).catch(() => { const b = $("st-pred"); if (b) b.innerHTML = ""; });
     goalMount(s).catch(() => { const b = $("st-goal"); if (b) b.innerHTML = ""; });
     collected.then((all) => {
@@ -376,7 +385,7 @@
         base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
       } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final", src: "hw" });
       else if ("VAM".includes(r.kind)) { const P = partOf(r.lesson, r.pid); if (!P) continue;
-        const ctx = P.mode === "test" ? "final" : /Домашн|Дополн/.test(P.title) ? "hw" : "learn", sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
+        const ctx = workbookContext(P), sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
         base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx, src: "hw" });
       } else continue;
       if (r.mock?.skipped.size) {
@@ -464,61 +473,117 @@
       if (!lists?.every(Array.isArray) || x.n !== size * 2) continue;
       const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m]));
       lists.forEach((ids, mi) => { if (skip[mi]) return; ids.forEach((cid, qi) => {
-        const it = cat.items[cid] || {}, m = miss.get(`${mi + 1}.${qi + 1}`);
-        let id = (it.c || []).find((r) => TAGS[r]);
+        const it = cat.items?.[cid] || {}, m = miss.get(`${mi + 1}.${qi + 1}`);
+        const refs = Array.isArray(it.c) ? it.c : [];
+        let id = refs.find((r) => TAGS[r]);
         if (!id) { id = "BB." + cid; if (!tags[id]) { const tg = PROGRESS.tagFromSkill(it.s || it.si); if (tg) tags[id] = tg; } }
         obs.push({ id, t: d.taken || d.at, x: m ? 0 : 1, blank: !!(m && m[2] == null), sec, level: it.d || "M", type: /^[A-D]$/.test((it.k || [])[0] || "") ? "mc" : "spr",
-          original: { test: x.label || x.test, route: x.route, cid, refs: it.c, sk: it.s || it.si, module: mi + 1, n: qi + 1, keys: m?.[3] },
+          original: { test: x.label || x.test, route: x.route, cid, refs, sk: it.s || it.si, module: mi + 1, n: qi + 1, keys: m?.[3] },
           ctx: "mock", src: "bb", part: `bb|${d.hash}|${sec}|${mi}`, attempt: 1, chosen: m && m[2] ? m[2] : "", second: null, secs: 0 });
       }); });
     }
     for (const { rec, me } of lv) obs.push(...PROGRESS.liveRound(rec, me, TAGS, tags));
     return { obs, tags };
   }
-  const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"], ["custom", "Мои тесты"]];
-  async function progData(s) {
+  const ANALYTICS_SECTIONS = [["rw", "Только Verbal"], ["math", "Только Math"], ["all", "Verbal и Math"]];
+  const SRC = [["practice", "Практика по урокам"], ["hw", "Домашние задания"], ["final", "Тесты по урокам"],
+    ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Живая практика"], ["custom", "Мои тесты"], ["sets", "Дополнительные наборы"]];
+  function analyticsPrefs(value) {
+    return {
+      sec: ANALYTICS_SECTIONS.some(([key]) => key === value?.sec) ? value.sec : "rw",
+      sources: SRC.map(([key]) => key).filter((key) => !Array.isArray(value?.sources) || value.sources.includes(key))
+    };
+  }
+  function filterAnalytics(prefs, sec, source) {
+    return (prefs.sec === "all" || prefs.sec === sec) && prefs.sources.includes(source);
+  }
+  const workbookSource = (ctx) => ctx === "learn" ? "practice" : ctx;
+  const workbookContext = (part) => part.mode === "test" ? "final" : /Домашн|Дополн/.test(part.title) ? "hw" : "learn";
+  const analyticsSource = (o) => o.src !== "hw" ? o.src
+    : ["X", "A"].includes(o.original?.r?.kind) ? "sets" : workbookSource(o.ctx);
+  const studentSources = (s) => {
+    try {
+      const saved = JSON.parse(store("pg_src_" + s.key));
+      return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    } catch (e) { return {}; }
+  };
+  function acceptsStudentSource(sel, source) {
+    return (sel[source] ?? (["practice", "final", "sets"].includes(source) ? sel.hw : undefined)) !== false;
+  }
+  function studentAnalytics(groups, s) {
+    return groups.find((g) => g.keys.has(s.key))?.analytics || analyticsPrefs();
+  }
+  async function progData(s, scope) {
     if (!window.PROGRESS) return null;
-    if (D.prog && D.prog.key === s.key) return D.prog.res;
-    const TAGS = await progTags(), tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
+    if (!scope && D.prog && D.prog.key === s.key) return D.prog.res;
+    const TAGS = await progTags(), tags = { ...TAGS };
     const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); Object.assign(tags, extra.tags);
-    let sel = {}; try { sel = JSON.parse(localStorage.getItem("pg_src_" + s.key) || "{}"); } catch (e) { sel = {}; }
-    return PROGRESS.compute([...progObs(s, TAGS), ...extra.obs].filter((o) => sel[o.src] !== false), tags);
+    const prefs = scope?.prefs || studentAnalytics((await gaGroups()).groups, s);
+    const sel = scope ? {} : studentSources(s);
+    return PROGRESS.compute([...progObs(s, TAGS), ...extra.obs].filter((o) => {
+      const source = analyticsSource(o);
+      return (!scope?.after || o.t >= scope.after) && filterAnalytics(prefs, o.sec, source) && acceptsStudentSource(sel, source);
+    }), tags);
   }
   const originalCards = new WeakMap();
   async function progMount(s) {
     const originals = originalCards.get($("st-originals"));
-    const box = $("st-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
-    box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
-    const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
-    await goalLoad(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
-    const SI = await startOf(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
-    const START = SI ? { t: +new Date(SI.date + "T00:00:00"), from: SI.from === "ученик" ? "" : SI.from } : null;
-    const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
-    const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
-    Object.assign(tags, extra.tags);
-    const all = [...progObs(s, TAGS), ...extra.obs], counts = {}; all.forEach((o) => (counts[o.src] = (counts[o.src] || 0) + (o.skipped || 1)));
-    // which sources count, remembered per student (Nurassyl's own account: homework off, it was only testing the site)
-    const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
-    const draw = () => {
-      const active = all.filter((o) => sel[o.src] !== false);
-      const res = PROGRESS.compute(active, tags); D.prog = { key: s.key, res };
-      if (originals && !$("st-originals").querySelector(".tw-original-card")) {
-        const mistakes = active.filter((o) => o.x === 0 && !o.blank && o.chosen);
-        originals("", mistakes.map(progressMistake), { all, mistakes, tags }, { quiet: true });
-      }
-      PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: originals && ((f) => {
-          const mistakes = active.filter((o) => {
-            const tag = tags[o.id];
-            return o.x === 0 && !o.blank && tag && (f.subtopic ? tag.p === f.subtopic || tag.s?.includes(f.subtopic) : tag.t?.[o.chosen] === f.trapKey);
-          });
-          document.querySelector('[data-st="fix"]')?.click();
-          originals(f.label, mistakes.map(progressMistake), { label: f.label, all, mistakes, focus: f.subtopic, trap: f.trapKey, tags });
-        }),
-        sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: sel[k] !== false })),
-          set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
+    const box = $("st-prog"); if (!box) return;
+    const showFailure = (result) => {
+      if ($("st-prog") !== box || D.student !== s.key) return;
+      const last = result?.snaps.at(-1), index = last?.nAns >= PROGRESS.MIN_IX ? last.index : null;
+      const value = index ?? last?.prediction?.value;
+      box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика · индекс</span>
+        ${value != null ? `<div class="pg-big">${value}</div>${index == null ? '<b class="pg-predicted">(прогноз)</b>' : ""}` : ""}
+        <p class="hint" role="status">${value != null ? "Не удалось построить подробные графики." : "Не удалось загрузить индекс."}</p>
+        <button type="button" class="btn ghost">Повторить</button></div>`;
+      box.querySelector("button").onclick = () => progMount(s);
     };
-    draw(); D.progDraw = { key: s.key, fn: draw };
-    liveMount(s).catch(() => { /* no lesson account */ });
+    try {
+      if (!window.PROGRESS || !window.PVIEW) { showFailure(); return; }
+      box.innerHTML = '<div class="card pg"><span class="label">Прогресс ученика</span><p class="hint">Считаю индекс…</p></div>';
+      const TAGS = await progTags(); if ($("st-prog") !== box || D.student !== s.key) return;
+      await goalLoad(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
+      const SI = await startOf(s).catch(() => null); if ($("st-prog") !== box || D.student !== s.key) return;
+      const START = SI ? { t: +new Date(SI.date + "T00:00:00"), from: SI.from === "ученик" ? "" : SI.from } : null;
+      const tags = { ...TAGS };
+      const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
+      Object.assign(tags, extra.tags);
+      const prefs = studentAnalytics((await gaGroups()).groups, s);
+      if ($("st-prog") !== box || D.student !== s.key) return;
+      const all = [...progObs(s, TAGS), ...extra.obs].filter((o) => filterAnalytics(prefs, o.sec, analyticsSource(o)));
+      const counts = {};
+      for (const o of all) {
+        const source = analyticsSource(o);
+        counts[source] = (counts[source] || 0) + (o.skipped || 1);
+      }
+      // which sources count, remembered per student (Nurassyl's own account: homework off, it was only testing the site)
+      const KEY = "pg_src_" + s.key, sel = studentSources(s);
+      const draw = () => {
+        if ($("st-prog") !== box || D.student !== s.key) return;
+        const active = all.filter((o) => acceptsStudentSource(sel, analyticsSource(o)));
+        const res = PROGRESS.compute(active, tags); D.prog = { key: s.key, res };
+        try { PVIEW.render(box, res, { name: s.name, target: goalNeeds(s, prefs), start: START, onTwins: originals && ((f) => {
+            const mistakes = active.filter((o) => {
+              const tag = tags[o.id];
+              return o.x === 0 && !o.blank && tag && (f.subtopic ? tag.p === f.subtopic || tag.s?.includes(f.subtopic) : tag.t?.[o.chosen] === f.trapKey);
+            });
+            document.querySelector('[data-st="fix"]')?.click();
+            originals(f.label, mistakes.map(progressMistake), { label: f.label, all, mistakes, focus: f.subtopic, trap: f.trapKey, tags });
+          }),
+          sources: { list: SRC.filter(([k]) => counts[k]).map(([k, l]) => ({ k, l, n: counts[k], on: acceptsStudentSource(sel, k) })),
+            set: (k, on) => { sel[k] = on; try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) { /* private mode */ } draw(); predMount(s).catch(() => {}); } } });
+        } catch (e) { showFailure(res); }
+        try {
+          if (originals && !$("st-originals")?.querySelector(".tw-original-card")) {
+            const mistakes = active.filter((o) => o.x === 0 && !o.blank && o.chosen);
+            originals("", mistakes.map(progressMistake), { all, mistakes, tags }, { quiet: true });
+          }
+        } catch (e) { /* Question previews load independently of the index. */ }
+      };
+      draw(); D.progDraw = { key: s.key, fn: draw };
+      liveMount(s).catch(() => { /* no lesson account */ });
+    } catch (e) { showFailure(); }
   }
   function courseMistake(ref) {
     const [code, part, mod, n] = (ref || "").split(".");
@@ -571,9 +636,10 @@
     D.goal = { key: s.key, acct, g: goal && (goal.rw || goal.math) ? goal : null, start: goal && /^\d{4}-\d{2}-\d{2}$/.test(goal.start || "") ? goal.start : null, raw: goal };
     return D.goal;
   }
-  const goalNeeds = (s) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
+  const goalNeeds = (s, prefs) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
     const P = D.pred && D.pred.key === s.key && D.pred.est ? D.pred.est.sections : {};
-    return PROGRESS.targetNeeds(D.goal.g, SATSCALE, { rw: P.rw && P.rw.mid, math: P.math && P.math.mid }); };
+    const goal = prefs && prefs.sec !== "all" ? { [prefs.sec]: D.goal.g[prefs.sec] } : D.goal.g;
+    return PROGRESS.targetNeeds(goal, SATSCALE, { rw: P.rw && P.rw.mid, math: P.math && P.math.mid }); };
   async function goalSave(acct, goal) {
     const url = "admin/progress?id=" + encodeURIComponent(acct), g = await SITE.api(url);
     let B = {}; if (g.ok) B = await SITE.unsealBlob(g.data.data); else if (g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
@@ -624,8 +690,8 @@
   async function predData(s) {
     if (!window.PREDICT || !window.SATSCALE) return null;
     const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
-    let sel = {}; try { sel = JSON.parse(localStorage.getItem("pg_src_" + s.key) || "{}"); } catch (e) { sel = {}; }
-    const tests = PREDICT.collect(s.rows, shares, SATSCALE).filter((x) => sel[x.src] !== false);
+    const prefs = studentAnalytics((await gaGroups()).groups, s), sel = studentSources(s);
+    const tests = PREDICT.collect(s.rows, shares, SATSCALE).filter((x) => filterAnalytics(prefs, x.sec, x.src) && acceptsStudentSource(sel, x.src));
     return { tests, est: PREDICT.estimate(tests) };
   }
   const dY = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
@@ -634,14 +700,14 @@
     const P = await predData(s); if ($("st-pred") !== box || D.student !== s.key) return;
     D.pred = { key: s.key, ...(P || {}) };
     if ($("st-goal") && !$("goal-f")) goalMount(s).catch(() => {});   // the pace line needs the range
-    if (D.goal && D.goal.key === s.key && D.goal.g && D.progDraw && D.progDraw.key === s.key) D.progDraw.fn();   // the target is anchored on the range
+    if (D.goal?.key === s.key && D.goal.g && D.progDraw?.key === s.key) D.progDraw.fn();
     if (!P || !P.tests.length) { box.innerHTML = '<div class="card pred"><span class="label">Ориентир на SAT</span><p class="hint">Появится после первого полного пробного теста (на сайте или в Bluebook).</p></div>'; return; }
     const E = P.est, S = E.sections, NM = { rw: "Reading and Writing", math: "Math" };
     const big = E.total ? `${E.total.lo}–${E.total.hi}` : Object.keys(S).map((k) => `${S[k].lo}–${S[k].hi}`).join(" · ");
     const secLine = Object.entries(S).map(([k, x]) => `<div class="pred-sec"><b>${NM[k]}</b><span class="pred-r">${x.lo}–${x.hi}</span><small>${x.n} ${x.n === 1 ? "тест" : x.n < 5 ? "теста" : "тестов"} · последний ${dY(x.last)}${x.trend != null ? ` · с первого ${x.trend >= 0 ? "+" : "−"}${Math.abs(x.trend)}` : ""}${x.weak ? " · мало свежих данных" : ""}</small></div>`).join("");
     const list = P.tests.slice().sort((a, b) => b.t - a.t).map((x) => `<li>${dY(x.t)} · ${x.src === "bb" ? "Bluebook" : "сайт"} · ${esc(x.label)} · ${NM[x.sec]} ≈ ${x.score}</li>`).join("");
     const gl = D.goal && D.goal.key === s.key && D.goal.g ? D.goal.g : null, gtot = gl && gl.rw && gl.math ? gl.rw + gl.math : null;
-    const gline = gl ? `<p class="pred-goal"><b>Цель:</b> ${[gl.rw ? `RW ${gl.rw}${S.rw ? ` (сейчас ${S.rw.lo}–${S.rw.hi})` : ""}` : "", gl.math ? `Math ${gl.math}${S.math ? ` (сейчас ${S.math.lo}–${S.math.hi})` : ""}` : "", gtot && E.total ? `всего ${gtot} (сейчас ${E.total.lo}–${E.total.hi})` : ""].filter(Boolean).join(" · ")}</p>` : "";
+    const gline = gl ? `<p class="pred-goal"><b>Цель:</b> ${[gl.rw && S.rw ? `RW ${gl.rw}${S.rw ? ` (сейчас ${S.rw.lo}–${S.rw.hi})` : ""}` : "", gl.math && S.math ? `Math ${gl.math}${S.math ? ` (сейчас ${S.math.lo}–${S.math.hi})` : ""}` : "", gtot && E.total ? `всего ${gtot} (сейчас ${E.total.lo}–${E.total.hi})` : ""].filter(Boolean).join(" · ")}</p>` : "";
     box.innerHTML = `<div class="card pred"><span class="label">Ориентир на SAT · примерный диапазон</span>
       <div class="pred-top"><div class="pred-big">${big}${E.total ? '<small>сумма двух разделов</small>' : `<small>${Object.keys(S).map((k) => NM[k]).join(" · ")}</small>`}</div><div class="pred-secs">${secLine}</div></div>
       ${gline}<p class="hint">Оценка по полным пробным тестам: свежие весят больше, Bluebook чуть больше пробников сайта. Это не официальный балл College Board и не обещание результата; чем больше свежих полных пробников, тем уже диапазон. Учитывает переключатели источников ниже.</p>
@@ -654,7 +720,7 @@
     const day = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
     const modes = { off: "Не учитывается", answered: "Только ответы", module: "Как полный модуль" };
     box.innerHTML = `<div class="card"><span class="label">Уроки · живая практика</span><p class="hint">Раунды на уроках, где ученик отвечал со своего устройства (сохраняет аккаунт урока после каждого раунда).</p>
-      ${table(["Дата", "Раунд", "Отвечено", "Верно", "Учёт в индексе"], lv.slice().reverse().map(({ rec, me }) => { const a = Object.values(me.ans || {}); return { cells: [esc(day(rec.at)), esc(rec.title || "Раунд"), `${a.length}/${(rec.items || []).length}`, `${a.filter((x) => x[1]).length}`, esc(rec.v === 2 ? modes[rec.progress] : modes.answered)] }; }), { num: [2, 3] })}</div>`;
+      ${table(["Дата", "Раунд", "Отвечено", "Верно", "Режим раунда"], lv.slice().reverse().map(({ rec, me }) => { const a = Object.values(me.ans || {}); return { cells: [esc(day(rec.at)), esc(rec.title || "Раунд"), `${a.length}/${(rec.items || []).length}`, `${a.filter((x) => x[1]).length}`, esc(rec.v === 2 ? modes[rec.progress] : modes.answered)] }; }), { num: [2, 3] })}</div>`;
   }
   // «PDF-отчёт»: what the report shows for one student (report.js); only the student's own submissions, no internal index
   async function reportData(s) {
@@ -1144,19 +1210,19 @@
   }
   // ---------- the whole group (2026-11-09, Nurassyl: «analysis of the group, not individuals: the most difficult questions and where people miss
   // very much»). Every student's FIRST submission of each homework part and test section counts once; no names are shown.
-  const GA = { sec: "all", days: 0, min: 3, top: 15, kind: "all", gid: null };
+  const GA = { days: 0, min: 3, top: 15, gid: null };
   // the cabinet's groups (2026-11-09, Nurassyl: «the group of students who I conduct the group lessons to; I assigned students to the
   // group»): members are account ids; their account names are matched to the form's merged names (FORMKIT.key, same rule as the
   // cabinet's import). Needs the admin key in this browser, like the cabinet.
   const GCOLT = { blue: "#1F4FA3", green: "#2B6E2F", amber: "#8A5300", violet: "#6A3D9E", teal: "#165F6E", rose: "#9E2456" };
-  async function groupStartSave(gid, date) {
+  async function updateGroup(gid, update) {
     const g = await SITE.api("admin/groups"); if (!g.ok) throw new Error(`Сервер ответил ${g.status}.`);
     const saved = await SITE.unsealBlob(g.data.data); const grp = (saved.groups || []).find((x) => String(x.id) === String(gid)); if (!grp) throw new Error("Группа не найдена.");
-    if (date) grp.start = date; else delete grp.start;
+    update(grp);
     saved.at = Math.max(Date.now(), (saved.at || 0) + 1);
     const p = await SITE.api("admin/groups", { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(saved) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
     try { store("cb_groups", JSON.stringify(saved)); } catch (e) { /* private mode */ }
-    D.cbg = null; D.gpRes = {};
+    D.cbg = null; D.gpRes = {}; D.prog = null; D.pred = null;
   }
   // a student's start: their own date (work_start in their copy, set in the card) or their cabinet group's date
   const dayLabel = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
@@ -1184,22 +1250,23 @@
     const groups = (saved?.groups || []).filter((x) => x && x.id && Array.isArray(x.members)).map((x) => {
       const names = x.members.filter((id) => !archived.has(id)).map((id) => users[id]?.name).filter(Boolean);
       return { id: String(x.id), name: String(x.name || "Группа"), kind: x.kind === "solo" ? "solo" : "group", color: GCOLT[x.color] || GCOLT.blue, names, keys: new Set(names.map((n) => FORMKIT.key(n)).filter(Boolean)),
-        start: /^\d{4}-\d{2}-\d{2}$/.test(x.start || "") ? x.start : null };
+        start: /^\d{4}-\d{2}-\d{2}$/.test(x.start || "") ? x.start : null, analytics: analyticsPrefs(x.analytics) };
     }).filter((x) => x.names.length);
     return (D.cbg = { groups });
   }
   const WORK = (r, P) => (r.kind === "P" ? "Пробные тесты" : "DUA".includes(r.kind) ? "Наборы «Полезное»" : !P ? "Другое" : /Холодный/.test(P.title) ? "Холодный старт" : /Финальный/.test(P.title) ? "Финальный тест" : /Дополнительное/.test(P.title) ? "Дополнительное ДЗ" : /Домашнее/.test(P.title) ? "Домашнее задание" : "Практика на уроке");
-  // opt.keys: only these students and no filters (one student's review on the lesson account); otherwise the «Анализ группы» filters
+  // An individual review keeps its full history. Group review uses the saved analytics selection.
   async function gaCollect(opt) {
     const o = opt || {}, now = Date.now(), seen = new Set(), Q = {};
     const grp = !o.keys && GA.gid && D.cbg && D.cbg.groups.find((g) => g.id === GA.gid);
-    const days = o.keys ? 0 : GA.days, secF = o.keys ? "all" : GA.sec, kindF = o.keys ? "all" : GA.kind;
+    const days = o.keys ? 0 : GA.days;
     const from = !o.keys && grp && grp.start ? +new Date(grp.start + "T00:00:00") : 0;   // «Работаю с группой с»: earlier results do not count
     const rows = D.rows.filter((r) => (!days || (r.ts && now - r.ts < days * DAY)) && (!from || (r.ts && +r.ts >= from)) && "VMDUAP".includes(r.kind) && (o.keys ? o.keys.has(r.key) : !grp || grp.keys.has(r.key)));
     for (const r of rows) {
       const mock = r.kind === "P", sec = mock ? (/·Math$/.test(r.lesson) ? "math" : "rw") : r.lesson[0] === "V" || r.lesson[0] === "A" ? "rw" : "math";
-      if (secF !== "all" && secF !== sec) continue;
-      if (kindF === "hw" && mock || kindF === "mk" && !mock) continue;
+      const part = mock ? null : partOf(r.lesson, r.pid);
+      const source = mock ? "mock" : "DUA".includes(r.kind) ? "sets" : part && workbookSource(workbookContext(part));
+      if (o.prefs && !filterAnalytics(o.prefs, sec, source)) continue;
       const id = `${r.key}|${r.lesson}|${r.pid}`; if (seen.has(id) || r.attempt > 1) continue; seen.add(id);
       const bad = new Set(r.wrong.map(String)), pick = {}, TR = {}; r.answers.forEach((a) => { pick[String(a.n)] = a.tries[0] || ""; TR[String(a.n)] = a.tries; });
       if (mock) {
@@ -1225,7 +1292,7 @@
   // (median and the middle half), subtopics (median mastery, how many are weak, change over 4 weeks), levels, traps.
   const gmed = (a) => { const v = a.filter((x) => x != null && !isNaN(x)).sort((x, y) => x - y); if (!v.length) return null; const m = v.length / 2; return v.length % 2 ? v[m | 0] : (v[m - 1] + v[m]) / 2; };
   const quant = (a, q) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); if (!v.length) return null; const i = (v.length - 1) * q, lo = Math.floor(i); return v[lo] + (v[Math.ceil(i)] - v[lo]) * (i - lo); };
-  async function gpMount(grp) {
+  async function gpMount(grp, prefs, after) {
     const box = $("ga-prog"); if (!box || !window.PROGRESS || !window.PVIEW) return;
     const studs = D.students.filter((st) => !grp || grp.keys.has(st.key));
     if (studs.length < 2) { box.innerHTML = ""; return; }
@@ -1234,7 +1301,12 @@
     D.gpRes = D.gpRes || {};
     const rows = [];
     for (const st of studs) {
-      let res = D.gpRes[st.key]; if (!res) { res = await progData(st).catch(() => null); if (res) D.gpRes[st.key] = res; }
+      const cacheKey = JSON.stringify([st.key, prefs, grp?.start, GA.days]);
+      let res = D.gpRes[cacheKey];
+      if (!res) {
+        res = await progData(st, {prefs, after}).catch(() => null);
+        if (res) D.gpRes[cacheKey] = res;
+      }
       if (D.gpTok !== token || $("ga-prog") !== box) return;
       const S = res ? res.snaps : [], last = S[S.length - 1];
       rows.push({ st, res, idx: last && last.nAns >= PROGRESS.MIN_IX ? last.index : null, predicted: last?.prediction?.value, n: last ? last.nAns : 0 });
@@ -1248,7 +1320,7 @@
       ? `индекс ${r.idx}: значительно ${r.idx > med ? "выше" : "ниже"} группы (медиана ${Math.round(med)})` : "");
     let over = {}; try { over = JSON.parse(store("gp_ex_" + gid) || "{}"); } catch (e) { over = {}; }
     rows.forEach((r) => { r.why = auto(r); r.out = over[r.st.key] != null ? !!over[r.st.key] : !!r.why; });
-    const inc = rows.filter((r) => !r.out && r.res), WEEK = 6048e5, T0 = grp && grp.start ? +new Date(grp.start + "T00:00:00") : null;
+    const inc = rows.filter((r) => !r.out && r.res?.snaps.length), WEEK = 6048e5, T0 = grp && grp.start ? +new Date(grp.start + "T00:00:00") : null;
     const draw = () => {
       if (!inc.length) { box.innerHTML = `<div class="card gp"><span class="label">Прогресс группы</span><p class="hint">Нет учеников с данными для общего анализа.</p>${chipsHTML()}</div>`; wire(); return; }
       // index by week on one calendar: each student's latest point at or before the week
@@ -1326,10 +1398,25 @@
       box.querySelectorAll("[data-gp]").forEach((b) => (b.onclick = () => {
         const r = rows.find((x) => x.st.key === b.dataset.gp); if (!r) return;
         r.out = !r.out; over[r.st.key] = r.out; try { store("gp_ex_" + gid, JSON.stringify(over)); } catch (e) { /* private mode */ }
-        inc.splice(0, inc.length, ...rows.filter((x) => !x.out && x.res)); draw();
+        inc.splice(0, inc.length, ...rows.filter((x) => !x.out && x.res?.snaps.length)); draw();
       }));
     }
     draw();
+  }
+  function allAnalytics() {
+    try { return JSON.parse(store("ga_analytics_all")); } catch (e) { return null; }
+  }
+  function analyticsSettings(prefs, grp) {
+    return `<details class="card" id="ga-analytics"${GA.settingsOpen === (grp?.id || "") ? " open" : ""}>
+      <summary><b>Настройки аналитики</b> · ${ANALYTICS_SECTIONS.find(([key]) => key === prefs.sec)[1]} · ${prefs.sources.length} ${pl(prefs.sources.length, "вид работы", "вида работ", "видов работ")}</summary>
+      <form id="ga-analytics-form">
+        <p class="hint">${grp ? "Для этой группы и графиков её учеников." : "Для сводки «Все ученики» в этом браузере."}</p>
+        <label>Раздел SAT <select name="section">${ANALYTICS_SECTIONS.map(([key, label]) =>
+          `<option value="${key}"${key === prefs.sec ? " selected" : ""}>${label}</option>`).join("")}</select></label>
+        <fieldset class="ga-sources"><legend>Какие работы учитывать</legend>${SRC.map(([key, label]) =>
+          `<label><input type="checkbox" name="source" value="${key}"${prefs.sources.includes(key) ? " checked" : ""}> ${label}</label>`).join("")}</fieldset>
+        <div class="row"><button class="btn sm" type="submit">Сохранить</button><span class="hint" role="status">${GA.settingsOpen === (grp?.id || "") ? "Настройки сохранены." : ""}</span></div>
+      </form></details>`;
   }
   async function groupView() {
     const box = $("v-group"), version = D.groupRender = (D.groupRender || 0) + 1;
@@ -1339,13 +1426,14 @@
     if (GA.gid === null) { const first = CB.groups.find((g) => g.kind === "group" && D.students.some((st) => g.keys.has(st.key))); GA.gid = first ? first.id : ""; }
     if (GA.gid && !CB.groups.some((g) => g.id === GA.gid)) GA.gid = "";
     const grp = CB.groups.find((g) => g.id === GA.gid);
-    const all = await gaCollect(); if (!current()) return;
+    const prefs = grp?.analytics || analyticsPrefs(allAnalytics());
+    const all = await gaCollect({ prefs }); if (!current()) return;
     const review = { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", keys: grp ? grp.keys : null,
       names: grp ? grp.names : D.students.map((x) => x.name),
-      note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") };
+      note: [ANALYTICS_SECTIONS.find(([key]) => key === prefs.sec)[1], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") };
     const selected = D.students.filter((student) => !grp || grp.keys.has(student.key));
     const after = Math.max(GA.days ? Date.now() - GA.days * DAY : 0, grp?.start ? +new Date(grp.start + "T00:00:00") : 0);
-    const bb = GA.kind === "hw" ? [] : await bluebookReviewRows(selected, { sec: GA.sec, after }).catch(() => []);
+    const bb = prefs.sources.includes("bb") ? await bluebookReviewRows(selected, { sec: prefs.sec, after }).catch(() => []) : [];
     if (!current()) return;
     const mountReview = (ranked, top) => rvMount($("ga-rv"), { ...review, all: [...all, ...bb], ranked: all.length ? ranked : bb, top });
     const err = (x) => (x.n ? (100 * x.wrong) / x.n : 0);
@@ -1365,13 +1453,14 @@
       : grp ? `<p class="hint">В группе «${esc(grp.name)}» ${grp.names.length} ${pl(grp.names.length, "ученик", "ученика", "учеников")}; в ответах формы найдены: ${found.length ? esc(found.join(", ")) : "никто"}.${lost.length ? ` Нет ответов в форме: ${esc(lost.join(", "))} (не сдавали или подписывались другим именем: объедините написания на вкладке «Ученики»).` : ""}</p>` : "";
     const gstart = grp ? `<div class="ga-start"><label>Работаю с группой с <input type="date" id="ga-start" value="${esc(grp.start || "")}"></label><button class="btn sm" type="button" id="ga-start-save">Сохранить</button>${grp.start ? '<button class="chip" type="button" id="ga-start-del">Убрать дату</button>' : ""}
       <span class="hint" id="ga-start-st">${grp.start ? `Результаты до ${esc(dayLabel(grp.start))} не учитываются; дата отмечена на графиках учеников группы.` : "Укажите, с какого дня учитывать результаты группы: эта дата будет отмечена на графиках учеников."}</span></div>` : "";
-    let html = `<h2>Анализ группы</h2>${gchips}${gnote}${gstart}<p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Сложные наборы X и тексты T сюда не входят.</p>
-      <div class="row t-filters">${chips("ga-sec", GA.sec, [["all", "Всё"], ["rw", "Reading and Writing"], ["math", "Math"]])}${chips("ga-kind", GA.kind, [["all", "ДЗ и тесты"], ["hw", "Только уроки и ДЗ"], ["mk", "Только пробные тесты"]])}
+    let html = `<h2>Анализ группы</h2>${gchips}${gnote}${analyticsSettings(prefs, grp)}${gstart}<p class="hint">Вся группа вместе, без имён. Учитывается только первая сдача каждой части и каждого раздела пробного теста (первая попытка), чтобы повторные сдачи не смягчали картину. Индекс учитывает выбранные виды работ. В сводке ошибок по сайту учитываются задания тетради и пробники сайта. Ошибки из Bluebook доступны в блоке разбора.</p>
+      <div class="row t-filters">
       ${chips("ga-days", GA.days, [[0, "Всё время"], [30, "30 дней"], [14, "14 дней"]])}${chips("ga-min", GA.min, [[2, "от 2 учеников"], [3, "от 3"], [5, "от 5"]])}</div>`;
-    html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
-      ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
+    if (all.length) html += kpis([["Учеников", who.size, "сдавали задания сайта"], ["Ответов на сайте", rw[0] + ma[0], `${all.length} разных вопросов`],
+      ...([["rw", "RW", rw], ["math", "Math", ma]].filter(([sec]) => prefs.sec === "all" || prefs.sec === sec)
+        .map(([, title, [n, wrong]]) => [`Ошибок · ${title}`, n ? pct(100 * wrong / n) : "—", `${wrong} из ${n} с первой попытки`]))]);
     html += '<div id="ga-prog"></div><div id="ga-hw"></div>';
-    if (!all.length) { box.innerHTML = html + '<div id="ga-rv"></div><p class="hint">Нет сдач на сайте для этого выбора.</p>'; mountReview([], []); gaBind(box); gpMount(grp).catch(() => {}); return; }
+    if (!all.length) { box.innerHTML = html + '<div id="ga-rv"></div><p class="hint">Нет ошибок по заданиям сайта для выбранных видов работ.</p>'; mountReview([], []); gaBind(box); gpMount(grp, prefs, after).catch(() => {}); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
     html += `<div id="ga-rv"></div><h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
     html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
@@ -1393,7 +1482,7 @@
     hbars($("ga-les"), agg((q) => q.title.split(" · №")[0].replace(/ · (Модуль|Reading|Math).*$/, "")).filter((s) => s.n >= 10).slice(0, 12).map((s) => ({ label: s.label, value: s.value, n: s.n })));
     if (difs.length) hbars($("ga-dif"), difs.map((s) => ({ label: s.label, value: s.value, n: s.n })));
     box.querySelectorAll(".ga-q").forEach((d) => d.addEventListener("toggle", () => d.open && gaOpen(d, all[+d.dataset.i])));
-    gpMount(grp).catch(() => { const b = $("ga-prog"); if (b) b.innerHTML = ""; });
+    gpMount(grp, prefs, after).catch(() => { const b = $("ga-prog"); if (b) b.innerHTML = ""; });
     // «Персональные ДЗ · Gemini» (hwplan.js): on the cabinet page, for a chosen group with the admin key
     if (grp && $("ga-hw") && window.HWPLAN && window.CTED && window.TWINS && SITE.adminKey()) {
       const studs = D.students.filter((st) => grp.keys.has(st.key));
@@ -1685,11 +1774,26 @@
     }
   }
   function gaBind(box) {
+    const form = box.querySelector("#ga-analytics-form");
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const data = new FormData(form), status = form.querySelector("[role=status]"), button = form.querySelector("button");
+      const settings = analyticsPrefs({ sec: data.get("section"), sources: data.getAll("source") });
+      if (!settings.sources.length) { status.textContent = "Выберите хотя бы один вид работы."; return; }
+      const gid = GA.gid;
+      button.disabled = true;
+      try {
+        if (gid) await updateGroup(gid, (g) => { g.analytics = settings; });
+        else { localStorage.setItem("ga_analytics_all", JSON.stringify(settings)); D.gpRes = {}; }
+        if (form.isConnected) { GA.settingsOpen = gid; render(); }
+      } catch (e) { status.textContent = "Не удалось сохранить настройки. Попробуйте снова."; }
+      finally { button.disabled = false; }
+    };
     const sv = box.querySelector("#ga-start-save"), dl = box.querySelector("#ga-start-del"), st = box.querySelector("#ga-start-st");
-    const put = async (date) => { try { await groupStartSave(GA.gid, date); render(); } catch (e) { if (st) st.textContent = "Не сохранилось: " + e.message; } };
+    const put = async (date) => { try { await updateGroup(GA.gid, (g) => { if (date) g.start = date; else delete g.start; }); render(); } catch (e) { if (st) st.textContent = "Не сохранилось: " + e.message; } };
     if (sv) sv.onclick = () => { const v = box.querySelector("#ga-start").value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { st.textContent = "Выберите дату."; return; } put(v); };
     if (dl) dl.onclick = () => put(null);
-    [["ga-grp", "gid"], ["ga-sec", "sec"], ["ga-kind", "kind"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
+    [["ga-grp", "gid"], ["ga-days", "days"], ["ga-min", "min"]].forEach(([id, k]) => box.querySelectorAll(`#${id} .chip`).forEach((b) => (b.onclick = () => { GA[k] = k !== "gid" && typeof GA[k] === "number" ? +b.dataset.x : b.dataset.x; render(); })));
   }
   async function gaOpen(d, q) {
     const body = d.querySelector(".rbody"); if (body.dataset.done) return;

@@ -185,9 +185,19 @@ window.PVIEW = (() => {
       // «Карта подтем»: grouping, a status filter, sorting and folding (Nurassyl, 2026-11-23: «allow me to categorize the sections
       // here»); the choice is kept in this browser for every student
       const MK = "pg_map", mp = (() => { try { return Object.assign({ g: "dom", f: "all", s: "order", closed: {} }, JSON.parse(localStorage.getItem(MK) || "{}")); } catch (e) { return { g: "dom", f: "all", s: "order", closed: {} }; } })();
+      if (!mp.closed || typeof mp.closed !== "object") mp.closed = {};
       const saveMap = () => { try { localStorage.setItem(MK, JSON.stringify(mp)); } catch (e) { /* private mode */ } };
-      const HAS_T = !!(o.target && Object.keys(o.target).length);
-      const ST_ORDER = HAS_T ? [["stuck", "Ниже цели"], ["grow", "На уровне цели"], ["ok", "Выше цели"], ["thin", "Мало данных"]] : [["stuck", "Требуют внимания"], ["grow", "Растут"], ["", "Держатся"], ["ok", "Освоено"], ["thin", "Мало данных"]];
+      const targetStatuses = [["stuck", "Ниже цели"], ["grow", "На уровне цели"], ["ok", "Выше цели"]];
+      const generalStatuses = [["stuck", "Требуют внимания"], ["grow", "Растут"], ["", "Держатся"], ["ok", "Освоено"]];
+      const hasTarget = res.secs.some((sec) => o.target?.[sec]);
+      const hasGeneral = res.secs.some((sec) => !o.target?.[sec]);
+      const statuses = [
+        ...(hasTarget ? targetStatuses.map(([key, label]) => [hasGeneral ? "target:" + key : key, label]) : []),
+        ...(hasGeneral ? generalStatuses.map(([key, label]) => [hasTarget ? "general:" + key : key, label]) : []),
+        ["thin", "Мало данных"]
+      ];
+      if (mp.f === "attn") mp.f = hasTarget && hasGeneral ? "all" : "stuck";
+      if (mp.f !== "all" && !statuses.some(([key]) => key === mp.f)) mp.f = "all";
       const all = [];
       res.secs.forEach((sec) => PROGRESS.DOMAINS[sec].forEach(([, list], gi) => res.subs.filter((x) => x.sec === sec && list.includes(x.k) && x.n > 0).forEach((x) => {
         const thin = x.n < 3, c = thin ? null : PROGRESS.change(res, x, a, n - 1), b0 = c ? c.from : n - 1, now = x.series[n - 1] ?? 0, was = x.series[b0] ?? now, ch = c ? c.ch : 0, sig = c && Math.abs(c.z) >= PROGRESS.ZMIN, late = !!c && b0 > a;   // change from the first reliable value; sig: above the noise
@@ -196,16 +206,25 @@ window.PVIEW = (() => {
         all.push({ x, sec, gi, thin, c, b0, now, was, ch, sig, late, stt, need, gap: need != null ? need - now : null });
       })));
       const SECN = { rw: "Reading and Writing", math: "Math" };
-      const groupOf = (r) => mp.g === "dom" ? [`d:${r.sec}:${r.gi}`, DOMN[r.sec][r.gi], `${r.sec}${r.gi}`] : mp.g === "status" ? [`s:${r.stt[0]}`, ST_ORDER.find(([k]) => k === r.stt[0])[1], String(ST_ORDER.findIndex(([k]) => k === r.stt[0]))] : mp.g === "sec" ? [`c:${r.sec}`, SECN[r.sec], r.sec === "rw" ? "0" : "1"] : ["all", "", "0"];
-      const keep = (r) => mp.f === "all" || (mp.f === "attn" ? r.stt[0] === "stuck" : r.stt[0] === mp.f);
+      const statusOf = (r) => (hasTarget && hasGeneral && !r.thin ? (r.need != null ? "target:" : "general:") : "") + r.stt[0];
+      const groupOf = (r) => {
+        if (mp.g === "dom") return [`d:${r.sec}:${r.gi}`, DOMN[r.sec][r.gi], `${r.sec}${r.gi}`];
+        if (mp.g === "sec") return [`c:${r.sec}`, SECN[r.sec], r.sec === "rw" ? 0 : 1];
+        if (mp.g === "status") {
+          const key = statusOf(r), i = statuses.findIndex(([value]) => value === key);
+          return [`s:${key}`, statuses[i]?.[1] ?? r.stt[1], i];
+        }
+        return ["all", "", 0];
+      };
+      const keep = (r) => mp.f === "all" || statusOf(r) === mp.f;
       const sorter = mp.s === "gap" ? (p, q) => (p.thin - q.thin) || (q.gap ?? -9) - (p.gap ?? -9) : mp.s === "low" ? (p, q) => (p.thin - q.thin) || p.now - q.now : mp.s === "change" ? (p, q) => (p.thin - q.thin) || p.ch - q.ch : mp.s === "n" ? (p, q) => q.x.n - p.x.n : () => 0;
       const shown = all.filter(keep), G = new Map();
       for (const r of shown) { const [id, title, ord] = groupOf(r); if (!G.has(id)) G.set(id, { id, title, ord, rows: [] }); G.get(id).rows.push(r); }
-      const cnt = (f) => (f === "all" ? all.length : all.filter((r) => (f === "attn" ? r.stt[0] === "stuck" : r.stt[0] === f)).length);
+      const cnt = (f) => f === "all" ? all.length : all.filter((r) => statusOf(r) === f).length;
       const chip = (attr, v, cur, label) => `<button class="chip" type="button" data-${attr}="${v}" aria-pressed="${cur === v}">${label}</button>`;
       box.querySelector("#pg-mapctl").innerHTML = `<div class="pg-mapctl"><span class="hint">Группировать</span><div class="chips" role="group" aria-label="Группировать">${[["dom", "по доменам"], ["status", "по статусу"], ["sec", "по разделу"], ["none", "без групп"]].map(([v, l]) => chip("mg", v, mp.g, l)).join("")}</div></div>
-        <div class="pg-mapctl"><span class="hint">Показать</span><div class="chips" role="group" aria-label="Показать">${(HAS_T ? [["all", "все"], ["attn", "ниже цели"], ["grow", "на уровне цели"], ["ok", "выше цели"], ["thin", "мало данных"]] : [["all", "все"], ["attn", "требуют внимания"], ["grow", "растут"], ["", "держатся"], ["ok", "освоено"], ["thin", "мало данных"]]).filter(([v]) => v === "all" || cnt(v)).map(([v, l]) => chip("mf", v, mp.f, `${l} <small>${cnt(v)}</small>`)).join("")}</div></div>
-        <div class="pg-mapctl"><span class="hint">Сортировать</span><div class="chips" role="group" aria-label="Сортировать">${[["order", "как в SAT"], ...(HAS_T ? [["gap", "дальше от цели сверху"]] : []), ["low", "слабые сверху"], ["change", "просели сверху"], ["n", "больше ответов"]].map(([v, l]) => chip("ms", v, mp.s, l)).join("")}</div></div>`;
+        <div class="pg-mapctl"><span class="hint">Показать</span><div class="chips" role="group" aria-label="Показать">${[["all", "все"], ...statuses].filter(([v]) => v === "all" || cnt(v)).map(([v, l]) => chip("mf", v, mp.f, `${l} <small>${cnt(v)}</small>`)).join("")}</div></div>
+        <div class="pg-mapctl"><span class="hint">Сортировать</span><div class="chips" role="group" aria-label="Сортировать">${[["order", "как в SAT"], ...(hasTarget ? [["gap", "дальше от цели сверху"]] : []), ["low", "слабые сверху"], ["change", "просели сверху"], ["n", "больше ответов"]].map(([v, l]) => chip("ms", v, mp.s, l)).join("")}</div></div>`;
       const tb = box.querySelector("#pg-rows"), cols = o.onTwins ? 8 : 7;
       if (!shown.length) tb.innerHTML = `<tr><td colspan="${cols}" class="hint">Нет подтем с таким статусом.</td></tr>`;
       [...G.values()].sort((p, q) => (p.ord < q.ord ? -1 : p.ord > q.ord ? 1 : 0)).forEach((g) => {
