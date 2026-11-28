@@ -73,7 +73,7 @@ const firstAnswers = (n, x, sec = "rw", level = "M") => Array.from({ length: n }
   const q = mkQ(sec === "rw" ? "b_splice" : "alg_lin1", level);
   return { id: q.id, t: T0, x, sec, level, type: "mc", ctx: "hw", part: "early", attempt: 1 };
 });
-const earlyFit = (obs) => P.compute(obs, tags, { now: T0 + DAY });
+const earlyFit = (obs) => P.compute(obs, tags, { now: T0 + DAY, freq: {} });
 const low = firstAnswers(P.MIN_EARLY, 0), high = firstAnswers(P.MIN_EARLY, 1);
 ok(last(earlyFit([])).prediction == null && last(earlyFit(high.slice(1))).prediction == null, "prediction needs five answered questions in a section");
 ok(last(earlyFit(high)).prediction.value > last(earlyFit(low)).prediction.value, "early performance drives the predicted index");
@@ -86,4 +86,24 @@ const later = firstAnswers(30, 0).map((q) => ({ ...q, t: T0 + 8 * DAY }));
 const both = P.compute([...high, ...later], tags, { now: T0 + 9 * DAY });
 const firstWeek = both.snaps[0], beforeLater = P.compute(high, tags, { now: firstWeek.t });
 ok(firstWeek.prediction.value === last(beforeLater).prediction.value, "later answers do not change the stored early-week prediction");
+const evidence = firstAnswers(30, 1);
+const baseline = earlyFit(evidence), improve = evidence.slice(0, 10).map((q) => ({ ...q, t: T0 + 16, x: 0, attempt: 2 }));
+const unscored = earlyFit([...evidence, ...improve, { sec: "rw", t: T0 + 17, skipped: 27 }, ...firstAnswers(8, 0).map((q) => ({ ...q, blank: true }))]);
+ok(last(unscored).parts.M === last(baseline).parts.M && last(unscored).nAns === 30 &&
+  unscored.habits.repeats === 10 && unscored.habits.skipped === 27 && unscored.habits.omitted === 8,
+  "retakes, ordinary blanks, and deliberate skips leave mastery and readiness unchanged");
+const mistakes = firstAnswers(30, 0);
+const retries = mistakes.slice(0, 10).map((q) => ({ ...q, t: T0 + 16, x: 1, attempt: 2 }));
+const corrected = earlyFit([...mistakes, ...retries]);
+ok(last(corrected).parts.C > 70 && last(corrected).parts.M === last(earlyFit(mistakes)).parts.M, "successful retries improve correction without changing mastery");
+const covered = earlyFit([...evidence, ...firstAnswers(4, 0).map((q) => ({ ...q, blank: true, scoreBlank: true }))]);
+ok(last(covered).nAns === 34 && last(covered).parts.M < last(baseline).parts.M, "an explicit full-module simulation scores unanswered positions");
+const lateProbes = (fresh) => Array.from({ length: 12 }, (_, week) => ({
+  ...(fresh ? firstAnswers(1, 1)[0] : evidence[0]), t: T0 + (week + 1) * 8 * DAY, x: 1, attempt: fresh ? 1 : 2
+}));
+const retention = (extra) => last(P.compute([...evidence, ...extra], tags, { now: T0 + 100 * DAY })).parts.R;
+ok(retention(lateProbes(true)) != null && retention(lateProbes(false)) == null, "only fresh questions after the delay provide retention evidence");
+const linkedBluebook = { ...evidence[0], id: "BB.abcd1234", src: "bb", t: T0 + 60, original: { cid: "abcd1234", refs: [evidence[0].id] }, x: 0 };
+const aliases = earlyFit([...evidence, linkedBluebook]);
+ok(last(aliases).nAns === evidence.length && aliases.habits.repeats === 1, "a known Bluebook match and its course copy count as one question");
 console.log(`ALL PASS (${n})`);

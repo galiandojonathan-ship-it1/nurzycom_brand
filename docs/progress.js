@@ -65,7 +65,7 @@
 
   /* obs: [{ id, t (ms), x (0/1 first try), sec ("rw"|"math"), level, type ("mc"|"spr"), ctx ("mock"|"final"|"hw"|"learn"),
              part (id of the submission), attempt (1…), chosen (letter or ""), second (0/1/null), secs (seconds per question or 0),
-             hints (0..1 share) }]
+             hints (0..1 share), skipped (deliberately excluded question count), scoreBlank (explicit full-module simulation) }]
      tags: { id: { p: primary, s: [secondary], t: { A: trap, … } } } */
   function compute(obs, tags, opts = {}) {
     TAUD = opts.tauD ?? 0.05; VD = opts.vD ?? 1.0;   // opts only for experiments; reset on every call
@@ -74,8 +74,13 @@
     const secs = [...new Set(obs.map((o) => o.sec))].filter((s) => DOMAINS[s]);
     const ability = {}; secs.forEach((s) => (ability[s] = { th: TH0, v: VSEC, cap: VSEC, t: null }));   // TH0: a course student starts below a medium SAT question
     const S = {};   // subtopic states
-    const seen = {}, lastTag = {};
-    const X = [], R = [], C = { n: 0, k: 0 }, partStats = {}, trapOpp = {}, slip = { n: 0, miss: 0, exp: 0 }, blanks = { n: 0, b: 0 };
+    const seen = new Map(), lastTag = {};
+    const aliases = new Map();
+    for (const o of obs) {
+      if (o.src !== "bb" || !o.original?.cid) continue;
+      for (const ref of o.original.refs || []) aliases.set(ref, "BB." + o.original.cid);
+    }
+    const X = [], R = [], C = { n: 0, k: 0 }, partStats = {}, trapOpp = {}, slip = { n: 0, miss: 0, exp: 0 }, coverage = { answered: 0, omitted: 0, skipped: 0, repeats: 0 };
     let tagged = 0, done = 0; const cnt = {}, answered = {};   // answers so far (first tries) by section and level: [right, total]
     const lambda = (t, half) => Math.pow(2, -(now - t) / (half * DAY));
     const snaps = [];
@@ -163,18 +168,34 @@
     for (const o of obs) {
       while (o.t > nextSnap) { snap(nextSnap); nextSnap += 7 * DAY; }
       const tag = tags[o.id], sec = o.sec, A = ability[sec]; if (!A) continue;
-      const g = o.type === "spr" ? 0 : 0.25, b = B[o.level] ?? 0;
-      const repeat = (seen[o.id] = (seen[o.id] || 0) + 1) > 1 || o.attempt > 1;
-      const w = (CTX[o.ctx] || 0.8) * (1 - 0.5 * (o.hints || 0)) * (repeat ? 0.3 : 1);
-      blanks.n++; if (o.blank) blanks.b++;
-      if (!repeat && !o.blank) answered[sec] = (answered[sec] || 0) + 1;
-      if (!repeat) { done++; const c = (cnt[sec] = cnt[sec] || {}); const r = (c[o.level] = c[o.level] || [0, 0]); r[0] += o.x; r[1]++; }
-      // prediction before the update (for transfer, retention, slips): the primary subtopic, else the section
-      const pk = tag && tag.p;
+      if (o.skipped) { coverage.skipped += o.skipped; continue; }
+      if (o.blank) coverage.omitted++;
+      else coverage.answered++;
+      // A blank records coverage. A teacher-selected full-module round explicitly grades its unanswered positions.
+      if (o.blank && !o.scoreBlank) continue;
+      const pk = tag?.p;
+      const identity = o.original?.cid && o.src === "bb" ? "BB." + o.original.cid : aliases.get(o.id) || o.id;
+      const previous = seen.get(identity);
+      if (previous || o.attempt > 1) {
+        if (!o.blank) {
+          coverage.repeats++;
+          if (pk) lastTag[pk] = o.t;
+          if (previous?.canCorrect) { C.n++; C.k += o.x; previous.canCorrect = false; }
+        }
+        continue;
+      }
+      seen.set(identity, { canCorrect: !o.blank && o.x === 0 && o.second == null });
+      if (!o.blank) answered[sec] = (answered[sec] || 0) + 1;
+      done++;
+      const level = B[o.level] == null ? "M" : o.level;
+      const c = cnt[sec] ||= {}, count = c[level] ||= [0, 0];
+      count[0] += o.x; count[1]++;
+      const g = o.type === "spr" ? 0 : 0.25, b = B[level];
+      const w = (CTX[o.ctx] || 0.8) * (1 - 0.5 * (o.hints || 0));
       const pHat = g + (1 - g) * sig(A.th + (pk && S[pk] ? S[pk].th : 0) - b);
-      if (o.ctx === "mock" && pk && S[pk] && S[pk].np >= 3) X.push({ t: o.t, x: o.x, p: pHat });   // transfer: only subtopics already practised outside mocks
-      if (pk && lastTag[pk] && o.t - lastTag[pk] >= 7 * DAY) R.push({ t: o.t, x: o.x, p: pHat });
-      if (pHat >= 0.8) { slip.n++; slip.miss += 1 - o.x; slip.exp += 1 - pHat; }
+      if (!o.blank && o.ctx === "mock" && pk && S[pk]?.np >= 3) X.push({ t: o.t, x: o.x, p: pHat });
+      if (!o.blank && pk && lastTag[pk] != null && o.t - lastTag[pk] >= 7 * DAY) R.push({ t: o.t, x: o.x, p: pHat });
+      if (!o.blank && pHat >= 0.8) { slip.n++; slip.miss += 1 - o.x; slip.exp += 1 - pHat; }
       const base = A.th;   // section level before this answer: the subtopic offset is learned against it
       grow(A, o.t); update(A, o.x, b, g, w, pk && S[pk] ? S[pk].th : 0);   // the section level is learned net of the subtopic's own offset
       if (tag) {
@@ -182,15 +203,15 @@
         [...(tag.p ? [[tag.p, 1]] : []), ...(tag.s || []).map((k) => [k, tag.sw ?? 0.5])].forEach(([k, alpha]) => {   // sw: share for evidence spread over a skill
           if (!OMEGA[k]) return;
           if (!S[k]) S[k] = { th: 0, v: VD, cap: VD, q: TAUD, t: o.t, n: 0, np: 0, first: o.t, hist: [] };   // offset from the section level, prior 0
-          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha, base); S[k].n += alpha === 1 ? 1 : 0; S[k].m = (S[k].m || 0) + alpha; if (alpha === 1 && o.ctx !== "mock") S[k].np++;
+          grow(S[k], o.t); update(S[k], o.x, b, g, w * alpha, base); S[k].n += alpha === 1 ? 1 : 0; S[k].m = (S[k].m || 0) + alpha; if (!o.blank && alpha === 1 && o.ctx !== "mock") S[k].np++;
         });
-        if (tag.p) lastTag[tag.p] = o.t;
-        for (const [L, trap] of Object.entries(tag.t || {})) {
+        if (!o.blank && tag.p) lastTag[tag.p] = o.t;
+        if (!o.blank) for (const [L, trap] of Object.entries(tag.t || {})) {
           const r = (trapOpp[trap] = trapOpp[trap] || { list: [] });
           r.list.push({ t: o.t, pick: o.chosen === L ? 1 : 0 });
         }
       }
-      if (o.x === 0 && o.second != null) { C.n++; C.k += o.second; }   // a second try exists in learning parts and on-screen homework
+      if (!o.blank && o.x === 0 && o.second != null) { C.n++; C.k += o.second; }   // a second try exists in learning parts and on-screen homework
       const ps = (partStats[o.part] = partStats[o.part] || { t: o.t, n: 0, right: 0, exp: 0, secs: o.secs || 0, sec, timed: o.ctx === "mock" || o.ctx === "final" });
       ps.n++; ps.right += o.x; ps.exp += pHat; ps.t = Math.max(ps.t, o.t);
     }
@@ -204,9 +225,9 @@
       const rate = (a) => (a.reduce((x, y) => x + y.pick, 0) + 0.5) / (a.length + 2);
       return { trap, n: L.length, was: rate(L.slice(0, h)), now: rate(L.slice(-h)) };
     }).filter((x) => x.n >= 4).sort((a, b) => b.now - a.now);
-    return { snaps, subs, traps, secs, n: obs.length, tagged, omega: OMEGA, lv: lastLv,
-      habits: { slip: slip.n >= 5 ? slip.miss / slip.n : null, slipExpected: slip.n >= 5 ? slip.exp / slip.n : null, blank: blanks.n ? blanks.b / blanks.n : null },
-      mocks: [...new Set(obs.filter((o) => o.ctx === "mock").map((o) => o.part))].map((p) => partStats[p].t) };
+    return { snaps, subs, traps, secs, n: done, tagged, omega: OMEGA, lv: lastLv,
+      habits: { slip: slip.n >= 5 ? slip.miss / slip.n : null, slipExpected: slip.n >= 5 ? slip.exp / slip.n : null, blank: coverage.answered + coverage.omitted ? coverage.omitted / (coverage.answered + coverage.omitted) : null, ...coverage },
+      mocks: [...new Set(obs.filter((o) => o.ctx === "mock" && partStats[o.part]).map((o) => o.part))].map((p) => partStats[p].t) };
   }
   // contribution of each subtopic to the change of the index between two snapshots (mastery part only)
   // only subtopics with at least minN answers: a change built on one or two answers is noise
@@ -266,7 +287,7 @@
         const tag = tagFromSkill(it.sk);
         if (tag) fallbackTags[id] = tag;
       }
-      return { id, t: rec.at, x: a?.[1] === 1 ? 1 : 0, blank: !a, sec: it.sec || "rw", level: it.d || "M",
+      return { id, t: rec.at, x: a?.[1] === 1 ? 1 : 0, blank: !a, scoreBlank: mode === "module", sec: it.sec || "rw", level: it.d || "M",
         type: it.type === "mc" ? "mc" : "spr", ctx: mode === "module" ? "mock" : "learn", src: "live",
         part: `live|${rec.round}`, attempt: 1, chosen: a?.[0] || "", second: null, secs: 0,
         original: { title: rec.title || "Живая практика", n: it.n || i + 1, ref: it.ref, refs: it.ref ? [it.ref] : [], sk: it.sk } };

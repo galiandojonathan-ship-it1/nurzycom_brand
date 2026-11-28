@@ -44,7 +44,8 @@
 
   function mergeRows() {
     const rows = [...(D.formRows || []), ...(D.demo ? [] : D.customRows || [])];
-    if (!rows.length) {
+    const shared = D.demo ? [] : D.sharedBluebook || [];
+    if (!rows.length && !shared.length) {
       D.rows = []; D.students = []; D.prog = null;
       $("dash").classList.add("hidden");
       sources(true);
@@ -53,6 +54,7 @@
     rows.sort((x, y) => (x.ts || 0) - (y.ts || 0));
     // one student, several spellings («Шер. Ж.», «Sher Zh», «Sherniyaz»): merged under one romanized name (formkit.js)
     const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
+    for (const { name, shares } of shared) if (shares.length && !counts[name]) counts[name] = 1;
     const G = FORMKIT.group(counts, D.aliases);
     if (G) rows.forEach((r) => { const x = G.of[r.raw]; if (x) { r.key = x.key; r.name = x.name; } });
     D.groups = G ? G.groups : []; D.cbg = null; D.prog = null; D.gpRes = {};   // cabinet groups are read again with the new names
@@ -60,7 +62,15 @@
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
     ACCT = null;   // account ↔ student matching depends on the student list (bare first names)
-    D.students = Object.values(by).map((s) => Object.assign(s, { name: usual(s.rows), last: s.rows[s.rows.length - 1].ts })).sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    for (const st of Object.values(by)) { st.name = usual(st.rows); st.last = st.rows.at(-1).ts; }
+    for (const { name, shares } of shared) {
+      if (!shares.length) continue;
+      const identity = G.of[name]; if (!identity) continue;
+      const st = by[identity.key] ||= { ...identity, rows: [] };
+      const time = shares[0]?.taken || shares[0]?.at;
+      if (time > (+st.last || 0)) st.last = new Date(time);
+    }
+    D.students = Object.values(by).sort((a, b) => a.name.localeCompare(b.name, "ru"));
     $("dash").classList.remove("hidden"); $("src-msg").textContent = ""; sources(false);
     render();
   }
@@ -78,8 +88,13 @@
         const [a, b] = r.last.split("/").map(Number), test = catalog.get(r.id);
         return { kind: "C", lesson: r.id, part: test?.title || r.id, name: copy.name, raw: copy.name,
           key: FORMKIT.key(copy.name), ts: r.at ? new Date(r.at) : null, a, b, pct: b ? 100 * a / b : null,
-          wrong: [], sec: r.A.sec || 0, attempt: r.att, custom: { test, answers: r.A, uid: copy.id } };
+          wrong: [], sec: r.A.sec || 0, attempt: r.att, custom: { test, answers: r.A, first: r.first, uid: copy.id } };
       }));
+      D.sharedBluebook = window.BBSHARE ? copies.flatMap((copy) => {
+        const B = Object.fromEntries(Object.keys(copy.meta).filter((k) => k.startsWith("bb_share_")).map((k) => [k, { v: copy.get(k) }]));
+        const shares = BBSHARE.fromCopy(B, copy.id).map((share) => ({ ...share, acct: copy.id }));
+        return shares.length ? [{ name: copy.name, shares, acct: copy.id }] : [];
+      }) : [];
       if (!D.demo) mergeRows();
     })().catch(() => {}).finally(() => { customLoad = null; });
     return customLoad;
@@ -332,7 +347,9 @@
     collected.then((all) => {
       if (!reviewBox.isConnected) return;
       bbRender(s, all);
-      rvMount(reviewBox, { slot: "st", mode: "solo", title: s.name, all, keys, names: [s.name] });
+      bluebookReviewRows([s], { solo: true }).catch(() => []).then((bb) => {
+        if (reviewBox.isConnected) rvMount(reviewBox, { slot: "st", mode: "solo", title: s.name, all: [...all, ...bb], keys, names: [s.name] });
+      });
     }).catch(() => { if (reviewBox.isConnected) reviewBox.textContent = "Не удалось загрузить задания для разбора."; });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
     $("back-st").onclick = () => {
@@ -353,7 +370,7 @@
   function progObs(s, TAGS) {
     const out = [];
     for (const r of s.rows) {
-      const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b && !r.mock?.skipped.size ? r.sec / r.b : 0;
+      const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b && !r.mock?.skipped.size && r.answers.every((a) => a.tries.length) ? r.sec / r.b : 0;
       let base;
       if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
         base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
@@ -362,8 +379,9 @@
         const ctx = P.mode === "test" ? "final" : /Домашн|Дополн/.test(P.title) ? "hw" : "learn", sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
         base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx, src: "hw" });
       } else continue;
-      // an abandoned practice-test section (more than half the questions skipped) shows no skill: left out of the analysis
-      if (r.kind === "P" && r.answers.length && r.answers.filter((a) => !a.tries.length).length > r.answers.length / 2) continue;
+      if (r.mock?.skipped.size) {
+        out.push({ sec: /·Math$/.test(r.lesson) ? "math" : "rw", t: +r.ts, src: "mock", skipped: r.mock.skipped.size });
+      }
       for (const a of r.answers) {
         const b = base(a), tag = TAGS[b.id], blank = !a.tries.length;
         out.push({ ...b, t: +r.ts, x: blank || wrong.has(String(a.n)) ? 0 : 1, blank, level: tag ? tag.d : "M", type: tag ? tag.ty : "mc", part: `${r.lesson}|${r.pid}|${+r.ts}`,
@@ -400,11 +418,16 @@
     const mockSections = new Map((D.mocks?.mocks || []).flatMap((m) => m.sections.map((sec) =>
       [bundlePath(sec.b), { id: m.id, sec: sec.k }])));
     const observations = [];
-    for (const r of rows) {
+    const attempts = rows.flatMap((r) => r.custom.first ? [
+      { ...r, ts: new Date(r.custom.first.at), attempt: 1, custom: { ...r.custom, answers: r.custom.first.A } },
+      { ...r, attempt: Math.max(2, r.attempt) }
+    ] : [r]);
+    for (const r of attempts) {
       const qs = sets.get(r.lesson);
       for (const [i, q] of qs.entries()) {
         const chosen = r.custom.answers[q.id];
-        if (!chosen || chosen === "-" || CTL.problems(q).length) continue;
+        if (chosen == null || CTL.problems(q).length) continue;
+        const blank = chosen === "-" || chosen === "";
         const ref = q.ref, match = ref && mockSections.get(bundlePath(ref.b));
         const fromSkill = PROGRESS.tagFromSkill(q.skill), sub = PROGRESS.SEC_OF[q.sub] ? q.sub : null;
         const sec = match?.sec || PROGRESS.SEC_OF[sub || fromSkill?.p || fromSkill?.s[0]] ||
@@ -417,10 +440,10 @@
           if (tag) tags[id] = tag;
         }
         observations.push({
-          id, t: +r.ts, x: CTL.isRight(q, chosen) ? 1 : 0, blank: false, sec, level: q.level || courseTags[id]?.d || "M",
+          id, t: +r.ts, x: !blank && CTL.isRight(q, chosen) ? 1 : 0, blank, sec, level: q.level || courseTags[id]?.d || "M",
           type: q.type, ctx: "hw", src: "custom", part: `custom|${r.lesson}|${+r.ts}`,
-          // Only the latest answers are synced. The engine discounts repeated question IDs across assignments.
-          attempt: 1, chosen, second: null, secs: 0, original: { r, n: i + 1, q, sk: q.skill }
+          // An older retake may be the only saved attempt. Its attempt number still identifies it as a retry.
+          attempt: r.attempt, chosen, second: null, secs: 0, original: { r, n: i + 1, q, sk: q.skill }
         });
       }
     }
@@ -431,11 +454,15 @@
     if (!SITE.adminKey()) return { obs, tags };
     const [sh, cat, lv, custom] = await Promise.all([window.BBSHARE ? bbShares(s).catch(() => []) : [], SITE.json("bluebook").catch(() => null), liveOf(s).catch(() => []), customObservations(s, TAGS, tags).catch(() => [])]);
     obs.push(...custom);
-    if (cat) for (const d of sh) for (const [sec, x] of Object.entries(d.sections)) {
-      const T = cat.tests[x.test], lists = T && T[sec] ? [T[sec].m1, T[sec][x.route]] : null; if (!lists || !lists[0] || !lists[1]) continue;
-      const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m])), size = sec === "rw" ? 27 : 22;
-      // a module the student did not do: marked by the import (skip), or, in records sent before 2026-11-23, 80%+ blanks among the misses
-      const skip = x.skip || [1, 2].map((k) => x.miss.filter((m) => m[0] === k && m[2] == null).length >= size * 0.8);
+    for (const d of sh) for (const [sec, x] of Object.entries(d.sections)) {
+      const size = sec === "rw" ? 27 : 22;
+      const skip = BBSHARE.skipped(x, sec);
+      const skipped = skip.filter(Boolean).length * size;
+      if (skipped) obs.push({ sec, t: d.taken || d.at, src: "bb", skipped });
+      const T = cat?.tests?.[x.test]?.[sec], lists = T ? [T.m1, T[x.route]] : null;
+      // A full identified report enumerates every item. In partial reports missing rows may be absent rather than correct.
+      if (!lists?.every(Array.isArray) || x.n !== size * 2) continue;
+      const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m]));
       lists.forEach((ids, mi) => { if (skip[mi]) return; ids.forEach((cid, qi) => {
         const it = cat.items[cid] || {}, m = miss.get(`${mi + 1}.${qi + 1}`);
         let id = (it.c || []).find((r) => TAGS[r]);
@@ -469,7 +496,7 @@
     const tags = {}; for (const id in TAGS) tags[id] = { p: TAGS[id].p, s: TAGS[id].s, t: TAGS[id].t };
     const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
     Object.assign(tags, extra.tags);
-    const all = [...progObs(s, TAGS), ...extra.obs], counts = {}; all.forEach((o) => (counts[o.src] = (counts[o.src] || 0) + 1));
+    const all = [...progObs(s, TAGS), ...extra.obs], counts = {}; all.forEach((o) => (counts[o.src] = (counts[o.src] || 0) + (o.skipped || 1)));
     // which sources count, remembered per student (Nurassyl's own account: homework off, it was only testing the site)
     const KEY = "pg_src_" + s.key; let sel = {}; try { sel = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { sel = {}; }
     const draw = () => {
@@ -743,23 +770,41 @@
     const url = "admin/progress?id=" + encodeURIComponent(acct), g = await SITE.api(url); if (!g.ok) throw new Error(`Сервер ответил ${g.status}.`);
     const B = await SITE.unsealBlob(g.data.data); B[key] = { v: value, t: Date.now() };
     const p = await SITE.api(url, { method: "PUT", body: JSON.stringify({ data: await SITE.sealBlob(B) }) }); if (!p.ok) throw new Error(`Сервер ответил ${p.status}.`);
+    const record = D.sharedBluebook?.find((r) => r.acct === acct);
+    if (record) record.shares = BBSHARE.fromCopy(B, acct).map((share) => ({ ...share, acct }));
+    D.prog = null; D.gpRes = {};
   }
   function bbDelWire(s, all, sh) {
     const box = $("st-bb"); if (!box) return;
+    const refresh = async () => {
+      await bbRender(s, all);
+      const reviewBox = $("st-rv");
+      if (D.student !== s.key || !reviewBox) return;
+      const bb = await bluebookReviewRows([s], { solo: true }).catch(() => []);
+      if (D.student !== s.key || $("st-rv") !== reviewBox) return;
+      rvMount(reviewBox, { slot: "st", mode: "solo", title: s.name, all: [...all, ...bb], keys: new Set([s.key]), names: [s.name] });
+      progMount(s).catch(() => {});
+    };
     box.querySelectorAll("[data-bbdel]").forEach((btn) => (btn.onclick = async (e) => {
       e.preventDefault(); e.stopPropagation();
       const d = sh.find((x) => x.key === btn.dataset.bbdel), st = $("bb-del-st"); if (!d) return;
       const orig = JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => k !== "key" && k !== "acct")));
       btn.disabled = true;
       try { await bbSet(d.acct, d.key, BBSHARE.tomb(d)); } catch (err) { st.textContent = "Не удалось убрать: " + err.message; btn.disabled = false; return; }
-      await bbRender(s, all);
+      await refresh();
       const st2 = $("bb-del-st"); if (!st2) return;
       st2.innerHTML = `Пробник «${esc(Object.values(d.sections).map((x) => x.label).find(Boolean) || d.title || "Bluebook")}» убран. <button class="chip" type="button" id="bb-undo">Вернуть</button>`;
       const timer = setTimeout(() => { if ($("bb-undo")) st2.textContent = "Пробник убран."; }, 10000);
-      $("bb-undo").onclick = async () => { clearTimeout(timer); try { await bbSet(d.acct, d.key, orig); await bbRender(s, all); const st3 = $("bb-del-st"); if (st3) st3.textContent = "Пробник возвращён."; } catch (err) { st2.textContent = "Не удалось вернуть: " + err.message; } };
+      $("bb-undo").onclick = async () => { clearTimeout(timer); try { await bbSet(d.acct, d.key, orig); await refresh(); const st3 = $("bb-del-st"); if (st3) st3.textContent = "Пробник возвращён."; } catch (err) { st2.textContent = "Не удалось вернуть: " + err.message; } };
     }));
   }
   async function bbShares(s) {
+    const shared = D.sharedBluebook;
+    if (shared && !D.demo) {
+      const group = D.groups.find((g) => g.key === s.key);
+      return shared.filter(({ name }) => group && Object.hasOwn(group.spellings, name))
+        .flatMap(({ shares }) => shares).sort((a, b) => (b.taken || b.at) - (a.taken || a.at));
+    }
     const out = [];
     for (const id of (await accountsByName()).get(s.key) || []) {
       const g = await SITE.api("admin/progress?id=" + encodeURIComponent(id)); if (!g.ok) continue;
@@ -767,6 +812,50 @@
     }
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
+  async function bluebookReviewRows(students, { solo = false, sec = "all", after = 0 } = {}) {
+    if (!window.BBSHARE || !SITE.adminKey() || D.demo) return [];
+    const catalog = await SITE.json("bluebook").catch(() => null);
+    const rows = new Map(), seen = new Set();
+    for (const student of students) {
+      for (const share of await bbShares(student).catch(() => [])) {
+        const at = share.taken || share.at;
+        if (at < after) continue;
+        for (const [section, report] of Object.entries(share.sections)) {
+          if (!Array.isArray(report?.miss) || section !== "rw" && section !== "math" || sec !== "all" && sec !== section) continue;
+          const title = report.label || share.title || "Тест не определён";
+          const test = report.test || share.hash || share.key;
+          const part = `BB.${solo ? share.hash || share.key : test}.${section}`;
+          const skip = BBSHARE.skipped(report, section);
+          const sectionName = section === "rw" ? "Reading and Writing" : "Math";
+          const plabel = `Bluebook · ${title} · ${sectionName}`;
+          const lists = catalog?.tests?.[report.test]?.[section];
+          for (const [module, number, chosen, answers, savedId, skill, level] of report.miss) {
+            if (!chosen || ![1, 2].includes(module) || skip[module - 1]) continue;
+            const route = module === 1 ? "m1" : report.route;
+            const cid = !report.conflict && report.test ? savedId || lists?.[route]?.[number - 1] : null;
+            const item = catalog?.items?.[cid], keys = Array.isArray(answers) ? answers : [];
+            const moduleName = MODN[route] || "Модуль 2";
+            const id = `${part}.${route || "m2"}.${number}.${cid || "unmatched"}.${keys.join("_")}`;
+            const answerId = `${student.key}|${id}`;
+            if (seen.has(answerId)) continue;
+            seen.add(answerId);
+            if (!rows.has(id)) rows.set(id, {
+              id, part, plabel, title: `${plabel} · ${moduleName} · №${number}`, moduleName,
+              sec: section, sk: skill || item?.s || item?.si || "", d: level || item?.d,
+              work: "Bluebook", bb: { cid, keys }, src: (item?.c || []).map(courseMistake).find(Boolean)?.src,
+              n: 0, wrong: 0, picks: Object.create(null), who: new Set()
+            });
+            const row = rows.get(id);
+            row.wrong++; row.n++; row.who.add(student.key); row.ts = Math.max(row.ts || 0, at || 0);
+            if (solo) row.mine = [chosen];
+            row.picks[chosen] = (row.picks[chosen] || 0) + 1;
+          }
+        }
+      }
+    }
+    return [...rows.values()];
+  }
+
   async function originalLoad(c) {
     if (c.custom) {
       const q = c.custom;
@@ -1243,13 +1332,22 @@
     draw();
   }
   async function groupView() {
-    const box = $("v-group");
+    const box = $("v-group"), version = D.groupRender = (D.groupRender || 0) + 1;
+    const current = () => D.view === "group" && D.groupRender === version;
     box.innerHTML = '<h2>Анализ группы</h2><p class="hint">Загружаю группы из кабинета и считаю ответы…</p>';
-    const CB = await gaGroups(); if (D.view !== "group") return;
+    const CB = await gaGroups(); if (!current()) return;
     if (GA.gid === null) { const first = CB.groups.find((g) => g.kind === "group" && D.students.some((st) => g.keys.has(st.key))); GA.gid = first ? first.id : ""; }
     if (GA.gid && !CB.groups.some((g) => g.id === GA.gid)) GA.gid = "";
-    const all = await gaCollect(); if (D.view !== "group") return;
     const grp = CB.groups.find((g) => g.id === GA.gid);
+    const all = await gaCollect(); if (!current()) return;
+    const review = { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", keys: grp ? grp.keys : null,
+      names: grp ? grp.names : D.students.map((x) => x.name),
+      note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") };
+    const selected = D.students.filter((student) => !grp || grp.keys.has(student.key));
+    const after = Math.max(GA.days ? Date.now() - GA.days * DAY : 0, grp?.start ? +new Date(grp.start + "T00:00:00") : 0);
+    const bb = GA.kind === "hw" ? [] : await bluebookReviewRows(selected, { sec: GA.sec, after }).catch(() => []);
+    if (!current()) return;
+    const mountReview = (ranked, top) => rvMount($("ga-rv"), { ...review, all: [...all, ...bb], ranked: all.length ? ranked : bb, top });
     const err = (x) => (x.n ? (100 * x.wrong) / x.n : 0);
     const agg = (key) => { const g = {}; all.forEach((q) => { const k = key(q); if (!k) return; const s = (g[k] = g[k] || { n: 0, wrong: 0, q: 0 }); s.n += q.n; s.wrong += q.wrong; s.q++; });
       return Object.entries(g).map(([label, s]) => ({ label, n: s.n, value: err(s), q: s.q })).sort((a, b) => b.value - a.value); };
@@ -1273,7 +1371,7 @@
     html += kpis([["Учеников", who.size, "сдавали за выбранный период"], ["Ответов", rw[0] + ma[0], `${all.length} разных вопросов`],
       ["Ошибок · RW", rw[0] ? pct((100 * rw[1]) / rw[0]) : "—", `${rw[1]} из ${rw[0]} с первой попытки`], ["Ошибок · Math", ma[0] ? pct((100 * ma[1]) / ma[0]) : "—", `${ma[1]} из ${ma[0]} с первой попытки`]]);
     html += '<div id="ga-prog"></div><div id="ga-hw"></div>';
-    if (!all.length) { box.innerHTML = html + '<p class="hint">Нет сдач для этого выбора.</p>'; gaBind(box); gpMount(grp).catch(() => {}); return; }
+    if (!all.length) { box.innerHTML = html + '<div id="ga-rv"></div><p class="hint">Нет сдач на сайте для этого выбора.</p>'; mountReview([], []); gaBind(box); gpMount(grp).catch(() => {}); return; }
     const top = skills.filter((s) => s.n >= 8).slice(0, 3);
     html += `<div id="ga-rv"></div><h2>1. Самые трудные вопросы</h2><p class="hint">Доля учеников, ошибившихся с первой попытки. В список входят вопросы, которые решили не меньше ${GA.min} учеников (${ranked.length} таких). Откройте вопрос, чтобы увидеть текст, верный ответ и что выбирали.</p><div id="ga-hard">`;
     html += hard.map((q, i) => { const t = trapOf(q), e = err(q);
@@ -1302,8 +1400,7 @@
       if (studs.length) HWPLAN.mount($("ga-hw"), { group: grp, students: studs, skillMap, pool: studentPool, load: twinLoad, payloadOf: TWINS.payloadOf,
         acct: async (s) => { const ids = (await accountsByName()).get(s.key) || []; return ids[0] || null; } });
     }
-    rvMount($("ga-rv"), { slot: "ga", mode: "group", title: grp ? grp.name : "Все ученики", all, ranked, top, keys: grp ? grp.keys : null, names: grp ? grp.names : D.students.map((x) => x.name),
-      note: [{ all: "", rw: "Reading and Writing", math: "Math" }[GA.sec], { all: "", hw: "уроки и ДЗ", mk: "пробные тесты" }[GA.kind], GA.days ? `за ${GA.days} дней` : ""].filter(Boolean).join(" · ") });
+    mountReview(ranked, top);
     gaBind(box);
   }
   // ---------- «Разобрать на уроке» (2026-11-16, Nurassyl: the class's mistakes on the shared screen, then «for individual students too
@@ -1312,7 +1409,8 @@
   // counts and the wrong options chosen, no names; a one-student review holds that student's own tries and the name.
   D.rvSel = D.rvSel || {};
   const rvFilters = new Map();
-  const errorShare = (x) => x.wrong / x.n;
+  const reviewKind = (work) => work === "Bluebook" ? "bb" : work === "Пробные тесты" ? "mock" : "course";
+  const errorShare = (x) => reviewKind(x.work) === "bb" ? -1 : x.wrong / x.n;
   const byShare = (a, b) => errorShare(b) - errorShare(a) || b.wrong - a.wrong;
   const byWrong = (a, b) => b.wrong - a.wrong || byShare(a, b);
   const difficulty = { H: 3, M: 2, E: 1 };
@@ -1328,24 +1426,27 @@
       p.peak = Math.max(p.peak, q.wrong);
       if (q.wrong) {
         p.ts = Math.max(p.ts, q.ts || 0);
-        if (q.src?.mod) p.modules.add(q.src.mod);
+        if (q.moduleName || q.src?.mod) p.modules.add(q.moduleName || courseModule(q.src.mod, OfficialPractice.hasBundle(q.src.b)));
       }
     }
     return [...parts.values()].filter((p) => p.wrong).sort((a, b) => b.ts - a.ts || a.label.localeCompare(b.label, "ru", { numeric: true }));
   }
   function rvPick(c) {
-    const sel = D.rvSel[c.key] || new Set(), wrong = c.all.filter((q) => q.wrong && (!sel.size || sel.has(q.part)));
-    const sort = rvFilters.get(c.key)?.questions;
+    const sel = D.rvSel[c.key] || new Set(), filters = rvFilters.get(c.key) || {};
+    const included = (q) => (!filters.kind || reviewKind(q.work) === filters.kind) && (!filters.sec || q.sec === filters.sec);
+    const chosen = (q) => q.wrong && (sel.size ? sel.has(q.part) : included(q));
+    const wrong = c.all.filter(chosen), sort = filters.questions;
     const compare = sort === "wrong" ? byWrong : sort === "level" ? (a, b) => (difficulty[b.d] || 0) - (difficulty[a.d] || 0) || byShare(a, b) : byShare;
-    if (c.mode === "group") return (sel.size ? wrong : c.ranked.filter((q) => q.wrong)).sort((a, b) => compare(a, b) || qOrder(a, b)).slice(0, sel.size ? 40 : GA.top);
+    if (c.mode === "group") return (sel.size || filters.kind === "bb" ? wrong : c.ranked.filter(chosen)).sort((a, b) => compare(a, b) || qOrder(a, b)).slice(0, sel.size ? 40 : GA.top);
     if (sort) return wrong.sort((a, b) => compare(a, b) || qOrder(a, b)).slice(0, 60);
     const ts = {}; rvParts(c.all).forEach((p) => (ts[p.k] = p.ts));
     return wrong.sort((a, b) => (ts[b.part] || 0) - (ts[a.part] || 0) || qOrder(a, b)).slice(0, 60);
   }
   function rvSummary(c) {
     if (c.mode !== "group" || !c.ranked.length) return "";
-    const weak = rvParts(c.ranked).sort(byShare)[0];
-    const impact = c.ranked.filter((q) => q.wrong).sort(byWrong)[0];
+    const comparable = c.ranked.filter((q) => !q.bb);
+    const weak = rvParts(comparable).sort(byShare)[0];
+    const impact = comparable.filter((q) => q.wrong).sort(byWrong)[0];
     if (!weak || !impact) return "";
     const trap = trapOf(impact);
     return `<div class="rv-summary">
@@ -1368,10 +1469,11 @@
       ${rvSummary(c)}
       <div class="rv-controls">
         <label>Найти тест или урок<input type="search" data-rvsearch placeholder="Например, Прогноз 3, PR3 или V06"></label>
-        <label>Тип задания<select data-rvkind><option value="">Все задания</option><option value="mock">Пробные тесты</option><option value="course">Уроки и домашние задания</option></select></label>
+        <label>Тип задания<select data-rvkind><option value="">Все задания</option><option value="mock">Пробные тесты на сайте</option><option value="bb">Bluebook</option><option value="course">Уроки и домашние задания</option></select></label>
         <label>Раздел<select data-rvsec><option value="">Все разделы</option><option value="rw">Reading and Writing</option><option value="math">Math</option></select></label>
         <label>Сортировка заданий<select data-rvparts><option value="recent">Сначала недавние</option><option value="share">По доле ошибок</option><option value="wrong">По числу ошибок</option><option value="peak">По максимуму ошибившихся на вопросе</option></select></label>
       </div>
+      ${c.all.some((q) => q.bb) ? '<p class="hint">Bluebook показывает неверные ответы из отчётов, которыми поделились ученики.</p>' : ""}
       <div class="rv-listhead"><h3>Задания с ошибками</h3><span class="hint" data-rvfound role="status"></span></div>
       <div class="rv-parts" role="group" aria-label="Уроки и тесты для разбора"></div>
       <div class="rv-all"><button type="button" class="tlink" data-rvall="1">Выбрать найденные</button><button type="button" class="tlink" data-rvall="0">Снять выбор</button></div>
@@ -1403,29 +1505,29 @@
       const previewGroups = new Map();
       qs.forEach((q, i) => {
         const title = q.plabel || q.title;
-        if (!previewGroups.has(title)) previewGroups.set(title, { at: 0, modules: new Map() });
-        const group = previewGroups.get(title), mod = courseModule(q.src?.mod, OfficialPractice.hasBundle(q.src?.b)) || "";
+        if (!previewGroups.has(q.part)) previewGroups.set(q.part, { title, at: 0, modules: new Map() });
+        const group = previewGroups.get(q.part), mod = q.moduleName || courseModule(q.src?.mod, OfficialPractice.hasBundle(q.src?.b)) || "";
         group.at = Math.max(group.at, q.ts || 0);
         if (!group.modules.has(mod)) group.modules.set(mod, []);
         group.modules.get(mod).push({ q, i });
       });
-      const cards = (items) => items.map(({ q, i }) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title.match(/№.+$/)?.[0] || q.title)}</b><br><small>Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("");
-      preview.innerHTML = [...previewGroups].map(([title, group], index) => {
+      const cards = (items) => items.map(({ q, i }) => `<details class="rv tq" data-rvq="${i}"><summary><span class="tq-s"><b>${esc(q.title.match(/№.+$/)?.[0] || q.title)}</b><br><small>${q.bb ? `Ошибок в отчётах: ${q.wrong}` : `Ошиблись ${q.wrong} из ${q.n} · ${pct(100 * errorShare(q))}`}${DIFN[q.d] ? " · " + DIFN[q.d] : ""}</small></span></summary><div class="rbody"></div></details>`).join("");
+      preview.innerHTML = [...previewGroups.values()].map((group, index) => {
         const size = [...group.modules.values()].reduce((n, items) => n + items.length, 0);
-        return `<details class="review-group"${index === 0 ? " open" : ""}><summary><span><strong>${esc(title)}</strong>${group.at ? `<span class="review-date">${day(group.at)}</span>` : ""}</span><small>${size} ${pl(size, "вопрос", "вопроса", "вопросов")}</small></summary>
+        return `<details class="review-group"${index === 0 ? " open" : ""}><summary><span><strong>${esc(group.title)}</strong>${group.at ? `<span class="review-date">${day(group.at)}</span>` : ""}</span><small>${size} ${pl(size, "вопрос", "вопроса", "вопросов")}</small></summary>
           <div class="review-group-body">${[...group.modules].map(([mod, items], index) => mod ?
             `<details class="review-group"${index === 0 ? " open" : ""}><summary><span>${esc(mod)}</span><small>${items.length} ${pl(items.length, "вопрос", "вопроса", "вопросов")}</small></summary><div class="review-group-body">${cards(items)}</div></details>` : cards(items)).join("")}</div></details>`;
       }).join("") || '<p class="hint">Нет вопросов с ошибками.</p>';
       preview.querySelectorAll("[data-rvq]").forEach((d) => d.addEventListener("toggle", () => { if (d.open) gaOpen(d, qs[+d.dataset.rvq]); }));
     }
-    const isMock = (p) => p.work === "Пробные тесты";
-    const code = (p) => isMock(p) ? p.k.split(".")[0] : p.k;
-    const modules = (p) => Object.keys(MODN).filter((k) => p.modules.has(k)).map((k) => courseModule(k, OfficialPractice.ids.includes(code(p)))).join(" / ");
+    const isMock = (p) => reviewKind(p.work) === "mock";
+    const code = (p) => p.work === "Bluebook" ? "Bluebook" : isMock(p) ? p.k.split(".")[0] : p.k;
+    const modules = (p) => [...p.modules].sort((a, b) => a.localeCompare(b, "ru")).join(" / ");
     function visibleParts() {
       const terms = filters.search.toLowerCase().trim().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
       const matched = parts.filter((p) => {
         const text = `${p.label} ${p.k} ${p.work} ${modules(p)}`.toLowerCase();
-        return (!filters.kind || isMock(p) === (filters.kind === "mock")) &&
+        return (!filters.kind || reviewKind(p.work) === filters.kind) &&
           (!filters.sec || p.sec === filters.sec) && terms.every((term) => text.includes(term));
       });
       if (filters.parts === "share") matched.sort(byShare);
@@ -1438,10 +1540,10 @@
       found.textContent = `Найдено ${matched.length} из ${parts.length}`;
       box.querySelector('[data-rvall="1"]').disabled = !matched.length;
       list.innerHTML = matched.map((p) => `<label class="rv-p"><input type="checkbox" data-rvp="${esc(p.k)}"${sel.has(p.k) ? " checked" : ""}>
-        <span class="rv-source"><span class="rv-source-meta"><b>${esc(code(p))}</b> ${esc(isMock(p) ? "Пробный тест" : p.work)}</span>
+        <span class="rv-source"><span class="rv-source-meta"><b>${esc(code(p))}</b> ${p.work === "Bluebook" ? "" : esc(isMock(p) ? "Пробный тест" : p.work)}</span>
           <strong>${esc(p.label)}</strong>${p.modules.size ? `<small>${esc(modules(p))}</small>` : ""}</span>
         <span class="rv-stats"><b>${p.nq} ${pl(p.nq, "вопрос с ошибкой", "вопроса с ошибками", "вопросов с ошибками")}</b>
-          <small>${p.wrong} из ${p.n} ответов · ${pct(100 * errorShare(p))}${p.ts ? " · " + day(p.ts) : ""}</small></span>
+          <small>${p.work === "Bluebook" ? `Ошибок в отчётах: ${p.wrong}` : `${p.wrong} из ${p.n} ответов · ${pct(100 * errorShare(p))}`}${p.ts ? " · " + day(p.ts) : ""}</small></span>
         </label>`).join("") || '<p class="rv-empty hint">По этому запросу заданий нет.</p>';
     }
     function updateSelection() {
@@ -1449,8 +1551,8 @@
       label();
     }
     search.oninput = () => { filters.search = search.value; renderParts(); };
-    kind.onchange = () => { filters.kind = kind.value; renderParts(); };
-    section.onchange = () => { filters.sec = section.value; renderParts(); };
+    kind.onchange = () => { filters.kind = kind.value; renderParts(); updateSelection(); };
+    section.onchange = () => { filters.sec = section.value; renderParts(); updateSelection(); };
     partSort.onchange = () => { filters.parts = partSort.value; renderParts(); };
     questionSort.onchange = () => { filters.questions = questionSort.value; label(); };
     list.onchange = ({ target }) => { if (!target.matches("[data-rvp]")) return; if (target.checked) sel.add(target.dataset.rvp); else sel.delete(target.dataset.rvp); updateSelection(); };
@@ -1484,11 +1586,14 @@
   }
   function rvQuestion(q) {
     return { id: q.id, title: q.title, sec: q.sec, sk: q.sk || "", d: q.d || "", work: q.work, n: q.n,
-      wrong: q.wrong, picks: q.picks, src: q.src, plabel: q.plabel };
+      wrong: q.wrong, picks: q.picks, src: q.src, plabel: q.plabel, ...(q.bb ? { bb: q.bb } : {}) };
   }
   async function teacherReviewItem(q) {
-    const b = await bundleT(q.src.b);
-    return q.src.mod ? b.mods[q.src.mod][q.src.i] : b.find((x) => x.n === q.src.n);
+    const course = async () => {
+      const b = await bundleT(q.src.b);
+      return q.src.mod ? b.mods[q.src.mod][q.src.i] : b.find((x) => x.n === q.src.n);
+    };
+    return q.bb ? BluebookQuestion.review(q.sec, q.bb, q.src && course) : course();
   }
   async function lessonIds() {
     const [r, access] = await Promise.all([SITE.api("admin/users"), SITE.access()]);
@@ -1534,7 +1639,7 @@
     const sel = (D.rvSel[`${c.mode}:${c.title}`] = new Set(fresh.map((pp) => pp.k)));
     // who has not submitted anything since then (group only; the student's own card shows his history)
     const keyOf = (n) => (window.FORMKIT ? FORMKIT.key(n) : n.toLowerCase());
-    const quiet = c.mode === "group" ? (c.names || []).filter((n) => !D.rows.some((r) => r.key === keyOf(n) && r.ts && r.ts > since)) : [];
+    const quiet = c.mode === "group" ? (c.names || []).filter((n) => !D.students.some((r) => r.key === keyOf(n) && +r.last > since)) : [];
     const qs = rvPick(c), traps = qs.filter((q) => trapOf(q)).slice(0, 3);
     rvMount(box, c);   // shows the ticked parts
     await rvSend(c, $(`${c.slot}-send`), $(`${c.slot}-send-st`));
@@ -1591,9 +1696,15 @@
     let item; try { item = await teacherReviewItem(q); } catch (e) { body.innerHTML = '<p class="hint">Не удалось загрузить вопрос. Обновите страницу.</p>'; return; }
     if (!item) { body.innerHTML = '<p class="hint">Вопрос не найден.</p>'; return; }
     const t = trapOf(q), acc = [].concat(item.acc || item.ans).filter(Boolean), ok = q.n - q.wrong;
+    if (item.metadataOnly) {
+      const choices = Object.entries(q.picks).map(([choice, n]) => `${choice} (${n})`).join(", ");
+      body.innerHTML = `<p class="hint">Текст исходного вопроса пока не подтверждён. Откройте его в Bluebook → Score Details.</p>
+        <p>Ответы в отчётах: <b>${esc(choices || "—")}</b> · Ключ Bluebook: <b>${esc(acc.join(", ") || "—")}</b></p>`;
+      return;
+    }
     const opts = item.t === "mc" && item.opts && item.opts.length ? item.opts.map((o, k) => { const L = "ABCD"[k], c = L === item.ans ? ok : q.picks[L] || 0;
         const mine = q.mine?.[0] === L;
-        const tag = q.mine ? L === item.ans ? "верный ответ" : mine ? "ответ ученика" : "" : `${L === item.ans ? "верный · " : ""}${c} ${pl(c, "ученик", "ученика", "учеников")}`;
+        const tag = q.mine ? L === item.ans ? "верный ответ" : mine ? "ответ ученика" : "" : q.bb ? L === item.ans ? "верный ответ" : c ? `выбрали: ${c}` : "" : `${L === item.ans ? "верный · " : ""}${c} ${pl(c, "ученик", "ученика", "учеников")}`;
         return `<div class="ropt${L === item.ans ? " right" : ""}${mine || t?.[0] === L ? " mine" : ""}"><span class="lt">${L}</span><span class="qhtml">${o}</span><span class="tg">${tag}</span></div>`; }).join("")
       : `<p class="hint">Принимаются: ${esc(acc.join(", "))} · неверные ответы: ${esc(Object.entries(q.picks).map(([v, c]) => `${v} (${c})`).join(", ") || "—")}</p>`;
     body.innerHTML = `${item.stim ? `<div class="qhtml">${item.stim}</div>` : ""}<div class="qhtml">${item.stem || ""}</div>${opts}
@@ -1711,7 +1822,7 @@
     if (D.demo || !SITE.adminKey()) { if (u && !D.demo) return fromUrl(u); $("file").click(); return; }
     await Promise.all([syncCustom(true), u ? fromUrl(u) : cloudLoad()]);
   };
-  $("forget").onclick = () => { store("teacher_url", null); customEpoch++; D.rows = []; D.formRows = []; D.customRows = []; D.csv = ""; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
+  $("forget").onclick = () => { store("teacher_url", null); customEpoch++; D.rows = []; D.formRows = []; D.customRows = []; D.sharedBluebook = []; D.csv = ""; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
   $("demo").onclick = () => { D.demo = true; const a = D.aliases; D.aliases = {}; load(demoCSV(), "пример"); D.aliases = a; };
   $("tabs").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.view = b.dataset.v; if (D.view !== "students") D.student = null; render(); }));
   addEventListener("resize", () => { if (!$("teacher-results").classList.contains("hidden") && !$("dash").classList.contains("hidden") && D.view === "overview") render(); });

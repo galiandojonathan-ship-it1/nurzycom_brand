@@ -53,4 +53,9 @@ const old = CTL.parseText(`Q: One?\nA) a\nB) b\nC) c\nD) d\nAnswer: C\n---\nQ: T
 ok(old.qs.length === 2 && old.qs[0].a === "C" && old.qs[1].a === "A", "old «---» format still works");
 const bad = CTL.parseText(`1.\nQ: Missing key?\nA) a\nB) b\nC) c\nD) d\n\n7.\nQ: Fine?\nA) a\nB) b\nC) c\nD) d\nAnswer: B`);
 ok(bad.qs.length === 2 && bad.errs.length === 1 && /^Вопрос 1:/.test(bad.errs[0]), "an error names the question by its own number: " + bad.errs.join(" | "));
-console.log(fails ? fails + " FAILED" : "ALL PASS"); process.exit(fails ? 1 : 0);
+const savedId = "C12345678", k = CTL.keys("Fixture", savedId);
+const copy = { [k.last]: "1/1", [k.att]: "2", [k.ans]: "q:B · 10s", [k.first]: "q:A · 12s" };
+const saved = CTL.submissions({meta:{ [k.last]: 2200, [k.first]: 1100 }, get:(key)=>copy[key]}).get(savedId);
+ok(saved.A.q === "B" && saved.first.A.q === "A" && saved.first.at === 1100, "a later custom test result keeps its original attempt separate");
+console.log(fails ? fails + " FAILED" : "ALL PASS");
+process.exit(fails ? 1 : 0);

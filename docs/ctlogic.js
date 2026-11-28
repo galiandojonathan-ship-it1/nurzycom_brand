@@ -169,7 +169,7 @@
   }
 
   // ---- results stored in a student's copy
-  const keys = (name, id) => ({ last: `ct_last_${name}_${id}`, att: `ct_att_${name}_${id}`, ans: `ct_ans_${name}_${id}` });
+  const keys = (name, id) => ({ last: `ct_last_${name}_${id}`, att: `ct_att_${name}_${id}`, ans: `ct_ans_${name}_${id}`, first: `ct_first_${name}_${id}` });
   function parseAns(s) {   // "k3f9a1:B x0p2m7:12.5 · 512s" → { k3f9a1: "B", …, sec: 512 }
     const o = {}; const [a, t] = String(s || "").split(" · ");
     (a || "").split(" ").forEach((p) => { const i = p.indexOf(":"); if (i > 0) o[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1)); });
@@ -180,15 +180,23 @@
 
   // Read the newest saved attempt when a student used several spellings of their name.
   function submissions(copy) {
-    const latest = new Map();
+    const latest = new Map(), first = new Map();
+    const answers = (packed) => { try { return parseAns(packed); } catch { return {}; } };
     for (const [key, time] of Object.entries(copy.meta || {})) {
       const match = /^ct_last_(.+)_(C[a-z0-9]{8})$/.exec(key);
       if (!match) continue;
       const [, name, id] = match, K = keys(name, id), last = copy.get(key), at = Number(time) || 0;
-      if (!/^\d+\/\d+$/.test(last || "") || (latest.get(id)?.at ?? -1) > at) continue;
-      let A;
-      try { A = parseAns(copy.get(K.ans)); } catch { A = {}; }
-      latest.set(id, { id, last, at, att: Number(copy.get(K.att)) || 1, A });
+      if (!/^\d+\/\d+$/.test(last || "")) continue;
+      const att = Number(copy.get(K.att)) || 1, packed = copy.get(K.ans), archived = copy.get(K.first);
+      const earlier = archived ? Number(copy.meta[K.first]) || 0 : att === 1 && packed ? at : 0;
+      if (earlier && earlier <= at && (!first.has(id) || earlier < first.get(id).at)) {
+        first.set(id, { at: earlier, A: answers(archived || packed) });
+      }
+      if ((latest.get(id)?.at ?? -1) <= at) latest.set(id, { id, last, at, att, A: answers(packed) });
+    }
+    for (const [id, rec] of latest) {
+      const entry = first.get(id);
+      if (entry && entry.at < rec.at) rec.first = entry;
     }
     return latest;
   }

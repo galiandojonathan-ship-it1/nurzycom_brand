@@ -227,8 +227,8 @@ window.PVIEW = (() => {
       tb.querySelectorAll("[data-mfold]").forEach((b) => (b.onclick = () => { const k = b.dataset.mfold; if (mp.closed[k]) delete mp.closed[k]; else mp.closed[k] = 1; saveMap(); draw(); }));
       box.querySelector("#pg-tr").innerHTML = res.traps.length ? res.traps.slice(0, 6).map((x) => `<div class="pg-trap"><div><span>${esc(TRAP[x.trap] || x.trap)}</span><span class="num"><span class="hint">${pct(x.was)}%</span> → <b>${pct(x.now)}%</b></span></div><div class="pg-bar"><i style="width:${pct(x.now)}%"></i><em style="left:calc(${pct(x.was)}% - 1px)"></em></div>${o.onTwins ? `<button class="pg-tw" type="button" data-twt="${esc(x.trap)}" title="Посмотреть ошибки с этой ловушкой">Похожие</button>` : ""}</div>`).join("") : '<p class="hint">Пока мало вопросов с размеченными ловушками.</p>';
       const H = res.habits;
-      box.querySelector("#pg-hb").innerHTML = [["Невнимательность", "ошибки там, где модель была почти уверена в верном ответе", H.slip, H.slipExpected], ["Пропуски", "вопросы без ответа", H.blank, null]]
-        .map(([l, s, v, e]) => `<div class="pg-hab"><div><b>${l}</b><div class="hint">${s}</div></div><div class="num">${v == null ? "—" : pct(v) + "%"}${e != null ? `<div class="hint">ожидалось ${pct(e)}%</div>` : ""}</div></div>`).join("");
+      box.querySelector("#pg-hb").innerHTML = [["Невнимательность", "ошибки там, где модель была почти уверена в верном ответе", H.slip, H.slipExpected], ["Без ответа", "доля среди вопросов без отмеченного пропуска", H.blank, null]]
+        .map(([l, s, v, e]) => `<div class="pg-hab"><div><b>${l}</b><div class="hint">${s}</div></div><div class="num">${v == null ? "—" : pct(v) + "%"}${e != null ? `<div class="hint">ожидалось ${pct(e)}%</div>` : ""}</div></div>`).join("") + `<p class="hint">Повторные ответы: ${H.repeats}. Исключено из оценки навыков как пропуски: ${H.skipped}.</p>`;
       box.querySelectorAll("[data-pw]").forEach((b) => (b.onclick = () => { st.weeks = +b.dataset.pw; draw(); }));
       srcWire();
       // the domain chart: the weakest domain by default
