@@ -120,7 +120,14 @@
   function resHTML() {
     const t = E.tests.find((x) => x.id === E.resId); if (!t) { E.view = "list"; return listHTML(); }
     const R = resultsOf(t), n = t.q.length;
-    const per = t.q.map((q) => { const done = R.rows.filter((r) => r.A[q.id] != null); const ok = done.filter((r) => CTL.isRight(q, r.A[q.id] === "-" ? "" : r.A[q.id])).length; return done.length ? Math.round((100 * ok) / done.length) : null; });
+    const questions = t.q.map(view);
+    const unavailable = (q) => q.ref && !q.mockKeys;
+    const per = questions.map((q) => {
+      if (unavailable(q)) return null;
+      const done = R.rows.filter((r) => r.A[q.id] != null);
+      const ok = done.filter((r) => rightOf(q, r.A[q.id])).length;
+      return done.length ? Math.round((100 * ok) / done.length) : null;
+    });
     const mean = R.rows.length ? Math.round(R.rows.reduce((a, r) => a + Number(r.last.split("/")[0]) / n, 0) * 100 / R.rows.length) : null;
     return `<div class="cb-assign ct">
       <div class="cb-ah"><button class="tlink" type="button" data-ctlist="1">← Мои тесты</button><button class="tlink" type="button" data-ctclose="1">Закрыть ✕</button></div>
@@ -128,9 +135,16 @@
       <p class="hint">${qn(n)} · сдали ${R.rows.length}${mean != null ? ` · в среднем ${mean}%` : ""}${R.waiting.length ? ` · ещё не сдали: ${R.waiting.map((u) => esc(u.name)).join(", ")}` : ""}. Результаты приходят, когда ученик сдал тест в своём аккаунте; нажмите «Обновить», чтобы подтянуть новые.</p>
       <div class="row"><button class="btn" type="button" data-ctgive="${esc(t.id)}">Задать <span class="arr">+</span></button><button class="btn ghost" type="button" data-ctedit="${esc(t.id)}">Изменить тест</button></div>
       ${R.rows.length ? `<div class="tw ct-tw"><table class="dt ct-res"><thead><tr><th scope="col">Ученик</th><th scope="col">Балл</th><th scope="col">Попыток</th><th scope="col">Сдал(а)</th>${t.q.map((q, i) => `<th scope="col" title="${esc(q.skill || "")}">${i + 1}</th>`).join("")}</tr></thead><tbody>
-        ${R.rows.map((r) => `<tr><th scope="row"><button class="tlink ct-stu" type="button" data-ctstu="${esc(r.u.id)}" title="Открыть ошибки ученика">${esc(r.u.name)}</button></th><td><b>${esc(r.last)}</b></td><td>${r.att}</td><td>${when(r.t)}${r.A.sec ? ` · ${Math.round(r.A.sec / 60)} мин` : ""}</td>${t.q.map((q) => { const a = r.A[q.id], blank = a == null || a === "-", ok = !blank && CTL.isRight(q, a);
-          return `<td class="${ok ? "ok" : "no"}" title="${ok ? "верно" : blank ? "без ответа" : `ответ ${esc(a)}, верный ${esc(CTL.answerText(q))}`}">${blank ? "—" : esc(String(a).slice(0, 6))}</td>`; }).join("")}</tr>`).join("")}</tbody>
-        <tfoot><tr><th scope="row">Верно, %</th><td></td><td></td><td></td>${per.map((p) => `<td class="${p != null && p < 50 ? "low" : ""}">${p == null ? "—" : p}</td>`).join("")}</tr><tr><th scope="row">Верный ответ</th><td></td><td></td><td></td>${t.q.map((q) => `<td title="${esc(CTL.answerText(q))}">${esc((q.type === "spr" ? CTL.accepted(q.a)[0] || "" : q.a).slice(0, 8))}</td>`).join("")}</tr></tfoot></table></div>`
+        ${R.rows.map((r) => `<tr><th scope="row"><button class="tlink ct-stu" type="button" data-ctstu="${esc(r.u.id)}" title="Открыть ошибки ученика">${esc(r.u.name)}</button></th><td><b>${esc(r.last)}</b></td><td>${r.att}</td><td>${when(r.t)}${r.A.sec ? ` · ${Math.round(r.A.sec / 60)} мин` : ""}</td>${questions.map((q) => {
+          const a = r.A[q.id], blank = blankOf(a), label = blank ? "—" : esc(String(a).slice(0, 6));
+          if (unavailable(q)) return `<td title="Исходный вопрос недоступен">${label}</td>`;
+          const ok = rightOf(q, a);
+          return `<td class="${ok ? "ok" : "no"}" title="${ok ? "верно" : blank ? "без ответа" : `ответ ${esc(a)}, верный ${esc(CTL.answerText(q))}`}">${label}</td>`;
+        }).join("")}</tr>`).join("")}</tbody>
+        <tfoot><tr><th scope="row">Верно, %</th><td></td><td></td><td></td>${per.map((p) => `<td class="${p != null && p < 50 ? "low" : ""}">${p == null ? "—" : p}</td>`).join("")}</tr><tr><th scope="row">Верный ответ</th><td></td><td></td><td></td>${questions.map((q) => {
+          const key = q.type === "spr" ? CTL.accepted(q.a)[0] : q.a;
+          return `<td title="${esc(CTL.answerText(q))}">${esc(String(key || "—").slice(0, 8))}</td>`;
+        }).join("")}</tr></tfoot></table></div>`
         : '<p class="td-sub">Пока никто не сдал этот тест.</p>'}${mistHTML(t, R)}</div>`;
   }
   // ---- «Разбор ошибок» (2026-11-21, Nurassyl: «why can't I see the mistakes of my students on my own created tests»):
