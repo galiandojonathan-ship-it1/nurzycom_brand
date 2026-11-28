@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area and Volume</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Area and Volume</h1>
+<p class="intro">Surface area and volume of pyramids, cones, cylinders, prisms and spheres, plus area and perimeter of rectangles.</p>
+<div class="progress">Solved: <span id="count">0</span> of 12</div>
+<article class="card" id="ARE-01">
+<header><span class="num">ARE-01</span><span class="src">PDF 1 &middot; p. 17</span><label class="done"><input type="checkbox" data-id="ARE-01"> Solved</label></header>
+<div class="stem">Right rectangular prism $X$ is similar to right rectangular prism $Y$. The surface area of right rectangular prism $X$ is 59 square centimeters, and the surface area of right rectangular prism $Y$ is 1,475 square centimeters. The volume of right rectangular prism $Y$ is 1,500 cubic centimeters. What is the sum, in cubic centimeters, of the volumes of right rectangular prisms $X$ and $Y$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-02">
+<header><span class="num">ARE-02</span><span class="src">PDF 1 &middot; p. 20</span><label class="done"><input type="checkbox" data-id="ARE-02"> Solved</label></header>
+<div class="stem">For the right circular cone shown, $B$ is a point on the circumference of the base, and the length of segment $\overline{AB}$ (not shown) is 32 centimeters. If the height of the cone is 16 centimeters and the volume of the cone is $k\pi$ cubic centimeters, what is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p><p class="fig">Diagram is in the source PDF (PDF 1, page 20). It is not reproduced here.</p></article>
+<article class="card" id="ARE-03">
+<header><span class="num">ARE-03</span><span class="src">PDF 2 &middot; p. 6</span><label class="done"><input type="checkbox" data-id="ARE-03"> Solved</label></header>
+<div class="stem">The figure shown is a right rectangular pyramid, where $\ell=16$ units, $w=8$ units, and $h=18$ units. What is the surface area, in square units, of the pyramid?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p><p class="fig">Diagram is in the source PDF (PDF 2, page 6). It is not reproduced here.</p></article>
+<article class="card" id="ARE-04">
+<header><span class="num">ARE-04</span><span class="src">PDF 2 &middot; p. 7</span><label class="done"><input type="checkbox" data-id="ARE-04"> Solved</label></header>
+<div class="stem">A right square pyramid has a height of 12 inches and a volume of 196 cubic inches. What is the perimeter, in inches, of the base of this pyramid?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-05">
+<header><span class="num">ARE-05</span><span class="src">PDF 2 &middot; p. 12</span><label class="done"><input type="checkbox" data-id="ARE-05"> Solved</label></header>
+<div class="stem">The table shows the area and perimeter of two rectangles. Rectangle A has an area of 660 square inches and a perimeter of 220 inches. Rectangle B has an area of 2,640 square inches and a perimeter of $n$ inches. What is the value of $n$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$2{,}200$</span></li><li><span class="letter">B</span><span class="ctext">$1{,}760$</span></li><li><span class="letter">C</span><span class="ctext">$880$</span></li><li><span class="letter">D</span><span class="ctext">$440$</span></li></ol></article>
+<article class="card" id="ARE-06">
+<header><span class="num">ARE-06</span><span class="src">PDF 3 &middot; p. 6</span><label class="done"><input type="checkbox" data-id="ARE-06"> Solved</label></header>
+<div class="stem">The length of a rectangle's diagonal is $\sqrt{65}$, and the length of one of the rectangle's sides is 4. What is the perimeter of the rectangle?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$11$</span></li><li><span class="letter">B</span><span class="ctext">$22$</span></li><li><span class="letter">C</span><span class="ctext">$28$</span></li><li><span class="letter">D</span><span class="ctext">$65$</span></li></ol></article>
+<article class="card" id="ARE-07">
+<header><span class="num">ARE-07</span><span class="src">PDF 4 &middot; p. 5</span><label class="done"><input type="checkbox" data-id="ARE-07"> Solved</label></header>
+<div class="stem">A rectangular poster has an area of 330 square inches. A copy of the poster is made in which the length and width of the original poster are each increased by 50%. What is the area of the copy, in square inches?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-08">
+<header><span class="num">ARE-08</span><span class="src">PDF 4 &middot; p. 14</span><label class="done"><input type="checkbox" data-id="ARE-08"> Solved</label></header>
+<div class="stem">A right triangular pyramid has exactly six edges. Each of these edges is 96 centimeters long. If the surface area of the pyramid is $k\sqrt3$ square centimeters, what is the value of $k$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-09">
+<header><span class="num">ARE-09</span><span class="src">PDF 4 &middot; p. 21</span><label class="done"><input type="checkbox" data-id="ARE-09"> Solved</label></header>
+<div class="stem">The table shows the volume of two similar solids, right circular cylinder A and right circular cylinder B. Volume of cylinder A: $32\pi$ cubic units. Volume of cylinder B: $864\pi$ cubic units. The radius of right circular cylinder A is 2 units. The surface area of right circular cylinder A is $k\pi$ square units, and the surface area of right circular cylinder B is $n\pi$ square units, where $k$ and $n$ are constants. What is the value of $n-k$? (The surface area of a right circular cylinder with radius $r$ and height $h$ is $2\pi r^2+2\pi rh$.)</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-10">
+<header><span class="num">ARE-10</span><span class="src">PDF 4 &middot; p. 24</span><label class="done"><input type="checkbox" data-id="ARE-10"> Solved</label></header>
+<div class="stem">In the figure, a hollow steel pipe is in the shape of a right circular cylinder. The steel pipe has an outside diameter of 48 inches, a wall thickness of $\frac{3}{8}$ inches, and a height of 138 inches. Which of the following is closest to the volume, in cubic inches, of the wall of this steel pipe?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$61$</span></li><li><span class="letter">B</span><span class="ctext">$325$</span></li><li><span class="letter">C</span><span class="ctext">$1{,}242$</span></li><li><span class="letter">D</span><span class="ctext">$7{,}743$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 24). It is not reproduced here.</p><p class="note">The wall thickness fraction is hard to read in the source; it is read here as 3/8.</p></article>
+<article class="card" id="ARE-11">
+<header><span class="num">ARE-11</span><span class="src">PDF 5 &middot; p. 6</span><label class="done"><input type="checkbox" data-id="ARE-11"> Solved</label></header>
+<div class="stem">A rectangular region of land is divided into 88 square lots of equal area $A$, in square units. The length of the region is 5.5 times the width of the region. If the length of the region is $x\sqrt{A}$ units, what is the value of $x$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="ARE-12">
+<header><span class="num">ARE-12</span><span class="src">PDF 5 &middot; p. 7</span><label class="done"><input type="checkbox" data-id="ARE-12"> Solved</label></header>
+<div class="stem">A right square pyramid has a surface area of $100+20\sqrt{146}$ square inches, which includes a base area of 100 square inches. What is the height, in inches, of this pyramid?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+</main>
+
+<script>
+(function(){
+  var slug = "ARE";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

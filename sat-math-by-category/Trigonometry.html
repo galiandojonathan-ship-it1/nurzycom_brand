@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trigonometry</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Trigonometry</h1>
+<p class="intro">Sine, cosine and tangent in right triangles and on the unit circle, including ratio identities.</p>
+<div class="progress">Solved: <span id="count">0</span> of 10</div>
+<article class="card" id="TRG-01">
+<header><span class="num">TRG-01</span><span class="src">PDF 1 &middot; p. 29</span><label class="done"><input type="checkbox" data-id="TRG-01"> Solved</label></header>
+<div class="stem">In triangle $ABC$, $BC=36\sqrt3$. What is the value of $\cos A$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p><p class="fig">Diagram is in the source PDF (PDF 1, page 29). It is not reproduced here.</p></article>
+<article class="card" id="TRG-02">
+<header><span class="num">TRG-02</span><span class="src">PDF 3 &middot; p. 1</span><label class="done"><input type="checkbox" data-id="TRG-02"> Solved</label></header>
+<div class="stem">For two acute angles $X$ and $Y$, the measure of angle $Y$ is $47^\circ$ and $\frac{\sin X}{\cos Y}=1$. What is the measure, in degrees, of angle $X$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$92$</span></li><li><span class="letter">B</span><span class="ctext">$47$</span></li><li><span class="letter">C</span><span class="ctext">$45$</span></li><li><span class="letter">D</span><span class="ctext">$43$</span></li></ol></article>
+<article class="card" id="TRG-03">
+<header><span class="num">TRG-03</span><span class="src">PDF 3 &middot; p. 21</span><label class="done"><input type="checkbox" data-id="TRG-03"> Solved</label></header>
+<div class="stem">In triangle $XYZ$, the measure of angle $X$ is $90^\circ$. Point $W$ lies on segment $YZ$, and segment $WX$ is perpendicular to segment $XZ$. The length of segment $WY$ is 668, and the length of segment $WX$ is 501. What is the value of $\tan Z$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{5}{3}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{3}{5}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{5}{6}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{4}{3}$</span></li></ol></article>
+<article class="card" id="TRG-04">
+<header><span class="num">TRG-04</span><span class="src">PDF 3 &middot; p. 23</span><label class="done"><input type="checkbox" data-id="TRG-04"> Solved</label></header>
+<div class="stem">In the figure, $\overline{AD}$ and $\overline{BC}$ intersect at point $D$. The measure of $\angle ABD$ is $w^\circ$, the measure of $\angle CAD$ is $z^\circ$, and $AD=186$. If $\cos w^\circ=\frac{9}{41}$, what is the value of $\tan z^\circ$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p><p class="fig">Diagram is in the source PDF (PDF 3, page 23). It is not reproduced here.</p></article>
+<article class="card" id="TRG-05">
+<header><span class="num">TRG-05</span><span class="src">PDF 3 &middot; p. 28</span><label class="done"><input type="checkbox" data-id="TRG-05"> Solved</label></header>
+<div class="stem">In the $xy$-plane, a unit circle with center at the origin $O$ contains point $A$ with coordinates $(1,0)$ and point $B$ with coordinates $\left(\frac{5}{\sqrt{34}},-\frac{3}{\sqrt{34}}\right)$. If the measure of angle $AOB$ is $p$ radians, what is the value of $\frac{\cos p}{\sin p}$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="TRG-06">
+<header><span class="num">TRG-06</span><span class="src">PDF 4 &middot; p. 9</span><label class="done"><input type="checkbox" data-id="TRG-06"> Solved</label></header>
+<div class="stem">In triangle $XYZ$, the measure of angle $X$ is $90^\circ$. Point $W$ lies on segment $YZ$, and segment $WX$ is perpendicular to segment $YZ$. The length of segment $WY$ is 524, and the length of segment $WX$ is 393. What is the value of $\tan Z$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{3}{5}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{3}{4}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{4}{5}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{4}{3}$</span></li></ol></article>
+<article class="card" id="TRG-07">
+<header><span class="num">TRG-07</span><span class="src">PDF 4 &middot; p. 15</span><label class="done"><input type="checkbox" data-id="TRG-07"> Solved</label></header>
+<div class="stem">Triangle $ABC$ is similar to triangle $DEF$, where $A$ corresponds to $D$ and $C$ corresponds to $F$. Angles $C$ and $F$ are right angles. If $\tan(A)=\sqrt3$ and $DF=53$, what is the length of $\overline{DE}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$53\frac{\sqrt3}{3}$</span></li><li><span class="letter">B</span><span class="ctext">$53\frac{\sqrt3}{2}$</span></li><li><span class="letter">C</span><span class="ctext">$53\sqrt3$</span></li><li><span class="letter">D</span><span class="ctext">$106$</span></li></ol></article>
+<article class="card" id="TRG-08">
+<header><span class="num">TRG-08</span><span class="src">PDF 4 &middot; p. 27</span><label class="done"><input type="checkbox" data-id="TRG-08"> Solved</label></header>
+<div class="stem">For two acute angles $A$ and $B$, $\cos A-\sin B=0$. The measure of angle $A$ is $x$ degrees, where $8x-13=321$. What is the measure, in degrees, of angle $B$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="TRG-09">
+<header><span class="num">TRG-09</span><span class="src">PDF 5 &middot; p. 2</span><label class="done"><input type="checkbox" data-id="TRG-09"> Solved</label></header>
+<div class="stem">In the $xy$-plane, a unit circle with center at the origin $O$ contains point $A$ with coordinates $(1,0)$ and point $B$ with coordinates $\left(-\frac{5}{\sqrt{89}},\frac{8}{\sqrt{89}}\right)$. If the measure of angle $AOB$ is $w$ radians, what is the value of $\tan w$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="TRG-10">
+<header><span class="num">TRG-10</span><span class="src">PDF 5 &middot; p. 5</span><label class="done"><input type="checkbox" data-id="TRG-10"> Solved</label></header>
+<div class="stem">In triangles $RST$ and $XYZ$ shown, $\overline{XY}$ is parallel to $\overline{TS}$, and $\tan R=\frac{140}{171}$. What is the value of $\sin X$ in triangle $XYZ$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{140}{311}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{140}{221}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{171}{221}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{171}{140}$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 5, page 5). It is not reproduced here.</p></article>
+</main>
+
+<script>
+(function(){
+  var slug = "TRG";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

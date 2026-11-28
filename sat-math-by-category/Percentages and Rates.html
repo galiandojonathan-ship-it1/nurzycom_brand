@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Percentages and Rates</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Percentages and Rates</h1>
+<p class="intro">Percent increase and decrease, percent of a quantity, rates and unit conversions.</p>
+<div class="progress">Solved: <span id="count">0</span> of 8</div>
+<article class="card" id="PCT-01">
+<header><span class="num">PCT-01</span><span class="src">PDF 1 &middot; p. 9</span><label class="done"><input type="checkbox" data-id="PCT-01"> Solved</label></header>
+<div class="stem">The daily precipitation total at a weather station is recorded by a weather instrument each day. The daily precipitation total recorded on Monday was 19.00 millimeters. The daily precipitation total recorded on Tuesday was a 134.00% increase from the daily precipitation total recorded on Monday. What was the daily precipitation total, in millimeters, recorded on Tuesday?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$8.12$</span></li><li><span class="letter">B</span><span class="ctext">$14.18$</span></li><li><span class="letter">C</span><span class="ctext">$25.46$</span></li><li><span class="letter">D</span><span class="ctext">$44.46$</span></li></ol></article>
+<article class="card" id="PCT-02">
+<header><span class="num">PCT-02</span><span class="src">PDF 1 &middot; p. 23</span><label class="done"><input type="checkbox" data-id="PCT-02"> Solved</label></header>
+<div class="stem">A sphere has a volume of 247.00 cubic yards. What is the volume of the sphere, in cubic meters? (Use 1 yard = 0.914 meter.)</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="PCT-03">
+<header><span class="num">PCT-03</span><span class="src">PDF 1 &middot; p. 28</span><label class="done"><input type="checkbox" data-id="PCT-03"> Solved</label></header>
+<div class="stem">The positive number $a$ is $2{,}047\%$ of the sum of the positive numbers $b$ and $c$, and $b$ is $89\%$ of $c$. What percent of $b$ is $a$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$21.36\%$</span></li><li><span class="letter">B</span><span class="ctext">$38.69\%$</span></li><li><span class="letter">C</span><span class="ctext">$2{,}300\%$</span></li><li><span class="letter">D</span><span class="ctext">$4{,}347\%$</span></li></ol></article>
+<article class="card" id="PCT-04">
+<header><span class="num">PCT-04</span><span class="src">PDF 2 &middot; p. 11</span><label class="done"><input type="checkbox" data-id="PCT-04"> Solved</label></header>
+<div class="stem">In 2005, Aster earned 12% more than in 2004, and in 2006 Aster earned 6% more than in 2005. If Aster earned $y$ times as much in 2004 as in 2006, which of the following is closest to the value of $y$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$0.5000$</span></li><li><span class="letter">B</span><span class="ctext">$0.7200$</span></li><li><span class="letter">C</span><span class="ctext">$0.8423$</span></li><li><span class="letter">D</span><span class="ctext">$1.1872$</span></li></ol></article>
+<article class="card" id="PCT-05">
+<header><span class="num">PCT-05</span><span class="src">PDF 2 &middot; p. 27</span><label class="done"><input type="checkbox" data-id="PCT-05"> Solved</label></header>
+<div class="stem">A certain town has an area of 4.29 square miles. What is the area, in square yards, of this town? (1 mile = 1,760 yards)</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$410$</span></li><li><span class="letter">B</span><span class="ctext">$7{,}550$</span></li><li><span class="letter">C</span><span class="ctext">$722{,}051$</span></li><li><span class="letter">D</span><span class="ctext">$13{,}288{,}704$</span></li></ol></article>
+<article class="card" id="PCT-06">
+<header><span class="num">PCT-06</span><span class="src">PDF 3 &middot; p. 2</span><label class="done"><input type="checkbox" data-id="PCT-06"> Solved</label></header>
+<div class="stem">A researcher investigated two species of mites: a predator and its prey. At the start of a week, there was an equal number of the two species. At the end of the week, the number of prey had increased by $1{,}900\%$ of the number of prey at the start of the week, and the number of predators had increased by $150\%$ of the number of predators at the start of the week. The number of prey at the end of the week was $p\%$ greater than the number of predators at the end of the week. What is the value of $p$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="PCT-07">
+<header><span class="num">PCT-07</span><span class="src">PDF 3 &middot; p. 12</span><label class="done"><input type="checkbox" data-id="PCT-07"> Solved</label></header>
+<div class="stem">A scientist studied the effects of mixing two chemicals, chemical $A$ and chemical $B$, by gradually adding more of each chemical to a mixture of the two chemicals. At the start of the study, the mass of chemical $A$ in the mixture was equal to the mass of chemical $B$ in the mixture. From the start of the study to the end of the study, the mass of chemical $A$ in the mixture increased by $2{,}600\%$, and the mass of chemical $B$ in the mixture increased by $380\%$. At the end of the study, approximately how many times greater was the mass of chemical $A$ in the mixture than the mass of chemical $B$ in the mixture?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$29.80$</span></li><li><span class="letter">B</span><span class="ctext">$22.20$</span></li><li><span class="letter">C</span><span class="ctext">$6.84$</span></li><li><span class="letter">D</span><span class="ctext">$5.63$</span></li></ol></article>
+<article class="card" id="PCT-08">
+<header><span class="num">PCT-08</span><span class="src">PDF 5 &middot; p. 9</span><label class="done"><input type="checkbox" data-id="PCT-08"> Solved</label></header>
+<div class="stem">The value of a painting increased by 179% from the end of 2017 to the end of 2018 and then decreased by 27% from the end of 2019. What was the net percentage increase in the value of the painting from the end of 2017 to the end of 2019?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$254.33\%$</span></li><li><span class="letter">B</span><span class="ctext">$152.00\%$</span></li><li><span class="letter">C</span><span class="ctext">$130.67\%$</span></li><li><span class="letter">D</span><span class="ctext">$103.67\%$</span></li></ol></article>
+</main>
+
+<script>
+(function(){
+  var slug = "PCT";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

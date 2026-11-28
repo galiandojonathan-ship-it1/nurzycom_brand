@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triangles and Similarity</title>
+<style>
+:root{--ink:#0A0A0A;--paper:#FAF8F3;--mist:#F0EEE8;--stone:#5A5852;--line:#D5D5D4;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+a{color:var(--ink)}
+.back{font-size:14px;color:var(--stone);text-decoration:none}
+h1{font-size:30px;line-height:1.2;margin:14px 0 8px;font-weight:600}
+.intro{color:var(--stone);margin:0 0 22px}
+.progress{position:sticky;top:0;background:var(--paper);padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--stone);margin-bottom:18px;z-index:2}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 16px}
+.card header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;
+  margin-bottom:10px}
+.num{font-weight:600;font-size:15px}
+.src{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--stone);
+  letter-spacing:.04em;text-transform:uppercase}
+.done{font-size:14px;color:var(--stone);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.stem{font-size:17px;margin:4px 0 14px;overflow-wrap:anywhere}
+.choices{list-style:none;padding:0;margin:0}
+.choices li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;background:var(--paper)}
+.letter{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--ink);display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ctext{padding-top:2px;overflow-wrap:anywhere}
+.gridin{margin:0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.note{margin:12px 0 0;font-size:14px;color:var(--stone);background:var(--mist);border-radius:10px;padding:10px 12px}
+.fig{margin:12px 0 0;font-size:14px;color:var(--stone);border-left:3px solid var(--ink);padding:4px 0 4px 12px}
+.index li{margin:0 0 10px}
+.index .count{color:var(--stone);font-size:14px}
+table.cats{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.cats td,table.cats th{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cats th{font-size:13px;color:var(--stone);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:520px){h1{font-size:25px}.stem{font-size:16px}}
+</style>
+
+<script>
+window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$']],processEscapes:true}};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<main>
+<a class="back" href="index.html">&larr; All categories</a>
+<h1>Triangles and Similarity</h1>
+<p class="intro">Similar and congruent triangles, angle relationships, altitudes and areas of triangles.</p>
+<div class="progress">Solved: <span id="count">0</span> of 15</div>
+<article class="card" id="TRI-01">
+<header><span class="num">TRI-01</span><span class="src">PDF 1 &middot; p. 12</span><label class="done"><input type="checkbox" data-id="TRI-01"> Solved</label></header>
+<div class="stem">A right triangle has sides of length $3\sqrt2$, $5\sqrt2$, and $\sqrt{68}$ units. What is the area of the triangle, in square units?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$8\sqrt2+\sqrt{68}$</span></li><li><span class="letter">B</span><span class="ctext">$30\sqrt{68}$</span></li><li><span class="letter">C</span><span class="ctext">$30$</span></li><li><span class="letter">D</span><span class="ctext">$15$</span></li></ol></article>
+<article class="card" id="TRI-02">
+<header><span class="num">TRI-02</span><span class="src">PDF 1 &middot; p. 15</span><label class="done"><input type="checkbox" data-id="TRI-02"> Solved</label></header>
+<div class="stem">In triangle $ABC$, the measure of angle $B$ is $90^\circ$ and $\overline{BD}$ is an altitude of the triangle. The length of $\overline{AB}$ is 24 and the length of $\overline{AC}$ is 13 greater than the length of $\overline{AB}$. What is the value of $\frac{BC}{BD}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{13}{24}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{24}{37}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{37}{24}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{24}{13}$</span></li></ol></article>
+<article class="card" id="TRI-03">
+<header><span class="num">TRI-03</span><span class="src">PDF 1 &middot; p. 22</span><label class="done"><input type="checkbox" data-id="TRI-03"> Solved</label></header>
+<div class="stem">In the figure, $\overline{LQ}$ intersects $\overline{MP}$ at point $R$, and $\overline{LM}$ is parallel to $\overline{PQ}$. The lengths of $\overline{MR}$ and $\overline{RP}$ are 8 and 14 units, respectively. The area of $\triangle LMR$ is 36 square units. What is the area of $\triangle PQR$, in square units?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{576}{49}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{144}{7}$</span></li><li><span class="letter">C</span><span class="ctext">$63$</span></li><li><span class="letter">D</span><span class="ctext">(Choice D is unreadable in the source.)</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 1, page 22). It is not reproduced here.</p></article>
+<article class="card" id="TRI-04">
+<header><span class="num">TRI-04</span><span class="src">PDF 1 &middot; p. 26</span><label class="done"><input type="checkbox" data-id="TRI-04"> Solved</label></header>
+<div class="stem">The perimeter of an equilateral triangle is 876 centimeters. The three vertices of the triangle lie on a circle. The radius of the circle is $w\sqrt3$ centimeters. What is the value of $w$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="TRI-05">
+<header><span class="num">TRI-05</span><span class="src">PDF 1 &middot; p. 27</span><label class="done"><input type="checkbox" data-id="TRI-05"> Solved</label></header>
+<div class="stem">In triangle $ABC$, the measure of angle $A$ is $52^\circ$ and $AC=35$. In triangle $PQR$, the measure of angle $P$ is $52^\circ$ and $PR=105$. Which additional piece of information is sufficient to prove that triangle $ABC$ is similar to triangle $PQR$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$AB=30$ and $PQ=30$.</span></li><li><span class="letter">B</span><span class="ctext">$AB=30$ and $QR=90$.</span></li><li><span class="letter">C</span><span class="ctext">The measures of angle $B$ and angle $R$ are $34^\circ$ and $94^\circ$, respectively.</span></li><li><span class="letter">D</span><span class="ctext">The measures of angle $B$ and angle $Q$ are $52^\circ$ and $34^\circ$, respectively.</span></li></ol></article>
+<article class="card" id="TRI-06">
+<header><span class="num">TRI-06</span><span class="src">PDF 2 &middot; p. 2</span><label class="done"><input type="checkbox" data-id="TRI-06"> Solved</label></header>
+<div class="stem">In triangle $RST$, the measure of angle $R$ is $39^\circ$, the measure of angle $S$ is $x^\circ$, and the measure of angle $T$ is $(5x-3)^\circ$. Point $L$ lies on $\overline{RS}$, point $K$ lies on $\overline{ST}$, and $\overline{LK}$ is parallel to $\overline{RT}$. What is the measure, in degrees, of angle $SKL$? (Disregard the degree symbol when entering your answer.)</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p></article>
+<article class="card" id="TRI-07">
+<header><span class="num">TRI-07</span><span class="src">PDF 2 &middot; p. 19</span><label class="done"><input type="checkbox" data-id="TRI-07"> Solved</label></header>
+<div class="stem">In triangle $XYZ$, the measure of angle $X$ is $x^\circ$, the measure of angle $Y$ is $y^\circ$, and the measure of angle $Z$ is $31^\circ$. If $x&gt;y&gt;31$, which of the following additional pieces of information is NOT sufficient to determine the values of $x$ and $y$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">The value of $31-x-3y$</span></li><li><span class="letter">B</span><span class="ctext">The value of $31+3x+y$</span></li><li><span class="letter">C</span><span class="ctext">The value of $31-3x+3y$</span></li><li><span class="letter">D</span><span class="ctext">The value of $31-3x-3y$</span></li></ol></article>
+<article class="card" id="TRI-08">
+<header><span class="num">TRI-08</span><span class="src">PDF 3 &middot; p. 19</span><label class="done"><input type="checkbox" data-id="TRI-08"> Solved</label></header>
+<div class="stem">In triangle $ABC$, the measure of angle $B$ is $90^\circ$ and $\overline{BD}$ is an altitude of the triangle. The length of $\overline{AB}$ is 13 and the length of $\overline{AC}$ is 19 greater than the length of $\overline{AB}$. What is the value of $\frac{BC}{BD}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{13}{32}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{13}{19}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{19}{13}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{32}{13}$</span></li></ol></article>
+<article class="card" id="TRI-09">
+<header><span class="num">TRI-09</span><span class="src">PDF 4 &middot; p. 6</span><label class="done"><input type="checkbox" data-id="TRI-09"> Solved</label></header>
+<div class="stem">The line segment shown in the $xy$-plane represents one of the legs of a right triangle. The area of this triangle is $42\sqrt{13}$ square units. What is the length, in units, of the other leg of this triangle?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$14$</span></li><li><span class="letter">B</span><span class="ctext">$28$</span></li><li><span class="letter">C</span><span class="ctext">$3\sqrt{13}$</span></li><li><span class="letter">D</span><span class="ctext">$21\sqrt{13}$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 6). It is not reproduced here.</p></article>
+<article class="card" id="TRI-10">
+<header><span class="num">TRI-10</span><span class="src">PDF 4 &middot; p. 8</span><label class="done"><input type="checkbox" data-id="TRI-10"> Solved</label></header>
+<div class="stem">In isosceles triangle $ABC$, sides $\overline{AB}$ and $\overline{AC}$ are congruent. Point $D$ divides side $\overline{BC}$ such that the length of $\overline{BD}$ is $\frac{2}{7}$ of the length of $\overline{BC}$. Point $E$ lies on side $\overline{AB}$ and point $F$ lies on side $\overline{AC}$ such that when segments $\overline{DE}$ and $\overline{DF}$ are drawn, angle $BED$ is congruent to angle $CFD$. If the length of $\overline{BE}$ is 14, what is the length of $\overline{CF}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$28$</span></li><li><span class="letter">B</span><span class="ctext">$35$</span></li><li><span class="letter">C</span><span class="ctext">$49$</span></li><li><span class="letter">D</span><span class="ctext">$98$</span></li></ol></article>
+<article class="card" id="TRI-11">
+<header><span class="num">TRI-11</span><span class="src">PDF 4 &middot; p. 20</span><label class="done"><input type="checkbox" data-id="TRI-11"> Solved</label></header>
+<div class="stem">In quadrilateral $KLMN$ shown, $KL=3$, $LM=3$, $KN=27$, and $MN=27$. Diagonals $\overline{KM}$ and $\overline{LN}$ (not shown) intersect at point $G$ (not shown), where $GK=1$ and $GM=1$. If the length of diagonal $\overline{LN}$ is $\sqrt{p}+\sqrt{w}$, where $p$ and $w$ are integers, what is the value of $p+w$?</div>
+<p class="gridin">Student-produced response (grid-in): type a number, fraction or decimal.</p><p class="fig">Diagram is in the source PDF (PDF 4, page 20). It is not reproduced here.</p></article>
+<article class="card" id="TRI-12">
+<header><span class="num">TRI-12</span><span class="src">PDF 4 &middot; p. 26</span><label class="done"><input type="checkbox" data-id="TRI-12"> Solved</label></header>
+<div class="stem">$\triangle QPR$ is similar to $\triangle STR$. The lengths represented by $\overline{ST}$, $\overline{QP}$, $\overline{PR}$, and $\overline{QR}$ in the figure are 10, 16, 30, and 34, respectively. What is the length of $\overline{SR}$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$\frac{340}{16}$</span></li><li><span class="letter">B</span><span class="ctext">$\frac{340}{30}$</span></li><li><span class="letter">C</span><span class="ctext">$\frac{160}{30}$</span></li><li><span class="letter">D</span><span class="ctext">$\frac{160}{34}$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 26). It is not reproduced here.</p></article>
+<article class="card" id="TRI-13">
+<header><span class="num">TRI-13</span><span class="src">PDF 4 &middot; p. 28</span><label class="done"><input type="checkbox" data-id="TRI-13"> Solved</label></header>
+<div class="stem">In the figure, triangle $ABF$ is congruent to triangle $EDG$, where $B$ corresponds to $D$. The measure of angle $DCF$ is $58^\circ$. What is the measure, in degrees, of angle $ABF$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$29$</span></li><li><span class="letter">B</span><span class="ctext">$32$</span></li><li><span class="letter">C</span><span class="ctext">$58$</span></li><li><span class="letter">D</span><span class="ctext">$61$</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 4, page 28). It is not reproduced here.</p></article>
+<article class="card" id="TRI-14">
+<header><span class="num">TRI-14</span><span class="src">PDF 5 &middot; p. 3</span><label class="done"><input type="checkbox" data-id="TRI-14"> Solved</label></header>
+<div class="stem">In the figure, line $m$ is parallel to line $n$, and lines $\overline{AE}$ and $\overline{CD}$ intersect at point $B$. Which additional piece of information is sufficient to prove that triangle $ABC$ is congruent to triangle $EBD$?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">$AB=16$ and $DB=16$.</span></li><li><span class="letter">B</span><span class="ctext">$AB=16$ and $EB=16$.</span></li><li><span class="letter">C</span><span class="ctext">Triangles $ABC$ and $EBD$ are isosceles.</span></li><li><span class="letter">D</span><span class="ctext">No additional information is necessary to determine that the two triangles are congruent.</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 5, page 3). It is not reproduced here.</p></article>
+<article class="card" id="TRI-15">
+<header><span class="num">TRI-15</span><span class="src">PDF 5 &middot; p. 21</span><label class="done"><input type="checkbox" data-id="TRI-15"> Solved</label></header>
+<div class="stem">In triangle $XYZ$ shown, segments $\overline{XY}$ and $\overline{YZ}$ each have length 128 millimeters. Which statement is sufficient to prove that all three angles in the triangle have equal measure?</div>
+<ol class="choices"><li><span class="letter">A</span><span class="ctext">Segment $\overline{XZ}$ has length 64 millimeters.</span></li><li><span class="letter">B</span><span class="ctext">Segment $\overline{XZ}$ has length 128 millimeters.</span></li><li><span class="letter">C</span><span class="ctext">Segment $\overline{XZ}$ has length 256 millimeters.</span></li><li><span class="letter">D</span><span class="ctext">Segment $\overline{XZ}$ has length 384 millimeters.</span></li></ol><p class="fig">Diagram is in the source PDF (PDF 5, page 21). It is not reproduced here.</p></article>
+</main>
+
+<script>
+(function(){
+  var slug = "TRI";
+  var key = 'sat-math-solved-' + slug;
+  var boxes = document.querySelectorAll('input[data-id]');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { saved = {}; }
+  function update(){
+    var n = 0;
+    boxes.forEach(function(b){ if (b.checked) n++; });
+    var el = document.getElementById('count');
+    if (el) el.textContent = n;
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved[b.dataset.id];
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>
