@@ -395,7 +395,7 @@
     const L = S.lessons;
     if (kind === "rd") return PLAN.TEXT.map((x, i) => ({ v: `T${nn(i + 1)}`, t: `Текст ${i + 1} · «${x}»`, href: `reading.html?t=T${nn(i + 1)}`, rk: ["rd_last_", `T${nn(i + 1)}`] }));
     if (kind === "px") return Object.entries(PLAN.HARD).map(([x, t]) => ({ v: x, t: `Сложные вопросы ${x} · ${t}`, href: `practice.html?s=${x}`, rk: ["px_last_", x] }));
-    if (kind === "mk") return [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1", "PR2", "PR3"].map((x) => { const n = +x.slice(2), rw = x === "PR1" || (x[1] === "T" && n >= 5 && n <= 8); return { v: x, t: `${x[1] === "R" ? "Прогноз" : "Пробный тест"} ${n}${rw ? " · Reading and Writing" : ""}`, href: `mock.html?t=${x}`, rk: ["mk_last_", x] }; });
+    if (kind === "mk") return [...Array.from({ length: 19 }, (_, i) => `PT${i + 1}`), "PR1", "PR2", "PR3", ...OfficialPractice.ids].map((x) => { const n = +x.slice(2), rw = x === "PR1" || (x[1] === "T" && n >= 5 && n <= 8); return { v: x, t: OfficialPractice.ids.includes(x) ? OfficialPractice.title(x) : `${x[1] === "R" ? "Прогноз" : "Пробный тест"} ${n}${rw ? " · Reading and Writing" : ""}`, href: `mock.html?t=${x}`, rk: ["mk_last_", x] }; });
     if (kind === "ds") return Object.entries(PLAN.DESMOS).map(([x, t]) => ({ v: x, t: `Desmos · набор ${Number(x.slice(1))} · ${t}`, href: `desmos.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
     if (kind === "uc") return ["U01", "U02", "U03", "U04"].map((x, i) => ({ v: x, t: `Единичная окружность · набор ${i + 1}`, href: `circle.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
     if (kind === "ar") return ["A01", "A02", "A03"].map((x, i) => ({ v: x, t: `Архаичные слова · набор ${i + 1}`, href: `archaic.html?s=${x}`, rk: ["hw_last_", `${x}_p1`] }));
@@ -512,6 +512,7 @@
       rs.filter((r) => Math.abs((+r.ts || 0) - (+last.ts || 0)) < 9e5).forEach((r) => (run[r.sec2] = r));
       const v = ["rw", "math"].filter((x) => run[x]).map((x) => { const r = run[x], name = x === "rw" ? "RW" : "Math";
         if (r.mock?.skipped.size) return `${name} ${r.a}/${Math.max(0, r.b - r.mock.skipped.size)} · неполный тест`;
+        if (/M2 фиксированный/.test(r.part)) return `${name} ${r.a}/${r.b}`;
         return `${name} ${r.a}/${r.b} ≈ ${window.SATSCALE ? SATSCALE.section(x, r.hard, r.a) : "?"}`; }).join(" · ");
       put(`mk_last_${n}_${id}`, v, +last.ts || 0);
       rs.forEach((r) => cnt(`mk_att_${n}_${id}_${r.sec2}`, +r.ts || 0));

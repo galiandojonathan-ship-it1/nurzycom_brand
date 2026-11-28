@@ -21,9 +21,11 @@ window.BluebookQuestion = (() => {
   const dropped = new Set("annotation annotation-xml button embed form iframe link meta object script style template".split(" "));
   const mathAttrs = ["accent", "accentunder", "alttext", "bevelled", "columnalign", "columnlines", "display", "fence", "linethickness", "mathvariant", "rowalign", "rowlines", "separator", "stretchy"];
 
-  const svg = new Set("svg g defs title desc text tspan line rect circle ellipse path polygon polyline pattern clipPath marker linearGradient radialGradient stop".split(" "));
-  const svgAttrs = "aria-label role viewBox width height x y x1 x2 y1 y2 cx cy r rx ry d points transform fill stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray fill-rule clip-rule opacity fill-opacity stroke-opacity text-anchor dominant-baseline font-family font-size font-weight dx dy patternTransform patternUnits patternContentUnits clipPathUnits markerWidth markerHeight markerUnits orient refX refY offset stop-color stop-opacity gradientTransform gradientUnits fx fy preserveAspectRatio".split(" ");
+  const svg = new Set("svg g defs use title desc text tspan line rect circle ellipse path polygon polyline pattern clipPath marker linearGradient radialGradient stop".split(" "));
+  const svgAttrs = "aria-label role viewBox width height x y x1 x2 y1 y2 cx cy r rx ry d points transform fill stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray fill-rule clip-rule opacity fill-opacity stroke-opacity text-anchor dominant-baseline font-family font-size font-weight font-style dx dy patternTransform patternUnits patternContentUnits clipPathUnits markerWidth markerHeight markerUnits orient refX refY offset stop-color stop-opacity gradientTransform gradientUnits fx fy preserveAspectRatio".split(" ");
   const svgRefs = ["fill", "stroke", "clip-path", "marker-start", "marker-mid", "marker-end"];
+  const svgStyle = ["fill", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "stroke-linejoin",
+    "fill-opacity", "stroke-opacity", "opacity", "text-anchor", "dominant-baseline", "font-family", "font-size", "font-style", "font-weight"];
   let diagram = 0;
 
   function markup(input) {
@@ -60,6 +62,15 @@ window.BluebookQuestion = (() => {
           element.setAttribute(attr, value);
         }
         if (inSVG) {
+          // College Board SVGs use local glyph references and presentation styles for charts.
+          if (tag === "use") {
+            const href = node.getAttribute("href") || node.getAttribute("xlink:href");
+            if (href && /^#[\w.-]+$/.test(href)) element.setAttribute("href", "#" + prefix + href.slice(1));
+          }
+          for (const attr of svgStyle) {
+            const value = node.style.getPropertyValue(attr).trim();
+            if (/^(?:[a-z0-9 .,%#-]+|rgba?\([\d.,% ]+\))$/i.test(value)) element.style.setProperty(attr, value);
+          }
           const id = node.getAttribute("id");
           if (id && /^[\w.-]+$/.test(id)) element.id = prefix + id;
           for (const attr of svgRefs) {
@@ -89,12 +100,17 @@ window.BluebookQuestion = (() => {
       .catch((error) => { indexes.delete(sec); throw error; }));
     const external = (await indexes.get(sec)).get(id);
     if (!external) return null;
+    return official(external);
+  }
+
+  async function official(external) {
+    if (!uuid.test(external || "")) return null;
     const q = await request("get-question", { external_id: external });
     if (q.externalid !== external || typeof q.stem !== "string" || !q.stem.trim()) return null;
     const opts = q.type === "mcq" && Array.isArray(q.answerOptions) ? q.answerOptions.map((o) => markup(o.content)) : null;
     if (q.type === "mcq" && (opts?.length !== 4 || opts.some((o) => !o.trim()))) return null;
     const keys = Array.isArray(q.correct_answer) ? q.correct_answer.map(String) : [];
-    return { stim: markup(q.stimulus), stem: markup(q.stem), opts, bankKeys: keys, originalSource: "bank" };
+    return { stim: markup(q.stimulus), stem: markup(q.stem), opts, bankKeys: keys, rat: markup(q.rationale), originalSource: "bank" };
   }
 
   function load(sec, id) {
@@ -104,5 +120,5 @@ window.BluebookQuestion = (() => {
     if (!questions.has(key)) questions.set(key, lookup(sec, id).catch((error) => { questions.delete(key); throw error; }));
     return questions.get(key);
   }
-  return { load };
+  return { load, official };
 })();

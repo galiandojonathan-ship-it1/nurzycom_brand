@@ -9,7 +9,7 @@ window.NBANK = (() => {
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const LEVEL = { E: "лёгкий", M: "средний", H: "сложный" }, SEC = { rw: "Reading and Writing", math: "Math" };
   const PICK_MAX = 60, PAGE = 40;
-  const E = { loaded: false, err: "", all: [], f: { sec: "", skill: "", sub: "", level: "", kind: "", hard: false, theme: "", q: "" }, sel: new Set(), shown: PAGE, title: "", msg: "" };
+  const E = { loaded: false, err: "", all: [], f: { source: "", sec: "", skill: "", sub: "", level: "", kind: "", hard: false, theme: "", q: "" }, sel: new Set(), shown: PAGE, title: "", msg: "" };
   let api = { toast: () => {}, render: () => {}, focus: () => {} };
   const NAME = (k) => (window.PVIEW && PVIEW.NAME && PVIEW.NAME[k]) || k;
   const rich = (s) => (window.CTL ? CTL.rich(s || "") : `<p>${esc(s)}</p>`);
@@ -19,10 +19,15 @@ window.NBANK = (() => {
     if (E.loaded) return;
     try { const d = await SITE.json("nbank"); E.all = (d.questions || []).filter((q) => q && q.id && q.stem); E.at = d.at; E.err = ""; }
     catch (e) { E.all = []; E.err = "Банк не загрузился. Обновите страницу."; }
+    try {
+      E.all.push(...(await OfficialPractice.reserve()).map((q) => ({
+        id: q.id, sec: q.sec, skill: q.sk, level: q.d, type: q.t, official: true
+      })));
+    } catch { E.err += (E.err ? " " : "") + "Подборка College Board не загрузилась."; }
     E.loaded = true;
   }
   const match = (q) => { const F = E.f, t = F.q.trim().toLowerCase();
-    return (!F.sec || q.sec === F.sec) && (!F.skill || q.skill === F.skill) && (!F.sub || q.sub === F.sub) && (!F.level || q.level === F.level) &&
+    return (!F.source || F.source === (q.official ? "official" : "original")) && (!F.sec || q.sec === F.sec) && (!F.skill || q.skill === F.skill) && (!F.sub || q.sub === F.sub) && (!F.level || q.level === F.level) &&
       (!F.kind || q.kind === F.kind) && (!F.hard || q.hard) && (!F.theme || q.theme === F.theme) &&
       (!t || [q.passage, q.stem, ...(q.options || []), q.theme, q.id].join(" ").toLowerCase().includes(t)); };
   const list = () => E.all.filter(match);
@@ -32,13 +37,19 @@ window.NBANK = (() => {
 
   // the start of the passage tells questions apart (RW stems are the standard SAT wording); Math without a passage: the stem
   const snip = (q) => { const t = String(q.passage || q.stem || "").replace(/__|\*\*|\|/g, "").replace(/\s+/g, " ").trim(); return t.length > 150 ? t.slice(0, 150) + "…" : t; };
-  const plural = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);
+  function officialCard(q, pick) {
+    return `<div class="nb-row${E.sel.has(q.id) ? " on" : ""}">${pick}<details class="nb-q" data-nb-official="${esc(q.id)}">
+      <summary><span class="nb-sum"><b>${esc(q.skill)}</b><small>College Board · ноябрь 2026 · ${esc(LEVEL[q.level])}</small></span><code>${esc(q.id)}</code></summary>
+      <div class="nb-body" lang="en"></div></details></div>`;
+  }
   function card(q) {
     const on = E.sel.has(q.id), L = (k) => "ABCD"[k];
+    const pick = `<label class="nb-pick"><input type="checkbox" data-nbsel="${esc(q.id)}" aria-label="Выбрать ${esc(q.id)}"${on ? " checked" : ""}${!on && E.sel.size >= PICK_MAX ? " disabled" : ""}></label>`;
+    if (q.official) return officialCard(q, pick);
     const opts = q.type === "spr" ? `<p class="nb-spr">Ответ вводится: <b>${esc((q.accept || [q.key]).join(" · "))}</b></p>`
       : `<ol class="nb-opts">${(q.options || []).map((o, k) => `<li class="${L(k) === q.key ? "ok" : ""}"><b>${L(k)}</b><span class="qhtml">${inline(o)}</span>${L(k) === q.key ? '<em>ответ</em>' : q.traps && q.traps[L(k)] ? `<small>${esc(q.traps[L(k)])}</small>` : ""}</li>`).join("")}</ol>`;
     const words = (q.words || []).length ? `<div class="nb-words"><span class="label">Слова</span>${q.words.map((w) => `<span class="nb-w" title="${esc(w.def)}"><b>${esc(w.lemma || w.w)}</b> ${esc(w.ru)}${w.src === "course" ? " · курс" : ""}</span>`).join("")}</div>` : "";
-    return `<div class="nb-row${on ? " on" : ""}"><label class="nb-pick"><input type="checkbox" data-nbsel="${esc(q.id)}" aria-label="Выбрать ${esc(q.id)}"${on ? " checked" : ""}${!on && E.sel.size >= PICK_MAX ? " disabled" : ""}></label>
+    return `<div class="nb-row${on ? " on" : ""}">${pick}
       <details class="nb-q"><summary><span class="nb-sum"><b>${esc(NAME(q.sub))}</b> <small>${esc(q.skill)} · ${esc(LEVEL[q.level] || q.level)}${q.theme ? " · " + esc(q.theme) : ""}${q.pattern ? " · " + esc(q.pattern) : ""}</small>
           ${q.hard ? '<i class="nb-tag hard">очень сложный</i>' : ""}${q.kind === "control" ? '<i class="nb-tag ctl">контрольный</i>' : ""}
           <span class="nb-stem">${esc(snip(q))}</span></span><code>${esc(q.id)}</code></summary>
@@ -51,11 +62,12 @@ window.NBANK = (() => {
     const L = list(), A = E.all, F = E.f;
     const sel = (id, label, cur, pairs, all, fmt = (v) => v) => `<label>${label}<select data-nbf="${id}">${opt("", all, cur)}${pairs.map(([v, n]) => opt(v, `${fmt(v)} · ${n}`, cur)).join("")}</select></label>`;
     const subs = count(A.filter((q) => !F.sec || q.sec === F.sec), (q) => q.sub), skills = count(A.filter((q) => !F.sec || q.sec === F.sec), (q) => q.skill);
-    const picked = A.filter((q) => E.sel.has(q.id));
+    const picked = A.filter((q) => E.sel.has(q.id)), official = A.filter((q) => q.official).length;
     return `<div class="nb"><div class="cb-section-head"><h2 tabindex="-1" class="cb-section-title">nurzycom bank</h2>
-        <p class="hint">Наши авторские вопросы в формате SAT: ${A.length} ${plural(A.length, "вопрос", "вопроса", "вопросов")}, ${new Set(A.map((q) => q.sub)).size} ${plural(new Set(A.map((q) => q.sub)).size, "подтема", "подтемы", "подтем")}. Каждый ключ проверен вслепую вторым решением (Math — ещё и пересчётом), в каждом наборе из 10 есть контрольные и хотя бы один очень сложный вопрос. Отметьте вопросы и сделайте из них «Мой тест».</p></div>
+        <p class="hint">Авторские задания · ${A.length - official}${official ? ` · College Board, ноябрь 2026 · ${official}` : ""}. Выберите вопросы, чтобы собрать «Мой тест».</p></div>
       ${E.err ? `<p class="hint bad">${esc(E.err)}</p>` : ""}
       ${A.length ? `<div class="nb-filt">
+        ${official ? `<label>Источник<select data-nbf="source">${opt("", "Все источники", F.source)}${opt("original", "Авторские", F.source)}${opt("official", "College Board · ноябрь 2026", F.source)}</select></label>` : ""}
         <label>Раздел<select data-nbf="sec">${opt("", "Все", F.sec)}${["rw", "math"].map((v) => opt(v, SEC[v], F.sec)).join("")}</select></label>
         ${sel("skill", "Навык", F.skill, skills, "Все навыки")}${sel("sub", "Подтема", F.sub, subs, "Все подтемы", NAME)}
         <label>Уровень<select data-nbf="level">${opt("", "Любой", F.level)}${["E", "M", "H"].map((v) => opt(v, LEVEL[v], F.level)).join("")}</select></label>
@@ -74,7 +86,7 @@ window.NBANK = (() => {
       : '<p class="hint">Банк пока пуст.</p>'}</div>`;
   }
   function defTitle(picked) {
-    const subs = [...new Set(picked.map((q) => q.sub))];
+    const subs = [...new Set(picked.map((q) => q.sub || q.skill))];
     return `nurzycom bank · ${subs.length === 1 ? NAME(subs[0]) : `${picked.length} вопросов`} · ${today()}`;
   }
   function bind(root) {
@@ -83,8 +95,25 @@ window.NBANK = (() => {
     box.querySelectorAll("[data-nbf]").forEach((el) => {
       const k = el.dataset.nbf, ev = el.type === "search" ? "input" : "change";
       el.addEventListener(ev, () => { E.f[k] = el.type === "checkbox" ? el.checked : el.value; if (k === "sec") { E.f.sub = ""; E.f.skill = ""; } E.shown = PAGE; E.msg = "";
-        if (k === "q") { clearTimeout(E.t); E.t = setTimeout(() => { api.focus('[data-nbf="q"]'); rerender(); }, 250); } else rerender(); });
+        if (k === "source") { E.f.skill = ""; E.f.sub = ""; E.f.kind = ""; E.f.hard = false; E.f.theme = ""; }
+      if (k === "q") { clearTimeout(E.t); E.t = setTimeout(() => { api.focus('[data-nbf="q"]'); rerender(); }, 250); } else rerender(); });
     });
+    box.querySelectorAll("[data-nb-official]").forEach((details) => details.addEventListener("toggle", async () => {
+      if (!details.open || details.dataset.loaded) return;
+      const body = details.querySelector(".nb-body");
+      details.dataset.loaded = "pending";
+      body.innerHTML = '<p class="hint" lang="ru" role="status">Загружаю вопрос…</p>';
+      try {
+        const q = await OfficialPractice.question(details.dataset.nbOfficial);
+        const opts = q.opts.map((o, i) => `<li class="${q.ans === "ABCD"[i] ? "ok" : ""}"><b>${"ABCD"[i]}</b><span class="qhtml">${o}</span></li>`).join("");
+        body.innerHTML = `<div class="qhtml nb-pass">${q.stim}</div><div class="qhtml">${q.stem}</div>
+          ${opts ? `<ol class="nb-opts">${opts}</ol>` : `<p><b>${esc(q.ans)}</b></p>`}<div class="qhtml">${q.rat}</div>`;
+        details.dataset.loaded = "yes";
+      } catch {
+        delete details.dataset.loaded;
+        body.innerHTML = '<p class="hint" lang="ru">Вопрос недоступен. Закройте и откройте его снова.</p>';
+      }
+    }));
     box.querySelectorAll("[data-nbsel]").forEach((el) => (el.onchange = () => { el.checked ? E.sel.add(el.dataset.nbsel) : E.sel.delete(el.dataset.nbsel); E.title = ""; rerender(); }));
     const b = (id, fn) => { const el = box.querySelector("#" + id); if (el) el.onclick = fn; };
     b("nb-more", () => { E.shown += PAGE; rerender(); });
@@ -98,6 +127,8 @@ window.NBANK = (() => {
     b("nb-save", () => make(false)); b("nb-give", () => make(true));
   }
   function toQuestion(q) {
+    if (q.official) return { ...CTL.newQ(q.type), ref: { b: `public:item:${q.id}`, mod: "m1", i: 0 },
+      source: `College Board · ${q.id}`, skill: q.skill, level: q.level };
     const x = (q.explanation_ru || "") + (q.trap_ru ? `\n\nЛовушка: ${q.trap_ru}` : "");
     return { ...CTL.newQ(q.type), passage: q.passage || "", stem: q.stem, skill: q.skill, level: q.level, nb: q.id, x,
       ...(q.type === "spr" ? { a: (q.accept || [q.key]).join(";") } : { o: (q.options || []).slice(), a: q.key, gl: q.words || [] }) };
@@ -106,8 +137,9 @@ window.NBANK = (() => {
     if (!window.CTED || !window.CTL) { E.msg = "«Мои тесты» не загрузились: обновите страницу."; api.render(); return; }
     const picked = E.all.filter((q) => E.sel.has(q.id)); if (!picked.length) return;
     const t = CTL.newTest(); t.title = (E.title || defTitle(picked)).trim(); t.src = "nbank";
-    t.note = "Вопросы nurzycom в формате SAT. Решайте без подсказок и проверяйте каждый вариант.";
+    t.note = "Решайте без подсказок и проверяйте каждый вариант.";
     t.q = picked.map(toQuestion);
+    await CTL.resolve(t.q);
     const bad = t.q.filter((q) => CTL.problems(q).length).length;
     if (bad) { E.msg = `Вопросов с ошибкой формата: ${bad}. Снимите их и попробуйте снова.`; api.render(); return; }
     const ok = await CTED.addTest(t, `Тест «${t.title}» сохранён`);

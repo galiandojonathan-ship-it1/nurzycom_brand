@@ -37,7 +37,7 @@
   function collect(rows, shares, scale) {
     const out = [];
     for (const r of rows || []) {
-      if (r.kind !== "P" || !scale) continue;
+      if (r.kind !== "P" || !scale || /M2 фиксированный/.test(r.part)) continue;
       const sec = /Math/.test(r.lesson) ? "math" : "rw";
       if (r.mock?.skipped.size || r.answers?.length && r.answers.filter((a) => !a.tries.length).length > r.answers.length / 2) continue;   // abandoned
       out.push({ t: +r.ts, sec, score: scale.section(sec, /M2 сложный/.test(r.part), r.a), src: "mock", label: r.lesson.split("·")[0] });

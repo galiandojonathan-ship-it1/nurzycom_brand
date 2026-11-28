@@ -1,7 +1,7 @@
 // Timed adaptive mock tests in the Bluebook format: Reading and Writing (2 × 27 questions, 32 min), a 10-minute break,
-// Math (2 × 22, 35 min). Module 1 decides whether module 2 is the harder or the easier one.
+// Math (2 × 22, 35 min). The November series uses fixed second modules.
 // The whole run is kept in localStorage against fixed deadlines, so a reload or a closed tab continues where it stopped
-// and the clock keeps running, as on the real test. Results: raw counts per module and section (no 200–800 estimate).
+// and the clock keeps running. Fixed modules report raw counts only.
 (function () {
   "use strict";
   const pl = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);   // Russian plural: 1 шаг, 2 шага, 5 шагов
@@ -12,6 +12,7 @@
   const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   const SEC = { rw: "Reading and Writing", math: "Math" };
   const MODULES = { m1: "Модуль 1", m2h: "Модуль 2 · сложный", m2e: "Модуль 2 · лёгкий" };
+  const moduleLabel = (section, mod) => section.fixed && mod === "m2e" ? "Модуль 2" : MODULES[mod];
   const DOM = { CAS: "Craft and Structure", INI: "Information and Ideas", SEC: "Standard English Conventions", EOI: "Expression of Ideas",
     H: "Algebra", P: "Advanced Math", Q: "Problem-Solving and Data Analysis", S: "Geometry and Trigonometry" };
   const BREAK = 10 * 60;
@@ -46,7 +47,8 @@
     const num = (m) => Number(m.id.slice(2));
     const full = T.index.mocks.filter((m) => !m.only && num(m) <= 4 && !m.group), rw = T.index.mocks.filter((m) => m.only === "rw" && !m.group), full2 = T.index.mocks.filter((m) => !m.only && num(m) > 4 && !m.group), full3 = T.index.mocks.filter((m) => m.group === "official"), pred = T.index.mocks.filter((m) => m.group === "prediction");
     const group = (title, sub, ms, first) => (ms.length ? `<div class="course-h" style="grid-column:1/-1${first ? "" : ";margin-top:18px"}"><b>${title}</b><span class="label">${sub}</span></div>${ms.map(card).join("")}` : "");
-    $("mocks").innerHTML = group("Полные тесты", "Reading and Writing и Math", full, true)
+    $("mocks").innerHTML = group("Ноябрь 2026", "Вопросы College Board · фиксированные модули", T.index.mocks.filter((m) => m.group === "november"), true)
+      + group("Полные тесты", "Reading and Writing и Math", full)
       + group("Тесты Reading and Writing", "только авторские вопросы nurzycom", rw)
       + group("Полные тесты 9–12", "Reading and Writing и Math · почти все вопросы авторские", full2)
       + group("Полные тесты 13–19", "Reading and Writing и Math · официальные вопросы College Board", full3)
@@ -66,14 +68,14 @@
     const mock = T.mock;
     if (!mock) throw Error("Выберите пробный тест.");
     const modules = mock.sections.map((section) => ({ label: SEC[section.k],
-      options: Object.entries(MODULES).map(([mod, label]) => ({ value: `${section.k}.${mod}`, label })) }));
+      options: Object.keys(MODULES).filter((mod) => !section.fixed || mod !== "m2h").map((mod) => ({ value: `${section.k}.${mod}`, label: moduleLabel(section, mod) })) }));
     const selected = modules.flatMap((section) => section.options).find((opt) => opt.value === preferred)?.value || modules[0].options[0].value;
     return { title: mock.title, modules, selected, load: async (value) => {
       const [sec, mod] = value.split("."), section = mock.sections.find((s) => s.k === sec);
-      if (!section || !Object.hasOwn(MODULES, mod)) throw Error("Выберите модуль.");
+      if (!section || !Object.hasOwn(MODULES, mod) || section.fixed && mod === "m2h") throw Error("Выберите модуль.");
       const data = await bundleSection(section), items = data.mods?.[mod];
       if (!items?.length) throw Error("В этом модуле нет вопросов.");
-      return { title: `${mock.title} · ${SEC[sec]} · ${MODULES[mod]}`, ref: `${mock.id}.${sec}.${mod}`, sec, math: sec === "math",
+      return { title: `${mock.title} · ${SEC[sec]} · ${moduleLabel(section, mod)}`, ref: `${mock.id}.${sec}.${mod}`, sec, math: sec === "math",
         module: true, questions: LiveRound.workbook(items), defaultCount: Math.min(items.length, 100) };
     } };
   }
@@ -92,6 +94,10 @@
     return bundleSection(T.mock.sections.find((x) => x.k === sec));
   }
   async function bundleSection(s) {
+    if (OfficialPractice.hasBundle(s.b)) {
+      T.bundles[s.b] = await OfficialPractice.bundle(s.b);
+      return T.bundles[s.b];
+    }
     if (!T.bundles[s.b]) {
       const r = await fetch(s.b, { cache: "no-store" });
       if (!r.ok) throw Error("Не удалось загрузить вопросы.");
@@ -105,6 +111,11 @@
   const items = () => T.bundles[secInfo(curSec()).b].mods[T.st.mod];
 
   async function begin() {
+    try { $("go").disabled = true; await startRun(); }
+    finally { ready(); }
+  }
+
+  async function startRun() {
     T.view = false; store("hw_student", $("student").value.trim());
     const old = load(T.mock.id);
     if (old && old.phase !== "done" && confirm("Этот тест уже начат. Продолжить с того же места? «Отмена» начнёт тест заново.")) T.st = old;
@@ -134,7 +145,7 @@
     const rules = sec === "rw"
       ? ["Каждый вопрос — короткий текст или пара текстов и один вопрос с четырьмя вариантами.", "Внутри модуля можно отмечать вопросы, вычёркивать варианты и возвращаться назад."]
       : ["В вопросах с вариантами выберите один ответ. В остальных впишите число: целое, дробь 7/2 или десятичную .75.", "Калькулятор Desmos и справочник формул — кнопки справа вверху, как в Bluebook."];
-    rules.push(m2 ? "Этот модуль подобран по результату первого." : "От результата этого модуля зависит, каким будет второй: сложнее или легче.",
+    rules.push(s.fixed ? "В этой серии оба модуля фиксированы." : m2 ? "Этот модуль подобран по результату первого." : "От результата этого модуля зависит, каким будет второй: сложнее или легче.",
       "Когда время закончится, модуль сдастся сам. После сдачи к модулю вернуться нельзя.");
     $("dir-rules").innerHTML = rules.map((r) => `<li>${esc(r)}</li>`).join("");
     show("m-dir");
@@ -288,7 +299,7 @@
     const raw = its.filter((q) => right(q, A[q.n])).length;
     const used = Math.min(s.min * 60, s.min * 60 - Math.max(0, Math.ceil((T.st.deadline - Date.now()) / 1000)));
     (T.st.res[sec] = T.st.res[sec] || {})[T.st.mod] = { raw, n: its.length, sec: used, auto };
-    if (T.st.mod === "m1") { T.st.mod = raw >= s.route ? "m2h" : "m2e"; T.st.phase = "dir"; save(); if (auto) timeUp("Время модуля 1 закончилось: модуль сдан автоматически."); return resume(); }
+    if (T.st.mod === "m1") { T.st.mod = !s.fixed && raw >= s.route ? "m2h" : "m2e"; T.st.phase = "dir"; save(); if (auto) timeUp("Время модуля 1 закончилось: модуль сдан автоматически."); return resume(); }
     if (auto) timeUp("Время модуля 2 закончилось: модуль сдан автоматически.");
     if (T.st.si < T.st.secs.length - 1) { T.st.phase = "break"; T.st.deadline = Date.now() + BREAK * 1000; save(); return resume(); }
     T.st.phase = "done"; save(); resume();
@@ -318,10 +329,10 @@
       const r = T.st.res[sec], [, m2] = modsOf(sec), hard = m2 === "m2h";
       const mods = { m1: moduleCoverage(sec, "m1"), [m2]: moduleCoverage(sec, m2) };
       const tot = r.m1.raw + r[m2].raw, n = mods.m1.eligible.length + mods[m2].eligible.length, secs = r.m1.sec + r[m2].sec;
-      const full = n === r.m1.n + r[m2].n && n > 0, sc = full ? SATSCALE.section(sec, hard, tot) : null;
-      if (full) { est[sec] = sc; if (!hard) capped.push(sec); }
+      const full = n === r.m1.n + r[m2].n && n > 0, sc = full && !T.mock.fixed ? SATSCALE.section(sec, hard, tot) : null;
+      if (sc != null) { est[sec] = sc; if (!hard) capped.push(sec); }
       const summary = n ? `${tot}/${n}` : "без ответов";
-      parts.push(`${sec === "rw" ? "RW" : "Math"} ${summary}${full ? ` ≈ ${sc}` : " · неполный тест"}`);
+      parts.push(`${sec === "rw" ? "RW" : "Math"} ${summary}${sc != null ? ` ≈ ${sc}` : full ? "" : " · неполный тест"}`);
       const dom = {}, skl = {};
       for (const mod of ["m1", m2]) for (const q of mods[mod].eligible) {
         const ok = right(q, T.st.ans[`${sec}.${mod}`][q.n]) ? 1 : 0;
@@ -332,8 +343,8 @@
       const seg = (a, k) => { const f = Math.round((7 * a) / k); return `<span class="seg" aria-label="${a} из ${k}">${Array.from({ length: 7 }, (_, i) => `<i${i < f ? ' class="on"' : ""}></i>`).join("")}</span>`; };
       const moduleScore = (mod) => mods[mod].answered ? `${r[mod].raw}/${mods[mod].eligible.length}` : "Без ответов";
       return `<div class="secres"><span class="label">${SEC[sec]}</span>
-        <div class="result-grid"><div>${full ? `<span class="label">Примерный балл · 200–800</span><div class="big">${sc}</div><div class="meter"><i style="width:${((sc - 200) / 600) * 100}%"></i></div>` : '<span class="label">Неполный тест</span><p class="hint">Для примерного балла нужны оба модуля без осознанных пропусков.</p>'}</div>
-        <div class="stats"><div><span class="label">Модуль 1</span><b>${moduleScore("m1")}</b></div><div><span class="label">Модуль 2 · ${hard ? "сложный" : "лёгкий"}</span><b>${moduleScore(m2)}</b></div>
+        <div class="result-grid"><div>${T.mock.fixed ? `<span class="label">Верных ответов</span><div class="big">${summary}</div>` : full ? `<span class="label">Примерный балл · 200–800</span><div class="big">${sc}</div><div class="meter"><i style="width:${((sc - 200) / 600) * 100}%"></i></div>` : '<span class="label">Неполный тест</span><p class="hint">Для примерного балла нужны оба модуля без осознанных пропусков.</p>'}</div>
+        <div class="stats"><div><span class="label">Модуль 1</span><b>${moduleScore("m1")}</b></div><div><span class="label">${moduleLabel(secInfo(sec), m2)}</span><b>${moduleScore(m2)}</b></div>
         <div><span class="label">Верно</span><b>${n ? `${summary} · ${Math.round((100 * tot) / n)}%` : "—"}</b></div><div><span class="label">Время</span><b>${Math.floor(secs / 60)} мин ${secs % 60} с</b></div></div></div>
         ${n ? `<div class="ks"><span class="label">Knowledge and Skills · по разделам</span>${Object.entries(dom).map(([d, [a, k]]) => `<div class="dom"><span>${DOM[d] || d}<small>${k} вопр. · ${Math.round((100 * k) / n)}%</small></span>${seg(a, k)}<span class="mono">${a}/${k}</span></div>`).join("")}</div>` : ""}</div>`;
     }).join("");
@@ -348,7 +359,7 @@
       return `<div class="wk"><span class="no">${i + 1}</span><div><b>${esc(s.sk)}</b><small>${SEC[s.sec]} · верно ${s.a} из ${s.k} (${Math.round((100 * s.a) / s.k)}%)</small></div>
         ${l ? `<a class="btn ghost" href="index.html?l=${encodeURIComponent(l.tag)}">Повторить: ${esc(l.title.replace(/^SAT (Verbal|Math) · /, ""))}</a>` : ""}</div>`;
     }).join("") : `<p class="hint">Во всех навыках не меньше 80% верных ответов. Следующий шаг — сложные вопросы и следующий пробный тест.</p>`}</div>`;
-    const note = `<p class="hint" style="margin-top:18px">Балл примерный: его считает таблица nurzycom по числу верных ответов и по тому, какой второй модуль вам достался. Настоящий балл College Board может отличаться примерно на ±${SATSCALE.ERR} в каждом разделе; официальный балл даёт только экзамен или тест в Bluebook.${capped.length ? ` Вам достался лёгкий второй модуль (${capped.map((s) => SEC[s]).join(", ")}): с ним балл раздела не поднимается выше примерно ${capped.map((s) => SATSCALE.CAP[s]).join(" / ")}, поэтому важнее всего первый модуль.` : ""}</p>`;
+    const note = T.mock.fixed ? '<p class="hint">В этой серии результат показывается в верных ответах по каждому разделу.</p>' : `<p class="hint" style="margin-top:18px">Балл примерный: его считает таблица nurzycom по числу верных ответов и по тому, какой второй модуль вам достался. Настоящий балл College Board может отличаться примерно на ±${SATSCALE.ERR} в каждом разделе; официальный балл даёт только экзамен или тест в Bluebook.${capped.length ? ` Вам достался лёгкий второй модуль (${capped.map((s) => SEC[s]).join(", ")}): с ним балл раздела не поднимается выше примерно ${capped.map((s) => SATSCALE.CAP[s]).join(" / ")}, поэтому важнее всего первый модуль.` : ""}</p>`;
     $("res-secs").innerHTML = total + secHtml + weakHtml + note;
     store(lastKey(T.st.mid), parts.join(" · "));
     if (!T.view) store(doneKey(T.st.mid), JSON.stringify(Object.assign({}, T.st, { rev: revOf(T.st.mid) })));
@@ -365,7 +376,7 @@
       <label class="onlybad"><input type="checkbox" id="rv-bad"> Показать только ошибки и пропуски</label>
       <label class="onlybad" style="margin-top:8px"><input type="checkbox" id="rv-show"${showAll ? " checked" : ""}> Сразу показывать правильные ответы</label>` + T.st.secs.map((sec) => modsOf(sec).map((mod) => {
       const key = `${sec}.${mod}`, its = T.bundles[secInfo(sec).b].mods[mod], A = T.st.ans[key], coverage = moduleCoverage(sec, mod);
-      return `<div class="revmod"><span class="label">${SEC[sec]} · Модуль ${mod === "m1" ? "1" : `2 · ${mod === "m2h" ? "сложный" : "лёгкий"}`}</span>${its.map((q) => {
+      return `<div class="revmod"><span class="label">${SEC[sec]} · ${moduleLabel(secInfo(sec), mod)}</span>${its.map((q) => {
         const a = A[q.n], ok = right(q, a), omitted = !coverage.answered || skipped(key, q.n);
         const opts = q.t === "mc" ? q.opts.map((o, k) => { const c = "ABCD"[k];
           return `<div class="ropt${c === q.ans ? " right" : ""}${a === c ? " mine" : ""}${!ok && a === c ? " tried" : ""}" data-l="${c}"${ok ? "" : ' role="button" tabindex="0"'}><span class="lt">${c}</span><span class="qhtml">${o}</span>${c === q.ans ? '<span class="tg r">верный</span>' : a === c ? '<span class="tg">ваш ответ</span>' : ""}</div>`; }).join("") : "";
@@ -426,7 +437,7 @@
           if (!right(q, a)) wrong.push(id);
         }));
         const ak = `mk_att_${student()}_${T.st.mid}_${sec}`, attempt = Number(store(ak) || 0) + 1;
-        const res = { student: student(), lesson: T.st.mid, part: `${sec === "rw" ? "RW" : "Math"} · M1 ${r.m1.raw}/${r.m1.n} · M2 ${m2 === "m2h" ? "сложный" : "лёгкий"} ${r[m2].raw}/${r[m2].n}`,
+        const res = { student: student(), lesson: T.st.mid, part: `${sec === "rw" ? "RW" : "Math"} · M1 ${r.m1.raw}/${r.m1.n} · M2 ${secInfo(sec).fixed ? "фиксированный" : m2 === "m2h" ? "сложный" : "лёгкий"} ${r[m2].raw}/${r[m2].n}`,
           answers: ans.join(" "), score: `${r.m1.raw + r[m2].raw}/${r.m1.n + r[m2].n}`, wrong: wrong.join(","), seconds: String(r.m1.sec + r[m2].sec), attempt: String(attempt) };
         const body = new URLSearchParams(); Object.keys(res).forEach((k) => f[k] && body.append(f[k], res[k]));
         await fetch(CFG.formAction, { method: "POST", mode: "no-cors", body });
@@ -443,7 +454,7 @@
   }
 
   $("go").onclick = begin;
-  SITE.json("mocks").then((d) => {
+  SITE.json("mocks").catch(() => null).then(OfficialPractice.index).then((d) => {
     T.index = d;
     // a test finished before results were kept apart (mk_done) is copied there, so it reaches the account too
     d.mocks.forEach((m) => { if (store(doneKey(m.id))) return; const r = load(m.id); if (r && r.phase === "done") store(doneKey(m.id), JSON.stringify(Object.assign({}, r, { rev: revOf(m.id) }))); });
