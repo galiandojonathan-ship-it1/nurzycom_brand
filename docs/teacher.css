@@ -244,3 +244,19 @@
   .roster-table tbody td:last-child { grid-column: 1 / -1; }
   .roster-caption { display: block; color: var(--muted, #625545); font-size: .75rem; }
 }
+
+#ga-analytics summary { cursor: pointer; }
+#ga-analytics form { display: grid; gap: 0.85rem; margin-top: 0.75rem; }
+#ga-analytics form > label { display: grid; gap: 0.35rem; max-width: 22rem; }
+#ga-analytics .ga-sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.4rem 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--line, #D6CBB9);
+  border-radius: 0.65rem;
+}
+#ga-analytics .ga-sources label { display: flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; }
+#ga-analytics .ga-sources input { flex: none; }
