@@ -379,15 +379,17 @@
   function progObs(s, TAGS) {
     const out = [];
     for (const r of s.rows) {
+      // Custom submissions store their responses in r.custom and are read by customObservations.
+      if (!["P", "X", "V", "A", "M"].includes(r.kind)) continue;
       const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b && !r.mock?.skipped.size && r.answers.every((a) => a.tries.length) ? r.sec / r.b : 0;
       let base;
       if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
         base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
       } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final", src: "hw" });
-      else if ("VAM".includes(r.kind)) { const P = partOf(r.lesson, r.pid); if (!P) continue;
+      else { const P = partOf(r.lesson, r.pid); if (!P) continue;
         const ctx = workbookContext(P), sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
         base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx, src: "hw" });
-      } else continue;
+      }
       if (r.mock?.skipped.size) {
         out.push({ sec: /·Math$/.test(r.lesson) ? "math" : "rw", t: +r.ts, src: "mock", skipped: r.mock.skipped.size });
       }
