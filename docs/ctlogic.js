@@ -53,7 +53,8 @@
 
   // Ready practice stores only a reference to the immutable course bundle.
   const bundles = new Map(), mockItems = new Map();
-  const mockRef = (ref) => ref && /^(?:\.\/|\/)?q\/mocks\/[a-f0-9]{12}\.bin$/.test(ref.b) &&
+  const mockRef = (ref) => ref && (/^(?:\.\/|\/)?q\/mocks\/[a-f0-9]{12}\.bin$/.test(ref.b) ||
+    window.OfficialPractice?.hasBundle(ref.b) || window.OfficialPractice?.hasItem(ref.b) && ref.mod === "m1" && ref.i === 0) &&
     ["m1", "m2e", "m2h"].includes(ref.mod) && Number.isInteger(ref.i) && ref.i >= 0;
   const refKey = (r) => `${r.b}:${r.mod}:${r.i}`;
   function fromMock(item) {
@@ -78,6 +79,8 @@
       const r = q.ref, key = refKey(r);
       if (mockItems.has(key)) return;
       if (!bundles.has(r.b)) bundles.set(r.b, (async () => {
+        if (window.OfficialPractice?.hasBundle(r.b)) return OfficialPractice.bundle(r.b);
+        if (window.OfficialPractice?.hasItem(r.b)) return { mods: { m1: [await OfficialPractice.question(r.b.slice(12))] } };
         const response = await fetch(r.b);
         if (!response.ok) throw new Error("Пробник недоступен");
         return JSON.parse(new TextDecoder().decode(await SITE.open(await response.arrayBuffer())));

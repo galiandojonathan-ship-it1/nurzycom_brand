@@ -117,13 +117,14 @@
 
   // the question itself (text, options, key, explanation), decrypted in this browser like everywhere else in the cabinet
   async function bundle(path) {
+    if (OfficialPractice.hasBundle(path)) return OfficialPractice.bundle(path);
     if (!L.bundles[path]) L.bundles[path] = fetch(path, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("q " + r.status); return r.arrayBuffer(); }).then((b) => SITE.open(b)).then((u) => JSON.parse(new TextDecoder().decode(u)));
     return L.bundles[path];
   }
   async function item(q) {
     const m = /^((?:PT|PR)\d+)\.([a-z]+)\.(m\d[a-z]?)\.(\d+)$/.exec(q);
     if (m) {
-      if (!L.mocks) L.mocks = await SITE.json("mocks");
+      if (!L.mocks) L.mocks = await OfficialPractice.index(await SITE.json("mocks").catch(() => null));
       const mock = L.mocks.mocks.find((x) => x.id === m[1]), sec = mock && mock.sections.find((x) => x.k === m[2]); if (!sec) return null;
       return ((await bundle(sec.b)).mods[m[3]] || []).find((x) => x.n === +m[4]) || null;
     }
