@@ -55,7 +55,7 @@
     const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
     const G = FORMKIT.group(counts, D.aliases);
     if (G) rows.forEach((r) => { const x = G.of[r.raw]; if (x) { r.key = x.key; r.name = x.name; } });
-    D.groups = G ? G.groups : []; D.cbg = null; D.prog = null;   // cabinet groups are read again with the new names
+    D.groups = G ? G.groups : []; D.cbg = null; D.prog = null; D.gpRes = {};   // cabinet groups are read again with the new names
     D.rows = rows;
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
@@ -198,18 +198,80 @@
     clickStudents($("v-overview"));
   }
   function clickStudents(root) { root.querySelectorAll("tr.click").forEach((tr) => (tr.onclick = () => { D.view = "students"; D.student = tr.dataset.k; render(); })); }
+  const roster = { query: "", activity: "", section: "", sort: "name" };
+  const rosterFields = [
+    ["activity", "Активность", [["", "За всё время"], ["7", "Сдавали за 7 дней"], ["14", "Сдавали за 14 дней"], ["quiet", "Не сдавали за 14 дней"]]],
+    ["section", "Тетрадь", [["", "Все"], ["rw", "Сдавали Verbal"], ["math", "Сдавали Math"], ["both", "Сдавали обе"]]],
+    ["sort", "Сортировка", [["name", "По имени А–Я"], ["recent", "Сначала недавние"], ["count", "Больше сдач"], ["low", "Ниже точность ДЗ"], ["high", "Выше точность ДЗ"]]]
+  ];
   function students() {
     if (D.student) return studentDetail(D.students.find((s) => s.key === D.student));
-    const V = D.lessons.filter((l) => l.tag[0] === "V"), M = D.lessons.filter((l) => l.tag[0] === "M");
-    const total = (ls) => ls.reduce((s, l) => s + l.parts.length, 0);
-    const done = (s, ls) => ls.reduce((n, l) => n + l.parts.filter((p) => s.rows.some((r) => r.lesson === l.tag && r.pid === p.id)).length, 0);
-    const rows = D.students.map((s) => { const hw = s.rows.filter((r) => "VM".includes(r.kind)), sk = skillStats(hw).filter((x) => x.n >= 3)[0];
-      return { k: s.key, sortv: [s.name, -(s.last || 0), -s.rows.length, -(mean(hw.map((r) => r.pct)) ?? -1)], cells: [`<b>${esc(s.name)}</b>`, ago(s.last), s.rows.length, pct(mean(hw.map((r) => r.pct))),
-        `${done(s, V)} / ${total(V)}`, `${done(s, M)} / ${total(M)}`, sk ? `${esc(sk.label)} · ${pct(sk.value)}` : "—"] }; });
-    $("v-students").innerHTML = `<h2>Ученики</h2><p class="hint">Нажмите на ученика, чтобы открыть его карточку. Части = части рабочей тетради, сданные хотя бы раз.</p>` +
-      table(["Ученик", "Активность", "Сдач", "С 1-й попытки", "Verbal: части", "Math: части", "Слабый навык"], rows, { click: true, num: [2, 3, 4, 5] }) +
-      '<p class="hint">Разные написания одного имени («Шер. Ж.», «Sher Zh») сайт объединяет сам, под латинским написанием. Если объединил не тех или не объединил своих, откройте ученика: там можно отделить или присоединить написание.</p>';
-    clickStudents($("v-students"));
+    const root = $("v-students");
+    const parts = Object.fromEntries(["V", "M"].map((sec) => [sec, D.lessons.filter((l) => l.tag[0] === sec).flatMap((l) => l.parts.map((p) => l.tag + "." + p.id))]));
+    const aliases = new Map(D.groups.map((g) => [g.key, Object.keys(g.spellings)]));
+    const searchText = (value) => norm(FORMKIT.roman(value));
+    const rows = D.students.map((s) => {
+      const hw = s.rows.filter((r) => "VM".includes(r.kind));
+      const submitted = new Set(hw.map((r) => r.lesson + "." + r.pid));
+      const skill = skillStats(hw).find((x) => x.n >= 3);
+      const match = [s.name, ...(aliases.get(s.key) || [])].map(searchText).join(" ");
+      return { s, skill, match, acc: mean(hw.map((r) => r.pct).filter((p) => p != null)),
+        rw: parts.V.filter((id) => submitted.has(id)).length, math: parts.M.filter((id) => submitted.has(id)).length };
+    });
+    const names = new Intl.Collator("ru", { sensitivity: "base", numeric: true });
+    const sortValue = {
+      recent: ({ s }) => -(+s.last || 0), count: ({ s }) => -s.rows.length,
+      low: ({ acc }) => acc ?? Infinity, high: ({ acc }) => acc == null ? Infinity : -acc
+    };
+    const columns = ["Активность", "Сдач", "Точность ДЗ", "Части Verbal", "Части Math", "Слабый навык"];
+    root.innerHTML = `<section class="student-roster">
+      <h2>Ученики</h2>
+      <div class="roster-controls">
+        <label>Поиск по имени<input type="search" id="roster-query" value="${esc(roster.query)}" autocomplete="off"></label>
+        ${rosterFields.map(([key, label, options]) => `<label>${label}<select id="roster-${key}">${options.map(([val, title]) =>
+          `<option value="${val}"${roster[key] === val ? " selected" : ""}>${title}</option>`).join("")}</select></label>`).join("")}
+      </div>
+      <div class="roster-status"><span id="roster-count" role="status"></span><button class="tlink" type="button" id="roster-reset">Сбросить фильтры</button></div>
+      <div class="roster-scroll">
+        <table class="roster-table" aria-label="Ученики" role="table">
+          <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Ученик</th>${columns.map((title) => `<th scope="col" role="columnheader">${title}</th>`).join("")}</tr></thead>
+          <tbody id="roster-rows" role="rowgroup"></tbody>
+        </table>
+      </div><p class="hint" id="roster-empty" hidden>По этим фильтрам учеников нет.</p></section>`;
+    const renderRows = () => {
+      const terms = searchText(roster.query.trim()).split(/\s+/).filter(Boolean);
+      const now = Date.now(), days = roster.activity === "quiet" ? 14 : Number(roster.activity);
+      const visible = rows.filter(({ s, match, rw, math }) => {
+        if (!terms.every((term) => match.includes(term))) return false;
+        if (roster.section === "both" && !(rw && math) || roster.section === "rw" && !rw || roster.section === "math" && !math) return false;
+        const active = s.last && now - s.last < days * DAY;
+        return !roster.activity || (roster.activity === "quiet" ? !active : active);
+      });
+      const value = sortValue[roster.sort];
+      visible.sort((a, b) => (value ? value(a) - value(b) || 0 : 0) || names.compare(a.s.name, b.s.name));
+      $("roster-count").textContent = `Показано ${visible.length} из ${rows.length}`;
+      $("roster-reset").disabled = !roster.query && !roster.activity && !roster.section && roster.sort === "name";
+      $("roster-empty").hidden = !!visible.length;
+      root.querySelector(".roster-scroll").hidden = !visible.length;
+      $("roster-rows").innerHTML = visible.map(({ s, skill, acc, rw, math }) => {
+        const data = [ago(s.last), s.rows.length, pct(acc), `${rw} / ${parts.V.length}`, `${math} / ${parts.M.length}`, skill ? `${esc(skill.label)} · ${pct(skill.value)}` : "—"];
+        return `<tr class="click" role="row" data-k="${esc(s.key)}"><th scope="row" role="rowheader"><button class="roster-name" type="button">${esc(s.name)} <span aria-hidden="true">›</span></button></th>
+          ${data.map((d, i) => `<td role="cell"><span class="roster-caption" aria-hidden="true">${columns[i]}</span><span>${d}</span></td>`).join("")}</tr>`;
+      }).join("");
+      $("roster-rows").querySelectorAll("tr").forEach((row) => (row.onclick = () => {
+        D.student = row.dataset.k;
+        render();
+        $("st-name")?.focus();
+      }));
+    };
+    $("roster-query").oninput = (e) => { roster.query = e.target.value; renderRows(); };
+    rosterFields.forEach(([key]) => ($("roster-" + key).onchange = (e) => { roster[key] = e.target.value; renderRows(); }));
+    $("roster-reset").onclick = () => {
+      Object.assign(roster, { query: "", activity: "", section: "", sort: "name" });
+      students();
+      $("roster-query").focus();
+    };
+    renderRows();
   }
   function studentDetail(s) {
     if (!s) { D.student = null; return students(); }
@@ -217,7 +279,7 @@
     const per = hw.filter((r) => r.sec > 0 && r.b).map((r) => r.sec / r.b);
     const used = D.lessons.filter((l) => s.rows.some((r) => r.lesson === l.tag));
     const rowsOf = (tag, pid) => s.rows.filter((r) => r.lesson === tag && r.pid === pid);
-    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button>${window.REPORT ? '<button class="btn" id="st-pdf" type="button">PDF-отчёт</button>' : ""}</div><h2 style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
+    let html = `<div class="row" style="margin-top:0"><button class="btn ghost" id="back-st">← Все ученики</button>${window.REPORT ? '<button class="btn" id="st-pdf" type="button">PDF-отчёт</button>' : ""}</div><h2 id="st-name" tabindex="-1" style="font:600 44px/1.1 var(--serif);margin-top:18px">${esc(s.name)}</h2>`;
     const grp = (D.groups || []).find((g) => g.key === s.key), sps = grp ? Object.entries(grp.spellings) : [];
     const others = D.students.filter((x) => x.key !== s.key);
     const spellHTML = `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
@@ -266,7 +328,12 @@
       rvMount(reviewBox, { slot: "st", mode: "solo", title: s.name, all, keys, names: [s.name] });
     }).catch(() => { if (reviewBox.isConnected) reviewBox.textContent = "Не удалось загрузить задания для разбора."; });
     $("v-students").querySelectorAll(".to-hw").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); D.hwAll = false; hwReview(s, s.rows[+el.dataset.i]); }));
-    $("back-st").onclick = () => { D.student = null; render(); };
+    $("back-st").onclick = () => {
+      D.student = null;
+      render();
+      const row = [...document.querySelectorAll("#roster-rows tr")].find((el) => el.dataset.k === s.key);
+      (row?.querySelector("button") || $("roster-query"))?.focus();
+    };
     if ($("st-pdf")) $("st-pdf").onclick = async () => { const b = $("st-pdf"); b.disabled = true; try { REPORT.open(await reportData(s)); } finally { b.disabled = false; } };
     $("v-students").querySelectorAll("[data-split]").forEach((b) => (b.onclick = () => { D.aliases[b.dataset.split] = "!"; relink(); }));
     if ($("join-go")) $("join-go").onclick = () => { const k = $("join-sel").value, o = D.students.find((x) => x.key === k); if (!o) return;
@@ -575,8 +642,12 @@
       if (from >= 0) { const W = S.slice(from).filter((x) => x.index != null), last = W[W.length - 1];
         const SI = await startOf(s).catch(() => null);
         index = { now: last.index, first: W[0].index, from: W[0].t, at: last.t, nAns: last.nAns, weeks: W.map((x) => [x.t, x.index]), parts: last.parts || {}, parts0: W[0].parts || {}, start: SI ? +new Date(SI.date + "T00:00:00") : null }; }
-      else index = { thin: true, nAns: S.length ? S[S.length - 1].nAns || 0 : 0, need: PROGRESS.MIN_IX };
-    } catch (e) { index = { thin: true, nAns: 0, need: (window.PROGRESS && PROGRESS.MIN_IX) || 30 }; }
+      else {
+        const last = S[S.length - 1], prediction = last?.prediction;
+        index = prediction ? { predicted: true, now: prediction.value, nAns: prediction.n, need: PROGRESS.MIN_IX, sectionNeed: PROGRESS.MIN_SEC }
+          : { thin: true, nAns: last?.earlyAnswers || 0, need: PROGRESS.MIN_EARLY };
+      }
+    } catch (e) { index = { thin: true, nAns: 0, need: (window.PROGRESS && PROGRESS.MIN_EARLY) || 5 }; }
     const skillmap = await skillMap(s).catch(() => null);
     return { name: s.name, rows, skills: skillStats(hw), strong, weak, shares, index, skillmap, pred: pred && pred.est && pred.tests.length ? { est: pred.est, n: pred.tests.length, bb: pred.tests.filter((x) => x.src === "bb").length } : null };
   }
@@ -1070,7 +1141,7 @@
       let res = D.gpRes[st.key]; if (!res) { res = await progData(st).catch(() => null); if (res) D.gpRes[st.key] = res; }
       if (D.gpTok !== token || $("ga-prog") !== box) return;
       const S = res ? res.snaps : [], last = S[S.length - 1];
-      rows.push({ st, res, idx: last && last.nAns >= PROGRESS.MIN_IX ? last.index : null, n: last ? last.nAns : 0 });
+      rows.push({ st, res, idx: last && last.nAns >= PROGRESS.MIN_IX ? last.index : null, predicted: last?.prediction?.value, n: last ? last.nAns : 0 });
     }
     // outliers: a robust z from the median and the median absolute deviation of the index
     const NOTST = (r) => (window.FORMKIT && r.st.key === FORMKIT.key(store("hw_student") || "")) || /^(claude|урок|urok|lesson|student|demo|тест|test)\b/i.test(r.st.name || "");
@@ -1152,7 +1223,7 @@
         ${wkT.length ? `<h3>Кто как занимается: ответы по неделям</h3><div class="tw"><table class="dt gp-hmap"><thead><tr><th>Ученик</th>${wkT.map((t) => `<th class="num">${esc(PVIEW.day(t).replace(/ \d{4}$/, ""))}</th>`).join("")}</tr></thead><tbody>${per.slice().sort((a, b) => b.ans - a.ans).map((x) => `<tr><td>${esc(x.r.st.name)}</td>${wkT.map((t) => cell(x, t)).join("")}</tr>`).join("")}</tbody></table></div><p class="hint">Число ответов с первой попытки за неделю; темнее — больше. Пустая клетка — неделя без работы.</p>` : ""}`;
     }
     function chipsHTML() {
-      return `<div class="gp-who">${rows.slice().sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1)).map((r) => `<button type="button" class="chip gp-st${r.out ? " out" : ""}" data-gp="${esc(r.st.key)}" aria-pressed="${!r.out}" title="${esc(r.why || "в общей массе")}">${esc(r.st.name)} <small>${r.idx ?? "—"}</small></button>`).join("")}</div>
+      return `<div class="gp-who">${rows.slice().sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1)).map((r) => `<button type="button" class="chip gp-st${r.out ? " out" : ""}" data-gp="${esc(r.st.key)}" aria-pressed="${!r.out}" title="${esc(r.why || "в общей массе")}">${esc(r.st.name)} <small>${r.idx ?? (r.predicted != null ? r.predicted + " (прогноз)" : "—")}</small></button>`).join("")}</div>
         ${rows.some((r) => r.out) ? `<p class="hint gp-outs">Не учтены: ${rows.filter((r) => r.out).map((r) => `${esc(r.st.name)} (${esc(r.why || "исключён вручную")})`).join("; ")}.</p>` : ""}`;
     }
     function wire() {

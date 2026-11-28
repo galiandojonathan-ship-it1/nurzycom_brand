@@ -136,9 +136,16 @@ window.PVIEW = (() => {
     }
     const draw = () => {
       const S = res.snaps, n = S.length, start = S.findIndex((s) => s.nAns >= PROGRESS.MIN_IX && s.index != null), last = S[n - 1];
-      // weeks resting on fewer than MIN_IX answers are not drawn: there the start value of the model, not the student, sets the line
-      if (start < 0) { const na = last ? last.nAns : 0, c = (last && last.cnt) || {}, by = Object.keys(c).map((k) => `${k === "rw" ? "Reading and Writing" : "Math"}: ${Object.values(c[k]).reduce((x, y) => x + y[1], 0)}`).join(", ");
-        box.innerHTML = `<div class="card pg"><span class="label">Прогресс ученика</span>${srcHTML()}<p class="hint">${na < PROGRESS.MIN_IX ? `Мало ответов для расчёта: ${na} из ${PROGRESS.MIN_IX}.` : `Ни в одном разделе пока нет ${PROGRESS.MIN_SEC} ответов (${by}).`} Индекс появится, когда ответов с первой попытки будет ${PROGRESS.MIN_IX}, из них ${PROGRESS.MIN_SEC} в одном разделе.</p></div>`; srcWire(); return; }
+      if (start < 0) {
+        const prediction = last?.prediction, na = last?.nAns || 0;
+        const title = '<span class="label">Прогресс ученика · индекс</span>';
+        const threshold = `Обычный индекс появится после ${PROGRESS.MIN_IX} ответов с первой попытки, из них ${PROGRESS.MIN_SEC} в одном разделе.`;
+        box.innerHTML = `<div class="card pg">${title}${srcHTML()}${prediction
+          ? `<div class="pg-big">${prediction.value}</div><b class="pg-predicted">(прогноз)</b><p class="hint">По первым ответам · ${prediction.n} в расчёте. ${threshold}</p>`
+          : `<p class="hint">Для первого прогноза нужно ${PROGRESS.MIN_EARLY} ответов в одном разделе. Сейчас: ${last?.earlyAnswers || 0} из ${PROGRESS.MIN_EARLY}. ${na ? threshold : ""}</p>`}</div>`;
+        srcWire();
+        return;
+      }
       let k0 = -1; if (T0) S.forEach((x, i) => { if (x.t <= T0 + 864e5) k0 = i; });
       const a = st.weeks === -1 ? Math.max(start, Math.max(0, k0)) : Math.max(start, n - 1 - st.weeks), cut = S.slice(a), first = cut[0];
       const NOISE = noiseOf((last.nAns - first.nAns) / Math.max(1, (last.t - first.t) / 6048e5)), d = last.index - first.index, slope = cut.length > 1 ? (last.index - cut[Math.max(0, cut.length - 4)].index) / Math.min(3, cut.length - 1) : 0;

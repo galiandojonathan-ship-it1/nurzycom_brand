@@ -68,4 +68,22 @@ ok(late.snaps[2].live.length === 1 && late.snaps.at(-1).live.length === 2, "the 
 const steadyD = []; for (let r = 0; r < 10; r++) { const st = student((k, w, lv) => model(1, lv)), S2 = st.snaps.filter((x) => x.index != null); steadyD.push(S2.at(-1).index - S2[0].index); }
 const mD = steadyD.reduce((a, b) => a + b, 0) / steadyD.length;
 ok(Math.abs(mD) < 6, `a steady student shows no growth from piling up answers: mean index change ${mD.toFixed(1)} over 10 students (${steadyD.join(", ")})`);
+// A prediction is fitted to early answers and ends when the existing index has enough evidence.
+const firstAnswers = (n, x, sec = "rw", level = "M") => Array.from({ length: n }, () => {
+  const q = mkQ(sec === "rw" ? "b_splice" : "alg_lin1", level);
+  return { id: q.id, t: T0, x, sec, level, type: "mc", ctx: "hw", part: "early", attempt: 1 };
+});
+const earlyFit = (obs) => P.compute(obs, tags, { now: T0 + DAY });
+const low = firstAnswers(P.MIN_EARLY, 0), high = firstAnswers(P.MIN_EARLY, 1);
+ok(last(earlyFit([])).prediction == null && last(earlyFit(high.slice(1))).prediction == null, "prediction needs five answered questions in a section");
+ok(last(earlyFit(high)).prediction.value > last(earlyFit(low)).prediction.value, "early performance drives the predicted index");
+ok(last(earlyFit(firstAnswers(5, 1, "rw", "H"))).prediction.value > last(earlyFit(firstAnswers(5, 1, "rw", "E"))).prediction.value, "early prediction accounts for difficulty");
+ok(last(earlyFit(high.map((q) => ({ ...q, blank: true, x: 0 })))).prediction == null && last(earlyFit(high.map((q) => ({ ...q, id: high[0].id })))).prediction == null, "blanks and repeats cannot unlock an early prediction");
+const almost = firstAnswers(P.MIN_IX - 1, 1), finalAnswer = firstAnswers(1, 1), before = last(earlyFit(almost)), after = last(earlyFit([...almost, ...finalAnswer]));
+ok(before.prediction != null && after.prediction == null && after.index != null, "prediction clears at 30 answers when the section is established");
+ok(last(earlyFit([...firstAnswers(15, 1), ...firstAnswers(15, 1, "math")])).prediction != null, "30 split answers still need 20 in one section");
+const later = firstAnswers(30, 0).map((q) => ({ ...q, t: T0 + 8 * DAY }));
+const both = P.compute([...high, ...later], tags, { now: T0 + 9 * DAY });
+const firstWeek = both.snaps[0], beforeLater = P.compute(high, tags, { now: firstWeek.t });
+ok(firstWeek.prediction.value === last(beforeLater).prediction.value, "later answers do not change the stored early-week prediction");
 console.log(`ALL PASS (${n})`);

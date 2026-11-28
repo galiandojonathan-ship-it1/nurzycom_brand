@@ -84,7 +84,9 @@ window.REPORT = (() => {
     }).join("");
   }
   function indexHTML(ix) {
-    if (!ix || ix.thin) return `<p>Индекс пока не рассчитан: для него нужно около ${ix ? ix.need : 30} ответов с первой попытки в размеченных заданиях, сейчас ${ix ? ix.nAns : 0}. Он появится в следующих отчётах по мере выполнения домашних заданий и пробных тестов.</p><p class="rp-hint">Индекс nurzycom от 0 до 100 — внутренняя мера прогресса, а не балл SAT.</p>`;
+    if (ix?.predicted) return `<div class="rp-pred"><div class="rp-pred-big">${ix.now}<small style="font-size:14px;font-weight:500"> из 100 (прогноз)</small></div></div>
+      <p>Ответов в расчёте: ${ix.nAns}. Обычный индекс появится после ${ix.need} ответов с первой попытки, из них ${ix.sectionNeed} в одном разделе.</p><p class="rp-hint">Шкала nurzycom от 0 до 100 показывает прогресс в подготовке к SAT.</p>`;
+    if (!ix || ix.thin) return `<p>Для первого прогноза нужно ${ix ? ix.need : 5} ответов с первой попытки в одном разделе. Сейчас: ${ix ? ix.nAns : 0}.</p><p class="rp-hint">Индекс nurzycom от 0 до 100 — внутренняя мера прогресса, а не балл SAT.</p>`;
     const d = ix.now - ix.first;
     return `<div class="rp-pred"><div class="rp-pred-big">${ix.now}<small style="font-size:14px;font-weight:500"> из 100</small></div><div>${ix.weeks.length > 1 ? `<b>${d >= 0 ? "+" : "−"}${Math.abs(d)}</b> с ${esc(dShort(ix.from))} (было ${ix.first})` : `на ${esc(dShort(ix.at))}`} · ответов в расчёте: ${ix.nAns}</div></div>
       ${indexCharts(ix)}
@@ -126,7 +128,8 @@ window.REPORT = (() => {
     if (pts.length >= 4) { const k = Math.max(2, Math.floor(pts.length / 3)), a = mean(pts.slice(0, k).map((r) => r.pct)), b = mean(pts.slice(-k).map((r) => r.pct)), dd = Math.round(b - a);
       out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(a)} в начале, ${P(b)} в последних работах (${dd >= 0 ? "+" : "−"}${Math.abs(dd)} п.).`); }
     else if (pts.length) out.push(`<b>Точность.</b> Домашние задания с первой попытки: ${P(mean(pts.map((r) => r.pct)))}.`);
-    if (on.index && d.index && !d.index.thin) { const dd = d.index.now - d.index.first;
+    if (on.index && d.index?.predicted) out.push(`<b>Индекс прогресса (прогноз).</b> ${d.index.now} из 100 по первым ответам.`);
+    else if (on.index && d.index && !d.index.thin) { const dd = d.index.now - d.index.first;
       if (d.index.start) { const k = d.index.weeks.reduce((a, [t], i) => (t <= d.index.start + 864e5 ? i : a), 0), b = d.index.weeks[k];
         out.push(`<b>С начала работы</b> (${esc(dShort(d.index.start))}): индекс ${b[1]} → ${d.index.now}${k > 0 || b[0] <= d.index.start + 864e5 ? "" : " (точка отсчёта: первая неделя с достаточным числом ответов)"}.`); }
       out.push(`<b>Индекс прогресса.</b> ${d.index.now} из 100${d.index.weeks.length > 1 ? `, ${dd >= 0 ? "+" : "−"}${Math.abs(dd)} с ${esc(dShort(d.index.from))}` : ""} (внутренняя мера nurzycom, не балл SAT).`); }
@@ -186,7 +189,7 @@ window.REPORT = (() => {
           <div class="rp-opts">${SECTIONS.map(([k, l]) => `<label><input type="checkbox" data-rps="${k}"${st.on[k] ? " checked" : ""}> ${l}</label>`).join("")}</div>
           <label class="rp-ta">Комментарий для родителей<textarea id="rp-note" rows="2" maxlength="900" placeholder="Например: Айбике стала увереннее в грамматике, теперь главное — время на втором модуле.">${esc(st.note)}</textarea></label>
           <label class="rp-ta">Следующие шаги<textarea id="rp-next" rows="2" maxlength="600">${esc(st.next)}</textarea></label>
-          <p class="hint">В отчёте имя и результаты ученика. Отправляйте ученику, родителям или тем, кому ученик согласен показать. Внутренний индекс прогресса в отчёт не входит.</p>
+          <p class="hint">В отчёте имя и результаты ученика. Отправляйте ученику, родителям или тем, кому ученик согласен показать. Разделы отчёта можно выбрать выше.</p>
           <div class="row"><button class="btn" type="button" id="rp-print">Сохранить PDF</button><button class="btn ghost" type="button" id="rp-close">Закрыть</button></div>
           <p class="hint">В окне печати выберите «Сохранить как PDF» (Save as PDF).</p></div></div>
         <div class="rp-paper"><article class="rp-sheet" id="rp-sheet">${sheet(d, st.on, st.note, st.next)}</article></div>`;

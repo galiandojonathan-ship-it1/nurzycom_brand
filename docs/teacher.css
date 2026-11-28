@@ -208,3 +208,38 @@
 .rp-control{background:#e8efdc;color:#324421}
 .rp-tray .rp-control{margin-inline-start:4px}
 .rp-tray [data-rp-clear]{margin:5px 0}
+
+/* Teacher analytics student roster */
+.student-roster { --roster-bg: var(--paper, #fbf7ee); --roster-border: var(--studio, #d9cbb8); }
+.roster-controls { display: grid; grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(145px, 1fr)); gap: 12px; margin: 12px 0; }
+.roster-controls label { display: grid; align-content: start; gap: 5px; font-size: .86rem; }
+.roster-controls input, .roster-controls select, .roster-controls .site-select { width: 100%; min-width: 0; }
+.roster-controls input { font: inherit; min-height: 44px; border: 1px solid var(--roster-border); border-radius: 9px; padding: 8px 12px; background: var(--roster-bg); color: var(--ink); }
+.roster-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 8px 0; color: var(--muted, #625545); font-size: .86rem; }
+.roster-status button:disabled { opacity: .5; cursor: default; }
+.roster-scroll { overflow-x: auto; border: 1px solid var(--roster-border); border-radius: 14px; }
+.roster-table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--ink); font-size: .9rem; }
+.roster-table th, .roster-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--roster-border); vertical-align: middle; }
+.roster-table thead th { background: var(--mist); color: var(--muted, #625545); font-weight: 650; }
+.roster-table tbody tr:last-child > * { border-bottom: 0; }
+.roster-table tbody tr { background: var(--roster-bg); cursor: pointer; }
+.roster-table tbody tr:hover, .roster-table tbody tr:focus-within { background: var(--mist); }
+.roster-table tr > :first-child { position: sticky; left: 0; min-width: 12rem; max-width: 22rem; z-index: 1; }
+.roster-table tbody th { background: inherit; }
+.roster-table td:not(:last-child) { white-space: nowrap; }
+.roster-name { width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: none; border: 0; border-radius: 7px; padding: 7px 0; color: var(--ink); font: inherit; font-size: 1.04rem; font-weight: 750; overflow-wrap: anywhere; cursor: pointer; }
+.roster-name span { color: var(--oxide); font-size: 1.3rem; }
+.roster-caption { display: none; }
+@media (max-width: 840px) {
+  .roster-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .roster-scroll { border: 0; overflow: visible; }
+  .roster-table, .roster-table tbody { display: block; }
+  .roster-table thead { position: absolute; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+  .roster-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--roster-border); border-radius: 14px; margin: 0 0 10px; padding: 6px 12px 10px; }
+  .roster-table tbody th { position: static; grid-column: 1 / -1; min-width: 0; max-width: none; padding: 1px 0; }
+  .roster-table tbody td { border: 0; padding: 5px 8px 4px 0; white-space: normal; }
+  .roster-table tbody td:last-child { grid-column: 1 / -1; }
+  .roster-caption { display: block; color: var(--muted, #625545); font-size: .75rem; }
+}
