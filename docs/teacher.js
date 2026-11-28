@@ -7,6 +7,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
   const D = { csv: "", aliases: {}, lessons: [], sets: [], texts: [], mocks: null, bundles: {}, t: {}, rows: [], students: [], demo: false, view: "overview", student: null, lesson: null, sort: null };
+  let customCopies, openCustom, customLoad, customEpoch = 0;
   let ACCT = null;   // account ids by form student key (accountsByName)
   const DAY = 864e5;
 
@@ -37,19 +38,51 @@
         attempt: Number(g("attempt")) || 1, answers, mock });
     });
     if (!rows.length) throw new Error("Строки есть, но ни одна не похожа на результат с сайта.");
+    D.formRows = rows; D.csv = text; D.label = label;
+    mergeRows();
+  }
+
+  function mergeRows() {
+    const rows = [...(D.formRows || []), ...(D.demo ? [] : D.customRows || [])];
+    if (!rows.length) {
+      D.rows = []; D.students = []; D.prog = null;
+      $("dash").classList.add("hidden");
+      sources(true);
+      return;
+    }
     rows.sort((x, y) => (x.ts || 0) - (y.ts || 0));
     // one student, several spellings («Шер. Ж.», «Sher Zh», «Sherniyaz»): merged under one romanized name (formkit.js)
     const counts = {}; rows.forEach((r) => (counts[r.raw] = (counts[r.raw] || 0) + 1));
     const G = FORMKIT.group(counts, D.aliases);
     if (G) rows.forEach((r) => { const x = G.of[r.raw]; if (x) { r.key = x.key; r.name = x.name; } });
-    D.groups = G ? G.groups : []; D.csv = text; D.cbg = null;   // cabinet groups are read again with the new names
-    D.rows = rows; D.label = label;
+    D.groups = G ? G.groups : []; D.cbg = null; D.prog = null;   // cabinet groups are read again with the new names
+    D.rows = rows;
     const by = {}; rows.forEach((r) => { (by[r.key] = by[r.key] || { key: r.key, rows: [] }).rows.push(r); });
     const usual = (rs) => { const c = {}; rs.forEach((r) => (c[r.name] = (c[r.name] || 0) + 1)); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };   // most frequent spelling
     ACCT = null;   // account ↔ student matching depends on the student list (bare first names)
     D.students = Object.values(by).map((s) => Object.assign(s, { name: usual(s.rows), last: s.rows[s.rows.length - 1].ts })).sort((a, b) => a.name.localeCompare(b.name, "ru"));
     $("dash").classList.remove("hidden"); $("src-msg").textContent = ""; sources(false);
     render();
+  }
+
+  async function syncCustom(refresh = false) {
+    if (!customCopies || !SITE.adminKey()) return;
+    if (customLoad) return customLoad;
+    const epoch = customEpoch;
+    customLoad = (async () => {
+      const [copies, bank] = await Promise.all([customCopies(refresh), CTL.loadBank().catch(() => null)]);
+      if (epoch !== customEpoch) return;
+      const catalog = new Map((bank?.tests || []).map((t) => [t.id, t]));
+      for (const t of catalog.values()) PLAN.CT[t.id] = t.title || "Без названия";
+      D.customRows = copies.flatMap((copy) => [...CTL.submissions(copy).values()].map((r) => {
+        const [a, b] = r.last.split("/").map(Number), test = catalog.get(r.id);
+        return { kind: "C", lesson: r.id, part: test?.title || r.id, name: copy.name, raw: copy.name,
+          key: FORMKIT.key(copy.name), ts: r.at ? new Date(r.at) : null, a, b, pct: b ? 100 * a / b : null,
+          wrong: [], sec: r.A.sec || 0, attempt: r.att, custom: { test, answers: r.A, uid: copy.id } };
+      }));
+      if (!D.demo) mergeRows();
+    })().catch(() => {}).finally(() => { customLoad = null; });
+    return customLoad;
   }
 
   // ---------- helpers over the data
@@ -61,6 +94,7 @@
   const when = (d) => (d ? d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "—");
   const ago = (d) => { if (!d) return "—"; const n = Math.floor((Date.now() - d) / DAY); return n <= 0 ? "сегодня" : n === 1 ? "вчера" : `${n} дн. назад`; };
   const whatOf = (r) => {
+    if (r.kind === "C") return `Мой тест · ${r.part}`;
     if (r.kind === "X") { const s = D.sets.find((x) => x.id === r.lesson); return `Сложные вопросы · ${s ? s.title : r.lesson}`; }
     if (r.kind === "U") { const l = lessonOf(r.lesson); return `Окружность · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
     if (r.kind === "A") { const l = lessonOf(r.lesson); return `Архаичные слова · ${l ? l.title.split(" · ").slice(1).join(" · ") : r.lesson}`; }
@@ -189,11 +223,11 @@
     const spellHTML = `<div class="card spell"><span class="label">Как ученик подписывал работы</span><div class="spl">${sps.map(([sp, n]) => `<span class="sp">${esc(sp)} <small>×${n}</small>${sps.length > 1 ? `<button class="chip" data-split="${esc(sp)}" title="Это другой ученик">Отделить</button>` : ""}</span>`).join("")}</div>
       ${others.length ? `<div class="row" style="margin-top:10px"><select id="join-sel" aria-label="Присоединить другого ученика"><option value="">Присоединить: это тот же ученик…</option>${others.map((x) => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("")}</select><button class="btn ghost" id="join-go">Объединить</button></div>` : ""}
       ${Object.keys(D.aliases).length ? '<p class="hint"><a href="#" id="alias-reset">Вернуть автоматическое объединение имён</a></p>' : ""}</div>`;
-    const kpiHTML = kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)} · текстов и сложных: ${s.rows.filter((r) => !"VM".includes(r.kind)).length}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
+    const kpiHTML = kpis([["Сдач", s.rows.length, `последняя: ${ago(s.last)}`], ["ДЗ с 1-й попытки", pct(mean(hw.map((r) => r.pct))), `${hw.length} ${pl(hw.length, "часть", "части", "частей")} тетради`],
       ["Со 2-й попытки", pct(mean(scr.filter((r) => r.second !== null).map((r) => r.second))), "на экране, после второй попытки"], ["Время на вопрос", per.length ? `${Math.round(median(per))} с` : "—", "медиана"]]);
     const lesHTML = `<h2>Уроки</h2><p class="hint">Лучший результат с первой попытки по частям тетради, %. Наведите на клетку, чтобы увидеть часть. Тёмнее — лучше.</p>` + (used.filter((l) => "VM".includes(l.tag[0])).length ? heat(rowsOf, D.lessons.filter((l) => "VM".includes(l.tag[0]) && s.rows.some((r) => r.lesson === l.tag))) : '<p class="hint">Пока нет сданных частей.</p>');
     const skHTML = `<h2>Навыки</h2><p class="hint">Доля вопросов, решённых с первой попытки, по навыкам College Board (от слабых к сильным). Число справа — сколько вопросов.</p><div id="st-sk"></div>`;
-    const hisHTML = `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), esc(resultOf(r)) + (mockEstimate(r) ? ` · ≈ ${mockEstimate(r)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
+    const hisHTML = `<h2>История</h2><p class="hint">«разбор →» открывает вопросы этой части только с ответами этого ученика: ошибки, его попытки, верный ответ и объяснение.</p><div id="st-hw"></div>` + table(["Когда", "Что", "Результат", "Ошибки (1-я попытка)", "Попытка", "Время"], [...s.rows].reverse().map((r) => ({ k: r.key, cells: [when(r.ts), esc(whatOf(r)) + (r.screen ? '<span class="pill">экран</span>' : "") + ("VM".includes(r.kind) && (partOf(r.lesson, r.pid) || {}).b ? ` <a href="#" class="to-hw pill" data-i="${s.rows.indexOf(r)}">разбор →</a>` : "") + (r.kind === "C" && r.custom.test ? ` <button type="button" class="tlink to-custom" data-i="${s.rows.indexOf(r)}">разбор →</button>` : "") + (r.kind === "P" ? ` <a href="#" class="to-test pill" data-m="${r.lesson.split("·")[0]}" data-s="${/Math/.test(r.lesson) ? "math" : "rw"}">ответы →</a>` : ""), esc(resultOf(r)) + (mockEstimate(r) ? ` · ≈ ${mockEstimate(r)}` : ""), r.wrong.length ? esc(r.wrong.join(", ")) : "—", r.attempt, r.sec ? `${Math.round(r.sec / 60)} мин` : "—"] })), { num: [2, 4, 5] });
     // tabs (Nurassyl, 2026-11-23: «сделай эргономичнее… вкладки "анализ", "графики", "сдачи"»); the choice is kept in this browser
     const TABS = [["over", "Обзор"], ["charts", "Графики"], ["anal", "Анализ"], ["subs", "Сдачи"], ["fix", "Работа над ошибками"]];
     const cur = TABS.some(([k]) => k === D.stTab) ? D.stTab : (localStorage.getItem("st_tab") || "over"), tab = TABS.some(([k]) => k === cur) ? cur : "over";
@@ -210,6 +244,9 @@
       $("v-students").querySelectorAll("[data-st]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
       $("v-students").querySelectorAll(".st-pane").forEach((p) => (p.hidden = p.dataset.pane !== D.stTab)); }));
     $("v-students").querySelectorAll(".to-test").forEach((el) => (el.onclick = (e) => { e.preventDefault(); e.stopPropagation(); Object.assign(D.t, { mid: el.dataset.m, sec: el.dataset.s, mod: "m1", who: s.key, bad: true, others: false }); D.view = "tests"; D.student = null; render(); }));
+    $("v-students").querySelectorAll(".to-custom").forEach((button) => {
+      button.onclick = () => { const r = s.rows[+button.dataset.i]; openCustom?.(r.lesson, r.custom.uid); };
+    });
     hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     const reviewBox = $("st-rv"), originalBox = $("st-originals"), keys = new Set([s.key]);
     const collected = gaCollect({ keys });
@@ -280,10 +317,46 @@
     const key = (n) => (window.FORMKIT ? FORMKIT.key(n) : String(n).toLowerCase());
     return (await liveRecords()).map((rec) => ({ rec, me: (rec.students || []).find((st) => key(st.name) === s.key) })).filter((x) => x.me);
   }
+  async function customObservations(s, courseTags, tags) {
+    const rows = s.rows.filter((r) => r.custom?.test && r.ts);
+    if (!rows.length) return [];
+    const sets = new Map(rows.map((r) => [r.lesson, r.custom.test.q || []]));
+    await CTL.resolve([...sets.values()].flat());
+    const bundlePath = (b) => b.replace(/^\.\/|^\//, "");
+    const mockSections = new Map((D.mocks?.mocks || []).flatMap((m) => m.sections.map((sec) =>
+      [bundlePath(sec.b), { id: m.id, sec: sec.k }])));
+    const observations = [];
+    for (const r of rows) {
+      const qs = sets.get(r.lesson);
+      for (const [i, q] of qs.entries()) {
+        const chosen = r.custom.answers[q.id];
+        if (!chosen || chosen === "-" || CTL.problems(q).length) continue;
+        const ref = q.ref, match = ref && mockSections.get(bundlePath(ref.b));
+        const fromSkill = PROGRESS.tagFromSkill(q.skill), sub = PROGRESS.SEC_OF[q.sub] ? q.sub : null;
+        const sec = match?.sec || PROGRESS.SEC_OF[sub || fromSkill?.p || fromSkill?.s[0]] ||
+          (["rw", "math"].includes(q.sec) ? q.sec : q.type === "spr" ? "math" : null);
+        if (!sec) continue;
+        const id = match ? `${match.id}.${sec}.${ref.mod}.${ref.i + 1}`
+          : ref ? `${bundlePath(ref.b)}:${ref.mod}:${ref.i}` : q.nb || `CT.${r.lesson}.${q.id}`;
+        if (!courseTags[id] && !tags[id]) {
+          const tag = sub ? { p: sub, s: [], t: {} } : fromSkill;
+          if (tag) tags[id] = tag;
+        }
+        observations.push({
+          id, t: +r.ts, x: CTL.isRight(q, chosen) ? 1 : 0, blank: false, sec, level: q.level || courseTags[id]?.d || "M",
+          type: q.type, ctx: "hw", src: "custom", part: `custom|${r.lesson}|${+r.ts}`,
+          // Only the latest answers are synced. The engine discounts repeated question IDs across assignments.
+          attempt: 1, chosen, second: null, secs: 0, original: { r, n: i + 1, q, sk: q.skill }
+        });
+      }
+    }
+    return observations;
+  }
   async function progExtra(s, TAGS) {
     const obs = [], tags = {};
     if (!SITE.adminKey()) return { obs, tags };
-    const [sh, cat, lv] = await Promise.all([window.BBSHARE ? bbShares(s).catch(() => []) : [], SITE.json("bluebook").catch(() => null), liveOf(s).catch(() => [])]);
+    const [sh, cat, lv, custom] = await Promise.all([window.BBSHARE ? bbShares(s).catch(() => []) : [], SITE.json("bluebook").catch(() => null), liveOf(s).catch(() => []), customObservations(s, TAGS, tags).catch(() => [])]);
+    obs.push(...custom);
     if (cat) for (const d of sh) for (const [sec, x] of Object.entries(d.sections)) {
       const T = cat.tests[x.test], lists = T && T[sec] ? [T[sec].m1, T[sec][x.route]] : null; if (!lists || !lists[0] || !lists[1]) continue;
       const miss = new Map(x.miss.map((m) => [`${m[0]}.${m[1]}`, m])), size = sec === "rw" ? 27 : 22;
@@ -301,7 +374,7 @@
     for (const { rec, me } of lv) obs.push(...PROGRESS.liveRound(rec, me, TAGS, tags));
     return { obs, tags };
   }
-  const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"]];
+  const SRC = [["hw", "Домашние"], ["mock", "Пробные на сайте"], ["bb", "Bluebook"], ["live", "Уроки"], ["custom", "Мои тесты"]];
   async function progData(s) {
     if (!window.PROGRESS) return null;
     if (D.prog && D.prog.key === s.key) return D.prog.res;
@@ -359,6 +432,10 @@
   }
   function progressMistake(o) {
     const a = o.original;
+    if (o.src === "custom") return {
+      title: `${whatOf(a.r)} · №${a.n}`, ts: o.t, chosen: o.chosen, observation: o, custom: a.q,
+      review: { group: o.part, test: whatOf(a.r), section: o.sec === "math" ? "Math" : "Reading and Writing", n: a.n, attempt: a.r.attempt }
+    };
     if (o.src === "bb") return { ...bluebookMistake(o.sec, { ...a, group: o.part.split("|")[1] }, o.chosen, o.t), observation: o };
     const q = courseMistake(o.src === "live" ? a.ref : o.id);
     const hard = a.r?.kind === "X" ? D.sets.find((s) => s.id === a.r.lesson) : null;
@@ -613,6 +690,12 @@
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }
   async function originalLoad(c) {
+    if (c.custom) {
+      const q = c.custom;
+      return { t: q.type, stim: CTL.html(q, "passage"), stem: CTL.html(q, "stem"),
+        opts: q.type === "mc" ? "ABCD".split("").map((_, i) => CTL.html(q, "o", i)) : [],
+        ans: CTL.answerText(q), rat: CTL.html(q, "x") };
+    }
     if (c.bb) {
       const { cid, sec, refs } = c.bb;
       let item;
@@ -1545,8 +1628,12 @@
   ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("on"); }));
   drop.addEventListener("drop", (e) => e.dataTransfer.files[0] && fromFile(e.dataTransfer.files[0]));
   $("load-url").onclick = () => $("url").value.trim() && fromUrl($("url").value.trim());
-  $("reload").onclick = () => { const u = store("teacher_url"); if (u && !D.demo) fromUrl(u); else $("file").click(); };
-  $("forget").onclick = () => { store("teacher_url", null); D.rows = []; D.csv = ""; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
+  $("reload").onclick = async () => {
+    const u = store("teacher_url");
+    if (D.demo || !SITE.adminKey()) { if (u && !D.demo) return fromUrl(u); $("file").click(); return; }
+    await Promise.all([syncCustom(true), u ? fromUrl(u) : cloudLoad()]);
+  };
+  $("forget").onclick = () => { store("teacher_url", null); customEpoch++; D.rows = []; D.formRows = []; D.customRows = []; D.csv = ""; $("url").value = ""; $("dash").classList.add("hidden"); sources(true); $("src-msg").textContent = "Данные убраны с этой страницы."; };
   $("demo").onclick = () => { D.demo = true; const a = D.aliases; D.aliases = {}; load(demoCSV(), "пример"); D.aliases = a; };
   $("tabs").querySelectorAll(".chip").forEach((b) => (b.onclick = () => { D.view = b.dataset.v; if (D.view !== "students") D.student = null; render(); }));
   addEventListener("resize", () => { if (!$("teacher-results").classList.contains("hidden") && !$("dash").classList.contains("hidden") && D.view === "overview") render(); });
@@ -1779,6 +1866,7 @@
   let resultsReady = null, accountsLoading = null;
   window.TeacherWorkspace = {
     useFile: (csv, label) => useFile(csv, label, {}),
+    initCustom: (copies, show) => { customCopies = copies; openCustom = show; },
     form: () => D.csv && !D.demo ? { csv: D.csv, aliases: D.aliases, label: D.label } : null,
     open(view) {
       if (view === "accounts") {
@@ -1797,7 +1885,7 @@
           return cloudLoad();
         });
       } else if (!$("dash").classList.contains("hidden")) render();
-      return resultsReady;
+      return Promise.all([resultsReady, syncCustom(true)]);
     }
   };
   window.__teacher = { parseCSV, parseDate, columns };   // for testing

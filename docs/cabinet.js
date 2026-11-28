@@ -586,6 +586,12 @@
       </header>`;
   }
   let viewChange = 0, returnView = "overview", loadingCabinet = null;
+  function ensureCabinet(refresh = false) {
+    if (!S.loaded || refresh) {
+      if (!loadingCabinet) loadingCabinet = load().finally(() => { loadingCabinet = null; });
+      return loadingCabinet;
+    }
+  }
   async function openView(view, focus = false, hash = "") {
     const step = ++viewChange;
     if (["overview", "students", "archive"].includes(S.view) && ["tests", "bank", "lessons", "forms", "results", "accounts"].includes(view)) returnView = S.view;
@@ -610,8 +616,7 @@
       return;
     }
     if (!S.loaded) {
-      if (!loadingCabinet) loadingCabinet = load().finally(() => { loadingCabinet = null; });
-      await loadingCabinet;
+      await ensureCabinet();
       if (step !== viewChange || !S.loaded) return;
     }
     S.loadingView = view === "tests" || view === "lessons" || view === "bank";
@@ -800,6 +805,10 @@
       setView("students"); openAssign(ids, "ct", id);
     },
     copy: (u) => { if (!u.B || u.err) return null; const I = info(u); return { nm: u.nm, get: I.get, meta: I.meta, tasks: I.T }; } });
+  window.TeacherWorkspace?.initCustom(async (refresh) => {
+    await ensureCabinet(refresh);
+    return S.loaded ? activeUsers().filter((u) => u.B && !u.err).map((u) => ({ id: u.id, name: u.name, get: getter(u), meta: metaOf(u) })) : [];
+  }, (id, uid) => { CTED.openRes(id, uid); return openView("tests", true); });
   window.addEventListener("DOMContentLoaded", () => {
     if (!window.SITE) return;
     SITE.ready.then(async () => {

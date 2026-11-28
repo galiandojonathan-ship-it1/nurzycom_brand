@@ -128,9 +128,9 @@ window.NBANK = (() => {
   }
   function toQuestion(q) {
     if (q.official) return { ...CTL.newQ(q.type), ref: { b: `public:item:${q.id}`, mod: "m1", i: 0 },
-      source: `College Board · ${q.id}`, skill: q.skill, level: q.level };
+      source: `College Board · ${q.id}`, sec: q.sec, skill: q.skill, level: q.level };
     const x = (q.explanation_ru || "") + (q.trap_ru ? `\n\nЛовушка: ${q.trap_ru}` : "");
-    return { ...CTL.newQ(q.type), passage: q.passage || "", stem: q.stem, skill: q.skill, level: q.level, nb: q.id, x,
+    return { ...CTL.newQ(q.type), passage: q.passage || "", stem: q.stem, sec: q.sec, skill: q.skill, sub: q.sub, level: q.level, nb: q.id, x,
       ...(q.type === "spr" ? { a: (q.accept || [q.key]).join(";") } : { o: (q.options || []).slice(), a: q.key, gl: q.words || [] }) };
   }
   async function make(assign) {

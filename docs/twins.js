@@ -89,7 +89,7 @@ window.TWINS = (() => {
       const give = box.querySelector("#tw-give"), save = box.querySelector("#tw-save");
       if (give) give.onclick = () => store(true);
       if (save) save.onclick = () => store(false);
-      if (!picker || !S.pool) return;
+      if (!picker || !S.pool?.length) return;
       box.querySelectorAll("[data-twf]").forEach((el) => (el.onchange = () => { S.f[el.dataset.twf] = el.dataset.twf === "days" ? +el.value : el.value; S.msg = ""; draw(); }));
       box.querySelectorAll("[data-twsel]").forEach((el) => (el.onchange = () => { el.checked ? S.sel.add(el.dataset.twsel) : S.sel.delete(el.dataset.twsel); S.msg = ""; draw(); }));
       const note = box.querySelector("#tw-note"); if (note) note.oninput = () => (S.note = note.value);

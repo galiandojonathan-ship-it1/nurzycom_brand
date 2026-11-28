@@ -209,7 +209,7 @@ window.TeacherPractice = (() => {
       draft = draft?.signature === signature ? draft : { signature, test: {
         ...CTL.newTest(), src: "ready",
         title: `Готовые задания · ${state.context.label ? state.context.label + " · " : ""}${today()}`.slice(0, 90),
-        q: picks.map((c) => c.ref ? { id: CTL.newQ().id, type: c.item.type, ref: c.ref, source: c.label, skill: c.skill, level: c.level } : NBANK.toQuestion(c.raw))
+        q: picks.map((c) => c.ref ? { id: CTL.newQ().id, type: c.item.type, ref: c.ref, source: c.label, sec: c.sec, skill: c.skill, level: c.level } : NBANK.toQuestion(c.raw))
       } };
       state.busy = true; state.message = "Сохраняю тест…"; draw(state);
       try {
