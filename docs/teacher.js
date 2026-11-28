@@ -331,16 +331,7 @@
     $("v-students").querySelectorAll(".to-custom").forEach((button) => {
       button.onclick = () => { const r = s.rows[+button.dataset.i]; openCustom?.(r.lesson, r.custom.uid); };
     });
-    const skillsBox = $("st-sk");
-    gaGroups().then(({ groups }) => {
-      if (!skillsBox.isConnected) return;
-      const prefs = studentAnalytics(groups, s);
-      const included = hw.filter((r) => {
-        const part = partOf(r.lesson, r.pid);
-        return part && filterAnalytics(prefs, r.kind === "M" ? "math" : "rw", workbookSource(workbookContext(part)));
-      });
-      hbars(skillsBox, skillStats(included).filter((x) => x.n >= 2));
-    });
+    hbars($("st-sk"), skillStats(hw).filter((x) => x.n >= 2));
     const reviewBox = $("st-rv"), originalBox = $("st-originals"), keys = new Set([s.key]);
     const collected = gaCollect({ keys });
     if (window.TWINS) TWINS.mount($("st-tw"), { name: s.name, key: s.key,
@@ -379,15 +370,17 @@
   function progObs(s, TAGS) {
     const out = [];
     for (const r of s.rows) {
+      // Custom submissions store their responses in r.custom and are read by customObservations.
+      if (!["P", "X", "V", "A", "M"].includes(r.kind)) continue;
       const wrong = new Set(r.wrong.map(String)), per = r.sec && r.b && !r.mock?.skipped.size && r.answers.every((a) => a.tries.length) ? r.sec / r.b : 0;
       let base;
       if (r.kind === "P") { const mid = r.lesson.split("·")[0], sec = /·Math$/.test(r.lesson) ? "math" : "rw", m2 = /M2 сложный/.test(r.part) ? "m2h" : "m2e";
         base = (a) => { const [mn, qn] = String(a.n).split("."); return { id: `${mid}.${sec}.${mn === "1" ? "m1" : m2}.${qn}`, sec, ctx: "mock", src: "mock" }; };
       } else if (r.kind === "X") base = (a) => ({ id: `${r.lesson}.${a.n}`, sec: "rw", ctx: "final", src: "hw" });
-      else if ("VAM".includes(r.kind)) { const P = partOf(r.lesson, r.pid); if (!P) continue;
+      else { const P = partOf(r.lesson, r.pid); if (!P) continue;
         const ctx = workbookContext(P), sec = "VA".includes(r.lesson[0]) ? "rw" : "math";
         base = (a) => ({ id: `${r.lesson}.${r.pid}.${a.n}`, sec, ctx, src: "hw" });
-      } else continue;
+      }
       if (r.mock?.skipped.size) {
         out.push({ sec: /·Math$/.test(r.lesson) ? "math" : "rw", t: +r.ts, src: "mock", skipped: r.mock.skipped.size });
       }
@@ -510,19 +503,16 @@
   function acceptsStudentSource(sel, source) {
     return (sel[source] ?? (["practice", "final", "sets"].includes(source) ? sel.hw : undefined)) !== false;
   }
-  function studentAnalytics(groups, s) {
-    return groups.find((g) => g.keys.has(s.key))?.analytics || analyticsPrefs();
-  }
   async function progData(s, scope) {
     if (!window.PROGRESS) return null;
     if (!scope && D.prog && D.prog.key === s.key) return D.prog.res;
     const TAGS = await progTags(), tags = { ...TAGS };
     const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); Object.assign(tags, extra.tags);
-    const prefs = scope?.prefs || studentAnalytics((await gaGroups()).groups, s);
     const sel = scope ? {} : studentSources(s);
     return PROGRESS.compute([...progObs(s, TAGS), ...extra.obs].filter((o) => {
       const source = analyticsSource(o);
-      return (!scope?.after || o.t >= scope.after) && filterAnalytics(prefs, o.sec, source) && acceptsStudentSource(sel, source);
+      return scope ? (!scope.after || o.t >= scope.after) && filterAnalytics(scope.prefs, o.sec, source)
+        : acceptsStudentSource(sel, source);
     }), tags);
   }
   const originalCards = new WeakMap();
@@ -549,9 +539,7 @@
       const tags = { ...TAGS };
       const extra = await progExtra(s, TAGS).catch(() => ({ obs: [], tags: {} })); if ($("st-prog") !== box || D.student !== s.key) return;
       Object.assign(tags, extra.tags);
-      const prefs = studentAnalytics((await gaGroups()).groups, s);
-      if ($("st-prog") !== box || D.student !== s.key) return;
-      const all = [...progObs(s, TAGS), ...extra.obs].filter((o) => filterAnalytics(prefs, o.sec, analyticsSource(o)));
+      const all = [...progObs(s, TAGS), ...extra.obs];
       const counts = {};
       for (const o of all) {
         const source = analyticsSource(o);
@@ -563,7 +551,7 @@
         if ($("st-prog") !== box || D.student !== s.key) return;
         const active = all.filter((o) => acceptsStudentSource(sel, analyticsSource(o)));
         const res = PROGRESS.compute(active, tags); D.prog = { key: s.key, res };
-        try { PVIEW.render(box, res, { name: s.name, target: goalNeeds(s, prefs), start: START, onTwins: originals && ((f) => {
+        try { PVIEW.render(box, res, { name: s.name, target: goalNeeds(s), start: START, onTwins: originals && ((f) => {
             const mistakes = active.filter((o) => {
               const tag = tags[o.id];
               return o.x === 0 && !o.blank && tag && (f.subtopic ? tag.p === f.subtopic || tag.s?.includes(f.subtopic) : tag.t?.[o.chosen] === f.trapKey);
@@ -636,10 +624,9 @@
     D.goal = { key: s.key, acct, g: goal && (goal.rw || goal.math) ? goal : null, start: goal && /^\d{4}-\d{2}-\d{2}$/.test(goal.start || "") ? goal.start : null, raw: goal };
     return D.goal;
   }
-  const goalNeeds = (s, prefs) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
+  const goalNeeds = (s) => { if (!(D.goal && D.goal.key === s.key && D.goal.g && window.PROGRESS && PROGRESS.targetNeeds && window.SATSCALE)) return null;
     const P = D.pred && D.pred.key === s.key && D.pred.est ? D.pred.est.sections : {};
-    const goal = prefs && prefs.sec !== "all" ? { [prefs.sec]: D.goal.g[prefs.sec] } : D.goal.g;
-    return PROGRESS.targetNeeds(goal, SATSCALE, { rw: P.rw && P.rw.mid, math: P.math && P.math.mid }); };
+    return PROGRESS.targetNeeds(D.goal.g, SATSCALE, { rw: P.rw && P.rw.mid, math: P.math && P.math.mid }); };
   async function goalSave(acct, goal) {
     const url = "admin/progress?id=" + encodeURIComponent(acct), g = await SITE.api(url);
     let B = {}; if (g.ok) B = await SITE.unsealBlob(g.data.data); else if (g.status !== 404) throw new Error(`Сервер ответил ${g.status}.`);
@@ -690,8 +677,8 @@
   async function predData(s) {
     if (!window.PREDICT || !window.SATSCALE) return null;
     const shares = window.BBSHARE && SITE.adminKey() ? await bbShares(s).catch(() => []) : [];
-    const prefs = studentAnalytics((await gaGroups()).groups, s), sel = studentSources(s);
-    const tests = PREDICT.collect(s.rows, shares, SATSCALE).filter((x) => filterAnalytics(prefs, x.sec, x.src) && acceptsStudentSource(sel, x.src));
+    const sel = studentSources(s);
+    const tests = PREDICT.collect(s.rows, shares, SATSCALE).filter((x) => acceptsStudentSource(sel, x.src));
     return { tests, est: PREDICT.estimate(tests) };
   }
   const dY = (t) => new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }).replace(/\s?г\.?$/, "");
@@ -1410,7 +1397,7 @@
     return `<details class="card" id="ga-analytics"${GA.settingsOpen === (grp?.id || "") ? " open" : ""}>
       <summary><b>Настройки аналитики</b> · ${ANALYTICS_SECTIONS.find(([key]) => key === prefs.sec)[1]} · ${prefs.sources.length} ${pl(prefs.sources.length, "вид работы", "вида работ", "видов работ")}</summary>
       <form id="ga-analytics-form">
-        <p class="hint">${grp ? "Для этой группы и графиков её учеников." : "Для сводки «Все ученики» в этом браузере."}</p>
+        <p class="hint">${grp ? "Влияет на сводку, индекс и разбор ошибок в анализе этой группы." : "Для сводки «Все ученики» в этом браузере."}</p>
         <label>Раздел SAT <select name="section">${ANALYTICS_SECTIONS.map(([key, label]) =>
           `<option value="${key}"${key === prefs.sec ? " selected" : ""}>${label}</option>`).join("")}</select></label>
         <fieldset class="ga-sources"><legend>Какие работы учитывать</legend>${SRC.map(([key, label]) =>
