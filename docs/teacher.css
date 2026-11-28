@@ -229,6 +229,7 @@
 .roster-table td:not(:last-child) { white-space: nowrap; }
 .roster-name { width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: none; border: 0; border-radius: 7px; padding: 7px 0; color: var(--ink); font: inherit; font-size: 1.04rem; font-weight: 750; overflow-wrap: anywhere; cursor: pointer; }
 .roster-name span { color: var(--oxide); font-size: 1.3rem; }
+.roster-submitted { display: block; color: #2F7A33; font-size: .75rem; font-weight: 600; padding-bottom: 3px; }
 .roster-caption { display: none; }
 @media (max-width: 840px) {
   .roster-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -198,15 +198,20 @@
     clickStudents($("v-overview"));
   }
   function clickStudents(root) { root.querySelectorAll("tr.click").forEach((tr) => (tr.onclick = () => { D.view = "students"; D.student = tr.dataset.k; render(); })); }
-  const roster = { query: "", activity: "", section: "", sort: "name" };
+  const roster = { query: "", activity: "", section: "", sort: "latest" };
+  const rosterTest = (r) => r.b > 0 && (r.kind === "C" || r.kind === "P") ? r.lesson.split("·")[0] : "";
   const rosterFields = [
     ["activity", "Активность", [["", "За всё время"], ["7", "Сдавали за 7 дней"], ["14", "Сдавали за 14 дней"], ["quiet", "Не сдавали за 14 дней"]]],
     ["section", "Тетрадь", [["", "Все"], ["rw", "Сдавали Verbal"], ["math", "Сдавали Math"], ["both", "Сдавали обе"]]],
-    ["sort", "Сортировка", [["name", "По имени А–Я"], ["recent", "Сначала недавние"], ["count", "Больше сдач"], ["low", "Ниже точность ДЗ"], ["high", "Выше точность ДЗ"]]]
+    ["sort", "Сортировка", [["latest", "Сначала сдавшие последний тест"], ["name", "По имени А–Я"], ["recent", "Сначала недавние"], ["count", "Больше сдач"], ["low", "Ниже точность ДЗ"], ["high", "Выше точность ДЗ"]]]
   ];
   function students() {
     if (D.student) return studentDetail(D.students.find((s) => s.key === D.student));
     const root = $("v-students");
+    const latest = D.rows.slice().reverse().find((r) => r.ts && rosterTest(r));
+    const latestTest = latest ? rosterTest(latest) : "";
+    const latestName = latest?.kind === "P" ? mockName(latestTest) : latest?.part;
+    const completed = new Set(latestTest ? D.rows.filter((r) => rosterTest(r) === latestTest).map((r) => r.key) : []);
     const parts = Object.fromEntries(["V", "M"].map((sec) => [sec, D.lessons.filter((l) => l.tag[0] === sec).flatMap((l) => l.parts.map((p) => l.tag + "." + p.id))]));
     const aliases = new Map(D.groups.map((g) => [g.key, Object.keys(g.spellings)]));
     const searchText = (value) => norm(FORMKIT.roman(value));
@@ -220,12 +225,14 @@
     });
     const names = new Intl.Collator("ru", { sensitivity: "base", numeric: true });
     const sortValue = {
+      latest: ({ s }) => completed.has(s.key) ? 0 : 1,
       recent: ({ s }) => -(+s.last || 0), count: ({ s }) => -s.rows.length,
       low: ({ acc }) => acc ?? Infinity, high: ({ acc }) => acc == null ? Infinity : -acc
     };
     const columns = ["Активность", "Сдач", "Точность ДЗ", "Части Verbal", "Части Math", "Слабый навык"];
     root.innerHTML = `<section class="student-roster">
       <h2>Ученики</h2>
+      ${latest ? `<p class="hint roster-latest">Последний тест · <strong>${esc(latestName)}</strong> · сдали ${completed.size}</p>` : ""}
       <div class="roster-controls">
         <label>Поиск по имени<input type="search" id="roster-query" value="${esc(roster.query)}" autocomplete="off"></label>
         ${rosterFields.map(([key, label, options]) => `<label>${label}<select id="roster-${key}">${options.map(([val, title]) =>
@@ -250,12 +257,12 @@
       const value = sortValue[roster.sort];
       visible.sort((a, b) => (value ? value(a) - value(b) || 0 : 0) || names.compare(a.s.name, b.s.name));
       $("roster-count").textContent = `Показано ${visible.length} из ${rows.length}`;
-      $("roster-reset").disabled = !roster.query && !roster.activity && !roster.section && roster.sort === "name";
+      $("roster-reset").disabled = !roster.query && !roster.activity && !roster.section && roster.sort === "latest";
       $("roster-empty").hidden = !!visible.length;
       root.querySelector(".roster-scroll").hidden = !visible.length;
       $("roster-rows").innerHTML = visible.map(({ s, skill, acc, rw, math }) => {
         const data = [ago(s.last), s.rows.length, pct(acc), `${rw} / ${parts.V.length}`, `${math} / ${parts.M.length}`, skill ? `${esc(skill.label)} · ${pct(skill.value)}` : "—"];
-        return `<tr class="click" role="row" data-k="${esc(s.key)}"><th scope="row" role="rowheader"><button class="roster-name" type="button">${esc(s.name)} <span aria-hidden="true">›</span></button></th>
+        return `<tr class="click" role="row" data-k="${esc(s.key)}"><th scope="row" role="rowheader"><button class="roster-name" type="button">${esc(s.name)} <span aria-hidden="true">›</span></button>${completed.has(s.key) ? '<small class="roster-submitted">Последний тест сдан</small>' : ""}</th>
           ${data.map((d, i) => `<td role="cell"><span class="roster-caption" aria-hidden="true">${columns[i]}</span><span>${d}</span></td>`).join("")}</tr>`;
       }).join("");
       $("roster-rows").querySelectorAll("tr").forEach((row) => (row.onclick = () => {
@@ -267,7 +274,7 @@
     $("roster-query").oninput = (e) => { roster.query = e.target.value; renderRows(); };
     rosterFields.forEach(([key]) => ($("roster-" + key).onchange = (e) => { roster[key] = e.target.value; renderRows(); }));
     $("roster-reset").onclick = () => {
-      Object.assign(roster, { query: "", activity: "", section: "", sort: "name" });
+      Object.assign(roster, { query: "", activity: "", section: "", sort: "latest" });
       students();
       $("roster-query").focus();
     };
