@@ -13,6 +13,7 @@
   const W = { M: 0.6, X: 0.15, R: 0.1, P: 0.1, C: 0.05 };
   const CTX = { mock: 1, final: 1, hw: 0.8, learn: 0.6 };
   const PACE = { rw: 71, math: 95 };
+  const MIN_EARLY = 5;   // distinct questions with actual responses in one section
   const MIN_SEC = 20, MIN_LV = 5, MIN_IX = 30;   // answers needed before a section, a level or the index is drawn
   const sig = (z) => 1 / (1 + Math.exp(-z));
   // exam weights: domain share of the real SAT, split equally among the domain's subtopics
@@ -75,7 +76,7 @@
     const S = {};   // subtopic states
     const seen = {}, lastTag = {};
     const X = [], R = [], C = { n: 0, k: 0 }, partStats = {}, trapOpp = {}, slip = { n: 0, miss: 0, exp: 0 }, blanks = { n: 0, b: 0 };
-    let tagged = 0, done = 0; const cnt = {};   // answers so far (first tries) by section and level: [right, total]
+    let tagged = 0, done = 0; const cnt = {}, answered = {};   // answers so far (first tries) by section and level: [right, total]
     const lambda = (t, half) => Math.pow(2, -(now - t) / (half * DAY));
     const snaps = [];
     const weekEnd = (t) => { const d = new Date(t); d.setHours(23, 59, 59, 999); d.setDate(d.getDate() + ((7 - d.getDay()) % 7)); return +d; };
@@ -92,8 +93,44 @@
       const ps = Object.values(partStats).filter((p) => p.t <= t && p.timed && p.secs > 0);
       if (ps.length >= 2) { let a = 0, d = 0; for (const p of ps) { const l = lambda(p.t, 21) * p.n, pace = Math.max(0, Math.min(1, 2 - p.secs / PACE[p.sec])), acc = Math.min(1, (p.right + 1) / (p.exp + 1)); a += l * pace * acc; d += l; } parts.P = 100 * a / d; } else parts.P = null;
       parts.C = C.n >= 10 ? 100 * Math.max(0, Math.min(1, ((C.k + 1) / (C.n + 3) - 1 / 3) / (2 / 3))) : null;
-      return { t, index: null, parts, sub: {}, sd: {}, diff: {}, nAns: done, live, subN: Object.fromEntries(Object.entries(S).map(([k, v]) => [k, v.n])), cnt: JSON.parse(JSON.stringify(cnt)), used: 0,
+      const point = { t, index: null, parts, sub: {}, sd: {}, diff: {}, nAns: done, live, subN: Object.fromEntries(Object.entries(S).map(([k, v]) => [k, v.n])), cnt: JSON.parse(JSON.stringify(cnt)), used: 0,
         ab: Object.fromEntries(secs.map((sec) => [sec, at(ability[sec])])), st: Object.fromEntries(Object.keys(S).map((k) => [k, at(S[k])])) };
+      const ready = secs.filter((sec) => (answered[sec] || 0) >= MIN_EARLY);
+      point.earlyAnswers = Math.max(0, ...Object.values(answered));
+      // Capture the prediction from the forward estimate. Later answers must not revise it retrospectively.
+      if (ready.length && (done < MIN_IX || !live.length)) {
+        const eligible = live.filter((sec) => ready.includes(sec));
+        const sections = eligible.length ? eligible : ready;
+        const parts = { ...point.parts, M: mastery(point, sections) };
+        point.prediction = { value: indexValue(parts), n: sections.reduce((n, sec) => n + answered[sec], 0), sections };
+      }
+      return point;
+    }
+
+    function mastery(point, sections, details = false) {
+      let num = 0, den = 0;
+      for (const sec of sections) for (const k in OMEGA) {
+        if (SEC_OF[k] !== sec) continue;
+        const d = point.st[k] || { th: 0, v: VD };
+        const variance = point.ab[sec].v + d.v;
+        const level = point.ab[sec].th + d.th - 0.5 * Math.sqrt(variance);
+        const probs = LV.map((difficulty) => sig(level - B[difficulty]));
+        const m = probs.reduce((a, p) => a + p, 0) / LV.length;
+        if (details) {
+          point.sub[k] = m;
+          point.sd[k] = Math.sqrt(variance) * probs.reduce((a, p) => a + p * (1 - p), 0) / LV.length;
+        }
+        num += OMEGA[k] * m;
+        den += OMEGA[k];
+      }
+      return den ? 100 * num / den : null;
+    }
+
+    function indexValue(parts) {
+      if (parts.M == null) return null;
+      let num = 0, den = 0;
+      for (const k in W) if (parts[k] != null) { num += W[k] * parts[k]; den += W[k]; }
+      return Math.round(num / den);
     }
     /* Backward (Rauch–Tung–Striebel) smoothing over the weekly points: each week's ability is estimated with all answers, later ones
        included. Without it the forward estimate climbs out of the prior as answers pile up, and a student who does not change
@@ -111,16 +148,8 @@
     function finish() {
       if (!opts.noSmooth) { for (const sec of secs) smooth((s) => s.ab[sec], (s, v) => (s.ab[sec] = v)); for (const k in S) smooth((s) => s.st[k], (s, v) => (s.st[k] = v)); }
       for (const s of snaps) {
-        let mNum = 0, mDen = 0;
-        for (const sec of s.live) for (const k in OMEGA) if (SEC_OF[k] === sec) {
-          const d = s.st[k] || { th: 0, v: VD }, vt = s.ab[sec].v + d.v, th = s.ab[sec].th + d.th - 0.5 * Math.sqrt(vt);   // subtopic = section level + its own offset
-          const m = LV.reduce((a, d) => a + sig(th - B[d]), 0) / 3; s.sub[k] = m;
-          s.sd[k] = Math.sqrt(vt) * LV.reduce((a, d) => a + sig(th - B[d]) * (1 - sig(th - B[d])), 0) / 3;   // standard error of the mastery (delta method)
-          mNum += OMEGA[k] * m; mDen += OMEGA[k];
-        }
-        s.parts.M = mDen ? 100 * mNum / mDen : null;
-        let num = 0, den = 0; for (const k in W) if (s.parts[k] != null) { num += W[k] * s.parts[k]; den += W[k]; }
-        s.index = den && s.parts.M != null ? Math.round(num / den) : null;   // no index without mastery: pace or correction alone say nothing about level
+        s.parts.M = mastery(s, s.live, true);
+        s.index = indexValue(s.parts);
         s.used = Object.keys(W).filter((k) => s.parts[k] != null).length;
         // expected share right at each level, guessing included (comparable with the raw count); a section from MIN_SEC answers,
         // a level from MIN_LV answers of that level, so the prior never draws a line by itself
@@ -138,6 +167,7 @@
       const repeat = (seen[o.id] = (seen[o.id] || 0) + 1) > 1 || o.attempt > 1;
       const w = (CTX[o.ctx] || 0.8) * (1 - 0.5 * (o.hints || 0)) * (repeat ? 0.3 : 1);
       blanks.n++; if (o.blank) blanks.b++;
+      if (!repeat && !o.blank) answered[sec] = (answered[sec] || 0) + 1;
       if (!repeat) { done++; const c = (cnt[sec] = cnt[sec] || {}); const r = (c[o.level] = c[o.level] || [0, 0]); r[0] += o.x; r[1]++; }
       // prediction before the update (for transfer, retention, slips): the primary subtopic, else the section
       const pk = tag && tag.p;
@@ -297,6 +327,6 @@
     const gap = need - now;
     return gap > 0.05 ? ["stuck", "ниже цели"] : gap < -0.05 ? ["ok", "выше цели"] : ["grow", "на уровне цели"];
   }
-  const api = { compute, liveRound, drivers, change, ZMIN, targetNeeds, targetFor, vsTarget, MIX, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV };
+  const api = { compute, liveRound, drivers, change, ZMIN, targetNeeds, targetFor, vsTarget, MIX, domainSeries, tagFromSkill, CB, SKILL_OF_SUB: SKILL_OF, weights, bankFreq, OMEGA: OMEGA0, SEC_OF, DOMAINS, W, MIN_IX, MIN_SEC, MIN_LV, MIN_EARLY };
   if (typeof module !== "undefined") module.exports = api; else root.PROGRESS = api;
 })(typeof window !== "undefined" ? window : globalThis);
